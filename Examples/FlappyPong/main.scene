@@ -1,0 +1,142 @@
+{
+	"input": {
+		"keybinds": [
+			{
+				"name": "Flap",
+				"keys": [
+					"KC_MOUSE_LEFT",
+					"KC_UP"
+				]
+			}	
+		]
+	},
+	"entities": [
+		{
+			"name": "MainCamera",
+			"transform": {
+				"position": {
+					"x": 0.0,
+					"y": 0.0,
+					"z": 0.0
+				},
+				"rotation": {
+					"x": 0.0,
+					"y": 0.0,
+					"z": 0.0,
+					"w": 0.0
+				},
+				"scale": {
+					"x": 1.0,
+					"y": 1.0,
+					"z": 1.0
+				}
+			},
+			"components": [
+				{
+					"type": "CameraComponent",
+					"aspect": 0.75,
+					"viewSize": 60
+				},
+				{
+					"type": "LuaComponent",
+					"file": "Examples/FlappyPong/controller.lua"
+				}
+			]
+		},
+		{
+			"name": "Ball",
+			"transform": {
+				"position": {
+					"x": 0.0,
+					"y": 0.0,
+					"z": -1.0
+				},
+				"rotation": {
+					"x": 0.0,
+					"y": 0.0,
+					"z": 0.0,
+					"w": 0.0
+				},
+				"scale": {
+					"x": 4.0,
+					"y": 4.0,
+					"z": 1.0
+				}
+			},
+			"components": [
+				{
+					"type": "SpriteComponent",
+					"file": "Examples/FlappyPong/white_pixel.png"
+				},
+				{
+					"type": "LuaComponent",
+					"file": "Examples/FlappyPong/ball.lua"
+				}
+			]
+		},
+		{
+			"name": "Left Paddle",
+			"transform": {
+				"position": {
+					"x": -70.0,
+					"y": 0.0,
+					"z": -1.0
+				},
+				"rotation": {
+					"x": 0.0,
+					"y": 0.0,
+					"z": 0.0,
+					"w": 0.0
+				},
+				"scale": {
+					"x": 2.0,
+					"y": 18.0,
+					"z": 1.0
+				}
+			},
+			"components": [
+				{
+					"type": "SpriteComponent",
+					"file": "Examples/FlappyPong/white_pixel.png"
+				},
+				{
+					"type": "LuaComponent",
+					"file": "Examples/FlappyPong/paddle.lua"
+				}
+			]
+		},
+{
+			"name": "Right Paddle",
+			"transform": {
+				"position": {
+					"x": 70.0,
+					"y": 0.0,
+					"z": -1.0
+				},
+				"rotation": {
+					"x": 0.0,
+					"y": 0.0,
+					"z": 0.0,
+					"w": 0.0
+				},
+				"scale": {
+					"x": 2.0,
+					"y": 18.0,
+					"z": 1.0
+				}
+			},
+			"components": [
+				{
+					"type": "SpriteComponent",
+					"file": "Examples/FlappyPong/white_pixel.png"
+				},
+				{
+					"type": "LuaComponent",
+					"file": "Examples/FlappyPong/paddle.lua"
+				}
+			]
+		}
+		
+	]
+}
+

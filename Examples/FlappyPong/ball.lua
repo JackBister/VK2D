@@ -1,0 +1,29 @@
+
+moveSpeed = 50.0
+
+function OnEvent(component, name, args)
+	if name == "BeginPlay" then
+		math.randomseed(os.time())
+		velocityDir = { x = math.random()*2-1, y = math.random()*2-1 }
+		if velocityDir.x < 0.0 then
+			velocityDir.x = -1.0
+		else
+			velocityDir.x = 1.0
+		end
+	end
+
+	if name == "Tick" then
+		if transform.position.y <= -60.0 + transform.scale.y/2 or transform.position.y >= 60 -transform.scale.y/2 then
+			velocityDir.y = -velocityDir.y
+		end
+		transform.position.x = transform.position.x + velocityDir.x * moveSpeed * args.deltaTime;
+		transform.position.y = transform.position.y + velocityDir.y * moveSpeed * args.deltaTime;
+		transform.isToParentDirty = true
+		transform.isToWorldDirty = true
+	end
+
+	if name == "Bounce" then
+		velocityDir.x = -velocityDir.x
+	end
+end
+
