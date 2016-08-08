@@ -11,6 +11,12 @@
 
 using nlohmann::json;
 
+void Transform::MakeDirty()
+{
+	isToParentDirty = true;
+	isToWorldDirty = true;
+}
+
 const glm::mat4& Transform::GetLocalToParentSpace()
 {
 	glm::mat4 trans = glm::translate(glm::mat4(), position);
@@ -35,8 +41,7 @@ const glm::mat4& Transform::GetLocalToWorldSpace()
 	return toWorldSpace;
 }
 
-
-PUSH_TO_LUA(Transform)
+//PUSH_TO_LUA(Transform)
 LUA_INDEX(Transform, LuaSerializable, position, LuaSerializable, rotation, LuaSerializable, scale, bool, isToParentDirty, bool, isToWorldDirty)
 
 Transform Transform::Deserialize(std::string s)

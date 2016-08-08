@@ -27,7 +27,7 @@ void Entity::FireEvent(std::string ename, EventArgs args)
 	}
 }
 
-PUSH_TO_LUA(Entity);
+//PUSH_TO_LUA(Entity);
 
 //See Source/Core/Lua/luaindex.h
 LUA_INDEX(Entity, string, name, LuaSerializable, transform, VECTOR(LuaSerializablePtr), components, CFunction_local, FireEvent)

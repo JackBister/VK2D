@@ -21,10 +21,10 @@ struct LuaComponent : Component
 
 	Component * Create(std::string json) override;
 	void OnEvent(std::string name, EventArgs args) override;
-	void PushToLua(lua_State *) override;
+	//void PushToLua(lua_State *) override;
 
-	static int LuaIndex(lua_State *);
-	static int LuaNewIndex(lua_State *);
+	int LuaIndex(lua_State *) override;
+	int LuaNewIndex(lua_State *) override;
 
 	//This maps a lua_State to a LuaComponent. This is necessary to conform with the lua_CFunction prototype but still be able to access different parameters.
 	//This is ugly.

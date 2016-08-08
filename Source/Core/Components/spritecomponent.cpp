@@ -29,7 +29,7 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 	}
 }
 
-PUSH_TO_LUA(SpriteComponent)
+//PUSH_TO_LUA(SpriteComponent)
 
 int SpriteComponent::LuaIndex(lua_State * L)
 {

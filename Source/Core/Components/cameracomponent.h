@@ -25,10 +25,10 @@ struct CameraComponent : Component
 
 	Component * Create(std::string json) override;
 	void OnEvent(std::string name, EventArgs args = {}) override;
-	void PushToLua(lua_State *) override;
+	//void PushToLua(lua_State *) override;
 
-	static int LuaIndex(lua_State *);
-	static int LuaNewIndex(lua_State *);
+	int LuaIndex(lua_State *) override;
+	int LuaNewIndex(lua_State *) override;
 
 private:
 	float aspect;

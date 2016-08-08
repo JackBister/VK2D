@@ -71,7 +71,7 @@ void CameraComponent::OnEvent(std::string name, EventArgs args)
 	}
 }
 
-PUSH_TO_LUA(CameraComponent)
+//PUSH_TO_LUA(CameraComponent)
 
 //See Source/Core/Lua/luaindex.h
 LUA_INDEX(CameraComponent, string, type, float, aspect, float, viewSize)

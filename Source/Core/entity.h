@@ -23,9 +23,9 @@ struct Entity final : LuaSerializable
 	void FireEvent(std::string name, EventArgs args = {});
 	static int FireEvent_Lua(lua_State *);
 
-	void PushToLua(lua_State *) override;
-	static int LuaIndex(lua_State *);
-	static int LuaNewIndex(lua_State *);
+//	void PushToLua(lua_State *) override;
+	int LuaIndex(lua_State *) override;
+	int LuaNewIndex(lua_State *) override;
 
 	//JSON deserializer
 	static Entity * Deserialize(std::string);

@@ -5,7 +5,7 @@
 
 #include "lua_cfuncs.h"
 
-PUSH_TO_LUA(Sprite)
+//PUSH_TO_LUA(Sprite)
 
 Sprite Sprite::FromFile(Transform * const transform, const char * const fileName, const int forcedComponents)
 {

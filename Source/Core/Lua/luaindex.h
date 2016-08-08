@@ -68,10 +68,10 @@
 #define LUA_NEW_INDEX(basetype, ...) NEWINDEX_TOP(basetype) EVAL(DEFER3(MAP) (PULL, EVAL(__VA_ARGS__))) { } return 0; }
 
 #define INDEX_TOP(basetype) int basetype::LuaIndex(lua_State * L) { \
-	void ** vpp = static_cast<void **>(lua_touserdata(L, 1)); \
+/*void ** vpp = static_cast<void **>(lua_touserdata(L, 1)); \
 	basetype * ptr = static_cast< basetype * >(*vpp); \
-	const char * idx = lua_tostring(L, 2); \
-	if (ptr == nullptr || idx == nullptr) { \
+*/	const char * idx = lua_tostring(L, 2); \
+	if (idx == nullptr) { \
 		lua_pushnil(L); \
 		return 1; \
 	}
@@ -80,10 +80,10 @@
 	 if (lua_gettop(L) != 3) { \
 		return 0; \
 	} \
-	void ** vpp = static_cast<void **>(lua_touserdata(L, 1)); \
+/*	void ** vpp = static_cast<void **>(lua_touserdata(L, 1)); \
 	basetype * ptr = static_cast< basetype *>(*vpp); \
-	const char * idx = lua_tostring(L, 2); \
-	if (ptr == nullptr || idx == nullptr) { \
+*/	const char * idx = lua_tostring(L, 2); \
+	if (idx == nullptr) { \
 		return 0; \
 	}
 
@@ -92,26 +92,26 @@
 
 #define STRCMP(name) if (strcmp(idx, #name) == 0) {
 #define PUSH(type, name) PUSH_##type(name) } else
-#define PUSH_bool(name) STRCMP(name) lua_pushboolean(L, ptr->name);
+#define PUSH_bool(name) STRCMP(name) lua_pushboolean(L, this->name);
 #define PUSH_CFunction_global(name) STRCMP(name) lua_pushcfunction(L, name);
-#define PUSH_CFunction_local(name) STRCMP(name) lua_pushcfunction(L, ptr->name##_Lua);
-#define PUSH_EventArgs(name) STRCMP(name) lua_createtable(L, 0, static_cast<int>(ptr->name.size())); \
-		for (auto& eap : ptr->name) { \
+#define PUSH_CFunction_local(name) STRCMP(name) lua_pushcfunction(L, this->name##_Lua);
+#define PUSH_EventArgs(name) STRCMP(name) lua_createtable(L, 0, static_cast<int>(this->name.size())); \
+		for (auto& eap : this->name) { \
 			eap.second.PushToLua(L); \
 			lua_setfield(L, -2, eap.first.c_str()); \
 		}
-#define PUSH_float(name) STRCMP(name) lua_pushnumber(L, ptr->name);
-#define PUSH_LuaSerializable(name) STRCMP(name) ptr->name.PushToLua(L);
-#define PUSH_LuaSerializablePtr(name) STRCMP(name) ptr->name->PushToLua(L);
-#define PUSH_string(name) STRCMP(name) lua_pushstring(L, ptr->name.c_str());
-#define PUSH_VECTOR_LuaSerializable(name) STRCMP(name) lua_createtable(L, 0, static_cast<int>(ptr->name.size())); \
-		for (size_t i = 0; i < ptr->name.size(); ++i) { \
-			ptr->name[i].PushToLua(L); \
+#define PUSH_float(name) STRCMP(name) lua_pushnumber(L, this->name);
+#define PUSH_LuaSerializable(name) STRCMP(name) this->name.PushToLua(L);
+#define PUSH_LuaSerializablePtr(name) STRCMP(name) this->name->PushToLua(L);
+#define PUSH_string(name) STRCMP(name) lua_pushstring(L, this->name.c_str());
+#define PUSH_VECTOR_LuaSerializable(name) STRCMP(name) lua_createtable(L, 0, static_cast<int>(this->name.size())); \
+		for (size_t i = 0; i < this->name.size(); ++i) { \
+			this->name[i].PushToLua(L); \
 			lua_rawseti(L, -2, i + 1); \
 		}
-#define PUSH_VECTOR_LuaSerializablePtr(name) STRCMP(name) lua_createtable(L, 0, static_cast<int>(ptr->name.size())); \
-		for (size_t i = 0; i < ptr->name.size(); ++i) { \
-			ptr->name[i]->PushToLua(L); \
+#define PUSH_VECTOR_LuaSerializablePtr(name) STRCMP(name) lua_createtable(L, 0, static_cast<int>(this->name.size())); \
+		for (size_t i = 0; i < this->name.size(); ++i) { \
+			this->name[i]->PushToLua(L); \
 			lua_rawseti(L, -2, i + 1); \
 		}
 
@@ -119,19 +119,19 @@
 #define PULL_bool(name) STRCMP(name) if (!lua_isboolean(L, 3)) { \
 			return 0; \
 		} \
-		ptr->name = lua_toboolean(L, 3);
+		this->name = lua_toboolean(L, 3);
 #define PULL_CFunction STRCMP(name) if (!lua_iscfunction(L, 3)) { \
 			return 0; \
 		} \
-		ptr->name = lua_tocfunction(L, 3);
+		this->name = lua_tocfunction(L, 3);
 #define PULL_float(name) STRCMP(name) if (!lua_isnumber(L, 3)) { \
 			return 0; \
 		} \
-		ptr->name = static_cast<float>(lua_tonumber(L, 3));
+		this->name = static_cast<float>(lua_tonumber(L, 3));
 #define PULL_string(name) STRCMP(name) if (!lua_isstring(L, 3)) { \
 			return 0; \
 		} \
-		ptr->name = lua_tostring(L, 3);
+		this->name = lua_tostring(L, 3);
 
 #define FIRST(a, ...) a
 #define SECOND(a, b, ...) b

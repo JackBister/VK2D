@@ -39,10 +39,10 @@ struct Input : LuaSerializable
 	static int RemoveKeybind_Lua(lua_State *);
 
 	
-	void PushToLua(lua_State *) override;
+//	void PushToLua(lua_State *) override;
 
-	static int LuaIndex(lua_State *);
-	static int LuaNewIndex(lua_State *);
+	int LuaIndex(lua_State *) override;
+	int LuaNewIndex(lua_State *) override;
 
 	static Input * Deserialize(std::string);
 

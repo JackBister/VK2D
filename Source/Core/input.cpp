@@ -155,8 +155,7 @@ int Input::RemoveKeybind_Lua(lua_State * L)
 	INPUT_KEYBIND(RemoveKeybind)
 }
 
-
-PUSH_TO_LUA(Input);
+//PUSH_TO_LUA(Input);
 
 int Input::LuaIndex(lua_State * L)
 {

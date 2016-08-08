@@ -11,7 +11,7 @@
 using nlohmann::json;
 using namespace std;
 
-PUSH_TO_LUA(Scene)
+//PUSH_TO_LUA(Scene)
 
 LUA_INDEX(Scene, CFunction_local, GetEntityByName, CFunction_local, BroadcastEvent)
 
@@ -140,6 +140,7 @@ Scene * Scene::FromFile(string fn)
 	string fileContent = SlurpFile(fn);
 	json j = json::parse(fileContent);
 	ret->input = Input::Deserialize(j["input"].dump());
+	ret->physicsWorld = PhysicsWorld::Deserialize(j["physics"].dump());
 	for (auto& je : j["entities"]) {
 		Entity * tmp = Entity::Deserialize(je.dump());
 		tmp->scene = ret;

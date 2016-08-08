@@ -29,9 +29,9 @@ struct Sprite : LuaSerializable
 	//Renderer-specific data
 	void * rendererData;
 
-	void PushToLua(lua_State *) override;
+	//void PushToLua(lua_State *) override;
 
 	static Sprite FromFile(Transform * const transform, const char * const fileName, const int forcedComponents = 0);	
-	static int LuaIndex(lua_State *);
-	static int LuaNewIndex(lua_State *);
+	int LuaIndex(lua_State *) override;
+	int LuaNewIndex(lua_State *) override;
 };

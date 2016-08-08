@@ -1,9 +1,9 @@
 
 BUILD_DIR = build
 CORE_DIR = Source/Core
-CORE_FILES = entity.cpp eventarg.cpp input.cpp main.cpp scene.cpp sprite.cpp dtime.cpp transform.cpp
+CORE_FILES = entity.cpp eventarg.cpp input.cpp main.cpp physicsworld.cpp scene.cpp sprite.cpp dtime.cpp transform.cpp
 COMPONENT_DIR = Source/Core/Components
-COMPONENT_FILES = cameracomponent.cpp component.cpp spritecomponent.cpp
+COMPONENT_FILES = cameracomponent.cpp component.cpp physicscomponent.cpp spritecomponent.cpp
 LUA_DIR = Source/Core/Lua
 LUA_FILES = lua_cfuncs.cpp luacomponent.cpp luaserializable.cpp
 MATH_DIR = Source/Core/Math
@@ -15,7 +15,7 @@ OBJ_OUTPUT = $(CPP_FILES:%.cpp=$(BUILD_DIR)/%.o)
 BUILD_DIRS = $(BUILD_DIR)/$(CORE_DIR) $(BUILD_DIR)/$(COMPONENT_DIR) $(BUILD_DIR)/$(LUA_DIR) $(BUILD_DIR)/$(MATH_DIR) $(BUILD_DIR)/$(RENDERING_DIR)
 EXE_OUTPUT = build/Vulkan2D.exe
 
-LIBS = libs/SDL2main.lib libs/SDL2.lib libs/liblua.lib libs/vulkan-1.lib
+LIBS = libs/SDL2main.lib libs/SDL2.lib libs/liblua.lib libs/vulkan-1.lib libs/libBulletDynamics.a libs/libBulletCollision.a libs/libLinearMath.a
 WINLIBS = -lopengl32 # -ldxguid -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lversion -lopengl32
 
 #-Wno-padded warning should be removed when things are more stable
@@ -45,3 +45,16 @@ build/glew.o: glew.c
 clean:
 	rm $(OBJ_OUTPUT)
 
+
+HEADERGENERATOR_FILES = Source/Tools/HeaderGenerator/main.cpp
+HEADERGENERATOR_OUTPUT = $(HEADERGENERATOR_FILES:%.cpp=$(BUILD_DIR)/%.o)
+HEADERGENERATOR_LIBS = libs/libboost_filesystem.a libs/libboost_system.a
+
+headergeneratordirs:
+	mkdir -p build/Source/Tools/HeaderGenerator
+
+$(BUILD_DIR)/Source/Tools/HeaderGenerator/%.o: Source/Tools/HeaderGenerator/%.cpp
+	g++ -m64 -isystem include -ISource/Tools/HeaderGenerator -std=c++14 -c -o $@ $<
+
+headergenerator: headergeneratordirs $(HEADERGENERATOR_OUTPUT)
+	g++ -m64 -O2 -o $(BUILD_DIR)/headergenerator.exe $(HEADERGENERATOR_OUTPUT) $(HEADERGENERATOR_LIBS)

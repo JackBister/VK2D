@@ -42,5 +42,11 @@ struct LuaSerializable
 {
 	virtual ~LuaSerializable();
 	//This could be done in the base class, but then objects of the same type could not share a metatable
-	virtual void PushToLua(lua_State *) = 0;
+	void PushToLua(lua_State *);
+
+	virtual int LuaIndex(lua_State *) = 0;
+	virtual int LuaNewIndex(lua_State *) = 0;
+
+	static int StaticLuaIndex(lua_State *);
+	static int StaticLuaNewIndex(lua_State *);
 };

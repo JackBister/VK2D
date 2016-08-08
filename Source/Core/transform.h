@@ -16,13 +16,16 @@ struct Transform final : LuaSerializable
 	Quat rotation = Quat(0.f, 0.f, 0.f, 0.f);
 	Vec3 scale = Vec3(1.f, 1.f, 1.f);
 
+	//TODO: remove
+	void MakeDirty();
+
 	const glm::mat4& GetLocalToParentSpace();
 	const glm::mat4& GetLocalToWorldSpace();
-	void PushToLua(lua_State *);
+	//void PushToLua(lua_State *);
 
 	static Transform Deserialize(std::string);
-	static int LuaIndex(lua_State *);
-	static int LuaNewIndex(lua_State *);
+	int LuaIndex(lua_State *) override;
+	int LuaNewIndex(lua_State *) override;
 
 private:
 	bool isToParentDirty = true;

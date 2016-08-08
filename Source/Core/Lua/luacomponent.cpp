@@ -101,7 +101,7 @@ void LuaComponent::OnEvent(string name, EventArgs eargs)
 }
 
 
-PUSH_TO_LUA(LuaComponent)
+//PUSH_TO_LUA(LuaComponent)
 
 //See Source/Core/Lua/luaindex.h
 LUA_INDEX(LuaComponent, LuaSerializablePtr, entity, string, type, bool, isActive, bool, receiveTicks, string, file, EventArgs, args)

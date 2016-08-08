@@ -29,6 +29,8 @@ int main(int argc, char *argv[])
 	while (true) {
 		scene->input->Frame();
 		scene->time.Frame();
+		//TODO: substeps
+		scene->physicsWorld.world->stepSimulation(scene->time.GetDeltaTime());
 		scene->BroadcastEvent("Tick", { {"deltaTime", scene->time.GetDeltaTime()} });
 		renderer->EndFrame();
 	}
