@@ -6,8 +6,11 @@
 
 #include "component.h"
 
+#include "Tools/HeaderGenerator/headergenerator.h"
+
 struct LuaComponent : Component
 {
+	PROPERTY(LuaRead)
 	std::string file;
 	//TODO: Each component has its own state - I'm not sure if that's good or if it's a waste.
 	lua_State * state;

@@ -9,14 +9,15 @@
 //TODO: Render targets
 struct CameraComponent : Component
 {	
-	CameraComponent()
-	{
-		receiveTicks = false;
-	}
+	bool Component::receiveTicks = false;
 
+	PROPERTY(LuaRead)
 	float GetAspect();
+	PROPERTY(LuaRead)
 	void SetAspect(float);
+	PROPERTY(LuaRead)
 	float GetViewSize();
+	PROPERTY(LuaRead)
 	void SetViewSize(float);
 
 	const glm::mat4& GetProjectionMatrix();

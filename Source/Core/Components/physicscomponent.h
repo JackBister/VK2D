@@ -4,6 +4,8 @@
 
 #include "component.h"
 
+#include "Tools/HeaderGenerator/headergenerator.h"
+
 struct PhysicsComponent : Component, btMotionState
 {
 	bool Component::receiveTicks = false;
@@ -25,6 +27,7 @@ struct PhysicsComponent : Component, btMotionState
 	void setWorldTransform(const btTransform&) override;
 
 private:
+	PROPERTY(LuaRead)
 	float mass;
 	btRigidBody * rigidBody;
 	btCollisionShape * shape;

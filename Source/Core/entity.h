@@ -8,18 +8,24 @@
 #include "luaserializable.h"
 #include "transform.h"
 
+#include "Tools/HeaderGenerator/headergenerator.h"
+
 struct Scene;
 
 //The 11th commandment: Thou shalt not inherit from the Entity class; use components like a normal person instead.
 struct Entity final : LuaSerializable
 {
+	PROPERTY(LuaReadWrite)
 	std::string name;
 	//TODO: Necessary for now
+	PROPERTY(LuaReadWrite)
 	Scene * scene;
+	PROPERTY(LuaReadWrite)
 	Transform transform;
 
 	std::vector<Component *> components;
 	
+	PROPERTY(LuaRead)
 	void FireEvent(std::string name, EventArgs args = {});
 	static int FireEvent_Lua(lua_State *);
 

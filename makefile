@@ -24,7 +24,7 @@ WINLIBS = -lopengl32 # -ldxguid -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lver
 #though in that case the compiler should warn anyway.
 #reserved-id-macro should be turned on later when luaindex.h is changed, right now it just causes spam
 WARN_FLAGS = -Wall -Wextra -Wpedantic # -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-global-constructors -Wno-exit-time-destructors -Wno-covered-switch-default -Wno-gnu-zero-variadic-macro-arguments -Wno-reserved-id-macro
-OBJ_FLAGS = -m64 -isystem include -I$(CORE_DIR) -I$(COMPONENT_DIR) -I$(LUA_DIR) -I$(MATH_DIR) -I$(RENDERING_DIR) -std=c++14 -c -o
+OBJ_FLAGS = -m64 -isystem include -ISource -I$(CORE_DIR) -I$(COMPONENT_DIR) -I$(LUA_DIR) -I$(MATH_DIR) -I$(RENDERING_DIR) -std=c++14 -c -o
 
 all: dirs $(OBJ_OUTPUT) build/glew.o
 	g++ -m64 -O2 -o $(EXE_OUTPUT) $(OBJ_OUTPUT) build/glew.o $(LIBS) $(WINLIBS)
@@ -48,13 +48,13 @@ clean:
 
 HEADERGENERATOR_FILES = Source/Tools/HeaderGenerator/main.cpp
 HEADERGENERATOR_OUTPUT = $(HEADERGENERATOR_FILES:%.cpp=$(BUILD_DIR)/%.o)
-HEADERGENERATOR_LIBS = libs/libboost_filesystem.a libs/libboost_system.a
+HEADERGENERATOR_LIBS = libs/libboost_filesystem.a libs/libboost_system.a libs/liblibclang.dll.a
 
 headergeneratordirs:
 	mkdir -p build/Source/Tools/HeaderGenerator
 
 $(BUILD_DIR)/Source/Tools/HeaderGenerator/%.o: Source/Tools/HeaderGenerator/%.cpp
-	g++ -m64 -isystem include -ISource/Tools/HeaderGenerator -std=c++14 -c -o $@ $<
+	g++ -m64 -isystem include -g -Wall -ISource/Tools/HeaderGenerator -std=c++14 -DBYTE_ORDER=1 -DLLVM_ON_WIN32=1 -c -o $@ $<
 
 headergenerator: headergeneratordirs $(HEADERGENERATOR_OUTPUT)
 	g++ -m64 -O2 -o $(BUILD_DIR)/headergenerator.exe $(HEADERGENERATOR_OUTPUT) $(HEADERGENERATOR_LIBS)

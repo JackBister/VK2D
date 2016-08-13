@@ -10,6 +10,8 @@
 #include "keycodes.h"
 #include "luaserializable.h"
 
+#include "Tools/HeaderGenerator/headergenerator.h"
+
 typedef std::unordered_map<Keycode, bool, std::hash<int>> Keymap;
 
 struct Input : LuaSerializable
@@ -18,6 +20,7 @@ struct Input : LuaSerializable
 	//TODO: This could/should be static and push events to all Input instances - question is if that's meaningful in any way.
 	void Frame();
 
+	//TODO: Make Keycode a class with implicit std::string constructor for ez Lua interaction
 	//TODO: Modifier keys?
 	bool GetKey(Keycode);
 	static int GetKey_Lua(lua_State *);
@@ -26,10 +29,13 @@ struct Input : LuaSerializable
 	bool GetKeyUp(Keycode);
 	static int GetKeyUp_Lua(lua_State *);
 
+	PROPERTY(LuaRead)
 	bool GetButton(std::string);
 	static int GetButton_Lua(lua_State *);
+	PROPERTY(LuaRead)
 	bool GetButtonDown(std::string);
 	static int GetButtonDown_Lua(lua_State *);
+	PROPERTY(LuaRead)
 	bool GetButtonUp(std::string);
 	static int GetButtonUp_Lua(lua_State *);
 
@@ -38,7 +44,6 @@ struct Input : LuaSerializable
 	void RemoveKeybind(std::string, Keycode);
 	static int RemoveKeybind_Lua(lua_State *);
 
-	
 //	void PushToLua(lua_State *) override;
 
 	int LuaIndex(lua_State *) override;

@@ -6,12 +6,8 @@
 
 struct SpriteComponent final : Component
 {
+	bool Component::receiveTicks = false;
 	Sprite sprite;
-
-	SpriteComponent()
-	{
-		receiveTicks = false;
-	}
 
 	Component * Create(std::string json) override;
 	void OnEvent(std::string name, EventArgs args) override;

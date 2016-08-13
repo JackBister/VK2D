@@ -8,12 +8,15 @@
 #include "luaserializable.h"
 #include "physicsworld.h"
 
+#include "Tools/HeaderGenerator/headergenerator.h"
+
 //TODO: Allocate all entities/components from same block for cache
 
 struct Entity;
 
 struct Scene : LuaSerializable
 {
+	PROPERTY(LuaReadWrite)
 	Input * input;
 	PhysicsWorld physicsWorld;
 	Time time;
@@ -27,12 +30,14 @@ struct Scene : LuaSerializable
 	/*
 		Returns the entity with the given name, or nullptr if an entity with that name does not exist.
 	*/
+	PROPERTY(LuaRead)
 	Entity * GetEntityByName(std::string);
 	static int GetEntityByName_Lua(lua_State *);
 
 	/*
 		Sends an event to all entities.
 	*/
+	PROPERTY(LuaRead)
 	void BroadcastEvent(std::string ename, EventArgs eas = {});
 	static int BroadcastEvent_Lua(lua_State *);
 
