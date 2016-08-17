@@ -18,7 +18,7 @@ function OnEvent(component, name, args)
 
 	if name == "Tick" then
 		if CollisionCheck(ball.transform, transform) then
-			ball:FireEvent("Bounce")
+			ball:FireEvent("Bounce", {})
 		end
 		if transform.position.y <= -60.0 + transform.scale.y/2 and velocityY <= 0.0 then
 			return

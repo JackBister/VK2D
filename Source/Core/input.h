@@ -31,20 +31,15 @@ struct Input : LuaSerializable
 
 	PROPERTY(LuaRead)
 	bool GetButton(std::string);
-	static int GetButton_Lua(lua_State *);
 	PROPERTY(LuaRead)
 	bool GetButtonDown(std::string);
-	static int GetButtonDown_Lua(lua_State *);
 	PROPERTY(LuaRead)
 	bool GetButtonUp(std::string);
-	static int GetButtonUp_Lua(lua_State *);
 
 	void AddKeybind(std::string, Keycode);
 	static int AddKeybind_Lua(lua_State *);
 	void RemoveKeybind(std::string, Keycode);
 	static int RemoveKeybind_Lua(lua_State *);
-
-//	void PushToLua(lua_State *) override;
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;

@@ -9,8 +9,6 @@ struct Vec3 : glm::vec3, LuaSerializable
 {
 	using glm::vec3::tvec3;
 
-	//void PushToLua(lua_State *);
-
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;
 };
@@ -18,8 +16,6 @@ struct Vec3 : glm::vec3, LuaSerializable
 struct Quat : glm::quat, LuaSerializable
 {
 	using glm::quat::tquat;
-
-	//void PushToLua(lua_State *);
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;

@@ -10,10 +10,12 @@
 #include "luaindex.h"
 #include "scene.h"
 
+#include "luacomponent.h.generated.h"
+
 using nlohmann::json;
 using namespace std;
 
-inline LuaComponent::LuaComponent()
+LuaComponent::LuaComponent()
 {
 	receiveTicks = true;
 }
@@ -99,76 +101,3 @@ void LuaComponent::OnEvent(string name, EventArgs eargs)
 		lua_close(state);
 	}
 }
-
-
-//PUSH_TO_LUA(LuaComponent)
-
-//See Source/Core/Lua/luaindex.h
-LUA_INDEX(LuaComponent, LuaSerializablePtr, entity, string, type, bool, isActive, bool, receiveTicks, string, file, EventArgs, args)
-
-/*
-//	Gonna leave this here for a while so we can look in awe at how much the LUA_INDEX macro saves
-int LuaComponent::LuaIndex(lua_State * L)
-{
-	void ** luaCompPtr = static_cast<void **>(lua_touserdata(L, 1));
-	LuaComponent * ptr = static_cast<LuaComponent *>(*luaCompPtr);
-	const char * idx = lua_tostring(L, 2);
-	if (ptr == nullptr || idx == nullptr) {
-		lua_pushnil(L);
-		return 1;
-	}
-	if (strcmp(idx, "entity") == 0) {
-		ptr->entity->PushToLua(L);
-	} else if (strcmp(idx, "type") == 0) {
-		lua_pushstring(L, ptr->type.c_str());
-	} else if (strcmp(idx, "isActive") == 0) {
-		lua_pushboolean(L, ptr->isActive);
-	} else if (strcmp(idx, "receiveTicks") == 0) {
-		lua_pushboolean(L, ptr->receiveTicks);
-	} else if (strcmp(idx, "file") == 0) {
-		lua_pushstring(L, ptr->file.c_str());
-	} else if (strcmp(idx, "args") == 0) {
-		lua_createtable(L, 0, ptr->args.size());
-		for (auto& eap : ptr->args) {
-			eap.second.PushToLua(L);
-			lua_setfield(L, -2, eap.first.c_str());
-		}
-	} else {
-		lua_pushnil(L);
-	}
-	return 1;
-}
-*/
-
-LUA_NEW_INDEX(LuaComponent, bool, isActive, bool, receiveTicks)
-
-/*
-//TODO: Assigning to file is stupid since it wont have effect
-//In future maybe use getter/setter
-int LuaComponent::LuaNewIndex(lua_State * L)
-{
-	if (lua_gettop(L) != 3) {
-		return 0;
-	}
-	void ** luaCompPtr = static_cast<void **>(lua_touserdata(L, 1));
-	LuaComponent * ptr = static_cast<LuaComponent *>(*luaCompPtr);
-	const char * idx = lua_tostring(L, 2);
-	if (ptr == nullptr || idx == nullptr) {
-		return 0;
-	}
-	
-	if (strcmp(idx, "isActive") == 0) {
-		if (!lua_isboolean(L, 3)) {
-			return 0;
-		}
-		ptr->isActive = lua_toboolean(L, 3);
-	} else if (strcmp(idx, "receiveTicks") == 0) {
-		if (!lua_isboolean(L, 3)) {
-			return 0;
-		}
-		ptr->receiveTicks = lua_toboolean(L, 3);
-	} 
-	return 0;
-}
-*/
-

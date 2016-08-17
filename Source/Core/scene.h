@@ -16,13 +16,11 @@ struct Entity;
 
 struct Scene : LuaSerializable
 {
-	PROPERTY(LuaReadWrite)
+	PROPERTY(LuaRead)
 	Input * input;
 	PhysicsWorld physicsWorld;
 	Time time;
 	std::vector<Entity *> entities;
-
-	//void PushToLua(lua_State *) override;
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;

@@ -7,6 +7,8 @@
 #include "luaindex.h"
 #include "scene.h"
 
+#include "physicscomponent.h.generated.h"
+
 BroadphaseNativeTypes DeserializeShapeType(std::string s)
 {
 	if (s == "BOX_2D_SHAPE_PROXYTYPE") {
@@ -89,12 +91,14 @@ void PhysicsComponent::OnEvent(std::string name, EventArgs args)
 	}
 }
 
+/*
 LUA_INDEX(PhysicsComponent, float, mass)
 
 int PhysicsComponent::LuaNewIndex(lua_State *)
 {
 	return 0;
 }
+*/
 
 void PhysicsComponent::getWorldTransform(btTransform& worldTransform) const
 {

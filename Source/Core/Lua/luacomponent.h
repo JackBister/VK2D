@@ -10,6 +10,8 @@
 
 struct LuaComponent : Component
 {
+	LuaComponent();
+
 	PROPERTY(LuaRead)
 	std::string file;
 	//TODO: Each component has its own state - I'm not sure if that's good or if it's a waste.
@@ -20,11 +22,8 @@ struct LuaComponent : Component
 	//TODO: Note that this means that a LuaComponent can't run multiple OnEvents concurrently, although that may also be problematic for other reasons.
 	EventArgs args;
 
-	LuaComponent();
-
 	Component * Create(std::string json) override;
 	void OnEvent(std::string name, EventArgs args) override;
-	//void PushToLua(lua_State *) override;
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;

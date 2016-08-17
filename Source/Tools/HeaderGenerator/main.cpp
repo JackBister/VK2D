@@ -82,6 +82,11 @@ std::string TypeCheck(CXType type)
 	case CXType_Pointer:
 	case CXType_Record:
 		return "lua_isuserdata";
+	case CXType_Typedef:
+		if (ts == "EventArgs") {
+			return "lua_istable";
+		}
+		return TypeCheck(clang_getCanonicalType(type));
 	case CXType_Unexposed:
 		if (ts == "std::string") {
 			return "lua_isstring";
@@ -119,6 +124,15 @@ std::string Pull(CXType type)
 		return "lua_tonumber";
 	case CXType_Record:
 		return "lua_touserdata";
+	case CXType_Typedef:
+		//TODO: HACK: For some reason Clang can't figure out the std::unordered_map type.
+		//Luckily I had already typedef'd it to "EventArgs" in the most relevant place where it's used.
+		//Therefore we can put this in here to solve it, but it's not robust since no other unordered_map template instances will work.
+		if (ts == "EventArgs") {
+			return "PullEventArgs";
+		}
+//		printf("%s\n", clang_getCString(clang_getTypeSpelling(clang_getCanonicalType(type))));
+		return Pull(clang_getCanonicalType(type));
 	case CXType_Unexposed:
 		if (ts == "std::string") {
 			return "lua_tostring";
@@ -153,7 +167,7 @@ std::string Push(Property p)
 		break;
 	case CXType_FunctionProto:
 		//TODO: Needs a GenerateCFuncs to run first
-		ss << "lua_pushCFunction(L, _" << p.name << "_Lua);";
+		ss << "lua_pushcfunction(L, _" << p.name << "_Lua);";
 		break;
 	case CXType_LValueReference:
 		p.cxType = clang_getPointeeType(p.cxType);
@@ -173,6 +187,10 @@ std::string Push(Property p)
 		}
 		ss << "PushToLua(L);";
 		break;
+	case CXType_Typedef:
+		p.cxType = clang_getCanonicalType(p.cxType);
+		ss << Push(p);
+		break;
 	case CXType_Unexposed:
 		if (p.type == "std::string") {
 			ss << "lua_pushstring(L, " << p.name;
@@ -186,7 +204,7 @@ std::string Push(Property p)
 		}
 		//Intentional fallthrough
 	default:
-		printf("[WARNING] Unhandled type %s %s in Push.\n", p.type.c_str(), clang_getCString(clang_getTypeKindSpelling(p.cxType.kind)));
+		printf("[WARNING] Unhandled type %s %s %s in Push.\n", p.name.c_str(), p.type.c_str(), clang_getCString(clang_getTypeKindSpelling(p.cxType.kind)));
 		break;
 	}
 	return ss.str();
@@ -235,7 +253,11 @@ std::string GenerateCFunctions(std::string className, ClassAccumulator accumulat
 			ret.isPtr = false;
 			ret.type = clang_getCString(clang_getTypeSpelling(ret.cxType));
 
-			ss << "\t auto res = " << pit.name << "(";
+			if (ret.cxType.kind == CXType_Void) {
+				ss << "\t ptr->" << pit.name << "(";
+			} else {
+				ss << "\t auto res = ptr->" << pit.name << "(";
+			}
 			for (int i = 1; i < argc; ++i) {
 				ss << "arg" << i;
 				if (i != argc - 1) {
@@ -243,9 +265,14 @@ std::string GenerateCFunctions(std::string className, ClassAccumulator accumulat
 				}
 			}
 
-			ss << ");\n"
-				<< "\t " << Push(ret) << "\n"
-				<< "}\n\n";
+			ss << ");\n";
+			if (ret.cxType.kind != CXType_Void) {
+				ss << "\t " << Push(ret) << "\n"
+					<< "\t return 1;\n";
+			} else {
+				ss << "\t return 0;\n";
+			}
+			ss << "}\n\n";
 		}
 	}
 	return ss.str();
@@ -330,7 +357,7 @@ CXChildVisitResult AttributeVisitor(CXCursor cursor, CXCursor parent, CXClientDa
 		prop->attrs = ParseAttributes(clang_getCString(s));
 		clang_disposeString(s);
 	}
-	return CXChildVisit_Recurse;
+	return CXChildVisit_Continue;
 }
 
 CXChildVisitResult DeclarationVisitor(CXCursor cursor, CXCursor parent, CXClientData clientData)
@@ -344,12 +371,12 @@ CXChildVisitResult DeclarationVisitor(CXCursor cursor, CXCursor parent, CXClient
 		p.parent = std::string(clang_getCString(ps));
 		clang_visitChildren(cursor, AttributeVisitor, &p);
 
-		if (p.attrs.size() == 0) {
-			return CXChildVisit_Recurse;
-		}
 		CXString s = clang_getCursorSpelling(cursor);
 		p.name = std::string(clang_getCString(s));
 		clang_disposeString(s);
+		if (p.attrs.size() == 0) {
+			return CXChildVisit_Recurse;
+		}
 		CXType type = clang_getCursorType(cursor);
 		if (type.kind == CXType_Pointer) {
 			p.isPtr = true;
@@ -358,6 +385,7 @@ CXChildVisitResult DeclarationVisitor(CXCursor cursor, CXCursor parent, CXClient
 		CXString ts = clang_getTypeSpelling(type);
 		p.cxType = type;
 		p.type = std::string(clang_getCString(ts));
+	//	printf("%s %s\n", p.type.c_str(), p.name.c_str());
 		clang_disposeString(ts);
 		auto fileAccumulator = static_cast<FileAccumulator *>(clientData);
 		if (p.parent == fileAccumulator->fileName) {
@@ -375,7 +403,7 @@ CXChildVisitResult DeclarationVisitor(CXCursor cursor, CXCursor parent, CXClient
 	return CXChildVisit_Recurse;
 }
 
-void ProcessFile(const boost::filesystem::path& path)
+void ProcessFile(const boost::filesystem::path& output, const boost::filesystem::path& path)
 {
 	CXIndex index = clang_createIndex(1, 0);
 	if (!index) {
@@ -384,7 +412,8 @@ void ProcessFile(const boost::filesystem::path& path)
 	}
 	const char * const args[] = {
 		//TODO: God damn it.
-		"-IC:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/5.3.0/include",
+		"-Iinclude/libcxx",
+/*		"-IC:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/5.3.0/include",
 		"-IC:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/5.3.0/../../../../include",
 		"-IC:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/5.3.0/include-fixed",
 		"-IC:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/5.3.0/../../../../x86_64-w64-mingw32/include",
@@ -392,6 +421,7 @@ void ProcessFile(const boost::filesystem::path& path)
 		"-IC:/msys64/mingw64/lib/gcc/../../include/c++/5.3.0/x86_64-w64-mingw32",
 		"-IC:/msys64/mingw64/lib/gcc/../../include/c++/5.3.0/backward",
 		"-isystem /mingw64/include/c++/5.3.0",
+	*/
 		"-Iinclude",
 		"-ISource",
 		"-ISource/Core",
@@ -399,36 +429,58 @@ void ProcessFile(const boost::filesystem::path& path)
 		"-ISource/Core/Lua",
 		"-ISource/Core/Math",
 		"-ISource/Core/Rendering",
+		"-x",
+		"c++",
 		"-std=c++14",
-		"-DHEADERGENERATOR"
+		"-D_WIN32",
+		"-DHEADERGENERATOR",
 	};
-	CXTranslationUnit unit = clang_parseTranslationUnit(index, path.generic_string().c_str(), args, sizeof(args)/sizeof(args[0]), nullptr, 0, CXTranslationUnit_None);
-	CXCursor cursor = clang_getTranslationUnitCursor(unit);
+	CXTranslationUnit unit;
+	auto error = clang_parseTranslationUnit2(index, path.generic_string().c_str(), args, sizeof(args) / sizeof(args[0]), nullptr, 0, CXTranslationUnit_None, &unit);
+	
+	if (error) {
+		printf("%d\n", error);
+	}
 
+	auto numDiagnostics(clang_getNumDiagnostics(unit));
+	if (numDiagnostics > 0) {
+		for (int i = 0; i < numDiagnostics; ++i) {
+			auto diagnostic(clang_getDiagnostic(unit, i));
+			auto diagnosticCXString(clang_formatDiagnostic(diagnostic, CXDiagnosticDisplayOptions::CXDiagnostic_DisplaySourceLocation));
+			printf("%s\n", clang_getCString(diagnosticCXString));
+			clang_disposeString(diagnosticCXString);
+			clang_disposeDiagnostic(diagnostic);
+		}
+	}
+
+	CXCursor cursor = clang_getTranslationUnitCursor(unit);
 	FileAccumulator res;
 	res.fileName = path.generic_string();
 	clang_visitChildren(cursor, DeclarationVisitor, &res);
 //	res.Dump();
-	std::stringstream fileNameSS;
-	fileNameSS << path.generic_string() << ".generated.h";
-	std::fstream outStream(fileNameSS.str(), std::ios_base::out);
-	outStream << "#include \"" << path.filename().generic_string() << "\"\n\n";
-	for (auto& it : res.classes) {
-		outStream << GenerateCFunctions(it.first, it.second)
-			<< GenerateLuaIndex(it.first, it.second)
-			<< GenerateLuaNewIndex(it.first, it.second);
-		/*
-		printf("%s\n", GenerateCFunctions(it.first, it.second).c_str());
-		printf("%s\n", GenerateLuaIndex(it.first, it.second).c_str());
-		printf("%s\n", GenerateLuaNewIndex(it.first, it.second).c_str());
-		*/
+	if (res.classes.size() != 0) {
+		const boost::filesystem::path outpath = output / path.filename() += ".generated.h";
+		std::stringstream fileNameSS;
+		fileNameSS << path.generic_string() << ".generated.h";
+		std::fstream outStream(outpath.generic_string(), std::ios_base::out);
+		outStream << "#include \"" << path.filename().generic_string() << "\"\n\n";
+		for (auto& it : res.classes) {
+			outStream << GenerateCFunctions(it.first, it.second)
+				<< GenerateLuaIndex(it.first, it.second)
+				<< GenerateLuaNewIndex(it.first, it.second);
+			/*
+			printf("%s\n", GenerateCFunctions(it.first, it.second).c_str());
+			printf("%s\n", GenerateLuaIndex(it.first, it.second).c_str());
+			printf("%s\n", GenerateLuaNewIndex(it.first, it.second).c_str());
+			*/
+		}
+		outStream.close();
 	}
-	outStream.close();
 	clang_disposeTranslationUnit(unit);
 	clang_disposeIndex(index);
 }
 
-void Generate_r(const boost::filesystem::path& path) {
+void Generate_r(const boost::filesystem::path& output, const boost::filesystem::path& path) {
     using boost::filesystem::directory_iterator;
     using boost::filesystem::is_directory;
 	using boost::filesystem::is_regular_file;
@@ -436,35 +488,38 @@ void Generate_r(const boost::filesystem::path& path) {
 	if (is_regular_file(path)) {
 		//TODO: Cannot use path::c_str because on Windows it results in wchar_t which doesn't work with %s.
 		printf("Processing %s.\n", path.generic_string().c_str());
-		ProcessFile(path);
+		ProcessFile(output, path);
 		return;
 	}
 
     for (auto& de : directory_iterator(path)) {
         const boost::filesystem::path subdir = de.path();
-        if (is_directory(subdir)) {
-            Generate_r(subdir);
-		} else {
-			printf("[WARNING] path is not directory or regular file: %s\n", subdir.generic_string().c_str());
-		}
+        Generate_r(output, subdir);
 	}
 }
 
 int main(const int argc, const char *argv[]) {
     using boost::filesystem::exists;
+	using boost::filesystem::is_directory;
 
-    if (argc != 2) {
-        printf("Usage: %s <directory>\n", argv[0]);
+    if (argc != 3) {
+        printf("Usage: %s <output directory> <input directory/file>\n", argv[0]);
         return 1;
     }
 
-    const boost::filesystem::path path(argv[1]);
-    if (!exists(path)) {
-        printf("[ERROR] %s doesn't exist.\n", argv[1]);
+	const boost::filesystem::path output(argv[1]);
+	if (!exists(output) || !is_directory(output)) {
+		printf("[ERROR] %s doesn't exist or isn't a directory.\n", argv[1]);
+		return 1;
+	}
+
+    const boost::filesystem::path input(argv[2]);
+    if (!exists(input)) {
+        printf("[ERROR] %s doesn't exist.\n", argv[2]);
         return 1;
     }
 
-    Generate_r(path);
+    Generate_r(output, input);
     
     return 0;
 }

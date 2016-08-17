@@ -9,6 +9,8 @@
 #include "lua_cfuncs.h"
 #include "luaindex.h"
 
+#include "transform.h.generated.h"
+
 using nlohmann::json;
 
 void Transform::MakeDirty()
@@ -41,9 +43,6 @@ const glm::mat4& Transform::GetLocalToWorldSpace()
 	return toWorldSpace;
 }
 
-//PUSH_TO_LUA(Transform)
-LUA_INDEX(Transform, LuaSerializable, position, LuaSerializable, rotation, LuaSerializable, scale, bool, isToParentDirty, bool, isToWorldDirty)
-
 Transform Transform::Deserialize(std::string s)
 {
 	Transform ret;
@@ -63,27 +62,3 @@ Transform Transform::Deserialize(std::string s)
 
 	return ret;
 }
-
-
-int Transform::LuaNewIndex(lua_State * L)
-{
-	void ** transformPtr = static_cast<void **>(lua_touserdata(L, 1));
-	Transform * ptr = static_cast<Transform *>(*transformPtr);
-	const char * idx = lua_tostring(L, 2);
-	if (ptr == nullptr || idx == nullptr) {
-		return 0;
-	}
-	if (strcmp(idx, "isToParentDirty") == 0) {
-		if (!lua_isboolean(L, 3)) {
-			return 0;
-		}
-		ptr->isToParentDirty = lua_toboolean(L, 3);
-	} else if (strcmp(idx, "isToWorldDirty") == 0) {
-		if (!lua_isboolean(L, 3)) {
-			return 0;
-		}
-		ptr->isToWorldDirty = lua_toboolean(L, 3);
-	}
-	return 0;
-}
-

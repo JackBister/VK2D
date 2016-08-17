@@ -8,7 +8,7 @@
 
 //TODO: Render targets
 struct CameraComponent : Component
-{	
+{
 	bool Component::receiveTicks = false;
 
 	PROPERTY(LuaRead)

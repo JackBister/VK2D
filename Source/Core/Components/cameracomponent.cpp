@@ -5,6 +5,8 @@
 
 #include "luaindex.h"
 
+#include "cameracomponent.h.generated.h"
+
 using nlohmann::json;
 
 float CameraComponent::GetAspect()
@@ -69,14 +71,4 @@ void CameraComponent::OnEvent(std::string name, EventArgs args)
 	} else if (name == "EndPlay") {
 		renderer->DeleteCamera(this);
 	}
-}
-
-//PUSH_TO_LUA(CameraComponent)
-
-//See Source/Core/Lua/luaindex.h
-LUA_INDEX(CameraComponent, string, type, float, aspect, float, viewSize)
-
-int CameraComponent::LuaNewIndex(lua_State *)
-{
-	return 0;
 }

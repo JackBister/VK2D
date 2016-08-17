@@ -8,6 +8,9 @@
 #include "json.hpp"
 
 #include "luaindex.h"
+#include "scene.h"
+
+#include "entity.h.generated.h"
 
 using nlohmann::json;
 using namespace std;
@@ -30,12 +33,13 @@ void Entity::FireEvent(std::string ename, EventArgs args)
 //PUSH_TO_LUA(Entity);
 
 //See Source/Core/Lua/luaindex.h
-LUA_INDEX(Entity, string, name, LuaSerializable, transform, VECTOR(LuaSerializablePtr), components, CFunction_local, FireEvent)
-
+//LUA_INDEX(Entity, string, name, LuaSerializable, transform, VECTOR(LuaSerializablePtr), components, CFunction_local, FireEvent)
+/*
 int Entity::LuaNewIndex(lua_State *)
 {
 	return 0;
 }
+*/
 
 Entity * Entity::Deserialize(string s)
 {

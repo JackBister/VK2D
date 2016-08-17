@@ -74,3 +74,4 @@ private:
 	void Delete();
 };
 
+EventArgs PullEventArgs(lua_State *, int);

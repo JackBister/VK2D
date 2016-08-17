@@ -191,3 +191,50 @@ EventArg& EventArg::operator=(EventArg&& ea)
 	}
 	return *this;
 }
+
+EventArgs PullEventArgs(lua_State * L, int i)
+{
+	EventArgs eargs;
+	lua_pushnil(L);
+	while (lua_next(L, i) != 0) {
+		if (lua_type(L, -2) != LUA_TSTRING) {
+			continue;
+		}
+		const char * key = lua_tostring(L, -2);
+		switch (lua_type(L, -1)) {
+		case LUA_TNUMBER:
+			eargs[key] = lua_tonumber(L, -1);
+			break;
+		case LUA_TBOOLEAN:
+			eargs[key] = lua_toboolean(L, -1);
+			break;
+		case LUA_TSTRING:
+			eargs[key] = lua_tostring(L, -1);
+			break;
+		case LUA_TTABLE:
+			//TODO:
+			printf("[STUB] PullEventArgs case LUA_TTABLE\n");
+			break;
+		case LUA_TFUNCTION:
+			//TODO
+			printf("[STUB] PullEventArgs case LUA_TCFUNCTION\n");
+			break;
+		case LUA_TUSERDATA:
+		{
+			auto ptr = static_cast<LuaSerializable **>(lua_touserdata(L, -1));
+			eargs[key] = *ptr;
+			break;
+		}
+		case LUA_TTHREAD:
+			printf("[STUB] PullEventArgs case LUA_TTHREAD\n");
+			break;
+		case LUA_TLIGHTUSERDATA:
+			printf("[STUB] PullEventArgs case LUA_TLIGHTUSERDATA\n");
+			break;
+		default:
+			printf("[WARNING] PullEventArgs default case\n");
+		}
+		lua_pop(L, 1);
+	}
+	return eargs;
+}

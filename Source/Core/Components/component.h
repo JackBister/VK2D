@@ -6,7 +6,17 @@
 #include "eventarg.h"
 #include "luaserializable.h"
 
+#include "Tools/HeaderGenerator/headergenerator.h"
+
 struct Entity;
+
+/*
+	Put this at the top of your class definition. Necessary for Lua serialization.
+*/
+#define COMPONENT_BODY() PROPERTY(LuaRead) std::string Component::type;\
+						 PROPERTY(LuaReadWrite) Entity * Component::entity;\
+						 PROPERTY(LuaReadWrite) bool Component::isActive;\
+						 PROPERTY(LuaReadWrite) bool Component::receiveTicks;
 
 /*
 	Putting this at the bottom of your component's header with its name as the parameter should add it to the component map.

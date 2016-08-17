@@ -15,7 +15,7 @@
 struct Sprite : LuaSerializable
 {
 	//A transform representing a world space position the sprite is located at
-	PROPERTY(LuaReadWrite)
+	PROPERTY(LuaRead)
 	Transform * transform;
 	//The layer the sprite is on, used for parallaxing
 	//lower number = closer to the camera
@@ -34,8 +34,6 @@ struct Sprite : LuaSerializable
 	bool isVisible;
 	//Renderer-specific data
 	void * rendererData;
-
-	//void PushToLua(lua_State *) override;
 
 	static Sprite FromFile(Transform * const transform, const char * const fileName, const int forcedComponents = 0);	
 	int LuaIndex(lua_State *) override;

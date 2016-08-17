@@ -32,7 +32,6 @@ struct Transform final : LuaSerializable
 
 	const glm::mat4& GetLocalToParentSpace();
 	const glm::mat4& GetLocalToWorldSpace();
-	//void PushToLua(lua_State *);
 
 	static Transform Deserialize(std::string);
 	int LuaIndex(lua_State *) override;
