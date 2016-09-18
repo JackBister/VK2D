@@ -18,7 +18,7 @@ struct Scene : LuaSerializable
 {
 	PROPERTY(LuaRead)
 	Input * input;
-	PhysicsWorld physicsWorld;
+	PhysicsWorld * physicsWorld;
 	Time time;
 	std::vector<Entity *> entities;
 

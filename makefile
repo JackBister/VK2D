@@ -1,8 +1,8 @@
 
 BUILD_DIR = build
 CORE_DIR = Source/Core
-CORE_FILES = entity.cpp eventarg.cpp input.cpp main.cpp physicsworld.cpp scene.cpp sprite.cpp dtime.cpp transform.cpp
-CORE_HEADERS = dtime.h entity.h eventarg.h input.h keycodes.h physicsworld.h scene.h sprite.h transform.h
+CORE_FILES = collisioninfo.cpp entity.cpp eventarg.cpp input.cpp main.cpp physicsworld.cpp scene.cpp sprite.cpp dtime.cpp transform.cpp
+CORE_HEADERS = collisioninfo.h dtime.h entity.h eventarg.h input.h keycodes.h physicsworld.h scene.h sprite.h transform.h
 COMPONENT_DIR = Source/Core/Components
 COMPONENT_FILES = cameracomponent.cpp component.cpp physicscomponent.cpp spritecomponent.cpp
 COMPONENT_HEADERS = cameracomponent.h component.h physicscomponent.h spritecomponent.h

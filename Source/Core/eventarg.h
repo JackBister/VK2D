@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "lua/lua.hpp"
 
@@ -34,6 +35,7 @@ struct EventArg
 		LUASERIALIZABLE,
 		LUA_CFUNCTION,
 		EVENTARGS,
+		VECTOR,
 	};
 	Type type;
 	union
@@ -45,6 +47,7 @@ struct EventArg
 		LuaSerializable * asLuaSerializable;
 		lua_CFunction asLuaCFunction;
 		EventArgs * asEventArgs;
+		std::vector<EventArg> * asVector;
 	};
 
 	//For string pointer
@@ -61,13 +64,14 @@ struct EventArg
 	EventArg(LuaSerializable *);
 	EventArg(lua_CFunction);
 	EventArg(EventArgs);
+	EventArg(const std::vector<EventArg>&);
 
 	/*
 		EventArgs does not push userdata, instead it directly pushes the wrapped value.
 	*/
 	//TODO: This may still be necessary and usable
 	void PushToLua(lua_State *);
-	EventArg& operator=(EventArg&);
+	EventArg& operator=(const EventArg&);
 	EventArg& operator=(EventArg&& ea);
 
 private:

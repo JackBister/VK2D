@@ -1,9 +1,9 @@
 #pragma once
+#include <vector>
 
 #include "btBulletDynamicsCommon.h"
 
 #include "component.h"
-
 #include "Tools/HeaderGenerator/headergenerator.h"
 
 struct PhysicsComponent : Component, btMotionState
@@ -18,7 +18,7 @@ struct PhysicsComponent : Component, btMotionState
 
 	/*
 		Set the transform of the physics object in the "bullet world".
-		Called by bullet automatically before stepping the simulation TODO:(?)
+		Called by bullet automatically before stepping the simulation
 	*/
 	void getWorldTransform(btTransform&) const override;
 	/*
@@ -29,6 +29,8 @@ struct PhysicsComponent : Component, btMotionState
 private:
 	PROPERTY(LuaRead)
 	float mass;
+	PROPERTY(LuaRead)
+	bool isKinematic = false;
 	btRigidBody * rigidBody;
 	btCollisionShape * shape;
 	BroadphaseNativeTypes shapeType;

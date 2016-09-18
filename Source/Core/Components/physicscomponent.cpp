@@ -68,6 +68,9 @@ Component * PhysicsComponent::Create(std::string json)
 		printf("[ERROR] PhysicsComponent: Unhandled shapeType %s.", j["shapeType"].get<std::string>().c_str());
 		return nullptr;
 	}
+	if (j.find("isKinematic") != j.end()) {
+		ret->isKinematic = j["isKinematic"];
+	}
 	return ret;
 }
 
@@ -80,13 +83,23 @@ void PhysicsComponent::OnEvent(std::string name, EventArgs args)
 		rigidBody = new btRigidBody(constructionInfo);
 		rigidBody->setAngularFactor(btVector3(0.f, 0.f, 1.f));
 		rigidBody->setLinearFactor(btVector3(1.f, 1.f, 0.f));
-	//	rigidBody->setActivationState(DISABLE_DEACTIVATION);
-		entity->scene->physicsWorld.world->addRigidBody(rigidBody);
+		rigidBody->setUserPointer(this);
+		if (isKinematic) {
+			rigidBody->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+		}
+		rigidBody->setActivationState(DISABLE_DEACTIVATION);
+		entity->scene->physicsWorld->world->addRigidBody(rigidBody);
+		//Needed for kinematics to register collision events
+		btBroadphaseProxy *bproxy = rigidBody->getBroadphaseHandle();
+		if (bproxy) {
+			bproxy->m_collisionFilterGroup = short(btBroadphaseProxy::DefaultFilter);
+			bproxy->m_collisionFilterMask = short(btBroadphaseProxy::AllFilter);
+		}
 	}
 
 	if (name == "EndPlay") {
 		if (rigidBody != nullptr) {
-			entity->scene->physicsWorld.world->removeCollisionObject(rigidBody);
+			entity->scene->physicsWorld->world->removeCollisionObject(rigidBody);
 		}
 	}
 }

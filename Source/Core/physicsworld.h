@@ -2,8 +2,13 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include "btBulletDynamicsCommon.h"
+
+#include "collisioninfo.h"
+
+struct Entity;
 
 struct PhysicsWorld
 {
@@ -13,12 +18,7 @@ struct PhysicsWorld
 	std::unique_ptr<btBroadphaseInterface> broadphase;
 	std::unique_ptr<btConstraintSolver> constraintSolver;
 
-	/*
-	btDiscreteDynamicsWorld * world;
-	btCollisionConfiguration * collisionConfig;
-	btCollisionDispatcher * dispatcher;
-	btBroadphaseInterface * broadphase;
-	btConstraintSolver * constraintSolver;
-	*/
-	static PhysicsWorld Deserialize(std::string);
+	std::unordered_map<Entity *, std::unordered_map<Entity *, CollisionInfo>> collisionsLastFrame;
+
+	static PhysicsWorld * Deserialize(std::string);
 };

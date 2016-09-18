@@ -14,6 +14,7 @@ out vec3 Color;
 void main() {
 	//floor aligns the quad to the pixel grid
 	gl_Position = projection * floor(view * model * vec4(pos, 1.0));
+	//gl_Position = projection * view * model * vec4(pos, 1.0);
 	Color = color;
 	Texcoord = texcoord;
 }

@@ -64,9 +64,6 @@ void LuaComponent::OnEvent(string name, EventArgs eargs)
 		entity->transform.PushToLua(state);
 		lua_setglobal(state, "transform");
 	}
-	if (entity->name == "Ball") {
-		//printf("%f %f\n", entity->transform.position.x, entity->transform.position.y);
-	}
 	args = eargs;
 	lua_getglobal(state, "OnEvent");
 	PushToLua(state);

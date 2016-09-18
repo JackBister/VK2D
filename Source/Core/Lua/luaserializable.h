@@ -7,7 +7,6 @@ A LuaSerializable must do the following:
 When PushToLua is called, the LuaSerializable will put a pointer to itself at the top of the lua stack, with a metatable that allows lua to
 access its members as if it were a type. This is done via the LuaIndex and LuaNewIndex functions. These must be defined as static methods of the derived class.
 The metatable should map __index to LuaIndex and __newindex to LuaNewIndex.
-!!!NOTE THAT THE POINTER MUST BE PUSHED AS FULL USERDATA, NOT LIGHT USERDATA. IF ITS LIGHT, IT CAN'T HAVE ITS OWN METATABLE!!!
 
 LuaIndex receives two arguments: The userdata at -2 on the stack and an index at -1 on the stack. Note that just doing lua_touserdata will just give you
 a pointer to the memory block containing the userdata, meaning you must dereference it twice to get to the LuaSerializable instance. From there, the index
