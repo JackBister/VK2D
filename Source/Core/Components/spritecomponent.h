@@ -16,5 +16,3 @@ struct SpriteComponent final : Component
 	int LuaNewIndex(lua_State *) override;
 
 };
-
-COMPONENT_HEADER(SpriteComponent);

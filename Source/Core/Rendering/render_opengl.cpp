@@ -259,6 +259,9 @@ bool OpenGLRenderer::Init(const char * title, const int winX, const int winY, co
 	glEnableVertexAttribArray(coordLoc);
 	glVertexAttribPointer(coordLoc, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	valid = true;
 	return true;
 }
@@ -275,6 +278,8 @@ void OpenGLRenderer::RenderCamera(CameraComponent * camera)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, plainQuad.ebo);
 	glUseProgram(ptProgram.id);
 	//TODO: Only needs to be done once
+	GLint minUVloc = glGetUniformLocation(ptProgram.id, "minUV");
+	GLint sizeUVloc = glGetUniformLocation(ptProgram.id, "sizeUV");
 	GLint mLoc = glGetUniformLocation(ptProgram.id, "model");
 	GLint vLoc = glGetUniformLocation(ptProgram.id, "view");
 	glUniformMatrix4fv(vLoc, 1, GL_FALSE, value_ptr(camera->GetViewMatrix()));
@@ -297,6 +302,8 @@ void OpenGLRenderer::RenderCamera(CameraComponent * camera)
 	//	vec3 oldScale = s.sprite->transform->scale;
 		//TODO: HACK: The /2.f is there because otherwise stuff is twice as big as it should be... but I don't know why.
 	//	s.sprite->transform->scale = glm::vec3(oldScale.x * s.sprite->dimensions.x / 2.f, oldScale.y * s.sprite->dimensions.y / 2.f, oldScale.z);
+		glUniform2f(minUVloc, s.sprite->minUV.x, s.sprite->minUV.y);
+		glUniform2f(sizeUVloc, s.sprite->sizeUV.x, s.sprite->sizeUV.y);
 		glUniformMatrix4fv(mLoc, 1, GL_FALSE, glm::value_ptr(s.sprite->transform->GetLocalToWorldSpace()));
 		glBindTexture(GL_TEXTURE_2D, s.rendererData.texture);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

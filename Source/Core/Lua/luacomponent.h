@@ -36,5 +36,3 @@ struct LuaComponent : Component
 		return ret;
 	}
 };
-
-COMPONENT_HEADER(LuaComponent)

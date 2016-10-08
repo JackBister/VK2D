@@ -33,7 +33,9 @@ void Input::Frame()
 		}
 		case SDL_KEYDOWN:
 		{
-			downKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
+			if (!e.key.repeat) {
+				downKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
+			}
 			break;
 		}
 		case SDL_KEYUP:

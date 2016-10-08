@@ -9,6 +9,8 @@
 
 #include "physicscomponent.h.generated.h"
 
+COMPONENT_IMPL(PhysicsComponent)
+
 BroadphaseNativeTypes DeserializeShapeType(std::string s)
 {
 	if (s == "BOX_2D_SHAPE_PROXYTYPE") {

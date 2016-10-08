@@ -40,5 +40,3 @@ private:
 	Renderer * renderer;
 	float viewSize;
 };
-
-COMPONENT_HEADER(CameraComponent)

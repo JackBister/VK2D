@@ -4,6 +4,7 @@
 #include "btBulletDynamicsCommon.h"
 
 #include "component.h"
+#include "mathtypes.h"
 #include "Tools/HeaderGenerator/headergenerator.h"
 
 struct PhysicsComponent : Component, btMotionState
@@ -35,5 +36,3 @@ private:
 	btCollisionShape * shape;
 	BroadphaseNativeTypes shapeType;
 };
-
-COMPONENT_HEADER(PhysicsComponent)

@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	Scene * scene = Scene::FromFile("Examples/FlappyPong/main.scene");
+	Scene * scene = Scene::FromFile("Examples/MM/main.scene");
 	scene->time.Start();
 	scene->BroadcastEvent("BeginPlay");
 	while (true) {

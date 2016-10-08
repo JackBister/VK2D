@@ -9,6 +9,8 @@
 
 using nlohmann::json;
 
+COMPONENT_IMPL(CameraComponent)
+
 float CameraComponent::GetAspect()
 {
 	return aspect;

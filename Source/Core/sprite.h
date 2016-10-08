@@ -29,6 +29,10 @@ struct Sprite : LuaSerializable
 	int components;
 	//width and height of the image
 	glm::ivec2 dimensions;
+	//The bottom left UV coordinate of what we want to render
+	glm::vec2 minUV = glm::vec2(0.f, 0.f);
+	//The size of the subimage in UV coordinates
+	glm::vec2 sizeUV = glm::vec2(1.f, 1.f);
 	//Wether this sprite should be rendered or not
 	PROPERTY(LuaReadWrite)
 	bool isVisible;

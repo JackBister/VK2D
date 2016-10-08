@@ -11,6 +11,7 @@
 struct Entity;
 
 /*
+	TODO: Doesn't work
 	Put this at the top of your class definition. Necessary for Lua serialization.
 */
 #define COMPONENT_BODY() PROPERTY(LuaRead) std::string Component::type;\
@@ -24,7 +25,7 @@ struct Entity;
 	Means every file that includes a header that uses this will waste the size of a pointer of memory. Not the end of the world but still unclean.
 	Static would be avoidable with extern + putting another macro in the .cpp file but I want to keep this as easy to use as possible.
 */
-#define COMPONENT_HEADER(str) static str * _##str##Instantiate() \
+#define COMPONENT_IMPL(str) static str * _##str##Instantiate() \
 							  { \
 									if(Component::ComponentMap()[#str] != nullptr) return static_cast< str *>(Component::ComponentMap()[#str]); \
 									str * ret = new str(); Component::ComponentMap()[#str] = ret; return ret; \

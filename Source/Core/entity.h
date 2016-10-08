@@ -28,7 +28,8 @@ struct Entity final : LuaSerializable
 
 	PROPERTY(LuaRead)
 	void FireEvent(std::string name, EventArgs args = {});
-	static int FireEvent_Lua(lua_State *);
+	PROPERTY(LuaRead)
+	Component * GetComponent(std::string type) const;
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;

@@ -11,6 +11,8 @@
 
 using nlohmann::json;
 
+COMPONENT_IMPL(SpriteComponent)
+
 Component * SpriteComponent::Create(std::string s)
 {
 	SpriteComponent * ret = new SpriteComponent();

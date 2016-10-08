@@ -15,6 +15,8 @@
 using nlohmann::json;
 using namespace std;
 
+COMPONENT_IMPL(LuaComponent)
+
 LuaComponent::LuaComponent()
 {
 	receiveTicks = true;
@@ -57,6 +59,8 @@ Component * LuaComponent::Create(string s)
 void LuaComponent::OnEvent(string name, EventArgs eargs)
 {
 	if (name == "BeginPlay") {
+		entity->PushToLua(state);
+		lua_setglobal(state, "entity");
 		entity->scene->input->PushToLua(state);
 		lua_setglobal(state, "Input");
 		entity->scene->PushToLua(state);

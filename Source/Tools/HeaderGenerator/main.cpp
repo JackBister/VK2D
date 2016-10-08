@@ -442,6 +442,7 @@ void ProcessFile(const boost::filesystem::path& output, const boost::filesystem:
 		printf("%d\n", error);
 	}
 
+	/*
 	auto numDiagnostics(clang_getNumDiagnostics(unit));
 	if (numDiagnostics > 0) {
 		for (int i = 0; i < numDiagnostics; ++i) {
@@ -452,6 +453,7 @@ void ProcessFile(const boost::filesystem::path& output, const boost::filesystem:
 			clang_disposeDiagnostic(diagnostic);
 		}
 	}
+	*/
 
 	CXCursor cursor = clang_getTranslationUnitCursor(unit);
 	FileAccumulator res;
@@ -463,7 +465,7 @@ void ProcessFile(const boost::filesystem::path& output, const boost::filesystem:
 		std::stringstream fileNameSS;
 		fileNameSS << path.generic_string() << ".generated.h";
 		std::fstream outStream(outpath.generic_string(), std::ios_base::out);
-		outStream << "#include \"" << path.filename().generic_string() << "\"\n\n";
+		//outStream << "#include \"" << path.filename().generic_string() << "\"\n\n";
 		for (auto& it : res.classes) {
 			outStream << GenerateCFunctions(it.first, it.second)
 				<< GenerateLuaIndex(it.first, it.second)
