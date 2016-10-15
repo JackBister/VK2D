@@ -24,7 +24,9 @@ struct CameraComponent : Component
 
 	const glm::mat4& GetViewMatrix();
 
-	Component * Create(std::string json) override;
+	Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
+
+	//Component * Create(std::string json) override;
 	void OnEvent(std::string name, EventArgs args = {}) override;
 	//void PushToLua(lua_State *) override;
 

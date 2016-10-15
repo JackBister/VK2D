@@ -21,8 +21,10 @@ struct LuaComponent : Component
 	//When an event call is received, the args are saved here so that the lua script can use getter functions to retreive them
 	//TODO: Note that this means that a LuaComponent can't run multiple OnEvents concurrently, although that may also be problematic for other reasons.
 	EventArgs args;
+	
+	Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
 
-	Component * Create(std::string json) override;
+	//Component * Create(std::string json) override;
 	void OnEvent(std::string name, EventArgs args) override;
 
 	int LuaIndex(lua_State *) override;

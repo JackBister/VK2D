@@ -12,6 +12,8 @@
 using nlohmann::json;
 using namespace std;
 
+DESERIALIZABLE_IMPL(Input)
+
 void Input::Frame()
 {
 	for (auto& kbp : downKeys) {
@@ -144,6 +146,22 @@ int Input::RemoveKeybind_Lua(lua_State * L)
 	INPUT_KEYBIND(RemoveKeybind)
 }
 
+Deserializable * Input::Deserialize(const std::string& str, Allocator& alloc) const
+{
+	void * mem = alloc.Allocate(sizeof(Input));
+	Input * ret = new (mem) Input();
+	json j = json::parse(str);
+	for (auto& js : j["keybinds"]) {
+		string name = js["name"];
+		for (auto& kjs : js["keys"]) {
+			ret->AddKeybind(name, strToKeycode[kjs]);
+		}
+	}
+
+	return ret;
+}
+
+/*
 Input * Input::Deserialize(string s)
 {
 	Input * ret = new Input();
@@ -157,3 +175,4 @@ Input * Input::Deserialize(string s)
 
 	return ret;
 }
+*/

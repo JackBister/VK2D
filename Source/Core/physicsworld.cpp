@@ -8,6 +8,8 @@
 #include "entity.h"
 #include "physicscomponent.h"
 
+DESERIALIZABLE_IMPL(PhysicsWorld)
+
 void TickCallback(btDynamicsWorld * world, btScalar timestep)
 {
 	auto& collisionsLastFrame = static_cast<PhysicsWorld *>(world->getWorldUserInfo())->collisionsLastFrame;
@@ -87,10 +89,29 @@ void TickCallback(btDynamicsWorld * world, btScalar timestep)
 	collisionsLastFrame = collisionsThisFrame;
 }
 
+/*
 PhysicsWorld * PhysicsWorld::Deserialize(std::string s)
 {
 	nlohmann::json j = nlohmann::json::parse(s);
 	PhysicsWorld * ret = new PhysicsWorld();
+	ret->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
+	ret->dispatcher = std::make_unique<btCollisionDispatcher>(ret->collisionConfig.get());
+	ret->broadphase = std::make_unique<btDbvtBroadphase>();
+	ret->constraintSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
+	ret->world = std::make_unique<btDiscreteDynamicsWorld>(ret->dispatcher.get(), ret->broadphase.get(), ret->constraintSolver.get(), ret->collisionConfig.get());
+
+	ret->world->setGravity(btVector3(j["gravity"]["x"], j["gravity"]["y"], j["gravity"]["z"]));
+	ret->world->setInternalTickCallback(TickCallback);
+	ret->world->setWorldUserInfo(ret);
+	return ret;
+}
+*/
+
+Deserializable * PhysicsWorld::Deserialize(const std::string& str, Allocator& alloc) const
+{
+	void * mem = alloc.Allocate(sizeof(PhysicsWorld));
+	PhysicsWorld * ret = new (mem) PhysicsWorld();
+	nlohmann::json j = nlohmann::json::parse(str);
 	ret->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
 	ret->dispatcher = std::make_unique<btCollisionDispatcher>(ret->collisionConfig.get());
 	ret->broadphase = std::make_unique<btDbvtBroadphase>();

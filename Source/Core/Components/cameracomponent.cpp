@@ -53,6 +53,19 @@ const glm::mat4& CameraComponent::GetViewMatrix()
 	return viewMatrix;
 }
 
+Deserializable * CameraComponent::Deserialize(const std::string& str, Allocator& alloc) const
+{
+	void * mem = alloc.Allocate(sizeof(CameraComponent));
+	CameraComponent * ret = new (mem) CameraComponent();
+	json j = json::parse(str);
+	ret->aspect = j["aspect"];
+	//TODO: Seeing as the renderer might change during runs this might be a bad idea
+	ret->renderer = Render_currentRenderer;
+	ret->viewSize = j["viewSize"];
+	return ret;
+}
+
+/*
 Component * CameraComponent::Create(std::string s)
 {
 	CameraComponent * ret = new CameraComponent();
@@ -63,6 +76,7 @@ Component * CameraComponent::Create(std::string s)
 	ret->viewSize = j["viewSize"];
 	return ret;
 }
+*/
 
 void CameraComponent::OnEvent(std::string name, EventArgs args)
 {

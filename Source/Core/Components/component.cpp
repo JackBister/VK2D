@@ -7,6 +7,7 @@ using nlohmann::json;
 
 Component::~Component() {}
 
+/*
 unordered_map<string, Component*>& Component::ComponentMap()
 {
 	static auto map = unordered_map<string, Component *>();
@@ -22,3 +23,4 @@ Component * Component::Deserialize(std::string s)
 	ret->type = type;
 	return ret;
 }
+*/

@@ -15,6 +15,8 @@
 using nlohmann::json;
 using namespace std;
 
+DESERIALIZABLE_IMPL(Entity)
+
 void Entity::FireEvent(std::string ename, EventArgs args)
 {
 	for (auto& c : components) {
@@ -40,6 +42,23 @@ Component * Entity::GetComponent(std::string type) const
 	return nullptr;
 }
 
+Deserializable * Entity::Deserialize(const std::string& str, Allocator& alloc) const
+{
+	void * mem = alloc.Allocate(sizeof(Entity));
+	Entity * ret = new (mem) Entity();
+	json j = json::parse(str);
+	ret->name = j["name"].get<string>();
+	ret->transform = Transform::Deserialize(j["transform"].dump());
+	json t = j["components"];
+	for (auto& js : j["components"]) {
+		Component * c = static_cast<Component *>(Deserializable::DeserializeString(js.dump(), alloc));
+		c->entity = ret;
+		ret->components.push_back(c);
+	}
+	return ret;
+}
+
+/*
 Entity * Entity::Deserialize(string s)
 {
 	Entity * ret = new Entity();
@@ -54,3 +73,4 @@ Entity * Entity::Deserialize(string s)
 	}
 	return ret;
 }
+*/

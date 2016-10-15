@@ -14,7 +14,7 @@
 struct Scene;
 
 //The 11th commandment: Thou shalt not inherit from the Entity class; use components like a normal person instead.
-struct Entity final : LuaSerializable
+struct Entity final : LuaSerializable, Deserializable
 {
 	PROPERTY(LuaReadWrite)
 	std::string name;
@@ -35,5 +35,5 @@ struct Entity final : LuaSerializable
 	int LuaNewIndex(lua_State *) override;
 
 	//JSON deserializer
-	static Entity * Deserialize(std::string);
+	Deserializable * Deserialize(const std::string& str, Allocator& alloc) const override;
 };

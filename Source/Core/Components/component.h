@@ -3,9 +3,9 @@
 #include <string>
 #include <unordered_map>
 
-#include "eventarg.h"
-#include "luaserializable.h"
-
+#include "Core/Deserializable.h"
+#include "Core/eventarg.h"
+#include "Core/Lua/luaserializable.h"
 #include "Tools/HeaderGenerator/headergenerator.h"
 
 struct Entity;
@@ -25,20 +25,15 @@ struct Entity;
 	Means every file that includes a header that uses this will waste the size of a pointer of memory. Not the end of the world but still unclean.
 	Static would be avoidable with extern + putting another macro in the .cpp file but I want to keep this as easy to use as possible.
 */
-#define COMPONENT_IMPL(str) static str * _##str##Instantiate() \
-							  { \
-									if(Component::ComponentMap()[#str] != nullptr) return static_cast< str *>(Component::ComponentMap()[#str]); \
-									str * ret = new str(); Component::ComponentMap()[#str] = ret; return ret; \
-							  } \
-							  static Component * _##str##StaticInst = _##str##Instantiate();
+#define COMPONENT_IMPL(str) DESERIALIZABLE_IMPL(str)
 
-struct Component : LuaSerializable
+struct Component : LuaSerializable, Deserializable
 {
 	/*
 		The type name as a string. This is set by the deserializer based on the ComponentMap, meaning classes inheriting from Component do not need to set it
 		as long as they are otherwise correctly defined.
 	*/
-	std::string type;
+	//std::string type;
 
 	Entity * entity;
 	bool isActive = true;
@@ -50,12 +45,12 @@ struct Component : LuaSerializable
 		json into the new instance, and return the new instance.
 		!!!DO NOT RETURN THE THIS POINTER !!! ALWAYS ALLOCATE A NEW INSTANCE!!!
 	*/
-	virtual Component * Create(std::string json) = 0;
+	//virtual Component * Create(std::string json) = 0;
 	virtual void OnEvent(std::string name, EventArgs args = {}) = 0;
 
 	//Every component must have an instance in this map to deserialize properly
 	//The values contained is irrelevant, only type matters
-	static std::unordered_map<std::string, Component *>& ComponentMap();
+	//static std::unordered_map<std::string, Component *>& ComponentMap();
 	//Uses ComponentMap to find the type to deserialize to
-	static Component * Deserialize(std::string s);
+	//static Component * Deserialize(std::string s);
 };

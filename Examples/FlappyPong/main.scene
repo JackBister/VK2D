@@ -1,5 +1,6 @@
 {
 	"input": {
+		"type": "Input",
 		"keybinds": [
 			{
 				"name": "Flap",
@@ -11,6 +12,7 @@
 		]
 	},
 	"physics": {
+		"type": "PhysicsWorld",
 		"gravity": {
 			"x": 0.0,
 			"y": 0.0,
@@ -19,6 +21,7 @@
 	},
 	"entities": [
 		{
+			"type": "Entity",
 			"name": "MainCamera",
 			"transform": {
 				"position": {
@@ -51,6 +54,7 @@
 			]
 		},
 		{
+			"type": "Entity",
 			"name": "Ball",
 			"transform": {
 				"position": {
@@ -92,6 +96,7 @@
 			]
 		},
 		{
+			"type": "Entity",
 			"name": "Left Paddle",
 			"transform": {
 				"position": {
@@ -133,6 +138,7 @@
 			]
 		},
 		{
+			"type": "Entity",
 			"name": "Right Paddle",
 			"transform": {
 				"position": {

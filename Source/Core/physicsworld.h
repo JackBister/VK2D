@@ -7,10 +7,11 @@
 #include "btBulletDynamicsCommon.h"
 
 #include "collisioninfo.h"
+#include "Deserializable.h"
 
 struct Entity;
 
-struct PhysicsWorld
+struct PhysicsWorld : Deserializable
 {
 	std::unique_ptr<btDiscreteDynamicsWorld> world;
 	std::unique_ptr<btCollisionConfiguration> collisionConfig;
@@ -20,5 +21,5 @@ struct PhysicsWorld
 
 	std::unordered_map<Entity *, std::unordered_map<Entity *, CollisionInfo>> collisionsLastFrame;
 
-	static PhysicsWorld * Deserialize(std::string);
+	Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
 };

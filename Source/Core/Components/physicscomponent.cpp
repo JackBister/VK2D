@@ -42,10 +42,47 @@ std::string SerializeShapeType(BroadphaseNativeTypes i)
 	}
 }
 
+/*
 Component * PhysicsComponent::Create(std::string json)
 {
 	PhysicsComponent * ret = new PhysicsComponent();
 	auto j = nlohmann::json::parse(json);
+	ret->mass = j["mass"];
+	ret->shapeType = DeserializeShapeType(j["shapeType"]);
+	switch (ret->shapeType) {
+	case BOX_2D_SHAPE_PROXYTYPE:
+	{
+		//1.f might as well be 0.f or any number really.
+		btVector3 shapeInfo(j["shapeInfo"]["x"], j["shapeInfo"]["y"], 1.f);
+		ret->shape = new btBox2dShape(shapeInfo);
+		break;
+	}
+	case BOX_SHAPE_PROXYTYPE:
+	{
+		btVector3 shapeInfo(j["shapeInfo"]["x"], j["shapeInfo"]["y"], j["shapeInfo"]["z"]);
+		ret->shape = new btBoxShape(shapeInfo);
+		break;
+	}
+	case INVALID_SHAPE_PROXYTYPE:
+		//TODO: Error handling. I mean, the engine's going to crash sooner or later anyway but this isn't very clean.
+		printf("[ERROR] PhysicsComponent: Invalid shapeType %s.", j["shapeType"].get<std::string>().c_str());
+		return nullptr;
+	default:
+		printf("[ERROR] PhysicsComponent: Unhandled shapeType %s.", j["shapeType"].get<std::string>().c_str());
+		return nullptr;
+	}
+	if (j.find("isKinematic") != j.end()) {
+		ret->isKinematic = j["isKinematic"];
+	}
+	return ret;
+}
+*/
+
+Deserializable * PhysicsComponent::Deserialize(const std::string& str, Allocator& alloc) const
+{
+	void * mem = alloc.Allocate(sizeof(PhysicsComponent));
+	PhysicsComponent * ret = new (mem) PhysicsComponent();
+	auto j = nlohmann::json::parse(str);
 	ret->mass = j["mass"];
 	ret->shapeType = DeserializeShapeType(j["shapeType"]);
 	switch (ret->shapeType) {
