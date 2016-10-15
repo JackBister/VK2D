@@ -17,7 +17,6 @@ int main(int argc, char *argv[])
 	Renderer * renderer = GetOpenGLRenderer();
 	Render_currentRenderer = renderer;
 	renderer->Init("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
-	//SDL_Delay(10000);
 	if (!renderer->valid) {
 		printf("Invalid renderer.\n");
 		return 1;

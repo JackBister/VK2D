@@ -160,19 +160,3 @@ Deserializable * Input::Deserialize(const std::string& str, Allocator& alloc) co
 
 	return ret;
 }
-
-/*
-Input * Input::Deserialize(string s)
-{
-	Input * ret = new Input();
-	json j = json::parse(s);
-	for (auto& js : j["keybinds"]) {
-		string name = js["name"];
-		for (auto& kjs : js["keys"]) {
-			ret->AddKeybind(name, strToKeycode[kjs]);
-		}
-	}
-
-	return ret;
-}
-*/

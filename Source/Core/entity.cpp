@@ -57,20 +57,3 @@ Deserializable * Entity::Deserialize(const std::string& str, Allocator& alloc) c
 	}
 	return ret;
 }
-
-/*
-Entity * Entity::Deserialize(string s)
-{
-	Entity * ret = new Entity();
-	json j = json::parse(s);
-	ret->name = j["name"].get<string>();
-	ret->transform = Transform::Deserialize(j["transform"].dump());
-	json t = j["components"];
-	for (auto& js : j["components"]) {
-		Component * c = Component::Deserialize(js.dump());
-		c->entity = ret;
-		ret->components.push_back(c);
-	}
-	return ret;
-}
-*/

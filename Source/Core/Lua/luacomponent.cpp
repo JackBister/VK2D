@@ -22,42 +22,6 @@ LuaComponent::LuaComponent()
 	receiveTicks = true;
 }
 
-/*
-Component * LuaComponent::Create(string s)
-{
-	LuaComponent * ret = new LuaComponent();
-	json j = json::parse(s);
-	string infile = j["file"];
-	ret->file = infile;
-	ret->state = luaL_newstate();
-	luaL_openlibs(ret->state);
-	PushCFuncs(ret->state);
-	int res = luaL_dofile(ret->state, infile.c_str());
-	switch (res) {
-	case LUA_ERRFILE:
-		printf("[WARNING] lua error opening file %s\n", infile.c_str());
-		break;
-	case LUA_ERRGCMM:
-		printf("[WARNING] %s: Lua GC error.\n", file.c_str());
-		break;	
-	case LUA_ERRMEM:
-		printf("[WARNING] lua memory error when opening file %s\n", infile.c_str());
-		break;
-	case LUA_ERRRUN:
-		printf("[WARNING] %s: Lua runtime error.\n", file.c_str());
-		break;
-	case LUA_ERRSYNTAX:
-		printf("[WARNING] lua syntax error in file %s\n", infile.c_str());
-		break;
-	}
-	if (res != LUA_OK) {
-		printf("[WARNING] %s: Events to this LuaComponent will fail.\n", infile.c_str());
-	}
-	LuaComponent::StateMap()[ret->state] = ret;
-	return ret;
-}
-*/
-
 Deserializable * LuaComponent::Deserialize(const std::string& str, Allocator& alloc) const
 {
 	void * mem = alloc.Allocate(sizeof(LuaComponent));

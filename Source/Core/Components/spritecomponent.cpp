@@ -13,17 +13,6 @@ using nlohmann::json;
 
 COMPONENT_IMPL(SpriteComponent)
 
-/*
-
-Component * SpriteComponent::Create(std::string s)
-{
-	SpriteComponent * ret = new SpriteComponent();
-	json j = json::parse(s);
-	ret->sprite = Sprite::FromFile(nullptr, j["file"].get<std::string>().c_str());
-	return ret;
-}
-*/
-
 Deserializable * SpriteComponent::Deserialize(const std::string& str, Allocator& alloc) const
 {
 	void * mem = alloc.Allocate(sizeof(SpriteComponent));
@@ -42,8 +31,6 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 		Render_currentRenderer->DeleteSprite(&sprite);
 	}
 }
-
-//PUSH_TO_LUA(SpriteComponent)
 
 int SpriteComponent::LuaIndex(lua_State * L)
 {

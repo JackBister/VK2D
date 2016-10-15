@@ -16,12 +16,9 @@ struct SpritesheetComponent : Component
 	PROPERTY(LuaReadWrite)
 	bool isFlipped;
 
-//	PROPERTY(LuaReadWrite)
 	std::vector<float> frameTimes;
 
 	Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
-
-	//Component * Create(std::string) override;
 	glm::vec2 GetFrameSize() const;
 	void OnEvent(std::string, EventArgs) override;
 	void PlayAnimationByName(std::string name);

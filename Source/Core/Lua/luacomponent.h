@@ -23,8 +23,6 @@ struct LuaComponent : Component
 	EventArgs args;
 	
 	Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
-
-	//Component * Create(std::string json) override;
 	void OnEvent(std::string name, EventArgs args) override;
 
 	int LuaIndex(lua_State *) override;

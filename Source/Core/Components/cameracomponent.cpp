@@ -65,19 +65,6 @@ Deserializable * CameraComponent::Deserialize(const std::string& str, Allocator&
 	return ret;
 }
 
-/*
-Component * CameraComponent::Create(std::string s)
-{
-	CameraComponent * ret = new CameraComponent();
-	json j = json::parse(s);
-	ret->aspect = j["aspect"];
-	//TODO: Seeing as the renderer might change during runs this might be a bad idea
-	ret->renderer = Render_currentRenderer;
-	ret->viewSize = j["viewSize"];
-	return ret;
-}
-*/
-
 void CameraComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "BeginPlay") {

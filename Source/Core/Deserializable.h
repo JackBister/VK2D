@@ -12,6 +12,9 @@ struct Deserializable
 	*/
 	virtual Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const = 0;
 
+	/*
+		Deserializes a string of unknown type.
+	*/
 	static Deserializable * DeserializeString(const std::string& str, Allocator& alloc = Allocator::default_allocator);
 
 	static std::unordered_map<std::string, const Deserializable *>& Map();
