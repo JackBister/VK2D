@@ -15,6 +15,9 @@
 #endif
 #include "vulkan/vulkan.h"
 
+#include "Core/Rendering/Shader.h"
+#include "Core/ResourceManager.h"
+
 //The number of floats contained in one vertex
 //vec3 pos, vec3 color, vec2 UV
 #define VERTEX_SIZE 8
@@ -57,7 +60,7 @@ struct VulkanRenderer : Renderer
 {
 	void Destroy() override;
 	void EndFrame() override;
-	bool Init(const char * title, int winX, int winY, int w, int h, uint32_t flags) override;
+	bool Init(ResourceManager *, const char * title, int winX, int winY, int w, int h, uint32_t flags) override;
 	void RenderCamera(CameraComponent * const) override;
 
 	void AddSprite(Sprite * const) override;
@@ -65,6 +68,9 @@ struct VulkanRenderer : Renderer
 
 	void AddCamera(CameraComponent * const) override;
 	void DeleteCamera(CameraComponent * const) override;
+
+	void AddShader(Shader * const) override;
+	void DeleteShader(Shader * const) override;
 
 	//The device we use to render:
 	VkPhysicalDevice physicalDevice;
@@ -99,6 +105,8 @@ struct VulkanRenderer : Renderer
 	std::vector<VulkanSprite> sprites;
 	//The window
 	SDL_Window * window;
+
+	ResourceManager * resourceManager;
 
 private:
 	void Clear();
@@ -349,11 +357,12 @@ VkBool32 VKAPI_PTR dbgCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectT
 	I broke it up using lambdas to make it explicit which parts of the code affect which member variables.
 	TODO: WTF: Putting some parts in blocks/lambdas causes vkGetPhysicalDeviceSurfaceCapabilitiesKHR to fail.
 */
-bool VulkanRenderer::Init(const char * title, const int winX, const int winY, const int w, const int h, const uint32_t flags)
+bool VulkanRenderer::Init(ResourceManager * resMan,  const char * title, const int winX, const int winY, const int w, const int h, const uint32_t flags)
 {
 	aspectRatio = static_cast<float>(w) / static_cast<float>(h);
 	dimensions = glm::ivec2(w, h);
 	window = SDL_CreateWindow(title, winX, winY, w, h, flags);
+	resourceManager = resMan;
 
 	//The extensions the renderer needs
 	std::vector<const char *> instanceExtensions = {
@@ -977,4 +986,12 @@ void VulkanRenderer::DeleteCamera(CameraComponent * const camera)
 			cameras.erase(it);
 		}
 	}
+}
+
+void VulkanRenderer::AddShader(Shader * const)
+{
+}
+
+void VulkanRenderer::DeleteShader(Shader * const)
+{
 }

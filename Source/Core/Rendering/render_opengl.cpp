@@ -24,6 +24,8 @@
 
 #include "cameracomponent.h"
 #include "render.h"
+#include "Core/ResourceManager.h"
+#include "Core/Rendering/Shader.h"
 #include "transform.h"
 
 using namespace glm;
@@ -50,6 +52,11 @@ struct OpenGLRendererData
 	GLuint texture = 0;
 };
 
+struct OpenGLShaderRendererData
+{
+	GLuint handle;
+};
+
 //Puts a sprite and its rendererData together, for better cache locality
 struct OpenGLSprite
 {
@@ -57,65 +64,9 @@ struct OpenGLSprite
 	OpenGLRendererData rendererData;
 };
 
-struct Shader
-{
-	GLuint id = 0;
-	char *src = nullptr;
-	bool isCompiled = false;
-
-	static Shader FromFile(const char * const fn, GLenum type)
-	{
-		Shader ret;
-		FILE * f = fopen(fn, "rb");
-		if (f == nullptr) {
-			return ret;
-		}
-		int err = fseek(f, 0, SEEK_END);
-		if (err) {
-			return ret;
-		}
-		size_t len = static_cast<size_t>(ftell(f));
-		err = fseek(f, 0, SEEK_SET);
-		if (err) {
-			return ret;
-		}
-		//from here on out if anything fails src must be set to nullptr and id to 0 before returning
-		//these two things indicate that the shader is invalid
-		ret.src = static_cast<char *>(malloc(len + 1));
-		if (ret.src == nullptr) {
-			return ret;
-		}
-		fread(ret.src, 1, len, f);
-		//null terminate string
-		ret.src[len] = '\0';
-		ret.id = glCreateShader(type);
-		if (ret.id == 0) {
-			free(ret.src);
-			ret.src = nullptr;
-			return ret;
-		}
-		glShaderSource(ret.id, 1, &ret.src, nullptr);
-		glCompileShader(ret.id);
-		GLint compileOk;
-		glGetShaderiv(ret.id, GL_COMPILE_STATUS, &compileOk);
-		if (compileOk != GL_TRUE) {
-			GLsizei log_length = 0;
-			GLchar message[1024];
-			glGetShaderInfoLog(ret.id, 1024, &log_length, message);
-			printf("Shader compile failed\n %s %s\n", ret.src, message);
-			glDeleteShader(ret.id);
-			ret.id = 0;
-			free(ret.src);
-			ret.src = nullptr;
-		}
-		return ret;
-	}
-};
-
 struct Program
 {
 	GLuint id = 0;
-	Shader shaders[2];
 
 	//Not really sure where the VAO really should be... it is the same for all runs of the program AFAICT
 	GLuint vao;
@@ -123,12 +74,12 @@ struct Program
 	Program() {}
 	Program(Shader vShader, Shader fShader)
 	{
-		if (vShader.id == 0 || fShader.id == 0) {
+		if (((OpenGLShaderRendererData *)vShader.rendererData)->handle == 0 || ((OpenGLShaderRendererData *)fShader.rendererData)->handle == 0) {
 			return;
 		}
 		id = glCreateProgram();
-		glAttachShader(id, vShader.id);
-		glAttachShader(id, fShader.id);
+		glAttachShader(id, ((OpenGLShaderRendererData *)vShader.rendererData)->handle);
+		glAttachShader(id, ((OpenGLShaderRendererData *)fShader.rendererData)->handle);
 		glBindFragDataLocation(id, 0, "outColor");
 		glLinkProgram(id);
 		GLint linkOk;
@@ -147,16 +98,21 @@ struct Program
 
 struct OpenGLRenderer : Renderer
 {
-	void Destroy() override;
-	void EndFrame() override;
-	bool Init(const char * title, int winX, int winY, int w, int h, uint32_t flags) override;
-	void RenderCamera(CameraComponent * const) override;
+	void Destroy() final override;
+	void EndFrame() final override;
+	bool Init(ResourceManager *, const char * title, int winX, int winY, int w, int h, uint32_t flags) final override;
+	void RenderCamera(CameraComponent * const) final override;
 
-	void AddSprite(Sprite * const) override;
-	void DeleteSprite(Sprite * const) override;
+	void AddSprite(Sprite * const) final override;
+	void DeleteSprite(Sprite * const) final override;
 
-	void AddCamera(CameraComponent * const) override;
-	void DeleteCamera(CameraComponent * const) override;
+	void AddCamera(CameraComponent * const) final override;
+	void DeleteCamera(CameraComponent * const) final override;
+
+	void AddShader(Shader * const) final override;
+	void DeleteShader(Shader * const) final override;
+
+	ResourceManager * resourceManager;
 
 	//The aspect ratio of the viewport
 	//TODO: Should this be attached to the camera?
@@ -208,12 +164,13 @@ void OpenGLRenderer::EndFrame()
 	SDL_GL_SwapWindow(window);
 }
 
-bool OpenGLRenderer::Init(const char * title, const int winX, const int winY, const int w, const int h, const uint32_t flags)
+bool OpenGLRenderer::Init(ResourceManager * resMan, const char * title, const int winX, const int winY, const int w, const int h, const uint32_t flags)
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	resourceManager = resMan;
 	aspectRatio = static_cast<float>(w) / static_cast<float>(h);
 	dimensions = ivec2(w, h);
 	window = SDL_CreateWindow(title, winX, winY, w, h, flags | SDL_WINDOW_OPENGL);
@@ -240,9 +197,9 @@ bool OpenGLRenderer::Init(const char * title, const int winX, const int winY, co
 	plainQuad.elements = plainQuadElems;
 	plainQuad.elementsLength = 6;
 
-	Shader ptvShader = Shader::FromFile("shaders/passthrough-transform.vert", GL_VERTEX_SHADER);
-	Shader pfShader = Shader::FromFile("shaders/passthrough.frag", GL_FRAGMENT_SHADER);
-	ptProgram = Program(ptvShader, pfShader);
+	auto ptvShader = resourceManager->LoadResource<Shader>("shaders/passthrough-transform.vert");
+	auto pfShader = resourceManager->LoadResource<Shader>("shaders/passthrough.frag");
+	ptProgram = Program(*ptvShader, *pfShader);
 	glGenVertexArrays(1, &ptProgram.vao);
 	glBindVertexArray(ptProgram.vao);
 	glUseProgram(ptProgram.id);
@@ -378,6 +335,50 @@ void OpenGLRenderer::DeleteCamera(CameraComponent * const camera)
 		if (*it == camera) {
 			cameras.erase(it);
 		}
+	}
+}
+
+void OpenGLRenderer::AddShader(Shader * const s)
+{
+	auto rData = new OpenGLShaderRendererData();
+	s->rendererData = rData;
+	GLuint shaderType;
+	auto type = s->GetType();
+	switch (type) {
+	case Shader::Type::VERTEX_SHADER:
+		shaderType = GL_VERTEX_SHADER;
+		break;
+	case Shader::Type::FRAGMENT_SHADER:
+		shaderType = GL_FRAGMENT_SHADER;
+		break;
+	case Shader::Type::GEOMETRY_SHADER:
+		shaderType = GL_GEOMETRY_SHADER;
+		break;
+	case Shader::Type::COMPUTE_SHADER:
+		shaderType = GL_COMPUTE_SHADER;
+		break;
+	}
+	rData->handle = glCreateShader(shaderType);
+	const char * src = s->GetSource().c_str();
+	glShaderSource(rData->handle, 1, &src, nullptr);
+	glCompileShader(rData->handle);
+	GLint compileOk;
+	glGetShaderiv(rData->handle, GL_COMPILE_STATUS, &compileOk);
+	if (compileOk != GL_TRUE) {
+		GLsizei log_length = 0;
+		GLchar message[1024];
+		glGetShaderInfoLog(rData->handle, 1024, &log_length, message);
+		printf("Shader compile failed\n %s %s\n", s->name, message);
+		glDeleteShader(rData->handle);
+		rData->handle = 0;
+	}
+}
+
+void OpenGLRenderer::DeleteShader(Shader * const s)
+{
+	auto rData = (OpenGLShaderRendererData *)s->rendererData;
+	if (rData->handle != 0) {
+		glDeleteShader(rData->handle);
 	}
 }
 

@@ -9,6 +9,10 @@
 #include "sprite.h"
 #include "transform.h"
 
+//TODO:
+#include "Core/ResourceManager.h"
+#include "Core/Rendering/Shader.h"
+
 #undef main
 int main(int argc, char *argv[])
 {
@@ -16,7 +20,8 @@ int main(int argc, char *argv[])
 	
 	Renderer * renderer = GetOpenGLRenderer();
 	Render_currentRenderer = renderer;
-	renderer->Init("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
+	ResourceManager * resMan = new ResourceManager();
+	renderer->Init(resMan, "SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
 	if (!renderer->valid) {
 		printf("Invalid renderer.\n");
 		return 1;
