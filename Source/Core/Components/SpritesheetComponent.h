@@ -18,7 +18,7 @@ struct SpritesheetComponent : Component
 
 	std::vector<float> frameTimes;
 
-	Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
+	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
 	glm::vec2 GetFrameSize() const;
 	void OnEvent(std::string, EventArgs) override;
 	void PlayAnimationByName(std::string name);

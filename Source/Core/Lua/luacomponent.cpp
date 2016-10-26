@@ -22,7 +22,7 @@ LuaComponent::LuaComponent()
 	receiveTicks = true;
 }
 
-Deserializable * LuaComponent::Deserialize(const std::string& str, Allocator& alloc) const
+Deserializable * LuaComponent::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const
 {
 	void * mem = alloc.Allocate(sizeof(LuaComponent));
 	LuaComponent * ret = new (mem) LuaComponent();

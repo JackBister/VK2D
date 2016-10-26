@@ -26,7 +26,7 @@ struct Entity final : LuaSerializable, Deserializable
 
 	std::vector<Component *> components;
 
-	Deserializable * Deserialize(const std::string& str, Allocator& alloc) const override;
+	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc) const override;
 	PROPERTY(LuaRead)
 	void FireEvent(std::string name, EventArgs args = {});
 	PROPERTY(LuaRead)

@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdio>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -11,73 +12,60 @@
 
 #include <cstdio>
 
-template <typename T>
-struct ResourceReference;
-
 struct ResourceManager
 {
-	template <typename T>
-	friend class ResourceReference;
-
 	ResourceManager(Allocator& a = Allocator::default_allocator);
 
 	template<typename T>
-	typename std::enable_if<std::is_base_of<Resource, T>::value && std::is_constructible<T, const std::string&>::value && std::is_constructible<T, const std::string&, std::istream&>::value, ResourceReference<T>>::type
-	LoadResource(const std::string& fileName);
+	typename std::enable_if<std::is_base_of<Resource, T>::value && std::is_constructible<T, const std::string&>::value && std::is_constructible<T, const std::string&, const std::vector<char>&>::value, std::shared_ptr<T>>::type
+	LoadResourceRefCounted(const std::string& fileName);
 
 private:
-	std::unordered_map<std::string, Resource *> cache;
+	std::unordered_map<std::string, std::weak_ptr<Resource>> rcCache;
 	Allocator& allocator;
 };
 
-template <typename T>
-struct ResourceReference
-{
-	friend class ResourceManager;
-
-	T& operator*();
-	T * operator->();
-
-private:
-	std::string name;
-	ResourceManager * owner;
-	ResourceReference<T>(const std::string& name, ResourceManager * owner);
-};
-
 template<typename T>
-T& ResourceReference<T>::operator*()
+typename std::enable_if<std::is_base_of<Resource, T>::value && std::is_constructible<T, const std::string&>::value && std::is_constructible<T, const std::string&, const std::vector<char>&>::value, std::shared_ptr<T>>::type
+ResourceManager::LoadResourceRefCounted(const std::string& fileName)
 {
-	return static_cast<T&>(*(owner->cache[name]));
-}
-
-template<typename T>
-T * ResourceReference<T>::operator->()
-{
-	return static_cast<T *>(owner->cache[name]);
-}
-
-template<typename T>
-ResourceReference<T>::ResourceReference(const std::string& name, ResourceManager * owner) : name(name), owner(owner)
-{
-}
-
-template<typename T>
-typename std::enable_if<std::is_base_of<Resource, T>::value && std::is_constructible<T, const std::string&>::value && std::is_constructible<T, const std::string&, std::istream&>::value, ResourceReference<T>>::type
-ResourceManager::LoadResource(const std::string& fileName)
-{
-	if (cache.find(fileName) != cache.end()) {
+	if (rcCache.find(fileName) != rcCache.end() && !rcCache[fileName].expired()) {
 		printf("found\n");
-		return ResourceReference<T>(fileName, this);
+		auto ret = std::static_pointer_cast<T>(rcCache[fileName].lock());
+		if (ret) {
+			return ret;
+		}
 	}
 	boost::filesystem::path filePath(fileName);
 	auto status = boost::filesystem::status(filePath);
 	Resource * mem = (Resource *)allocator.Allocate(sizeof(T));
 	if (status.type() != boost::filesystem::regular_file) {
-		cache[fileName] = new (mem) T(fileName);
+		auto ret = std::shared_ptr<T>(new (mem) T(fileName));
+		rcCache[fileName] = std::weak_ptr<Resource>(ret);
+		return ret;
 	} else {
-		boost::filesystem::ifstream is(filePath);
-		cache[fileName] = new (mem) T(fileName, is);
-		is.close();
+		//For some awful reason this wont work for binary files like PNG. Otherwise I think it's a prettier solution.
+#if 0
+		boost::filesystem::ifstream is(fileName, std::ios::in | std::ios::binary);
+		auto ret = std::shared_ptr<T>(new (mem) T(fileName, is));
+#endif
+		char * buffer = nullptr;
+		FILE * f = fopen(fileName.c_str(), "rb");
+		if (f) {
+			fseek(f, 0, SEEK_END);
+			size_t length = ftell(f);
+			fseek(f, 0, SEEK_SET);
+			std::vector<char> buf(length);
+			fread(&buf[0], 1, length, f);
+			auto ret = std::shared_ptr<T>(new (mem) T(fileName, buf));
+			rcCache[fileName] = std::weak_ptr<Resource>(ret);
+			free(buffer);
+			fclose(f);
+			return ret;
+		} else {
+			auto ret = std::shared_ptr<T>(new (mem) T(fileName));
+			rcCache[fileName] = std::weak_ptr<Resource>(ret);
+			return ret;
+		}
 	}
-	return ResourceReference<T>(fileName, this);
 }

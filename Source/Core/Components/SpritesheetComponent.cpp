@@ -9,19 +9,20 @@
 
 COMPONENT_IMPL(SpritesheetComponent)
 
-Deserializable * SpritesheetComponent::Deserialize(const std::string & str, Allocator & alloc) const
+Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceManager, const std::string & str, Allocator & alloc) const
 {
 	using nlohmann::json;
 	void * mem = alloc.Allocate(sizeof(SpritesheetComponent));
 	SpritesheetComponent * ret = new (mem) SpritesheetComponent();
 	json j = json::parse(str);
 	ret->receiveTicks = true;
-	ret->sprite = Sprite::FromFile(nullptr, j["file"].get<std::string>().c_str());
+	auto img = resourceManager->LoadResourceRefCounted<Image>(j["file"]);
+	ret->sprite = Sprite(nullptr, img);
 	glm::ivec2 frameSize = glm::ivec2(j["frameSize"]["x"], j["frameSize"]["y"]);
-	ret->frameSize = glm::vec2(frameSize.x / (float)ret->sprite.dimensions.x, frameSize.y / (float)ret->sprite.dimensions.y);
-	for (int y = 0; y < ret->sprite.dimensions.y / frameSize.y; ++y) {
-		for (int x = 0; x < ret->sprite.dimensions.x / frameSize.x; ++x) {
-			ret->minUVs.push_back(glm::vec2(x * frameSize.x / (float)ret->sprite.dimensions.x, y * frameSize.y / (float)ret->sprite.dimensions.y));
+	ret->frameSize = glm::vec2(frameSize.x / (float)img->GetWidth(), frameSize.y / (float)img->GetHeight());
+	for (int y = 0; y < img->GetHeight() / frameSize.y; ++y) {
+		for (int x = 0; x < img->GetWidth() / frameSize.x; ++x) {
+			ret->minUVs.push_back(glm::vec2(x * frameSize.x / (float)img->GetWidth(), y * frameSize.y / (float)img->GetHeight()));
 		}
 	}
 	if (j.find("frameTimes") != j.end()) {

@@ -2,6 +2,7 @@
 #include <unordered_map>
 
 #include "Core/Allocator.h"
+#include "Core/ResourceManager.h"
 
 struct Deserializable
 {
@@ -10,12 +11,12 @@ struct Deserializable
 		When Deserialize is called, a new object must be allocated using the provided allocator and the information contained in str
 		must be deserialized into the new object. The new object is then returned.
 	*/
-	virtual Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const = 0;
+	virtual Deserializable * Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc = Allocator::default_allocator) const = 0;
 
 	/*
 		Deserializes a string of unknown type.
 	*/
-	static Deserializable * DeserializeString(const std::string& str, Allocator& alloc = Allocator::default_allocator);
+	static Deserializable * DeserializeString(ResourceManager * resourceManager, const std::string& str, Allocator& alloc = Allocator::default_allocator);
 
 	static std::unordered_map<std::string, const Deserializable *>& Map();
 };

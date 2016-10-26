@@ -5,6 +5,7 @@
 #include "transform.h"
 
 struct CameraComponent;
+struct Image;
 struct ResourceManager;
 struct Shader;
 
@@ -22,6 +23,9 @@ struct Renderer {
 	
 	virtual void AddCamera(CameraComponent * const) = 0;
 	virtual void DeleteCamera(CameraComponent * const) = 0;
+
+	virtual void AddImage(Image * const) = 0;
+	virtual void DeleteImage(Image * const) = 0;
 
 	virtual void AddShader(Shader * const) = 0;
 	virtual void DeleteShader(Shader * const) = 0;

@@ -25,6 +25,7 @@
 #include "cameracomponent.h"
 #include "render.h"
 #include "Core/ResourceManager.h"
+#include "Core/Rendering/Image.h"
 #include "Core/Rendering/Shader.h"
 #include "transform.h"
 
@@ -52,9 +53,14 @@ struct OpenGLRendererData
 	GLuint texture = 0;
 };
 
+struct OpenGLImageRendererData
+{
+	GLuint texture = 0;
+};
+
 struct OpenGLShaderRendererData
 {
-	GLuint handle;
+	GLuint handle = 0;
 };
 
 //Puts a sprite and its rendererData together, for better cache locality
@@ -108,6 +114,9 @@ struct OpenGLRenderer : Renderer
 
 	void AddCamera(CameraComponent * const) final override;
 	void DeleteCamera(CameraComponent * const) final override;
+
+	virtual void AddImage(Image * const) override;
+	virtual void DeleteImage(Image * const) override;
 
 	void AddShader(Shader * const) final override;
 	void DeleteShader(Shader * const) final override;
@@ -197,8 +206,8 @@ bool OpenGLRenderer::Init(ResourceManager * resMan, const char * title, const in
 	plainQuad.elements = plainQuadElems;
 	plainQuad.elementsLength = 6;
 
-	auto ptvShader = resourceManager->LoadResource<Shader>("shaders/passthrough-transform.vert");
-	auto pfShader = resourceManager->LoadResource<Shader>("shaders/passthrough.frag");
+	auto ptvShader = resourceManager->LoadResourceRefCounted<Shader>("shaders/passthrough-transform.vert");
+	auto pfShader = resourceManager->LoadResourceRefCounted<Shader>("shaders/passthrough.frag");
 	ptProgram = Program(*ptvShader, *pfShader);
 	glGenVertexArrays(1, &ptProgram.vao);
 	glBindVertexArray(ptProgram.vao);
@@ -262,7 +271,8 @@ void OpenGLRenderer::RenderCamera(CameraComponent * camera)
 		glUniform2f(minUVloc, s.sprite->minUV.x, s.sprite->minUV.y);
 		glUniform2f(sizeUVloc, s.sprite->sizeUV.x, s.sprite->sizeUV.y);
 		glUniformMatrix4fv(mLoc, 1, GL_FALSE, glm::value_ptr(s.sprite->transform->GetLocalToWorldSpace()));
-		glBindTexture(GL_TEXTURE_2D, s.rendererData.texture);
+		glBindTexture(GL_TEXTURE_2D, ((OpenGLImageRendererData *)s.sprite->image->GetRendererData())->texture);
+	//	glBindTexture(GL_TEXTURE_2D, s.rendererData.texture);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	//	s.sprite->transform->scale = oldScale;
 	}
@@ -277,6 +287,7 @@ void OpenGLRenderer::AddSprite(Sprite * const sprite)
 {
 	OpenGLSprite s;
 	s.sprite = sprite;
+/*
 	sprite->rendererData = &s.rendererData;
 	GLenum format;
 	GLint internalFormat;
@@ -311,7 +322,7 @@ void OpenGLRenderer::AddSprite(Sprite * const sprite)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
+*/
 	sprites.push_back(s);
 }
 
@@ -335,6 +346,52 @@ void OpenGLRenderer::DeleteCamera(CameraComponent * const camera)
 		if (*it == camera) {
 			cameras.erase(it);
 		}
+	}
+}
+
+void OpenGLRenderer::AddImage(Image * const img)
+{
+	auto rData = new OpenGLImageRendererData();
+	img->SetRendererData(rData);
+	GLenum format;
+	GLint internalFormat;
+	switch (img->GetFormat()) {
+	case Image::Format::R8:
+		format = GL_RED;
+		internalFormat = GL_R8;
+		break;
+	case Image::Format::RG8:
+		format = GL_RG;
+		internalFormat = GL_RG8;
+		break;
+	case Image::Format::RGB8:
+		format = GL_RGB;
+		internalFormat = GL_RGB8;
+		break;
+	case Image::Format::RGBA8:
+		format = GL_RGBA;
+		internalFormat = GL_RGBA8;
+		break;
+	default:
+		printf("[TODO] Unimplemented image format %d\n", img->GetFormat());
+		break;
+	}
+	glGenTextures(1, &(rData->texture));
+	glBindTexture(GL_TEXTURE_2D, rData->texture);
+	//TODO: Let user specify this
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, img->GetWidth(), img->GetHeight(), 0, format, GL_UNSIGNED_BYTE, img->GetData().data());
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+}
+
+void OpenGLRenderer::DeleteImage(Image * const img)
+{
+	auto rData = (OpenGLImageRendererData *)img->GetRendererData();
+	if (rData->texture != 0) {
+		glDeleteTextures(1, &(rData->texture));
 	}
 }
 

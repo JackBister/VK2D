@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include "luaserializable.h"
 #include "physicsworld.h"
 
+#include "Core/ResourceManager.h"
 #include "Tools/HeaderGenerator/headergenerator.h"
 
 //TODO: Allocate all entities/components from same block for cache
@@ -19,6 +21,7 @@ struct Scene : LuaSerializable
 	PROPERTY(LuaRead)
 	Input * input;
 	PhysicsWorld * physicsWorld;
+	std::unique_ptr<ResourceManager> resourceManager;
 	Time time;
 	std::vector<Entity *> entities;
 

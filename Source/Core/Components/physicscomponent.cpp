@@ -42,7 +42,7 @@ std::string SerializeShapeType(BroadphaseNativeTypes i)
 	}
 }
 
-Deserializable * PhysicsComponent::Deserialize(const std::string& str, Allocator& alloc) const
+Deserializable * PhysicsComponent::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const
 {
 	void * mem = alloc.Allocate(sizeof(PhysicsComponent));
 	PhysicsComponent * ret = new (mem) PhysicsComponent();

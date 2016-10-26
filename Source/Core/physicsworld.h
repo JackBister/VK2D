@@ -21,5 +21,5 @@ struct PhysicsWorld : Deserializable
 
 	std::unordered_map<Entity *, std::unordered_map<Entity *, CollisionInfo>> collisionsLastFrame;
 
-	Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
+	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
 };

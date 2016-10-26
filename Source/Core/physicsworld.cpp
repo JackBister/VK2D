@@ -89,7 +89,7 @@ void TickCallback(btDynamicsWorld * world, btScalar timestep)
 	collisionsLastFrame = collisionsThisFrame;
 }
 
-Deserializable * PhysicsWorld::Deserialize(const std::string& str, Allocator& alloc) const
+Deserializable * PhysicsWorld::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const
 {
 	void * mem = alloc.Allocate(sizeof(PhysicsWorld));
 	PhysicsWorld * ret = new (mem) PhysicsWorld();

@@ -14,6 +14,7 @@ Shader::Type TypeFromFileName(const std::string& fn)
 	} else if (fileExtension == ".comp") {
 		return Shader::Type::COMPUTE_SHADER;
 	} else {
+		printf("[ERROR] Loading shader %s: Unknown file format.\n", fn.c_str());
 		return Shader::Type::VERTEX_SHADER;
 	}
 }
@@ -24,7 +25,7 @@ Shader::Shader(const std::string& name)
 	this->type = TypeFromFileName(name);
 }
 
-Shader::Shader(const std::string& name, std::istream& is) : src(std::istreambuf_iterator<char>(is), {})
+Shader::Shader(const std::string& name, const std::vector<char>& input) : src(input.begin(), input.end())
 {
 	this->name = name;
 	this->type = TypeFromFileName(name);

@@ -13,12 +13,13 @@ using nlohmann::json;
 
 COMPONENT_IMPL(SpriteComponent)
 
-Deserializable * SpriteComponent::Deserialize(const std::string& str, Allocator& alloc) const
+Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const
 {
 	void * mem = alloc.Allocate(sizeof(SpriteComponent));
 	SpriteComponent * ret = new (mem) SpriteComponent();
 	json j = json::parse(str);
-	ret->sprite = Sprite::FromFile(nullptr, j["file"].get<std::string>().c_str());
+	auto img = resourceManager->LoadResourceRefCounted<Image>(j["file"]);
+	ret->sprite = Sprite(nullptr, img);
 	return ret;
 }
 

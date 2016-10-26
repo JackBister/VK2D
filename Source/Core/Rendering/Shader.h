@@ -1,8 +1,5 @@
 #pragma once
 
-#include <iostream>
-#include <type_traits>
-
 #include "Core/Resource.h"
 
 struct Shader : Resource
@@ -17,7 +14,7 @@ struct Shader : Resource
 
 	Shader() = delete;
 	Shader(const std::string&);
-	Shader(const std::string&, std::istream&);
+	Shader(const std::string&, const std::vector<char>&);
 
 	Type GetType() const;
 	const std::string& GetSource() const;

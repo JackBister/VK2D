@@ -22,7 +22,7 @@ struct LuaComponent : Component
 	//TODO: Note that this means that a LuaComponent can't run multiple OnEvents concurrently, although that may also be problematic for other reasons.
 	EventArgs args;
 	
-	Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
+	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
 	void OnEvent(std::string name, EventArgs args) override;
 
 	int LuaIndex(lua_State *) override;

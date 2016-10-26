@@ -12,7 +12,7 @@ struct PhysicsComponent : Component, btMotionState
 	bool Component::receiveTicks = false;
 
 
-	Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
+	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
 	void OnEvent(std::string name, EventArgs args = {}) override;
 
 	int LuaIndex(lua_State *) override;

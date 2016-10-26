@@ -146,7 +146,7 @@ int Input::RemoveKeybind_Lua(lua_State * L)
 	INPUT_KEYBIND(RemoveKeybind)
 }
 
-Deserializable * Input::Deserialize(const std::string& str, Allocator& alloc) const
+Deserializable * Input::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const
 {
 	void * mem = alloc.Allocate(sizeof(Input));
 	Input * ret = new (mem) Input();

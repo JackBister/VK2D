@@ -43,10 +43,11 @@ Scene * Scene::FromFile(string fn)
 	Scene * ret = new Scene();
 	string fileContent = SlurpFile(fn);
 	json j = json::parse(fileContent);
-	ret->input = static_cast<Input *>(Deserializable::DeserializeString(j["input"].dump()));
-	ret->physicsWorld = static_cast<PhysicsWorld *>(Deserializable::DeserializeString(j["physics"].dump()));
+	ret->input = static_cast<Input *>(Deserializable::DeserializeString(ret->resourceManager.get(), j["input"].dump()));
+	ret->physicsWorld = static_cast<PhysicsWorld *>(Deserializable::DeserializeString(ret->resourceManager.get(), j["physics"].dump()));
+	ret->resourceManager = std::make_unique<ResourceManager>();
 	for (auto& je : j["entities"]) {
-		Entity * tmp = static_cast<Entity *>(Deserializable::DeserializeString(je.dump()));
+		Entity * tmp = static_cast<Entity *>(Deserializable::DeserializeString(ret->resourceManager.get(), je.dump()));
 		tmp->scene = ret;
 		ret->entities.push_back(tmp);
 	}

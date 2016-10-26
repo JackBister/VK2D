@@ -44,7 +44,7 @@ struct Input : LuaSerializable, Deserializable
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;
 
-	Deserializable * Deserialize(const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
+	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
 
 private:
 	//TODO: vector means you can have infinite keys bound
