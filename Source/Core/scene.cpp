@@ -10,15 +10,28 @@
 
 #include "scene.h.generated.h"
 
-using nlohmann::json;
-using namespace std;
-
-string SlurpFile(string fn)
+Scene::Scene(ResourceManager * resMan, const std::string& name) noexcept
 {
-	ifstream in = ifstream(fn);
-	stringstream sstr;
-	sstr << in.rdbuf();
-	return sstr.str();
+	//TODO: Default input and physicsworld
+	this->name = name;
+	this->resourceManager = resMan;
+}
+
+Scene::Scene(ResourceManager * resMan, const std::string& name, const std::vector<char>& input) noexcept
+{
+	using nlohmann::json;
+	this->name = name;
+//	std::string fileContent = std::string(input.data());
+	std::string fileContent = std::string(input.begin(), input.end());
+	json j = json::parse(fileContent);
+	this->resourceManager = resMan;
+	this->input = static_cast<Input *>(Deserializable::DeserializeString(resourceManager, j["input"].dump()));
+	this->physicsWorld = static_cast<PhysicsWorld *>(Deserializable::DeserializeString(resourceManager, j["physics"].dump()));
+	for (auto& je : j["entities"]) {
+		Entity * tmp = static_cast<Entity *>(Deserializable::DeserializeString(resourceManager, je.dump()));
+		tmp->scene = this;
+		this->entities.push_back(tmp);
+	}
 }
 
 Entity * Scene::GetEntityByName(std::string name)
@@ -37,20 +50,3 @@ void Scene::BroadcastEvent(std::string ename, EventArgs eas)
 		ep->FireEvent(ename, eas);
 	}
 }
-
-Scene * Scene::FromFile(string fn)
-{
-	Scene * ret = new Scene();
-	string fileContent = SlurpFile(fn);
-	json j = json::parse(fileContent);
-	ret->input = static_cast<Input *>(Deserializable::DeserializeString(ret->resourceManager.get(), j["input"].dump()));
-	ret->physicsWorld = static_cast<PhysicsWorld *>(Deserializable::DeserializeString(ret->resourceManager.get(), j["physics"].dump()));
-	ret->resourceManager = std::make_unique<ResourceManager>();
-	for (auto& je : j["entities"]) {
-		Entity * tmp = static_cast<Entity *>(Deserializable::DeserializeString(ret->resourceManager.get(), je.dump()));
-		tmp->scene = ret;
-		ret->entities.push_back(tmp);
-	}
-	return ret;
-}
-

@@ -13,8 +13,8 @@ struct Shader : Resource
 	};
 
 	Shader() = delete;
-	Shader(const std::string&);
-	Shader(const std::string&, const std::vector<char>&);
+	Shader(ResourceManager *, const std::string&);
+	Shader(ResourceManager *, const std::string&, const std::vector<char>&);
 
 	Type GetType() const;
 	const std::string& GetSource() const;

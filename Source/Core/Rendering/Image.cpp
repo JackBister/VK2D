@@ -5,7 +5,7 @@
 
 #include "render.h"
 
-Image::Image(const std::string& name) noexcept
+Image::Image(ResourceManager * _, const std::string& name) noexcept
 {
 	this->name = name;
 	this->format = Format::RGBA8;
@@ -15,7 +15,20 @@ Image::Image(const std::string& name) noexcept
 	Render_currentRenderer->AddImage(this);
 }
 
-Image::Image(const std::string& name, const std::vector<char>& input) noexcept
+Image::Image(const ImageCreateInfo& info) noexcept
+{
+	this->name = info.name;
+	this->format = info.format;
+	this->height = info.height;
+	this->width = info.width;
+	if (info.data.index() == 0) {
+		this->data = std::experimental::get<std::vector<uint8_t>>(info.data);
+	} else {
+		this->rendererData = std::experimental::get<void *>(info.data);
+	}
+}
+
+Image::Image(ResourceManager * _, const std::string& name, const std::vector<char>& input) noexcept
 {
 	this->name = name;
 	int n;

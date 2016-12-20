@@ -19,13 +19,13 @@ Shader::Type TypeFromFileName(const std::string& fn)
 	}
 }
 
-Shader::Shader(const std::string& name)
+Shader::Shader(ResourceManager * _, const std::string& name)
 {
 	this->name = name;
 	this->type = TypeFromFileName(name);
 }
 
-Shader::Shader(const std::string& name, const std::vector<char>& input) : src(input.begin(), input.end())
+Shader::Shader(ResourceManager * _, const std::string& name, const std::vector<char>& input) : src(input.begin(), input.end())
 {
 	this->name = name;
 	this->type = TypeFromFileName(name);

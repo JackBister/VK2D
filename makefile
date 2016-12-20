@@ -15,8 +15,8 @@ MATH_DIR = Source/Core/Math
 MATH_FILES = mathtypes.cpp
 MATH_HEADERS = mathtypes.h
 RENDERING_DIR = Source/Core/Rendering
-RENDERING_FILES = Image.cpp render.cpp render_opengl.cpp Shader.cpp
-RENDERING_HEADERS = render.h Shader.h
+RENDERING_FILES = Framebuffer.cpp Image.cpp render.cpp render_opengl.cpp Shader.cpp
+RENDERING_HEADERS = Framebuffer.h Image.h render.h Shader.h
 CPP_FILES = $(CORE_FILES:%=$(CORE_DIR)/%) $(COMPONENT_FILES:%=$(COMPONENT_DIR)/%) $(LUA_FILES:%=$(LUA_DIR)/%) $(MATH_FILES:%=$(MATH_DIR)/%) $(RENDERING_FILES:%=$(RENDERING_DIR)/%)
 H_FILES = $(CORE_HEADERS:%=$(CORE_DIR)/%) $(COMPONENT_HEADERS:%=$(COMPONENT_DIR)/%) $(LUA_HEADERS:%=$(LUA_DIR)/%) $(MATH_HEADERS:%=$(MATH_DIR)/%) $(RENDERING_HEADERS:%=$(RENDERING_DIR)/%)
 OBJ_OUTPUT = $(CPP_FILES:%.cpp=$(BUILD_DIR)/%.o)
@@ -59,8 +59,8 @@ dirs:
 
 #TODO: GENERATED_H_FILES and split into separate directories to avoid collisions
 build/include/hgen: build/headergenerator.exe $(H_FILES)
-	touch build/include/hgen
 	$(BUILD_DIR)/headergenerator.exe build/include $(CORE_DIR)
+	touch build/include/hgen
 
 $(BUILD_DIR)/%.o: %.cpp
 	g++ -g $(WARN_FLAGS) $(OBJ_FLAGS) $@ $<

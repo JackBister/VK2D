@@ -16,14 +16,17 @@
 
 struct Entity;
 
-struct Scene : LuaSerializable
+struct Scene : LuaSerializable, Resource
 {
 	PROPERTY(LuaRead)
 	Input * input;
 	PhysicsWorld * physicsWorld;
-	std::unique_ptr<ResourceManager> resourceManager;
+	ResourceManager * resourceManager;
 	Time time;
 	std::vector<Entity *> entities;
+
+	Scene(ResourceManager *, const std::string&) noexcept;
+	Scene(ResourceManager *, const std::string&, const std::vector<char>&) noexcept;
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;
@@ -41,10 +44,6 @@ struct Scene : LuaSerializable
 	PROPERTY(LuaRead)
 	void BroadcastEvent(std::string ename, EventArgs eas = {});
 	static int BroadcastEvent_Lua(lua_State *);
-
-	/*
-		Reads a JSON file describing a scene and returns that scene
-	*/
-	static Scene * FromFile(std::string fn);
 };
 
+RESOURCE_HEADER(Scene)

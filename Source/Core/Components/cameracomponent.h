@@ -2,11 +2,13 @@
 
 #include "glm/glm.hpp"
 
-#include "component.h"
-#include "entity.h"
-#include "render.h"
+#include "Core/Components/component.h"
+#include "Core/entity.h"
+#include "Core/Rendering/render.h"
 
-//TODO: Render targets
+struct Framebuffer;
+struct Image;
+
 struct CameraComponent : Component
 {
 	bool Component::receiveTicks = false;
@@ -21,7 +23,7 @@ struct CameraComponent : Component
 	void SetViewSize(float);
 
 	const glm::mat4& GetProjectionMatrix();
-
+	std::shared_ptr<Framebuffer> GetRenderTarget() const;
 	const glm::mat4& GetViewMatrix();
 
 	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
@@ -39,4 +41,6 @@ private:
 	glm::mat4 viewMatrix;
 	Renderer * renderer;
 	float viewSize;
+
+	std::shared_ptr<Framebuffer> renderTarget;
 };

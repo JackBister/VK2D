@@ -12,7 +12,6 @@
 
 /*
 	A sprite object should contain everything the renderer needs to put a sprite on the screen.
-	The rendererdata pointer is for renderers to store their own associated data in, such as a texture ID.
 */
 struct Sprite : LuaSerializable
 {

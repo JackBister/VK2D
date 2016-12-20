@@ -1,13 +1,12 @@
 #pragma once
-#include <cstddef>
-
-#include "sprite.h"
-#include "transform.h"
+#include <cstdint>
 
 struct CameraComponent;
+struct Framebuffer;
 struct Image;
 struct ResourceManager;
 struct Shader;
+struct Sprite;
 
 struct Renderer {
 	//If valid is false, the renderer is not in a complete state and should not be used.
@@ -15,6 +14,8 @@ struct Renderer {
 
 	virtual void Destroy() = 0;
 	virtual void EndFrame() = 0;
+	//Return elapsed GPU time on last frame if available, 0 if not.
+	virtual uint64_t GetFrameTime() = 0;
 	virtual bool Init(ResourceManager *, const char * title, int winX, int winY, int w, int h, uint32_t flags) = 0;
 	virtual void RenderCamera(CameraComponent * const) = 0;
 
@@ -23,6 +24,9 @@ struct Renderer {
 	
 	virtual void AddCamera(CameraComponent * const) = 0;
 	virtual void DeleteCamera(CameraComponent * const) = 0;
+
+	virtual void AddFramebuffer(Framebuffer * const) = 0;
+	virtual void DeleteFramebuffer(Framebuffer * const) = 0;
 
 	virtual void AddImage(Image * const) = 0;
 	virtual void DeleteImage(Image * const) = 0;

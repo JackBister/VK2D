@@ -385,7 +385,7 @@ CXChildVisitResult DeclarationVisitor(CXCursor cursor, CXCursor parent, CXClient
 		CXString ts = clang_getTypeSpelling(type);
 		p.cxType = type;
 		p.type = std::string(clang_getCString(ts));
-	//	printf("%s %s\n", p.type.c_str(), p.name.c_str());
+//		printf("%s %s\n", p.type.c_str(), p.name.c_str());
 		clang_disposeString(ts);
 		auto fileAccumulator = static_cast<FileAccumulator *>(clientData);
 		if (p.parent == fileAccumulator->fileName) {

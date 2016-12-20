@@ -22,15 +22,15 @@
 #include "SDL/SDL_opengl.h"
 #include "stb_image.h"
 
-#include "cameracomponent.h"
-#include "render.h"
+#include "Core/Components/cameracomponent.h"
+#include "Core/Rendering/OpenGL/OpenGLRendererData.h"
+#include "Core/Rendering/Framebuffer.h"
+#include "Core/Rendering/render.h"
 #include "Core/ResourceManager.h"
 #include "Core/Rendering/Image.h"
 #include "Core/Rendering/Shader.h"
-#include "transform.h"
-
-using namespace glm;
-using namespace std;
+#include "Core/sprite.h"
+#include "Core/transform.h"
 
 //The number of floats contained in one vertex
 //vec3 pos, vec3 color, vec2 UV
@@ -48,28 +48,6 @@ struct Model
 	GLuint ebo;
 };
 
-struct OpenGLRendererData
-{
-	GLuint texture = 0;
-};
-
-struct OpenGLImageRendererData
-{
-	GLuint texture = 0;
-};
-
-struct OpenGLShaderRendererData
-{
-	GLuint handle = 0;
-};
-
-//Puts a sprite and its rendererData together, for better cache locality
-struct OpenGLSprite
-{
-	Sprite * sprite;
-	OpenGLRendererData rendererData;
-};
-
 struct Program
 {
 	GLuint id = 0;
@@ -80,12 +58,12 @@ struct Program
 	Program() {}
 	Program(Shader vShader, Shader fShader)
 	{
-		if (((OpenGLShaderRendererData *)vShader.rendererData)->handle == 0 || ((OpenGLShaderRendererData *)fShader.rendererData)->handle == 0) {
+		if (((OpenGLShaderRendererData *)vShader.rendererData)->shader == 0 || ((OpenGLShaderRendererData *)fShader.rendererData)->shader == 0) {
 			return;
 		}
 		id = glCreateProgram();
-		glAttachShader(id, ((OpenGLShaderRendererData *)vShader.rendererData)->handle);
-		glAttachShader(id, ((OpenGLShaderRendererData *)fShader.rendererData)->handle);
+		glAttachShader(id, ((OpenGLShaderRendererData *)vShader.rendererData)->shader);
+		glAttachShader(id, ((OpenGLShaderRendererData *)fShader.rendererData)->shader);
 		glBindFragDataLocation(id, 0, "outColor");
 		glLinkProgram(id);
 		GLint linkOk;
@@ -96,7 +74,6 @@ struct Program
 			glGetProgramInfoLog(id, 1024, &log_length, message);
 			glDeleteProgram(id);
 			id = 0;
-			//TODO:
 			printf("Program link failed\n %s\n", message);
 		}
 	}
@@ -108,6 +85,7 @@ struct OpenGLRenderer : Renderer
 	void EndFrame() final override;
 	bool Init(ResourceManager *, const char * title, int winX, int winY, int w, int h, uint32_t flags) final override;
 	void RenderCamera(CameraComponent * const) final override;
+	uint64_t GetFrameTime() final override;
 
 	void AddSprite(Sprite * const) final override;
 	void DeleteSprite(Sprite * const) final override;
@@ -115,8 +93,11 @@ struct OpenGLRenderer : Renderer
 	void AddCamera(CameraComponent * const) final override;
 	void DeleteCamera(CameraComponent * const) final override;
 
-	virtual void AddImage(Image * const) override;
-	virtual void DeleteImage(Image * const) override;
+	void AddFramebuffer(Framebuffer * const) final override;
+	void DeleteFramebuffer(Framebuffer * const) final override;
+
+	void AddImage(Image * const) final override;
+	void DeleteImage(Image * const) final override;
 
 	void AddShader(Shader * const) final override;
 	void DeleteShader(Shader * const) final override;
@@ -133,9 +114,17 @@ struct OpenGLRenderer : Renderer
 	//The dimensions of the screen, in pixels
 	glm::ivec2 dimensions;
 	//All sprites the renderer knows about
-	std::vector<OpenGLSprite> sprites;
+	std::vector<Sprite *> sprites;
 	//The window
 	SDL_Window * window;
+
+	//TODO: Image and Framebuffer can be stored here along with pointer too.
+	OpenGLImageRendererData backbufferTexture;
+	OpenGLFramebufferRendererData backbuffer;
+	std::shared_ptr<Image> backBufferImage;
+	std::shared_ptr<Framebuffer> backbufferRenderTarget;
+
+	GLuint timeQuery;
 };
 
 //A quad with color 1.0, 1.0, 1.0
@@ -167,10 +156,14 @@ void OpenGLRenderer::Destroy()
 
 void OpenGLRenderer::EndFrame()
 {
+	glBeginQuery(GL_TIME_ELAPSED, timeQuery);
 	for (auto& camera : cameras) {
 		RenderCamera(camera);
 	}
+	glBindTexture(GL_TEXTURE_2D, backbufferTexture.texture);
+	glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 0, 0, dimensions.x, dimensions.y, 0);
 	SDL_GL_SwapWindow(window);
+	glEndQuery(GL_TIME_ELAPSED);
 }
 
 bool OpenGLRenderer::Init(ResourceManager * resMan, const char * title, const int winX, const int winY, const int w, const int h, const uint32_t flags)
@@ -181,7 +174,7 @@ bool OpenGLRenderer::Init(ResourceManager * resMan, const char * title, const in
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 	resourceManager = resMan;
 	aspectRatio = static_cast<float>(w) / static_cast<float>(h);
-	dimensions = ivec2(w, h);
+	dimensions = glm::ivec2(w, h);
 	window = SDL_CreateWindow(title, winX, winY, w, h, flags | SDL_WINDOW_OPENGL);
 	SDL_GL_CreateContext(window);
 
@@ -194,6 +187,44 @@ bool OpenGLRenderer::Init(ResourceManager * resMan, const char * title, const in
 	printf("Program start glGetError(Expected 1280): %d\n", glGetError());
 
 	stbi_set_flip_vertically_on_load(true);
+
+	glGenQueries(1, &timeQuery);
+
+	//TODO: depth and stencil buffers as images
+	ImageCreateInfo backBufferTexCreateInfo = {
+		"__Scratch/Backbuffer.tex",
+		Image::Format::RGBA8,
+		h, w,
+		&backbufferTexture
+	};
+	backBufferImage = std::make_shared<Image>(backBufferTexCreateInfo);
+
+	glGenTextures(1, &backbufferTexture.texture);
+	glBindTexture(GL_TEXTURE_2D, backbufferTexture.texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	resMan->AddResourceRefCounted<Image>("__Scratch/Backbuffer.tex", backBufferImage);
+
+	//No idea why it wont let me construct this as I normally would.
+/*
+	FramebufferCreateInfo backbufferFBCreateInfo = {
+		"__Scratch/Backbuffer.rendertarget",
+		{{Framebuffer::Attachment::COLOR0, backBufferImage}},
+		&backbuffer
+	};
+*/
+	FramebufferCreateInfo backbufferFBCreateInfo;
+	backbufferFBCreateInfo.name = "__Scratch/Backbuffer.rendertarget";
+	backbufferFBCreateInfo.imgs = {{Framebuffer::Attachment::COLOR0, backBufferImage }};
+	backbufferFBCreateInfo.rendererData = &backbuffer;
+
+	backbufferRenderTarget = std::make_shared<Framebuffer>(backbufferFBCreateInfo);
+	resMan->AddResourceRefCounted<Framebuffer>("__Scratch/Backbuffer.rendertarget", backbufferRenderTarget);
+
+	glReadBuffer(GL_BACK);
 
 	glGenBuffers(1, &plainQuad.vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, plainQuad.vbo);
@@ -238,6 +269,7 @@ void OpenGLRenderer::RenderCamera(CameraComponent * camera)
 	if (err != 0) {
 		printf("EndFrame start glGetError %d\n", err);
 	}
+	glBindFramebuffer(GL_FRAMEBUFFER, ((OpenGLFramebufferRendererData *)camera->GetRenderTarget()->GetRendererData())->framebuffer);
 	//TODO: Maybe unnecessary
 	glBindVertexArray(ptProgram.vao);
 	glBindBuffer(GL_ARRAY_BUFFER, plainQuad.vbo);
@@ -268,10 +300,10 @@ void OpenGLRenderer::RenderCamera(CameraComponent * camera)
 	//	vec3 oldScale = s.sprite->transform->scale;
 		//TODO: HACK: The /2.f is there because otherwise stuff is twice as big as it should be... but I don't know why.
 	//	s.sprite->transform->scale = glm::vec3(oldScale.x * s.sprite->dimensions.x / 2.f, oldScale.y * s.sprite->dimensions.y / 2.f, oldScale.z);
-		glUniform2f(minUVloc, s.sprite->minUV.x, s.sprite->minUV.y);
-		glUniform2f(sizeUVloc, s.sprite->sizeUV.x, s.sprite->sizeUV.y);
-		glUniformMatrix4fv(mLoc, 1, GL_FALSE, glm::value_ptr(s.sprite->transform->GetLocalToWorldSpace()));
-		glBindTexture(GL_TEXTURE_2D, ((OpenGLImageRendererData *)s.sprite->image->GetRendererData())->texture);
+		glUniform2f(minUVloc, s->minUV.x, s->minUV.y);
+		glUniform2f(sizeUVloc, s->sizeUV.x, s->sizeUV.y);
+		glUniformMatrix4fv(mLoc, 1, GL_FALSE, glm::value_ptr(s->transform->GetLocalToWorldSpace()));
+		glBindTexture(GL_TEXTURE_2D, ((OpenGLImageRendererData *)s->image->GetRendererData())->texture);
 	//	glBindTexture(GL_TEXTURE_2D, s.rendererData.texture);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	//	s.sprite->transform->scale = oldScale;
@@ -283,53 +315,22 @@ void OpenGLRenderer::RenderCamera(CameraComponent * camera)
 	}
 }
 
+uint64_t OpenGLRenderer::GetFrameTime()
+{
+	uint64_t ret = 0;
+	glGetQueryObjectui64v(timeQuery, GL_QUERY_RESULT, &ret);
+	return ret;
+}
+
 void OpenGLRenderer::AddSprite(Sprite * const sprite)
 {
-	OpenGLSprite s;
-	s.sprite = sprite;
-/*
-	sprite->rendererData = &s.rendererData;
-	GLenum format;
-	GLint internalFormat;
-	switch (sprite->components) {
-	case 1:
-		format = GL_RED;
-		internalFormat = GL_R8;
-		break;
-	case 2:
-		format = GL_RG;
-		internalFormat = GL_RG8;
-		break;
-	case 3:
-		format = GL_RGB;
-		internalFormat = GL_RGB8;
-		break;
-	case 4:
-		format = GL_RGBA;
-		internalFormat = GL_RGBA8;
-		break;
-	default:
-		//TODO: Sprite doesn't get added but program keeps running. Maybe should crash.
-		printf("[WARNING] Weird sprite format! %d\n", sprite->components);
-		return;
-	}
-	glGenTextures(1, &s.rendererData.texture);
-	glBindTexture(GL_TEXTURE_2D, s.rendererData.texture);
-	//TODO: Let user specify this
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, sprite->dimensions.x, sprite->dimensions.y, 0, format, GL_UNSIGNED_BYTE, sprite->data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-*/
-	sprites.push_back(s);
+	sprites.push_back(sprite);
 }
 
 void OpenGLRenderer::DeleteSprite(Sprite * const sprite)
 {
 	for (auto it = sprites.begin(); it != sprites.end(); ++it) {
-		if (it->sprite == sprite) {
+		if (*it == sprite) {
 			sprites.erase(it);
 		}
 	}
@@ -347,6 +348,40 @@ void OpenGLRenderer::DeleteCamera(CameraComponent * const camera)
 			cameras.erase(it);
 		}
 	}
+}
+
+void OpenGLRenderer::AddFramebuffer(Framebuffer * const fb)
+{
+	auto rData = new OpenGLFramebufferRendererData();
+	fb->SetRendererData(rData);
+	glGenFramebuffers(1, &rData->framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, rData->framebuffer);
+	for (auto& kv : fb->GetImages()) {
+		GLuint attachment;
+		switch (kv.first) {
+		case Framebuffer::Attachment::COLOR0:
+			attachment = GL_COLOR_ATTACHMENT0;
+			break;
+		case Framebuffer::Attachment::DEPTH:
+			attachment = GL_DEPTH_ATTACHMENT;
+			break;
+		case Framebuffer::Attachment::STENCIL:
+			attachment = GL_STENCIL_ATTACHMENT;
+			break;
+		case Framebuffer::Attachment::DEPTH_STENCIL:
+			attachment = GL_DEPTH_STENCIL_ATTACHMENT;
+			break;
+		default:
+			printf("[WARNING] Unknown framebuffer attachment %d.", kv.first);
+			attachment = GL_COLOR_ATTACHMENT0;
+		}
+		glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, ((OpenGLImageRendererData *)kv.second->GetRendererData())->texture, 0);
+	}
+}
+
+void OpenGLRenderer::DeleteFramebuffer(Framebuffer * const fb)
+{
+	glDeleteFramebuffers(1, &((OpenGLFramebufferRendererData *)fb->GetRendererData())->framebuffer);
 }
 
 void OpenGLRenderer::AddImage(Image * const img)
@@ -415,27 +450,27 @@ void OpenGLRenderer::AddShader(Shader * const s)
 		shaderType = GL_COMPUTE_SHADER;
 		break;
 	}
-	rData->handle = glCreateShader(shaderType);
+	rData->shader = glCreateShader(shaderType);
 	const char * src = s->GetSource().c_str();
-	glShaderSource(rData->handle, 1, &src, nullptr);
-	glCompileShader(rData->handle);
+	glShaderSource(rData->shader, 1, &src, nullptr);
+	glCompileShader(rData->shader);
 	GLint compileOk;
-	glGetShaderiv(rData->handle, GL_COMPILE_STATUS, &compileOk);
+	glGetShaderiv(rData->shader, GL_COMPILE_STATUS, &compileOk);
 	if (compileOk != GL_TRUE) {
 		GLsizei log_length = 0;
 		GLchar message[1024];
-		glGetShaderInfoLog(rData->handle, 1024, &log_length, message);
+		glGetShaderInfoLog(rData->shader, 1024, &log_length, message);
 		printf("Shader compile failed\n %s %s\n", s->name, message);
-		glDeleteShader(rData->handle);
-		rData->handle = 0;
+		glDeleteShader(rData->shader);
+		rData->shader = 0;
 	}
 }
 
 void OpenGLRenderer::DeleteShader(Shader * const s)
 {
 	auto rData = (OpenGLShaderRendererData *)s->rendererData;
-	if (rData->handle != 0) {
-		glDeleteShader(rData->handle);
+	if (rData->shader != 0) {
+		glDeleteShader(rData->shader);
 	}
 }
 

@@ -3,7 +3,8 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "json.hpp"
 
-#include "luaindex.h"
+#include "Core/Rendering/Framebuffer.h"
+#include "Core/Rendering/Image.h"
 
 #include "cameracomponent.h.generated.h"
 
@@ -45,6 +46,11 @@ const glm::mat4& CameraComponent::GetProjectionMatrix()
 	return projMatrix;
 }
 
+std::shared_ptr<Framebuffer> CameraComponent::GetRenderTarget() const
+{
+	return renderTarget;
+}
+
 const glm::mat4& CameraComponent::GetViewMatrix()
 {
 	if (dirtyView) {
@@ -62,6 +68,9 @@ Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager,
 	//TODO: Seeing as the renderer might change during runs this might be a bad idea
 	ret->renderer = Render_currentRenderer;
 	ret->viewSize = j["viewSize"];
+	if (j.find("renderTarget") != j.end()) {
+		ret->renderTarget = resourceManager->LoadResourceRefCounted<Framebuffer>(j["renderTarget"]);
+	}
 	return ret;
 }
 

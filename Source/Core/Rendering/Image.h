@@ -3,7 +3,12 @@
 #include <string>
 #include <vector>
 
+#include <experimental/variant.hpp>
+
 #include "Core/Resource.h"
+#include "Rendering/render.h"
+
+struct ImageCreateInfo;
 
 struct Image : Resource
 {
@@ -18,8 +23,9 @@ struct Image : Resource
 	};
 
 	Image() = delete;
-	Image(const std::string&) noexcept;
-	Image(const std::string&, const std::vector<char>&) noexcept;
+	Image(ResourceManager *, const std::string&) noexcept;
+	Image(const ImageCreateInfo&) noexcept;
+	Image(ResourceManager *, const std::string&, const std::vector<char>&) noexcept;
 
 	const std::vector<uint8_t>& GetData() const noexcept;
 	Format GetFormat() const noexcept;
@@ -34,6 +40,15 @@ private:
 	std::vector<uint8_t> data;
 	
 	void * rendererData;
+};
+
+struct ImageCreateInfo
+{
+	std::string name;
+	Image::Format format;
+	int height, width;
+	//The image is either created with CPU data or an existing rendererdata
+	std::experimental::variant<std::vector<uint8_t>, void *> data;
 };
 
 RESOURCE_HEADER(Image)
