@@ -109,9 +109,9 @@ void PhysicsComponent::OnEvent(std::string name, EventArgs args)
 
 void PhysicsComponent::getWorldTransform(btTransform& worldTransform) const
 {
-	const Vec3& pos = entity->transform.position;
+	const Vec3& pos = entity->transform.GetPosition();
 	worldTransform.setOrigin(btVector3(pos.x, pos.y, pos.z));
-	const Quat& rot = entity->transform.rotation;
+	const Quat& rot = entity->transform.GetRotation();
 	worldTransform.setRotation(btQuaternion(rot.x, rot.y, rot.z, rot.w));
 //	const Vec3& scale = entity->transform.scale;
 	//TODO:
@@ -121,9 +121,8 @@ void PhysicsComponent::getWorldTransform(btTransform& worldTransform) const
 void PhysicsComponent::setWorldTransform(const btTransform& worldTransform)
 {
 	const btVector3& pos = worldTransform.getOrigin();
-	entity->transform.position = Vec3(pos.x(), pos.y(), pos.z());
+	entity->transform.SetPosition(Vec3(pos.x(), pos.y(), pos.z()));
 	const btQuaternion& rot = worldTransform.getRotation();
 	//I don't know why, but for some reason the components of the rotation are shifted one step when they're returned here, which is why x = w, etc.
-	entity->transform.rotation = Quat(rot.w(), rot.x(), rot.y(), rot.z());
-	entity->transform.MakeDirty();
+	entity->transform.SetRotation(Quat(rot.w(), rot.x(), rot.y(), rot.z()));
 }

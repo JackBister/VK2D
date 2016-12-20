@@ -13,12 +13,6 @@
 
 using nlohmann::json;
 
-void Transform::MakeDirty()
-{
-	isToParentDirty = true;
-	isToWorldDirty = true;
-}
-
 const glm::mat4& Transform::GetLocalToParentSpace()
 {
 	glm::mat4 trans = glm::translate(glm::mat4(), position);
@@ -41,6 +35,54 @@ const glm::mat4& Transform::GetLocalToWorldSpace()
 		isToWorldDirty = false;
 	}
 	return toWorldSpace;
+}
+
+Transform * Transform::GetParent() const
+{
+	return parent;
+}
+
+const Vec3& Transform::GetPosition() const
+{
+	return position;
+}
+
+const Quat& Transform::GetRotation() const
+{
+	return rotation;
+}
+
+const Vec3& Transform::GetScale() const
+{
+	return scale;
+}
+
+void Transform::SetParent(Transform * p)
+{
+	parent = p;
+	isToParentDirty = true;
+	isToWorldDirty = true;
+}
+
+void Transform::SetPosition(const Vec3& p)
+{
+	position = p;
+	isToParentDirty = true;
+	isToWorldDirty = true;
+}
+
+void Transform::SetRotation(const Quat& r)
+{
+	rotation = r;
+	isToParentDirty = true;
+	isToWorldDirty = true;
+}
+
+void Transform::SetScale(const Vec3& s)
+{
+	scale = s;
+	isToParentDirty = true;
+	isToWorldDirty = true;
 }
 
 Transform Transform::Deserialize(std::string s)
