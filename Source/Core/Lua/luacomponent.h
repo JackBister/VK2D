@@ -4,7 +4,7 @@
 
 #include "lua/lua.hpp"
 
-#include "component.h"
+#include "Core/Components/component.h"
 
 #include "Tools/HeaderGenerator/headergenerator.h"
 

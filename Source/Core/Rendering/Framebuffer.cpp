@@ -1,5 +1,7 @@
-#include "Framebuffer.h"
+#include "Core/Rendering/Framebuffer.h"
 
+#include "Core/Rendering/Image.h"
+#include "Core/Rendering/render.h"
 #include "Core/ResourceManager.h"
 
 Framebuffer::Framebuffer(ResourceManager * resMan, const std::string& name) : imgs({{Framebuffer::Attachment::COLOR0, resMan->LoadResourceRefCounted<Image>(name + ".COLOR0.tex")}})

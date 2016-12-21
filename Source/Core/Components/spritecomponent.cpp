@@ -1,13 +1,12 @@
-#include "spritecomponent.h"
+#include "Core/Components/spritecomponent.h"
 
 #include <cstring>
 
 #include "json.hpp"
 
-#include "component.h"
-#include "entity.h"
-#include "render.h"
-#include "sprite.h"
+#include "Core/entity.h"
+#include "Core/Rendering/render.h"
+#include "Core/sprite.h"
 
 using nlohmann::json;
 

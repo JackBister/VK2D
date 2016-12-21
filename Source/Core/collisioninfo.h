@@ -1,9 +1,9 @@
 #pragma once
 #include <vector>
 
-#include "entity.h"
-#include "luaserializable.h"
-#include "mathtypes.h"
+#include "Core/entity.h"
+#include "Core/Lua/luaserializable.h"
+#include "Core/Math/mathtypes.h"
 
 //TODO: Cannot use headergenerator because of std::vector shenanigans
 struct CollisionInfo : LuaSerializable

@@ -1,19 +1,16 @@
-#include "luacomponent.h"
-
-#include <cstring>
+#include "Core/Lua/luacomponent.h"
 
 #include "json.hpp"
 #include "lua/lua.hpp"
 
-#include "entity.h"
-#include "lua_cfuncs.h"
-#include "luaindex.h"
-#include "scene.h"
+#include "Core/entity.h"
+#include "Core/input.h"
+#include "Core/Lua/lua_cfuncs.h"
+#include "Core/scene.h"
 
-#include "luacomponent.h.generated.h"
+#include "Core/Lua/luacomponent.h.generated.h"
 
 using nlohmann::json;
-using namespace std;
 
 COMPONENT_IMPL(LuaComponent)
 
@@ -27,7 +24,7 @@ Deserializable * LuaComponent::Deserialize(ResourceManager * resourceManager, co
 	void * mem = alloc.Allocate(sizeof(LuaComponent));
 	LuaComponent * ret = new (mem) LuaComponent();
 	json j = json::parse(str);
-	string infile = j["file"];
+	std::string infile = j["file"];
 	ret->file = infile;
 	ret->state = luaL_newstate();
 	luaL_openlibs(ret->state);
@@ -57,7 +54,7 @@ Deserializable * LuaComponent::Deserialize(ResourceManager * resourceManager, co
 	return ret;
 }
 
-void LuaComponent::OnEvent(string name, EventArgs eargs)
+void LuaComponent::OnEvent(std::string name, EventArgs eargs)
 {
 	if (name == "BeginPlay") {
 		entity->PushToLua(state);

@@ -1,13 +1,11 @@
 #define KEYCODE_IMPL
-#include "input.h"
-
-#include <cstring>
+#include "Core/input.h"
 
 #include "json.hpp"
 
-#include "input_cfuncs.h"
+#include "Core/Lua/input_cfuncs.h"
 
-#include "input.h.generated.h"
+#include "Core/input.h.generated.h"
 
 using nlohmann::json;
 using namespace std;

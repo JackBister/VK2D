@@ -1,9 +1,6 @@
 #pragma once
 #include "lua/lua.hpp"
 
-#include "input.h"
-#include "luaserializable.h"
-
 /*
 	This file should ONLY be included in input.cpp
 	It contains macros which generate CFunctions for use in Lua which call the Input class' methods.

@@ -1,13 +1,13 @@
-#include "physicscomponent.h"
+#include "Core/Components/physicscomponent.h"
 
 #include "BulletCollision/CollisionShapes/btBox2dShape.h"
 #include "json.hpp"
 
-#include "entity.h"
-#include "luaindex.h"
-#include "scene.h"
+#include "Core/entity.h"
+#include "Core/physicsworld.h"
+#include "Core/scene.h"
 
-#include "physicscomponent.h.generated.h"
+#include "Core/Components/physicscomponent.h.generated.h"
 
 COMPONENT_IMPL(PhysicsComponent)
 

@@ -1,9 +1,8 @@
-#include "eventarg.h"
+#include "Core/eventarg.h"
 
-#include <cassert>
 #include <string>
 
-using namespace std;
+#include "Core/Lua/LuaSerializable.h"
 
 //We need to do this both in the move assignment and in destructor
 void EventArg::Delete()
@@ -32,7 +31,7 @@ EventArg::EventArg(const EventArg& ea) : type(ea.type)
 {
 	switch (type) {
 	case Type::STRING:
-		asString = new string(*ea.asString);
+		asString = new std::string(*ea.asString);
 		break;
 	case Type::INT:
 		asInt = ea.asInt;
@@ -141,11 +140,11 @@ EventArg& EventArg::operator=(EventArg&& ea)
 }
 
 
-EventArg::EventArg(string s) : type(Type::STRING), asString(new string(s))
+EventArg::EventArg(std::string s) : type(Type::STRING), asString(new std::string(s))
 {
 }
 
-EventArg::EventArg(const char * s) : type(Type::STRING), asString(new string(s))
+EventArg::EventArg(const char * s) : type(Type::STRING), asString(new std::string(s))
 {
 }
 EventArg::EventArg(int i) : type(Type::INT), asInt(i)

@@ -1,12 +1,13 @@
-#include "cameracomponent.h"
+#include "Core/Components/cameracomponent.h"
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "json.hpp"
 
+#include "Core/entity.h"
 #include "Core/Rendering/Framebuffer.h"
 #include "Core/Rendering/Image.h"
 
-#include "cameracomponent.h.generated.h"
+#include "Core/Components/cameracomponent.h.generated.h"
 
 using nlohmann::json;
 

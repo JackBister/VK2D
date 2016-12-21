@@ -1,11 +1,11 @@
-#include "spritesheetcomponent.h"
+#include "Core/Components/spritesheetcomponent.h"
 
 #include "json.hpp"
 
-#include "entity.h"
-#include "render.h"
-#include "sprite.h"
-#include "SpritesheetComponent.h.generated.h"
+#include "Core/entity.h"
+#include "Core/Rendering/render.h"
+#include "Core/sprite.h"
+#include "Core/Components/SpritesheetComponent.h.generated.h"
 
 COMPONENT_IMPL(SpritesheetComponent)
 

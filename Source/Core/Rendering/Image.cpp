@@ -1,9 +1,9 @@
-#include "Image.h"
+#include "Core/Rendering/Image.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include "render.h"
+#include "Core/rendering/render.h"
 
 Image::Image(ResourceManager * _, const std::string& name) noexcept
 {
@@ -21,8 +21,10 @@ Image::Image(const ImageCreateInfo& info) noexcept
 	this->format = info.format;
 	this->height = info.height;
 	this->width = info.width;
+	this->params = info.params;
 	if (info.data.index() == 0) {
 		this->data = std::experimental::get<std::vector<uint8_t>>(info.data);
+		Render_currentRenderer->AddImage(this);
 	} else {
 		this->rendererData = std::experimental::get<void *>(info.data);
 	}
@@ -73,6 +75,11 @@ Image::Format Image::GetFormat() const noexcept
 int Image::GetHeight() const noexcept
 {
 	return height;
+}
+
+const Image::ImageParameters& Image::GetParameters() const noexcept
+{
+	return params;
 }
 
 int Image::GetWidth() const noexcept

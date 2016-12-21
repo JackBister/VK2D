@@ -3,7 +3,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/quaternion.hpp"
 
-#include "luaserializable.h"
+#include "Core/Lua/luaserializable.h"
 
 struct Vec3 : glm::vec3, LuaSerializable
 {

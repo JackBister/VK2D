@@ -5,8 +5,8 @@
 
 #include "glm/glm.hpp"
 
-#include "component.h"
-#include "sprite.h"
+#include "Core/Components/component.h"
+#include "Core/sprite.h"
 
 struct SpritesheetComponent : Component
 {

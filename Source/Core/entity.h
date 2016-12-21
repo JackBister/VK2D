@@ -4,13 +4,14 @@
 #include <unordered_map>
 #include <vector>
 
-#include "component.h"
-#include "eventarg.h"
-#include "luaserializable.h"
-#include "transform.h"
+#include "Core/Deserializable.h"
+#include "Core/eventarg.h"
+#include "Core/Lua/luaserializable.h"
+#include "Core/transform.h"
 
 #include "Tools/HeaderGenerator/headergenerator.h"
 
+struct Component;
 struct Scene;
 
 //The 11th commandment: Thou shalt not inherit from the Entity class; use components like a normal person instead.

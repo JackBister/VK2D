@@ -1,10 +1,5 @@
-#include "lua_cfuncs.h"
+#include "Core/Lua/lua_cfuncs.h"
 
-#include <cstring>
-#include <string>
-
-#include "glm/glm.hpp"
-#include "glm/gtc/quaternion.hpp"
 #include "lua/lua.hpp"
 
 static luaL_Reg argReg[] = {

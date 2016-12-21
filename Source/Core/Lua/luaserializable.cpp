@@ -1,4 +1,4 @@
-#include "luaserializable.h"
+#include "Core/Lua/luaserializable.h"
 
 void LuaSerializable::PushToLua(lua_State * L)
 {

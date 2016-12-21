@@ -5,9 +5,8 @@
 
 #include "lua/lua.hpp"
 
-#include "luaserializable.h"
-
 struct EventArg;
+struct LuaSerializable;
 
 typedef class std::unordered_map<std::string, EventArg> EventArgs;
 

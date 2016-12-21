@@ -4,9 +4,9 @@
 #include <unordered_map>
 
 #include "Core/Resource.h"
-#include "Core/Rendering/Image.h"
 
 struct FramebufferCreateInfo;
+struct Image;
 
 struct Framebuffer : Resource
 {
@@ -52,4 +52,4 @@ struct FramebufferCreateInfo
 	void * rendererData = nullptr;
 };
 
-RESOURCE_HEADER(Framebuffer);
+RESOURCE_HEADER(Framebuffer)

@@ -460,24 +460,22 @@ void ProcessFile(const boost::filesystem::path& output, const boost::filesystem:
 	res.fileName = path.generic_string();
 	clang_visitChildren(cursor, DeclarationVisitor, &res);
 //	res.Dump();
-	if (res.classes.size() != 0) {
-		const boost::filesystem::path outpath = output / path.filename() += ".generated.h";
-		std::stringstream fileNameSS;
-		fileNameSS << path.generic_string() << ".generated.h";
-		std::fstream outStream(outpath.generic_string(), std::ios_base::out);
-		//outStream << "#include \"" << path.filename().generic_string() << "\"\n\n";
-		for (auto& it : res.classes) {
-			outStream << GenerateCFunctions(it.first, it.second)
-				<< GenerateLuaIndex(it.first, it.second)
-				<< GenerateLuaNewIndex(it.first, it.second);
-			/*
-			printf("%s\n", GenerateCFunctions(it.first, it.second).c_str());
-			printf("%s\n", GenerateLuaIndex(it.first, it.second).c_str());
-			printf("%s\n", GenerateLuaNewIndex(it.first, it.second).c_str());
-			*/
-		}
-		outStream.close();
+	boost::filesystem::path outpath = output / path; 
+	outpath += ".generated.h";
+	outpath.make_preferred();
+	boost::filesystem::create_directories(outpath.parent_path());
+	std::fstream outStream(outpath.generic_string(), std::ios_base::out);
+	for (auto& it : res.classes) {
+		outStream << GenerateCFunctions(it.first, it.second)
+			<< GenerateLuaIndex(it.first, it.second)
+			<< GenerateLuaNewIndex(it.first, it.second);
 	}
+		/*
+		printf("%s\n", GenerateCFunctions(it.first, it.second).c_str());
+		printf("%s\n", GenerateLuaIndex(it.first, it.second).c_str());
+		printf("%s\n", GenerateLuaNewIndex(it.first, it.second).c_str());
+		*/
+	outStream.close();
 	clang_disposeTranslationUnit(unit);
 	clang_disposeIndex(index);
 }

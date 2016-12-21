@@ -10,8 +10,6 @@
 #include "Core/Allocator.h"
 #include "Core/Resource.h"
 
-#include <cstdio>
-
 struct ResourceManager
 {
 	ResourceManager(Allocator& a = Allocator::default_allocator);

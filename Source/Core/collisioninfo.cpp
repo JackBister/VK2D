@@ -1,6 +1,6 @@
-#include "collisioninfo.h"
+#include "Core/collisioninfo.h"
 
-#include "entity.h"
+#include "Core/entity.h"
 
 int CollisionInfo::LuaIndex(lua_State *L)
 {

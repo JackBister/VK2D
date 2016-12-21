@@ -18,25 +18,6 @@
 	of returning it assign the value at -1 to it. This function should never return anything, wether the index exists or not.
 */
 
-/*
-	This implementation of LuaSerializable::PushToLua should work in every imaginable case. It assumes the class contains a static LuaIndex and a static LuaNewIndex function.
-	Simply put this in your implementation file with the class name as the parameter.
-*/
-
-#define PUSH_TO_LUA(str) void str::PushToLua(lua_State * L) { \
-							void ** vpp = static_cast<void **>(lua_newuserdata(L, sizeof(void *))); \
-							*vpp = this; \
-							if (luaL_getmetatable(L, "_" #str "MT") == LUA_TNIL) { \
-								lua_pop(L, 1); \
-								luaL_newmetatable(L, "_" #str "MT"); \
-								lua_pushcfunction(L, str::LuaIndex); \
-								lua_setfield(L, -2, "__index"); \
-								lua_pushcfunction(L, str::LuaNewIndex); \
-								lua_setfield(L, -2, "__newindex"); \
-							} \
-							lua_setmetatable(L, -2); \
-						}
-
 struct LuaSerializable
 {
 	virtual ~LuaSerializable();

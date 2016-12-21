@@ -6,8 +6,8 @@
 
 #include "btBulletDynamicsCommon.h"
 
-#include "collisioninfo.h"
-#include "Deserializable.h"
+#include "Core/collisioninfo.h"
+#include "Core/Deserializable.h"
 
 struct Entity;
 

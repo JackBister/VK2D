@@ -15,12 +15,12 @@ MATH_DIR = Source/Core/Math
 MATH_FILES = mathtypes.cpp
 MATH_HEADERS = mathtypes.h
 RENDERING_DIR = Source/Core/Rendering
-RENDERING_FILES = Framebuffer.cpp Image.cpp render.cpp render_opengl.cpp Shader.cpp
+RENDERING_FILES = Framebuffer.cpp Image.cpp render.cpp render_opengl.cpp Shader.cpp OpenGL/OpenGLEnumConversions.cpp
 RENDERING_HEADERS = Framebuffer.h Image.h render.h Shader.h
 CPP_FILES = $(CORE_FILES:%=$(CORE_DIR)/%) $(COMPONENT_FILES:%=$(COMPONENT_DIR)/%) $(LUA_FILES:%=$(LUA_DIR)/%) $(MATH_FILES:%=$(MATH_DIR)/%) $(RENDERING_FILES:%=$(RENDERING_DIR)/%)
 H_FILES = $(CORE_HEADERS:%=$(CORE_DIR)/%) $(COMPONENT_HEADERS:%=$(COMPONENT_DIR)/%) $(LUA_HEADERS:%=$(LUA_DIR)/%) $(MATH_HEADERS:%=$(MATH_DIR)/%) $(RENDERING_HEADERS:%=$(RENDERING_DIR)/%)
 OBJ_OUTPUT = $(CPP_FILES:%.cpp=$(BUILD_DIR)/%.o)
-BUILD_DIRS = $(BUILD_DIR)/$(CORE_DIR) $(BUILD_DIR)/$(COMPONENT_DIR) $(BUILD_DIR)/$(LUA_DIR) $(BUILD_DIR)/$(MATH_DIR) $(BUILD_DIR)/$(RENDERING_DIR) $(BUILD_DIR)/include $(BUILD_DIR)/Source/Tools/HeaderGenerator
+BUILD_DIRS = $(BUILD_DIR)/$(CORE_DIR) $(BUILD_DIR)/$(COMPONENT_DIR) $(BUILD_DIR)/$(LUA_DIR) $(BUILD_DIR)/$(MATH_DIR) $(BUILD_DIR)/$(RENDERING_DIR) $(BUILD_DIR)/$(RENDERING_DIR)/OpenGL $(BUILD_DIR)/include $(BUILD_DIR)/Source/Tools/HeaderGenerator
 EXE_OUTPUT = build/Vulkan2D.exe
 
 MM_DIR = Examples/MM/Components
@@ -28,13 +28,13 @@ MM_FILES = PlayerMovement.cpp
 MM_HEADERS = PlayerMovement.h
 MM_OUTPUT = $(MM_FILES:%.cpp=$(BUILD_DIR)/$(MM_DIR)/%.o)
 
-MM: MMdirs build/include/hgen MMheaders $(OBJ_OUTPUT) $(MM_OUTPUT) build/glew.o
+MM: MMdirs $(H_FILES:%=$(BUILD_DIR)/include/%.generated.h) MMheaders $(OBJ_OUTPUT) $(MM_OUTPUT) build/glew.o
 	g++ -m64 -O2 -g -o $(EXE_OUTPUT) $(OBJ_OUTPUT) $(MM_OUTPUT) build/glew.o $(LIBS) $(WINLIBS)
 
 MMdirs:
 	mkdir -p $(BUILD_DIR)/$(MM_DIR)
 
-MMheaders:
+MMheaders: $(BUILD_DIR)/headergenerator.exe
 	$(BUILD_DIR)/headergenerator.exe build/include $(MM_DIR)
 
 LIBS = libs/SDL2main.lib libs/SDL2.lib libs/liblua.lib libs/vulkan-1.lib libs/libBulletDynamics.a libs/libBulletCollision.a libs/libLinearMath.a libs/libboost_filesystem.a libs/libboost_system.a
@@ -46,21 +46,22 @@ WINLIBS = -lopengl32 # -ldxguid -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lver
 #though in that case the compiler should warn anyway.
 #reserved-id-macro should be turned on later when luaindex.h is changed, right now it just causes spam
 WARN_FLAGS = -Wall -Wextra -Wpedantic # -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-global-constructors -Wno-exit-time-destructors -Wno-covered-switch-default -Wno-gnu-zero-variadic-macro-arguments -Wno-reserved-id-macro
-OBJ_FLAGS = -m64 -isystem include -Ibuild/include -ISource -I$(CORE_DIR) -I$(COMPONENT_DIR) -I$(LUA_DIR) -I$(MATH_DIR) -I$(RENDERING_DIR) -std=c++14 -DGLEW_STATIC -c -o
+OBJ_FLAGS = -m64 -isystem include -Ibuild/include -Ibuild/include/Source -ISource -std=c++14 -DGLEW_STATIC -c -o
 
-all: dirs build/include/hgen $(OBJ_OUTPUT) build/glew.o
+all: dirs $(H_FILES:%=$(BUILD_DIR)/include/%.generated.h) $(OBJ_OUTPUT) build/glew.o
 	g++ -m64 -O2 -o $(EXE_OUTPUT) $(OBJ_OUTPUT) build/glew.o $(LIBS) $(WINLIBS)
 
-debug: dirs build/include/hgen $(OBJ_OUTPUT) build/glew.o
+debug: dirs $(H_FILES:%=$(BUILD_DIR)/include/%.generated.h) $(OBJ_OUTPUT) build/glew.o
 	g++ -m64 -O0 -g -o $(EXE_OUTPUT) $(OBJ_OUTPUT) build/glew.o $(LIBS) $(WINLIBS)
 
 dirs:
 	mkdir -p $(BUILD_DIRS)
 
-#TODO: GENERATED_H_FILES and split into separate directories to avoid collisions
-build/include/hgen: build/headergenerator.exe $(H_FILES)
-	$(BUILD_DIR)/headergenerator.exe build/include $(CORE_DIR)
-	touch build/include/hgen
+build/include/%.h.generated.h: %.h build/headergenerator.exe
+	$(BUILD_DIR)/headergenerator.exe build/include $<
+
+$(BUILD_DIR)/%.o: %.cpp %.h build/include/%.h.generated.h
+	g++ -g $(WARN_FLAGS) $(OBJ_FLAGS) $@ $<
 
 $(BUILD_DIR)/%.o: %.cpp
 	g++ -g $(WARN_FLAGS) $(OBJ_FLAGS) $@ $<
@@ -70,7 +71,7 @@ build/glew.o: glew.c
 
 #Rebuilding glew takes ages so don't do that
 clean:
-	rm build/include/* build/headergenerator.exe $(EXE_OUTPUT) $(OBJ_OUTPUT) $(HEADERGENERATOR_OUTPUT)
+	rm -r build/include/* build/headergenerator.exe $(EXE_OUTPUT) $(OBJ_OUTPUT) $(HEADERGENERATOR_OUTPUT)
 
 
 HEADERGENERATOR_FILES = Source/Tools/HeaderGenerator/main.cpp

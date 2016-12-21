@@ -1,14 +1,15 @@
-#include "scene.h"
+#include "Core/scene.h"
 
 #include <fstream>
 #include <sstream>
 
 #include "json.hpp"
 
-#include "entity.h"
-#include "luaindex.h"
+#include "Core/entity.h"
+#include "Core/input.h"
+#include "Core/physicsworld.h"
 
-#include "scene.h.generated.h"
+#include "Core/scene.h.generated.h"
 
 Scene::Scene(ResourceManager * resMan, const std::string& name) noexcept
 {

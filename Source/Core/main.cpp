@@ -4,6 +4,8 @@
 #include "SDL/SDL.h"
 
 #include "Core/entity.h"
+#include "Core/input.h"
+#include "Core/physicsworld.h"
 #include "Core/Rendering/render.h"
 #include "Core/Rendering/Shader.h"
 #include "Core/ResourceManager.h"

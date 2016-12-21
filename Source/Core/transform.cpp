@@ -1,15 +1,9 @@
-#include "transform.h"
-
-#include <cstring>
+#include "Core/transform.h"
 
 #include "json.hpp"
 #include "lua/lua.hpp"
 
-#include "eventarg.h"
-#include "lua_cfuncs.h"
-#include "luaindex.h"
-
-#include "transform.h.generated.h"
+#include "Core/transform.h.generated.h"
 
 using nlohmann::json;
 

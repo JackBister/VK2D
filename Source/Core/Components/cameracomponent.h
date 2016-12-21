@@ -3,7 +3,6 @@
 #include "glm/glm.hpp"
 
 #include "Core/Components/component.h"
-#include "Core/entity.h"
 #include "Core/Rendering/render.h"
 
 struct Framebuffer;

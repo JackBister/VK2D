@@ -6,8 +6,8 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/quaternion.hpp"
 
-#include "mathtypes.h"
-#include "luaserializable.h"
+#include "Core/Math/mathtypes.h"
+#include "Core/Lua/luaserializable.h"
 
 #include "Tools/HeaderGenerator/headergenerator.h"
 

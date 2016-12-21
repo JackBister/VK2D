@@ -5,9 +5,9 @@
 #include "glm/glm.hpp"
 #include "transform.h"
 
-#include "luaserializable.h"
-
+#include "Core/Lua/luaserializable.h"
 #include "Core/Rendering/Image.h"
+
 #include "Tools/HeaderGenerator/headergenerator.h"
 
 /*
@@ -33,5 +33,4 @@ struct Sprite : LuaSerializable
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;
-
 };

@@ -1,8 +1,5 @@
-#include "component.h"
+#include "Core/Components/component.h"
 
 #include "json.hpp"
-
-using namespace std;
-using nlohmann::json;
 
 Component::~Component() {}

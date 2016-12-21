@@ -1,12 +1,12 @@
-#include "physicsworld.h"
+#include "Core/physicsworld.h"
 
 #include <unordered_map>
 #include <vector>
 
 #include "json.hpp"
 
-#include "entity.h"
-#include "physicscomponent.h"
+#include "Core/entity.h"
+#include "Core/Components/physicscomponent.h"
 
 DESERIALIZABLE_IMPL(PhysicsWorld)
 

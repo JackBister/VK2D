@@ -3,14 +3,12 @@
 
 #include "btBulletDynamicsCommon.h"
 
-#include "component.h"
-#include "mathtypes.h"
+#include "Core/Components/component.h"
 #include "Tools/HeaderGenerator/headergenerator.h"
 
 struct PhysicsComponent : Component, btMotionState
 {
 	bool Component::receiveTicks = false;
-
 
 	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
 	void OnEvent(std::string name, EventArgs args = {}) override;

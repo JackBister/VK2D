@@ -3,18 +3,19 @@
 #include <string>
 #include <vector>
 
-#include "dtime.h"
-#include "eventarg.h"
-#include "input.h"
-#include "luaserializable.h"
-#include "physicsworld.h"
+#include "Core/dtime.h"
+#include "Core/eventarg.h"
+#include "Core/Lua/luaserializable.h"
+#include "Core/Resource.h"
 
-#include "Core/ResourceManager.h"
 #include "Tools/HeaderGenerator/headergenerator.h"
 
 //TODO: Allocate all entities/components from same block for cache
 
 struct Entity;
+struct Input;
+struct PhysicsWorld;
+struct ResourceManager;
 
 struct Scene : LuaSerializable, Resource
 {

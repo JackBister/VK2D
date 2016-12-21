@@ -1,8 +1,7 @@
 #pragma once
 
-#include "component.h"
-#include "entity.h"
-#include "sprite.h"
+#include "Core/Components/component.h"
+#include "Core/sprite.h"
 
 struct SpriteComponent final : Component
 {

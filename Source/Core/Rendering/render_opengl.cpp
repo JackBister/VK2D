@@ -23,6 +23,7 @@
 #include "stb_image.h"
 
 #include "Core/Components/cameracomponent.h"
+#include "Core/Rendering/OpenGL/OpenGLEnumConversions.h"
 #include "Core/Rendering/OpenGL/OpenGLRendererData.h"
 #include "Core/Rendering/Framebuffer.h"
 #include "Core/Rendering/render.h"
@@ -195,6 +196,7 @@ bool OpenGLRenderer::Init(ResourceManager * resMan, const char * title, const in
 		"__Scratch/Backbuffer.tex",
 		Image::Format::RGBA8,
 		h, w,
+		{},
 		&backbufferTexture
 	};
 	backBufferImage = std::make_shared<Image>(backBufferTexCreateInfo);
@@ -388,38 +390,20 @@ void OpenGLRenderer::AddImage(Image * const img)
 {
 	auto rData = new OpenGLImageRendererData();
 	img->SetRendererData(rData);
-	GLenum format;
-	GLint internalFormat;
-	switch (img->GetFormat()) {
-	case Image::Format::R8:
-		format = GL_RED;
-		internalFormat = GL_R8;
-		break;
-	case Image::Format::RG8:
-		format = GL_RG;
-		internalFormat = GL_RG8;
-		break;
-	case Image::Format::RGB8:
-		format = GL_RGB;
-		internalFormat = GL_RGB8;
-		break;
-	case Image::Format::RGBA8:
-		format = GL_RGBA;
-		internalFormat = GL_RGBA8;
-		break;
-	default:
-		printf("[TODO] Unimplemented image format %d\n", img->GetFormat());
-		break;
-	}
+	const Image::Format iFormat = img->GetFormat();
+	const Image::ImageParameters& iParams = img->GetParameters();
+	const GLenum format = FormatGL(iFormat);
+	const GLint internalFormat = InternalFormatGL(iFormat);
+	
 	glGenTextures(1, &(rData->texture));
 	glBindTexture(GL_TEXTURE_2D, rData->texture);
 	//TODO: Let user specify this
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, img->GetWidth(), img->GetHeight(), 0, format, GL_UNSIGNED_BYTE, img->GetData().data());
 	glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, WrapModeGL(iParams.sWrapMode));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, WrapModeGL(iParams.tWrapMode));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, MagFilterGL(iParams.magFilter));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, MinFilterGL(iParams.minFilter));
 }
 
 void OpenGLRenderer::DeleteImage(Image * const img)
@@ -434,23 +418,8 @@ void OpenGLRenderer::AddShader(Shader * const s)
 {
 	auto rData = new OpenGLShaderRendererData();
 	s->rendererData = rData;
-	GLuint shaderType;
-	auto type = s->GetType();
-	switch (type) {
-	case Shader::Type::VERTEX_SHADER:
-		shaderType = GL_VERTEX_SHADER;
-		break;
-	case Shader::Type::FRAGMENT_SHADER:
-		shaderType = GL_FRAGMENT_SHADER;
-		break;
-	case Shader::Type::GEOMETRY_SHADER:
-		shaderType = GL_GEOMETRY_SHADER;
-		break;
-	case Shader::Type::COMPUTE_SHADER:
-		shaderType = GL_COMPUTE_SHADER;
-		break;
-	}
-	rData->shader = glCreateShader(shaderType);
+	GLuint type = ShaderTypeGL(s->GetType());
+	rData->shader = glCreateShader(type);
 	const char * src = s->GetSource().c_str();
 	glShaderSource(rData->shader, 1, &src, nullptr);
 	glCompileShader(rData->shader);
