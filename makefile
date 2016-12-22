@@ -45,7 +45,8 @@ WINLIBS = -lopengl32 # -ldxguid -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lver
 #covered-switch-default is off because having the default is nice in case a new enum value is added and I forget to add a case for it somewhere,
 #though in that case the compiler should warn anyway.
 #reserved-id-macro should be turned on later when luaindex.h is changed, right now it just causes spam
-WARN_FLAGS = -Wall -Wextra -Wpedantic # -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-global-constructors -Wno-exit-time-destructors -Wno-covered-switch-default -Wno-gnu-zero-variadic-macro-arguments -Wno-reserved-id-macro
+#No unused parameter check since there is no good portable way to suppress.
+WARN_FLAGS = -Wall -Wextra -Wpedantic -Wno-unused-parameter # -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-global-constructors -Wno-exit-time-destructors -Wno-covered-switch-default -Wno-gnu-zero-variadic-macro-arguments -Wno-reserved-id-macro
 OBJ_FLAGS = -m64 -isystem include -Ibuild/include -Ibuild/include/Source -ISource -std=c++14 -DGLEW_STATIC -c -o
 
 all: dirs $(H_FILES:%=$(BUILD_DIR)/include/%.generated.h) $(OBJ_OUTPUT) build/glew.o

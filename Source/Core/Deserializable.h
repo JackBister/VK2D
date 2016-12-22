@@ -21,9 +21,9 @@ struct Deserializable
 	static std::unordered_map<std::string, const Deserializable *>& Map();
 };
 
-#define DESERIALIZABLE_IMPL(str) static const str * const _##str##Instantiate() \
+#define DESERIALIZABLE_IMPL(str) static const str * _##str##Instantiate() \
 							  { \
-									if(Deserializable::Map()[#str] != nullptr) return static_cast< const str * const >(Deserializable::Map()[#str]); \
-									const str * const ret = new str(); Deserializable::Map()[#str] = ret; return ret; \
+									if(Deserializable::Map()[#str] != nullptr) return static_cast<const str *>(Deserializable::Map()[#str]); \
+									const str * ret = new str(); Deserializable::Map()[#str] = ret; return ret; \
 							  } \
 							  static const Deserializable * const _##str##StaticInst = _##str##Instantiate();

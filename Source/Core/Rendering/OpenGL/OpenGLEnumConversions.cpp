@@ -1,5 +1,32 @@
 #include "Core/Rendering/OpenGL/OpenGLEnumConversions.h"
 
+template <typename T>
+typename std::underlying_type<T>::type ToUnderlyingType(T in)
+{
+	return static_cast<typename std::underlying_type<T>::type>(in);
+}
+
+GLenum AttachmentGL(Framebuffer::Attachment attachment)
+{
+	switch (attachment) {
+	case Framebuffer::Attachment::COLOR0:
+		return GL_COLOR_ATTACHMENT0;
+		break;
+	case Framebuffer::Attachment::DEPTH:
+		return GL_DEPTH_ATTACHMENT;
+		break;
+	case Framebuffer::Attachment::STENCIL:
+		return GL_STENCIL_ATTACHMENT;
+		break;
+	case Framebuffer::Attachment::DEPTH_STENCIL:
+		return GL_DEPTH_STENCIL_ATTACHMENT;
+		break;
+	default:
+		printf("[WARNING] Unknown framebuffer attachment %d.", ToUnderlyingType(attachment));
+		return GL_COLOR_ATTACHMENT0;
+	}
+}
+
 GLint FormatGL(Image::Format format)
 {
 	switch (format) {
@@ -12,7 +39,7 @@ GLint FormatGL(Image::Format format)
 	case Image::Format::RGBA8:
 		return GL_RGBA;
 	default:
-		printf("[ERROR] Unrecognized image format: %d\n", format);
+		printf("[ERROR] Unrecognized image format: %d\n", ToUnderlyingType(format));
 		return GL_RGBA;
 	}
 }
@@ -29,7 +56,7 @@ GLint InternalFormatGL(Image::Format format)
 	case Image::Format::RGBA8:
 		return GL_RGBA8;
 	default:
-		printf("[ERROR] Unrecognized image format: %d\n", format);
+		printf("[ERROR] Unrecognized image format: %d\n", ToUnderlyingType(format));
 		return GL_RGBA8;
 	}
 }
@@ -50,7 +77,7 @@ GLint MinFilterGL(Image::MinFilter filter)
 	case Image::MinFilter::NEAREST_MIPMAP_NEAREST:
 		return GL_NEAREST_MIPMAP_NEAREST;
 	default:
-		printf("[ERROR] Unrecognized image min filter: %d\n", filter);
+		printf("[ERROR] Unrecognized image min filter: %d\n", ToUnderlyingType(filter));
 		return GL_NEAREST_MIPMAP_LINEAR;
 	}
 }
@@ -63,7 +90,7 @@ GLint MagFilterGL(Image::MagFilter filter)
 	case Image::MagFilter::NEAREST:
 		return GL_NEAREST;
 	default:
-		printf("[ERROR] Unrecognized image mag filter: %d\n", filter);
+		printf("[ERROR] Unrecognized image mag filter: %d\n", ToUnderlyingType(filter));
 		return GL_LINEAR;
 	}
 	return GLint();
@@ -84,6 +111,9 @@ GLint ShaderTypeGL(Shader::Type type)
 	case Shader::Type::COMPUTE_SHADER:
 		return GL_COMPUTE_SHADER;
 		break;
+	default:
+		printf("[ERROR] Unknown shader type: %d\n", ToUnderlyingType(type));
+		return GL_VERTEX_SHADER;
 	}
 }
 
@@ -101,7 +131,7 @@ GLint WrapModeGL(Image::WrapMode mode)
 	case Image::WrapMode::REPEAT:
 		return GL_REPEAT;
 	default:
-		printf("[ERROR] Unrecognized image wrap mode: %d\n", mode);
+		printf("[ERROR] Unrecognized image wrap mode: %d\n", ToUnderlyingType(mode));
 		return GL_REPEAT;
 	}
 }

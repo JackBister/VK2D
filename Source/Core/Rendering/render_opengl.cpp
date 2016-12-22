@@ -359,24 +359,7 @@ void OpenGLRenderer::AddFramebuffer(Framebuffer * const fb)
 	glGenFramebuffers(1, &rData->framebuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, rData->framebuffer);
 	for (auto& kv : fb->GetImages()) {
-		GLuint attachment;
-		switch (kv.first) {
-		case Framebuffer::Attachment::COLOR0:
-			attachment = GL_COLOR_ATTACHMENT0;
-			break;
-		case Framebuffer::Attachment::DEPTH:
-			attachment = GL_DEPTH_ATTACHMENT;
-			break;
-		case Framebuffer::Attachment::STENCIL:
-			attachment = GL_STENCIL_ATTACHMENT;
-			break;
-		case Framebuffer::Attachment::DEPTH_STENCIL:
-			attachment = GL_DEPTH_STENCIL_ATTACHMENT;
-			break;
-		default:
-			printf("[WARNING] Unknown framebuffer attachment %d.", kv.first);
-			attachment = GL_COLOR_ATTACHMENT0;
-		}
+		GLenum attachment = AttachmentGL(kv.first);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, ((OpenGLImageRendererData *)kv.second->GetRendererData())->texture, 0);
 	}
 }
@@ -397,7 +380,6 @@ void OpenGLRenderer::AddImage(Image * const img)
 	
 	glGenTextures(1, &(rData->texture));
 	glBindTexture(GL_TEXTURE_2D, rData->texture);
-	//TODO: Let user specify this
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, img->GetWidth(), img->GetHeight(), 0, format, GL_UNSIGNED_BYTE, img->GetData().data());
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, WrapModeGL(iParams.sWrapMode));
@@ -429,7 +411,7 @@ void OpenGLRenderer::AddShader(Shader * const s)
 		GLsizei log_length = 0;
 		GLchar message[1024];
 		glGetShaderInfoLog(rData->shader, 1024, &log_length, message);
-		printf("Shader compile failed\n %s %s\n", s->name, message);
+		printf("Shader compile failed\n %s %s\n", s->name.c_str(), message);
 		glDeleteShader(rData->shader);
 		rData->shader = 0;
 	}
