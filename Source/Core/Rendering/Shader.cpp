@@ -1,6 +1,6 @@
 #include "Core/Rendering/Shader.h"
 
-#include "Core/Rendering/render.h"
+#include "Core/ResourceManager.h"
 
 Shader::Type TypeFromFileName(const std::string& fn)
 {
@@ -25,11 +25,12 @@ Shader::Shader(ResourceManager * _, const std::string& name)
 	this->type = TypeFromFileName(name);
 }
 
-Shader::Shader(ResourceManager * _, const std::string& name, const std::vector<char>& input) : src(input.begin(), input.end())
+Shader::Shader(ResourceManager * resMan, const std::string& name, const std::vector<char>& input) : src(input.begin(), input.end())
 {
 	this->name = name;
 	this->type = TypeFromFileName(name);
-	Render_currentRenderer->AddShader(this);
+	RenderCommand rc(RenderCommand::AddShaderParams(this));
+	resMan->PushRenderCommand(rc);
 }
 
 Shader::Type Shader::GetType() const

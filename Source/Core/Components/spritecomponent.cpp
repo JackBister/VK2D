@@ -5,12 +5,17 @@
 #include "json.hpp"
 
 #include "Core/entity.h"
-#include "Core/Rendering/render.h"
+#include "Core/scene.h"
 #include "Core/sprite.h"
 
 using nlohmann::json;
 
 COMPONENT_IMPL(SpriteComponent)
+
+SpriteComponent::SpriteComponent() noexcept
+{
+	receiveTicks = true;
+}
 
 Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const
 {
@@ -18,6 +23,7 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 	SpriteComponent * ret = new (mem) SpriteComponent();
 	json j = json::parse(str);
 	auto img = resourceManager->LoadResourceRefCounted<Image>(j["file"]);
+	ret->receiveTicks = true;
 	ret->sprite = Sprite(nullptr, img);
 	return ret;
 }
@@ -26,9 +32,8 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "BeginPlay") {
 		sprite.transform = &(entity->transform);
-		Render_currentRenderer->AddSprite(&sprite);
-	} else if (name == "EndPlay") {
-		Render_currentRenderer->DeleteSprite(&sprite);
+	} else if (name == "Tick") {
+		entity->scene->SubmitSprite(&sprite);
 	}
 }
 

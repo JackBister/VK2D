@@ -20,3 +20,8 @@ float Time::GetDeltaTime()
 {
 	return deltaTime;
 }
+
+std::chrono::high_resolution_clock::time_point Time::GetLastTime()
+{
+	return lastTime;
+}

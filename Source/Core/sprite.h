@@ -2,11 +2,11 @@
 #include <cstddef>
 #include <memory>
 
-#include "glm/glm.hpp"
-#include "transform.h"
+#include <glm/glm.hpp>
 
 #include "Core/Lua/luaserializable.h"
 #include "Core/Rendering/Image.h"
+#include "Core/transform.h"
 
 #include "Tools/HeaderGenerator/headergenerator.h"
 

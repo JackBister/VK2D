@@ -3,16 +3,18 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include "Core/rendering/render.h"
+#include "Core/ResourceManager.h"
 
-Image::Image(ResourceManager * _, const std::string& name) noexcept
+Image::Image(ResourceManager * resMan, const std::string& name) noexcept
 {
 	this->name = name;
 	this->format = Format::RGBA8;
 	this->height = 128;
 	this->width = 128;
 	this->data = std::vector<uint8_t>(128 * 128 * 4, 0xFF);
-	Render_currentRenderer->AddImage(this);
+
+	RenderCommand rc(RenderCommand::AddImageParams(this));
+	resMan->PushRenderCommand(rc);
 }
 
 Image::Image(const ImageCreateInfo& info) noexcept
@@ -24,13 +26,14 @@ Image::Image(const ImageCreateInfo& info) noexcept
 	this->params = info.params;
 	if (info.data.index() == 0) {
 		this->data = std::experimental::get<std::vector<uint8_t>>(info.data);
-		Render_currentRenderer->AddImage(this);
+		RenderCommand rc(RenderCommand::AddImageParams(this));
+		info.resMan->PushRenderCommand(rc);
 	} else {
-		this->rendererData = std::experimental::get<void *>(info.data);
+		this->rendererData = std::experimental::get<ImageRendererData>(info.data);
 	}
 }
 
-Image::Image(ResourceManager * _, const std::string& name, const std::vector<char>& input) noexcept
+Image::Image(ResourceManager * resMan, const std::string& name, const std::vector<char>& input) noexcept
 {
 	this->name = name;
 	int n;
@@ -54,12 +57,13 @@ Image::Image(ResourceManager * _, const std::string& name, const std::vector<cha
 		printf("[ERROR] Loading image %s: Unknown format %d.\n", name.c_str(), n);
 		break;
 	}
-	Render_currentRenderer->AddImage(this);
+	RenderCommand rc(RenderCommand::AddImageParams(this));
+	resMan->PushRenderCommand(rc);
 }
 
-void Image::SetRendererData(void * p) noexcept
+void Image::SetRendererData(const ImageRendererData& rData) noexcept
 {
-	rendererData = p;
+	rendererData = rData;
 }
 
 const std::vector<uint8_t>& Image::GetData() const noexcept
@@ -87,7 +91,7 @@ int Image::GetWidth() const noexcept
 	return width;
 }
 
-void * Image::GetRendererData() const noexcept
+const ImageRendererData& Image::GetRendererData() const noexcept
 {
 	return rendererData;
 }

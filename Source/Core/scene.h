@@ -3,31 +3,42 @@
 #include <string>
 #include <vector>
 
+#include "SDL/SDL.h"
+
 #include "Core/dtime.h"
 #include "Core/eventarg.h"
+#include "Core/input.h"
 #include "Core/Lua/luaserializable.h"
+#include "Core/Queue.h"
+#include "Core/Rendering/RenderCommand.h"
+#include "Core/Rendering/ViewDef.h"
 #include "Core/Resource.h"
 
 #include "Tools/HeaderGenerator/headergenerator.h"
 
 //TODO: Allocate all entities/components from same block for cache
 
+struct CameraComponent;
 struct Entity;
-struct Input;
 struct PhysicsWorld;
 struct ResourceManager;
+struct SceneCreateInfo;
 
 struct Scene : LuaSerializable, Resource
 {
-	PROPERTY(LuaRead)
-	Input * input;
-	PhysicsWorld * physicsWorld;
 	ResourceManager * resourceManager;
+	PROPERTY(LuaRead)
+	Input input;
+	PhysicsWorld * physicsWorld;
 	Time time;
 	std::vector<Entity *> entities;
 
-	Scene(ResourceManager *, const std::string&) noexcept;
-	Scene(ResourceManager *, const std::string&, const std::vector<char>&) noexcept;
+	Scene(const std::string&, ResourceManager *, Queue<SDL_Event>::Reader&&, Queue<RenderCommand>::Writer&&, Queue<ViewDef *>::Reader&&, const std::string&) noexcept;
+
+	void EndFrame() noexcept;
+	void PushRenderCommand(const RenderCommand&) noexcept;
+	void SubmitCamera(CameraComponent *) noexcept;
+	void SubmitSprite(Sprite *) noexcept;
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;
@@ -45,6 +56,16 @@ struct Scene : LuaSerializable, Resource
 	PROPERTY(LuaRead)
 	void BroadcastEvent(std::string ename, EventArgs eas = {});
 	static int BroadcastEvent_Lua(lua_State *);
-};
 
-RESOURCE_HEADER(Scene)
+private:
+	Queue<RenderCommand>::Writer renderQueue;
+	Queue<ViewDef *>::Reader viewDefQueue;
+	/*
+		The scene allocates an array of ViewDefs (depending on if it's double buffered or triple), but may only write into one of them at a time.
+		Any ViewDef that isn't the current ViewDef belongs to the renderer, so messing with it can cause crazy results.
+	*/
+	std::vector<ViewDef> viewDefs;
+	ViewDef * currentViewDef;
+	std::vector<SubmittedCamera> camerasToSubmit;
+	std::vector<SubmittedSprite> spritesToSubmit;
+};

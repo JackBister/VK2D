@@ -1,61 +1,85 @@
 #include <cstdio>
+#include <thread>
 
 #include "glm/glm.hpp"
 #include "SDL/SDL.h"
 
+#include "Core/Components/component.h"
 #include "Core/entity.h"
 #include "Core/input.h"
 #include "Core/physicsworld.h"
-#include "Core/Rendering/render.h"
+#include "Core/Queue.h"
+#include "Core/Rendering/RenderCommand.h"
+#include "Core/Rendering/Renderer.h"
 #include "Core/Rendering/Shader.h"
+#include "Core/Rendering/ViewDef.h"
 #include "Core/ResourceManager.h"
 #include "Core/scene.h"
 #include "Core/sprite.h"
 #include "Core/transform.h"
 
+//TODO:
+const std::string sceneFile = "Examples/MM/main.scene";
+
+//TODO: ResourceManager race conditions - Renderer has access to resMan,
+//but only uses it before main thread starts anyway so right now this is a non-issue.
+void MainThread(ResourceManager * resMan, Queue<SDL_Event>::Reader&& inputQueue, Queue<RenderCommand>::Writer&& renderQueue,
+				Queue<ViewDef *>::Reader&& viewDefQueue) noexcept
+{
+	FILE * f = fopen(sceneFile.c_str(), "rb");
+	std::string serializedScene;
+	if (f) {
+		fseek(f, 0, SEEK_END);
+		size_t length = ftell(f);
+		fseek(f, 0, SEEK_SET);
+		std::vector<char> buf(length + 1);
+		fread(&buf[0], 1, length, f);
+		serializedScene = std::string(buf.begin(), buf.end());
+	} else {
+		renderQueue.Push(RenderCommand(RenderCommand::AbortParams(1)));
+	}
+
+	Scene scene(sceneFile, resMan, std::move(inputQueue), std::move(renderQueue), std::move(viewDefQueue), serializedScene);
+
+	scene.time.Start();
+	scene.BroadcastEvent("BeginPlay");
+	while (true) {
+		scene.input.Frame();
+		scene.time.Frame();
+		//TODO: substeps
+		scene.physicsWorld->world->stepSimulation(scene.time.GetDeltaTime());
+		scene.BroadcastEvent("Tick", {{"deltaTime", scene.time.GetDeltaTime()}});
+		scene.EndFrame();
+	}
+}
+
 #undef main
 int main(int argc, char *argv[])
 {
+	//Sends input from GPU thread -> main thread
+	Queue<SDL_Event> inputQueue;
+	//Sends commands from main thread -> GPU thread
+	Queue<RenderCommand> renderQueue;
+	//Sends ViewDefs available for the scene to use from GPU thread -> main thread
+	Queue<ViewDef *> viewDefQueue;
+	ResourceManager * resMan = new ResourceManager(renderQueue.GetWriter());
 	SDL_Init(SDL_INIT_EVERYTHING);
+	Renderer renderer(resMan, renderQueue.GetReader(), viewDefQueue.GetWriter(), "SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
+	auto mainThread = std::thread(MainThread, resMan, inputQueue.GetReader(), renderQueue.GetWriter(), viewDefQueue.GetReader());
+	auto inputWriter = inputQueue.GetWriter();
 
-	//TODO: User calls this from console instead
-	bool frametime = false;
-
-	for (int i = 0; i < argc; ++i) {
-		if (strcmp(argv[i], "-frametime") == 0) {
-			frametime = true;
+	while (!renderer.isAborting) {
+		SDL_Event e;
+		while (SDL_PollEvent(&e)) {
+			inputWriter.Push(e);
 		}
-	}
-	
-	Renderer * renderer = GetOpenGLRenderer();
-	Render_currentRenderer = renderer;
-	ResourceManager * resMan = new ResourceManager();
-	renderer->Init(resMan, "SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
-	if (!renderer->valid) {
-		printf("Invalid renderer.\n");
-		return 1;
-	}
-
-	std::shared_ptr<Scene> scene = resMan->LoadResourceRefCounted<Scene>("Examples/MM/main.scene");
-	if (!scene) {
-		printf("Error loading scene.\n");
-		return 1;
-	}
-	scene->time.Start();
-	scene->BroadcastEvent("BeginPlay");
-	while (true) {
-		scene->input->Frame();
-		scene->time.Frame();
-		//TODO: substeps
-		scene->physicsWorld->world->stepSimulation(scene->time.GetDeltaTime());
-		scene->BroadcastEvent("Tick", { {"deltaTime", scene->time.GetDeltaTime()} });
-		renderer->EndFrame();
-		if (frametime) {
-			printf("CPU: %f ms GPU: %f ms\n", scene->time.GetDeltaTime() * 1000.f, renderer->GetFrameTime() / 1000000.f);
+		const char * sdlErr = SDL_GetError();
+		if (*sdlErr != '\0') {
+			printf("%s\n", sdlErr);
 		}
+		renderer.DrainQueue();
 	}
-
-	renderer->Destroy();
+	mainThread.join();
 	SDL_Quit();
-	return 0;
+	return renderer.abortCode;
 }

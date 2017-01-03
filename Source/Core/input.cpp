@@ -4,15 +4,19 @@
 #include "json.hpp"
 
 #include "Core/Lua/input_cfuncs.h"
+#include "Core/Maybe.h"
 
 #include "Core/input.h.generated.h"
 
 using nlohmann::json;
 using namespace std;
 
-DESERIALIZABLE_IMPL(Input)
+Input::Input(Queue<SDL_Event>::Reader&& reader) noexcept
+	: inputQueue(std::move(reader))
+{
+}
 
-void Input::Frame()
+void Input::Frame() noexcept
 {
 	for (auto& kbp : downKeys) {
 		//If key was down last frame, it's held this frame
@@ -22,41 +26,45 @@ void Input::Frame()
 	}
 	downKeys.clear();
 	upKeys.clear();
-	//TODO: Put SDL polling in an event pump that sends input events here but handles some events(like quitting)
-	SDL_Event e;
-	while (SDL_PollEvent(&e)) {
-		switch (e.type) {
-		case SDL_QUIT:
-		{
-			//TODO:
-			exit(0);
-		}
-		case SDL_KEYDOWN:
-		{
-			if (!e.key.repeat) {
-				downKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
+
+	Maybe<SDL_Event> evt;
+	do {
+		evt = inputQueue.Pop();
+		if (evt.index() != 0) {
+			const SDL_Event& e = std::experimental::get<SDL_Event>(evt);
+			switch (e.type) {
+			case SDL_QUIT:
+			{
+				//TODO:
+				exit(0);
 			}
-			break;
+			case SDL_KEYDOWN:
+			{
+				if (!e.key.repeat) {
+					downKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
+				}
+				break;
+			}
+			case SDL_KEYUP:
+			{
+				//if key up, it's no longer held
+				heldKeys[static_cast<Keycode>(e.key.keysym.sym)] = false;
+				upKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
+				break;
+			}
+			case SDL_MOUSEBUTTONDOWN:
+			{
+				downKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
+				break;
+			}
+			case SDL_MOUSEBUTTONUP:
+			{
+				heldKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = false;
+				upKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
+			}
+			}
 		}
-		case SDL_KEYUP:
-		{
-			//if key up, it's no longer held
-			heldKeys[static_cast<Keycode>(e.key.keysym.sym)] = false;
-			upKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
-			break;
-		}
-		case SDL_MOUSEBUTTONDOWN:
-		{
-			downKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
-			break;
-		}
-		case SDL_MOUSEBUTTONUP:
-		{
-			heldKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = false;
-			upKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
-		}
-		}
-	}
+	} while (evt.index() != 0);
 }
 
 bool Input::GetKey(Keycode kc)
@@ -144,17 +152,13 @@ int Input::RemoveKeybind_Lua(lua_State * L)
 	INPUT_KEYBIND(RemoveKeybind)
 }
 
-Deserializable * Input::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const
+void Input::DeserializeInPlace(const std::string& serializedInput) noexcept
 {
-	void * mem = alloc.Allocate(sizeof(Input));
-	Input * ret = new (mem) Input();
-	json j = json::parse(str);
+	json j = json::parse(serializedInput);
 	for (auto& js : j["keybinds"]) {
 		string name = js["name"];
 		for (auto& kjs : js["keys"]) {
-			ret->AddKeybind(name, strToKeycode[kjs]);
+			this->AddKeybind(name, strToKeycode[kjs]);
 		}
 	}
-
-	return ret;
 }

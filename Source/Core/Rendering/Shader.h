@@ -1,10 +1,13 @@
 #pragma once
 
+#include "Core/Rendering/RendererData.h"
 #include "Core/Resource.h"
 
 struct Shader : Resource
 {
-	enum Type
+	friend class Renderer;
+
+	enum class Type
 	{
 		VERTEX_SHADER,
 		FRAGMENT_SHADER,
@@ -19,7 +22,7 @@ struct Shader : Resource
 	Type GetType() const;
 	const std::string& GetSource() const;
 
-	void * rendererData;
+	ShaderRendererData rendererData;
 
 private:
 	Type type;

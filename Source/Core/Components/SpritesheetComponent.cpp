@@ -3,7 +3,7 @@
 #include "json.hpp"
 
 #include "Core/entity.h"
-#include "Core/Rendering/render.h"
+#include "Core/scene.h"
 #include "Core/sprite.h"
 #include "Core/Components/SpritesheetComponent.h.generated.h"
 
@@ -54,7 +54,6 @@ void SpritesheetComponent::OnEvent(std::string name, EventArgs args)
 		sprite.transform = &(entity->transform);
 		sprite.minUV = minUVs[currentIndex];
 		sprite.sizeUV = frameSize;
-		Render_currentRenderer->AddSprite(&sprite);
 	}
 	if (name == "Tick") {
 		timeSinceUpdate += args["deltaTime"].asFloat;
@@ -74,6 +73,7 @@ void SpritesheetComponent::OnEvent(std::string name, EventArgs args)
 				sprite.minUV = minUVs[currentIndex];
 			}
 		}
+		entity->scene->SubmitSprite(&sprite);
 	}
 }
 

@@ -6,12 +6,18 @@
 #include "Core/entity.h"
 #include "Core/Rendering/Framebuffer.h"
 #include "Core/Rendering/Image.h"
+#include "Core/scene.h"
 
 #include "Core/Components/cameracomponent.h.generated.h"
 
 using nlohmann::json;
 
 COMPONENT_IMPL(CameraComponent)
+
+CameraComponent::CameraComponent() noexcept
+{
+	receiveTicks = true;
+}
 
 float CameraComponent::GetAspect()
 {
@@ -66,8 +72,6 @@ Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager,
 	CameraComponent * ret = new (mem) CameraComponent();
 	json j = json::parse(str);
 	ret->aspect = j["aspect"];
-	//TODO: Seeing as the renderer might change during runs this might be a bad idea
-	ret->renderer = Render_currentRenderer;
 	ret->viewSize = j["viewSize"];
 	if (j.find("renderTarget") != j.end()) {
 		ret->renderTarget = resourceManager->LoadResourceRefCounted<Framebuffer>(j["renderTarget"]);
@@ -77,11 +81,7 @@ Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager,
 
 void CameraComponent::OnEvent(std::string name, EventArgs args)
 {
-	if (name == "BeginPlay") {
-		renderer->AddCamera(this);
-	} else if (name == "RendererChanged") {
-		renderer = Render_currentRenderer;
-	} else if (name == "EndPlay") {
-		renderer->DeleteCamera(this);
+	if (name == "Tick") {
+		entity->scene->SubmitCamera(this);
 	}
 }

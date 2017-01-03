@@ -4,7 +4,7 @@
 BUILD_DIR = build
 CORE_DIR = Source/Core
 CORE_FILES = Allocator.cpp collisioninfo.cpp Deserializable.cpp entity.cpp eventarg.cpp input.cpp main.cpp physicsworld.cpp ResourceManager.cpp scene.cpp sprite.cpp dtime.cpp transform.cpp
-CORE_HEADERS = Allocator.h collisioninfo.h Deserializable.h dtime.h entity.h eventarg.h input.h keycodes.h physicsworld.h Resource.h ResourceManager.h scene.h sprite.h transform.h
+CORE_HEADERS = Allocator.h collisioninfo.h Deserializable.h dtime.h entity.h eventarg.h input.h keycodes.h Maybe.h physicsworld.h Queue.h Resource.h ResourceManager.h scene.h sprite.h transform.h
 COMPONENT_DIR = Source/Core/Components
 COMPONENT_FILES = cameracomponent.cpp component.cpp physicscomponent.cpp spritecomponent.cpp SpritesheetComponent.cpp
 COMPONENT_HEADERS = cameracomponent.h component.h physicscomponent.h spritecomponent.h SpritesheetComponent.h
@@ -15,8 +15,8 @@ MATH_DIR = Source/Core/Math
 MATH_FILES = mathtypes.cpp
 MATH_HEADERS = mathtypes.h
 RENDERING_DIR = Source/Core/Rendering
-RENDERING_FILES = Framebuffer.cpp Image.cpp render.cpp render_opengl.cpp Shader.cpp OpenGL/OpenGLEnumConversions.cpp
-RENDERING_HEADERS = Framebuffer.h Image.h render.h Shader.h
+RENDERING_FILES = Framebuffer.cpp Image.cpp Program.cpp Shader.cpp OpenGL/OpenGLEnumConversions.cpp OpenGL/OpenGLRenderer.cpp
+RENDERING_HEADERS = Framebuffer.h Image.h RenderCommand.h Renderer.h RendererData.h Shader.h OpenGL/OpenGLEnumConversions.h OpenGL/OpenGLRenderer.h OpenGL/OpenGLRendererData.h
 CPP_FILES = $(CORE_FILES:%=$(CORE_DIR)/%) $(COMPONENT_FILES:%=$(COMPONENT_DIR)/%) $(LUA_FILES:%=$(LUA_DIR)/%) $(MATH_FILES:%=$(MATH_DIR)/%) $(RENDERING_FILES:%=$(RENDERING_DIR)/%)
 H_FILES = $(CORE_HEADERS:%=$(CORE_DIR)/%) $(COMPONENT_HEADERS:%=$(COMPONENT_DIR)/%) $(LUA_HEADERS:%=$(LUA_DIR)/%) $(MATH_HEADERS:%=$(MATH_DIR)/%) $(RENDERING_HEADERS:%=$(RENDERING_DIR)/%)
 OBJ_OUTPUT = $(CPP_FILES:%.cpp=$(BUILD_DIR)/%.o)

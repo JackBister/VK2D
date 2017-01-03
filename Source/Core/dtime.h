@@ -9,6 +9,7 @@ struct Time
 	void Start(float timeScale = 1.f);
 	void Frame();
 	float GetDeltaTime();
+	std::chrono::high_resolution_clock::time_point GetLastTime();
 
 private:
 	float deltaTime;

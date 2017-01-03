@@ -59,7 +59,7 @@ void LuaComponent::OnEvent(std::string name, EventArgs eargs)
 	if (name == "BeginPlay") {
 		entity->PushToLua(state);
 		lua_setglobal(state, "entity");
-		entity->scene->input->PushToLua(state);
+		entity->scene->input.PushToLua(state);
 		lua_setglobal(state, "Input");
 		entity->scene->PushToLua(state);
 		lua_setglobal(state, "Scene");

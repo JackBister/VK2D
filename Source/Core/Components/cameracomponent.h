@@ -3,14 +3,14 @@
 #include "glm/glm.hpp"
 
 #include "Core/Components/component.h"
-#include "Core/Rendering/render.h"
 
 struct Framebuffer;
 struct Image;
 
 struct CameraComponent : Component
 {
-	bool Component::receiveTicks = false;
+
+	CameraComponent() noexcept;
 
 	PROPERTY(LuaRead)
 	float GetAspect();
@@ -38,7 +38,6 @@ private:
 	glm::mat4 projMatrix;
 	bool dirtyView = true;
 	glm::mat4 viewMatrix;
-	Renderer * renderer;
 	float viewSize;
 
 	std::shared_ptr<Framebuffer> renderTarget;

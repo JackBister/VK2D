@@ -3,6 +3,8 @@
 #include <memory>
 #include <unordered_map>
 
+#include "Core/Maybe.h"
+#include "Core/Rendering/RendererData.h"
 #include "Core/Resource.h"
 
 struct FramebufferCreateInfo;
@@ -10,6 +12,8 @@ struct Image;
 
 struct Framebuffer : Resource
 {
+	friend class Renderer;
+
 	enum class Attachment
 	{
 		//TODO: More color attachments
@@ -33,23 +37,24 @@ struct Framebuffer : Resource
 	Framebuffer(ResourceManager *, const std::string&, const std::vector<char>&);
 
 	const std::unordered_map<Framebuffer::Attachment, std::shared_ptr<Image>, AttachmentHash>& GetImages() const;
-	void * GetRendererData() const;
+	const FramebufferRendererData& GetRendererData() const;
 
-	void SetRendererData(void *);
+	void SetRendererData(const FramebufferRendererData&);
 
 private:
 	//Images the framebuffer renders into, e.g. color, depth, G-bufs, etc.
 	std::unordered_map<Framebuffer::Attachment, std::shared_ptr<Image>, AttachmentHash> imgs;
-	void * rendererData = nullptr;
+	FramebufferRendererData rendererData;
 };
 
 struct FramebufferCreateInfo
 {
 	std::string name;
 	std::unordered_map<Framebuffer::Attachment, std::shared_ptr<Image>, Framebuffer::AttachmentHash> imgs;
+	ResourceManager * resMan;
 	//If rendererData is null, the constructor creates a new rendererData
 	//If not null, it's presumed the user already created a correct rendererData for the imgs and is passing it in
-	void * rendererData = nullptr;
+	Maybe<FramebufferRendererData> rendererData;
 };
 
 RESOURCE_HEADER(Framebuffer)

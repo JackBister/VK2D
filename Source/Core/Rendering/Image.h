@@ -5,12 +5,15 @@
 
 #include <experimental/variant.hpp>
 
+#include "Core/Rendering/RendererData.h"
 #include "Core/Resource.h"
 
 struct ImageCreateInfo;
 
 struct Image : Resource
 {
+	friend class Renderer;
+
 	enum class Format
 	{
 		R8,
@@ -64,8 +67,8 @@ struct Image : Resource
 	int GetHeight() const noexcept;
 	const ImageParameters& GetParameters() const noexcept;
 	int GetWidth() const noexcept;
-	void * GetRendererData() const noexcept;
-	void SetRendererData(void *) noexcept;
+	const ImageRendererData& GetRendererData() const noexcept;
+	void SetRendererData(const ImageRendererData&) noexcept;
 
 private:
 	Format format;
@@ -74,7 +77,7 @@ private:
 
 	ImageParameters params;
 
-	void * rendererData;
+	ImageRendererData rendererData;
 };
 
 struct ImageCreateInfo
@@ -83,8 +86,9 @@ struct ImageCreateInfo
 	Image::Format format;
 	int height, width;
 	Image::ImageParameters params;
+	ResourceManager * resMan;
 	//The image is either created with CPU data or an existing rendererdata
-	std::experimental::variant<std::vector<uint8_t>, void *> data;
+	std::experimental::variant<std::vector<uint8_t>, ImageRendererData> data;
 };
 
 RESOURCE_HEADER(Image)

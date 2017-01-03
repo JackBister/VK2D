@@ -8,11 +8,13 @@
 #include <boost/filesystem.hpp>
 
 #include "Core/Allocator.h"
+#include "Core/Queue.h"
+#include "Core/Rendering/RenderCommand.h"
 #include "Core/Resource.h"
 
 struct ResourceManager
 {
-	ResourceManager(Allocator& a = Allocator::default_allocator);
+	ResourceManager(Queue<RenderCommand>::Writer&&, Allocator& a = Allocator::default_allocator);
 
 	template <typename T>
 	typename std::enable_if<is_resource<T>::value, void>::type
@@ -22,9 +24,12 @@ struct ResourceManager
 	typename std::enable_if<is_resource<T>::value, std::shared_ptr<T>>::type
 	LoadResourceRefCounted(const std::string& fileName);
 
+	void PushRenderCommand(const RenderCommand&);
+
 private:
 	std::unordered_map<std::string, std::weak_ptr<Resource>> rcCache;
 	Allocator& allocator;
+	Queue<RenderCommand>::Writer renderQueue;
 };
 
 template <typename T>
