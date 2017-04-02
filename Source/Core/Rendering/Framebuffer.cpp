@@ -3,7 +3,7 @@
 #include "Core/Rendering/Image.h"
 #include "Core/ResourceManager.h"
 
-Framebuffer::Framebuffer(ResourceManager * resMan, const std::string& name) : imgs({{Framebuffer::Attachment::COLOR0, resMan->LoadResourceRefCounted<Image>(name + ".COLOR0.tex")}})
+Framebuffer::Framebuffer(ResourceManager * resMan, const std::string& name) : imgs({{Framebuffer::Attachment::COLOR0, resMan->LoadResource<Image>(name + ".COLOR0.tex")}})
 {
 	this->name = name;
 	RenderCommand rc(RenderCommand::AddFramebufferParams(this));
@@ -22,7 +22,7 @@ Framebuffer::Framebuffer(const FramebufferCreateInfo& createInfo) : imgs(createI
 	}
 }
 
-Framebuffer::Framebuffer(ResourceManager * _, const std::string& name, const std::vector<char>& input)
+Framebuffer::Framebuffer(ResourceManager * _, const std::string& name, const std::vector<uint8_t>& input)
 {
 	this->name = name;
 }

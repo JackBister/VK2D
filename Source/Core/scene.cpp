@@ -1,5 +1,6 @@
 #include "Core/scene.h"
 
+#include <cinttypes>
 #include <fstream>
 #include <sstream>
 
@@ -10,6 +11,7 @@
 #include "Core/input.h"
 #include "Core/physicsworld.h"
 #include "Core/Rendering/Framebuffer.h"
+#include "Core/Rendering/Mesh.h"
 #include "Core/sprite.h"
 #include "Core/transform.h"
 
@@ -24,6 +26,49 @@ Scene::Scene(const std::string& name, ResourceManager * resMan, Queue<SDL_Event>
 	json j = json::parse(serializedScene);
 	input.DeserializeInPlace(j["input"].dump());
 	this->physicsWorld = static_cast<PhysicsWorld *>(Deserializable::DeserializeString(resourceManager, j["physics"].dump()));
+
+	for (auto& jr : j["resources"]) {
+		std::string fileName = jr["uri"];
+		FILE * f = fopen(fileName.c_str(), "rb");
+		std::string resourceFile;
+		if (f) {
+			fseek(f, 0, SEEK_END);
+			size_t length = ftell(f);
+			fseek(f, 0, SEEK_SET);
+			std::vector<char> buf(length + 1);
+			fread(&buf[0], 1, length, f);
+			resourceFile = std::string(buf.begin(), buf.end());
+			fclose(f);
+		} else {
+			printf("[ERROR] Unable to load resource file %s\n", fileName.c_str());
+		}
+		json r = json::parse(resourceFile);
+
+		for (auto& accessor : r["Accessors"]) {
+			Accessor * a = static_cast<Accessor *>(Deserializable::DeserializeString(resourceManager, accessor.dump()));
+			accessors.emplace_back(a);
+			resourceManager->AddResourceRefCounted<Accessor>(fileName + "/" + accessor["name"].get<std::string>(), std::weak_ptr<Accessor>(accessors.back()));
+		}
+
+		for (auto& program : r["Programs"]) {
+			Program * p = static_cast<Program *>(Deserializable::DeserializeString(resourceManager, program.dump()));
+			programs.emplace_back(p);
+			resourceManager->AddResourceRefCounted<Program>(fileName + "/" + program["name"].get<std::string>(), std::weak_ptr<Program>(programs.back()));
+		}
+
+		for (auto& material : r["Materials"]) {
+			Material * m = static_cast<Material *>(Deserializable::DeserializeString(resourceManager, material.dump()));
+			materials.emplace_back(m);
+			resourceManager->AddResourceRefCounted<Material>(fileName + "/" + material["name"].get<std::string>(), std::weak_ptr<Material>(materials.back()));
+		}
+
+		for (auto& mesh : r["Meshes"]) {
+			Mesh * m = static_cast<Mesh *>(Deserializable::DeserializeString(resourceManager, mesh.dump()));
+			meshes.emplace_back(m);
+			resourceManager->AddResourceRefCounted<Mesh>(fileName + "/" + mesh["name"].get<std::string>(), std::weak_ptr<Mesh>(meshes.back()));
+		}
+	}
+
 	for (auto& je : j["entities"]) {
 		Entity * tmp = static_cast<Entity *>(Deserializable::DeserializeString(resourceManager, je.dump()));
 		tmp->scene = this;
@@ -70,6 +115,13 @@ void Scene::PushRenderCommand(const RenderCommand& rc) noexcept
 void Scene::SubmitCamera(CameraComponent * cam) noexcept
 {
 	camerasToSubmit.emplace_back(cam->GetViewMatrix(), cam->GetProjectionMatrix(), cam->GetRenderTarget()->GetRendererData());
+}
+
+void Scene::SubmitMesh(Mesh * mesh) noexcept
+{
+	for (auto& p : mesh->primitives) {
+		meshesToSubmit.push_back(p.GetMeshSubmission());
+	}
 }
 
 void Scene::SubmitSprite(Sprite * sprite) noexcept

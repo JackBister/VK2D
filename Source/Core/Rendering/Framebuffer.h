@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 #include "Core/Maybe.h"
 #include "Core/Rendering/RendererData.h"
@@ -9,6 +10,7 @@
 
 struct FramebufferCreateInfo;
 struct Image;
+struct ResourceManager;
 
 struct Framebuffer : Resource
 {
@@ -34,7 +36,7 @@ struct Framebuffer : Resource
 	Framebuffer(ResourceManager *, const std::string&);
 	Framebuffer(const FramebufferCreateInfo&);
 	//TODO: Doesn't really make sense.
-	Framebuffer(ResourceManager *, const std::string&, const std::vector<char>&);
+	Framebuffer(ResourceManager *, const std::string&, const std::vector<uint8_t>&);
 
 	const std::unordered_map<Framebuffer::Attachment, std::shared_ptr<Image>, AttachmentHash>& GetImages() const;
 	const FramebufferRendererData& GetRendererData() const;
@@ -56,5 +58,3 @@ struct FramebufferCreateInfo
 	//If not null, it's presumed the user already created a correct rendererData for the imgs and is passing it in
 	Maybe<FramebufferRendererData> rendererData;
 };
-
-RESOURCE_HEADER(Framebuffer)

@@ -25,10 +25,18 @@ Shader::Shader(ResourceManager * _, const std::string& name)
 	this->type = TypeFromFileName(name);
 }
 
-Shader::Shader(ResourceManager * resMan, const std::string& name, const std::vector<char>& input) : src(input.begin(), input.end())
+Shader::Shader(ResourceManager * resMan, const std::string& name, const std::vector<uint8_t>& input) : type(TypeFromFileName(name)), src(input.begin(), input.end())
 {
 	this->name = name;
 	this->type = TypeFromFileName(name);
+	RenderCommand rc(RenderCommand::AddShaderParams(this));
+	resMan->PushRenderCommand(rc);
+}
+
+Shader::Shader(ResourceManager * resMan, const std::string&, Type type, const std::string& src)
+	: type(type), src(src)
+{
+	this->name = name;
 	RenderCommand rc(RenderCommand::AddShaderParams(this));
 	resMan->PushRenderCommand(rc);
 }

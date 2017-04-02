@@ -1,7 +1,10 @@
 #pragma once
+#include <vector>
 
 #include "Core/Rendering/RendererData.h"
 #include "Core/Resource.h"
+
+struct ResourceManager;
 
 struct Shader : Resource
 {
@@ -9,15 +12,16 @@ struct Shader : Resource
 
 	enum class Type
 	{
-		VERTEX_SHADER,
-		FRAGMENT_SHADER,
-		GEOMETRY_SHADER,
-		COMPUTE_SHADER
+		FRAGMENT_SHADER = 35632,
+		VERTEX_SHADER = 35633,
+		GEOMETRY_SHADER = 36313,
+		COMPUTE_SHADER = 37305
 	};
 
 	Shader() = delete;
 	Shader(ResourceManager *, const std::string&);
-	Shader(ResourceManager *, const std::string&, const std::vector<char>&);
+	Shader(ResourceManager *, const std::string&, const std::vector<uint8_t>&);
+	Shader(ResourceManager *, const std::string&, Type, const std::string& src);
 
 	Type GetType() const;
 	const std::string& GetSource() const;
@@ -28,5 +32,3 @@ private:
 	Type type;
 	std::string src;
 };
-
-RESOURCE_HEADER(Shader)

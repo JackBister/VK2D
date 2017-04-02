@@ -33,7 +33,7 @@ Image::Image(const ImageCreateInfo& info) noexcept
 	}
 }
 
-Image::Image(ResourceManager * resMan, const std::string& name, const std::vector<char>& input) noexcept
+Image::Image(ResourceManager * resMan, const std::string& name, const std::vector<uint8_t>& input) noexcept
 {
 	this->name = name;
 	int n;

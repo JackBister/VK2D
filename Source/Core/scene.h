@@ -10,6 +10,10 @@
 #include "Core/input.h"
 #include "Core/Lua/luaserializable.h"
 #include "Core/Queue.h"
+#include "Core/Rendering/Accessor.h"
+#include "Core/Rendering/Material.h"
+#include "Core/Rendering/Mesh.h"
+#include "Core/Rendering/Program.h"
 #include "Core/Rendering/RenderCommand.h"
 #include "Core/Rendering/ViewDef.h"
 #include "Core/Resource.h"
@@ -38,6 +42,7 @@ struct Scene : LuaSerializable, Resource
 	void EndFrame() noexcept;
 	void PushRenderCommand(const RenderCommand&) noexcept;
 	void SubmitCamera(CameraComponent *) noexcept;
+	void SubmitMesh(Mesh *) noexcept;
 	void SubmitSprite(Sprite *) noexcept;
 
 	int LuaIndex(lua_State *) override;
@@ -67,5 +72,12 @@ private:
 	std::vector<ViewDef> viewDefs;
 	ViewDef * currentViewDef;
 	std::vector<SubmittedCamera> camerasToSubmit;
+	std::vector<SubmittedMesh> meshesToSubmit;
 	std::vector<SubmittedSprite> spritesToSubmit;
+
+	//TODO:
+	std::vector<std::shared_ptr<Accessor>> accessors;
+	std::vector<std::shared_ptr<Material>> materials;
+	std::vector<std::shared_ptr<Mesh>> meshes;
+	std::vector<std::shared_ptr<Program>> programs;
 };

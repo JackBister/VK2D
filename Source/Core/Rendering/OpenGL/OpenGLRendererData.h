@@ -2,6 +2,16 @@
 
 #include "GL/glew.h"
 
+struct AccessorRendererData
+{
+	GLuint vao;
+};
+
+struct BufferRendererData
+{
+	GLuint buffer = 0;
+};
+
 struct FramebufferRendererData
 {
 	GLuint framebuffer = 0;

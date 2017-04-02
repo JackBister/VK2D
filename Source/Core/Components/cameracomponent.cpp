@@ -74,7 +74,7 @@ Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager,
 	ret->aspect = j["aspect"];
 	ret->viewSize = j["viewSize"];
 	if (j.find("renderTarget") != j.end()) {
-		ret->renderTarget = resourceManager->LoadResourceRefCounted<Framebuffer>(j["renderTarget"]);
+		ret->renderTarget = resourceManager->LoadResource<Framebuffer>(j["renderTarget"]);
 	}
 	return ret;
 }

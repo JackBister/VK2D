@@ -3,6 +3,8 @@
 #include <experimental/variant.hpp>
 
 #include "Core/Maybe.h"
+#include "Core/Rendering/Buffer.h"
+#include "Core/Rendering/RendererData.h"
 #include "Core/Rendering/SubmittedCamera.h"
 #include "Core/Rendering/SubmittedSprite.h"
 
@@ -20,6 +22,8 @@ struct RenderCommand
 	{
 		NOP,
 		ABORT,
+		ADD_BUFFER,
+		DELETE_BUFFER,
 		ADD_FRAMEBUFFER,
 		DELETE_FRAMEBUFFER,
 		ADD_IMAGE,
@@ -38,6 +42,20 @@ struct RenderCommand
 	{
 		int errorCode;
 		AbortParams(int errorCode) : errorCode(errorCode) {}
+	};
+
+	struct AddBufferParams
+	{
+		BufferRendererData * rData;
+		size_t size;
+		Buffer::Type type;
+
+		AddBufferParams(BufferRendererData * rData, size_t size, Buffer::Type type) : rData(rData), size(size), type(type) {}
+	};
+
+	struct DeleteBufferParams
+	{
+		BufferRendererData * rData;
 	};
 
 	struct AddFramebufferParams
@@ -102,7 +120,7 @@ struct RenderCommand
 		DrawViewParams(ViewDef * view) : view(view) {}
 	};
 
-	using RenderCommandParams = std::experimental::variant<None, AbortParams, AddFramebufferParams, DeleteFramebufferParams,
+	using RenderCommandParams = std::experimental::variant<None, AbortParams, AddBufferParams, DeleteBufferParams, AddFramebufferParams, DeleteFramebufferParams,
 														   AddImageParams, DeleteImageParams, AddProgramParams, DeleteProgramParams, AddShaderParams,
 														   DeleteShaderParams, EndFrameParams, DrawViewParams>;
 

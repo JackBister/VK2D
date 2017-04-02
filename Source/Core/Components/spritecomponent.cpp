@@ -22,7 +22,7 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 	void * mem = alloc.Allocate(sizeof(SpriteComponent));
 	SpriteComponent * ret = new (mem) SpriteComponent();
 	json j = json::parse(str);
-	auto img = resourceManager->LoadResourceRefCounted<Image>(j["file"]);
+	auto img = resourceManager->LoadResource<Image>(j["file"]);
 	ret->receiveTicks = true;
 	ret->sprite = Sprite(nullptr, img);
 	return ret;

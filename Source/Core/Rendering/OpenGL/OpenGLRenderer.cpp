@@ -17,7 +17,7 @@
 #include "Core/Sprite.h"
 
 //The number of floats contained in one vertex
-//vec3 pos, vec3 color, vec2 UV
+//vec3 pos, vec3 normal, vec2 UV
 #define VERTEX_SIZE 8
 
 //Realistically this should only be used to represent different quads
@@ -179,9 +179,10 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 	plainQuad.elements = plainQuadElems;
 	plainQuad.elementsLength = 6;
 
-	ptvShader = resourceManager->LoadResourceRefCounted<Shader>("shaders/passthrough-transform.vert");
-	pfShader = resourceManager->LoadResourceRefCounted<Shader>("shaders/passthrough.frag");
-	ptProgram = std::make_shared<Program>(resMan, ptvShader, pfShader);
+	ptvShader = resourceManager->LoadResource<Shader>("shaders/passthrough-transform.vert");
+	pfShader = resourceManager->LoadResource<Shader>("shaders/passthrough.frag");
+	ptProgram = resourceManager->LoadResourceOrConstruct<Program>("__Scratch/Programs/passthrough.prog", ptvShader, pfShader);
+
 	glGenVertexArrays(1, &ptVAO);
 	glBindVertexArray(ptVAO);
 
@@ -205,6 +206,24 @@ uint64_t Renderer::GetFrameTime() noexcept
 	uint64_t ret = 0;
 	glGetQueryObjectui64v(timeQuery, GL_QUERY_RESULT, &ret);
 	return ret;
+}
+
+void Renderer::AddBuffer(RenderCommand::AddBufferParams params) noexcept
+{
+	//Only copy the handle to rData when we've finished uploading
+	GLuint ret;
+	glGenBuffers(1, &ret);
+	//TODO: STATIC_DRAW should be parametrized, but glTF doesn't allow it it seems - use extension
+	glNamedBufferData(ret, params.size, nullptr, static_cast<GLenum>(params.type));
+
+	params.rData->buffer = ret;
+}
+
+void Renderer::DeleteBuffer(BufferRendererData * rData) noexcept
+{
+	//TODO: Potential race condition
+	glDeleteBuffers(1, &rData->buffer);
+	rData->buffer = 0;
 }
 
 void Renderer::AddFramebuffer(Framebuffer * const fb) noexcept
@@ -324,6 +343,14 @@ void Renderer::DrainQueue() noexcept
 			case RenderCommand::Type::ABORT:
 				isAborting = true;
 				abortCode = std::experimental::get<RenderCommand::AbortParams>(command.params).errorCode;
+				break;
+			case RenderCommand::Type::ADD_BUFFER:
+			{
+				AddBuffer(std::experimental::get<RenderCommand::AddBufferParams>(command.params));
+				break;
+			}
+			case RenderCommand::Type::DELETE_BUFFER:
+				DeleteBuffer(std::experimental::get<RenderCommand::DeleteBufferParams>(command.params).rData);
 				break;
 			case RenderCommand::Type::ADD_FRAMEBUFFER:
 				AddFramebuffer(std::experimental::get<RenderCommand::AddFramebufferParams>(command.params).fb);

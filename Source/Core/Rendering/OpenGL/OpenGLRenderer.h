@@ -27,6 +27,9 @@ struct Renderer
 	~Renderer() noexcept;
 	uint64_t GetFrameTime() noexcept;
 
+	void AddBuffer(RenderCommand::AddBufferParams) noexcept;
+	void DeleteBuffer(BufferRendererData *) noexcept;
+
 	void AddFramebuffer(Framebuffer * const) noexcept;
 	void DeleteFramebuffer(Framebuffer * const) noexcept;
 

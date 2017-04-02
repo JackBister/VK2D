@@ -9,6 +9,7 @@
 #include "Core/Resource.h"
 
 struct ImageCreateInfo;
+struct ResourceManager;
 
 struct Image : Resource
 {
@@ -60,7 +61,7 @@ struct Image : Resource
 	Image() = delete;
 	Image(ResourceManager *, const std::string&) noexcept;
 	Image(const ImageCreateInfo&) noexcept;
-	Image(ResourceManager *, const std::string&, const std::vector<char>&) noexcept;
+	Image(ResourceManager *, const std::string&, const std::vector<uint8_t>&) noexcept;
 
 	const std::vector<uint8_t>& GetData() const noexcept;
 	Format GetFormat() const noexcept;
@@ -90,5 +91,3 @@ struct ImageCreateInfo
 	//The image is either created with CPU data or an existing rendererdata
 	std::experimental::variant<std::vector<uint8_t>, ImageRendererData> data;
 };
-
-RESOURCE_HEADER(Image)

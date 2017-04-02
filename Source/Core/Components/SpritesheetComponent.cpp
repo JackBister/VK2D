@@ -16,7 +16,7 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 	SpritesheetComponent * ret = new (mem) SpritesheetComponent();
 	json j = json::parse(str);
 	ret->receiveTicks = true;
-	auto img = resourceManager->LoadResourceRefCounted<Image>(j["file"]);
+	auto img = resourceManager->LoadResource<Image>(j["file"]);
 	ret->sprite = Sprite(nullptr, img);
 	glm::ivec2 frameSize = glm::ivec2(j["frameSize"]["x"], j["frameSize"]["y"]);
 	ret->frameSize = glm::vec2(frameSize.x / (float)img->GetWidth(), frameSize.y / (float)img->GetHeight());
