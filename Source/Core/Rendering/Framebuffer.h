@@ -14,7 +14,7 @@ struct ResourceManager;
 
 struct Framebuffer : Resource
 {
-	friend class Renderer;
+	friend struct Renderer;
 
 	enum class Attachment
 	{

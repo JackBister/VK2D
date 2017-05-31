@@ -1,13 +1,17 @@
-#version 410 core
+#version 420 
 
 in vec3 Color;
 in vec2 Texcoord;
 
 out vec4 outColor;
 
-uniform vec2 minUV;
-uniform vec2 sizeUV;
-uniform sampler2D tex;
+layout (std140, binding = 0) uniform numbers {
+	mat4 pvm;
+	vec2 minUV;
+	vec2 sizeUV;
+};
+layout (binding = 1) uniform sampler2D tex;
+
 
 void main() {
 	vec2 nCoord = minUV + sizeUV * Texcoord;

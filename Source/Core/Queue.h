@@ -1,7 +1,12 @@
 #pragma once
 
 #include <concurrentqueue.h>
+#if _MSC_VER && !__INTEL_COMPILER
+#include <variant>
+#else
 #include <experimental/variant.hpp>
+using std::variant = std::experimental::variant;
+#endif
 
 #include "Core/Maybe.h"
 
@@ -20,7 +25,7 @@ struct Queue
 {
 	struct Reader
 	{
-		friend class Queue;
+		friend struct Queue;
 		Maybe<T> Pop()
 		{
 			T ret;
@@ -39,7 +44,7 @@ struct Queue
 
 	struct Writer
 	{
-		friend class Queue;
+		friend struct Queue;
 		void Push(T val)
 		{
 			queue->enqueue(token, val);

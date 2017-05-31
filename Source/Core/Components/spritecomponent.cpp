@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "json.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 #include "Core/entity.h"
 #include "Core/scene.h"
@@ -11,6 +12,23 @@
 using nlohmann::json;
 
 COMPONENT_IMPL(SpriteComponent)
+
+static const float plainQuadVerts[] = {
+	//vec3 pos, vec3 color, vec2 texcoord
+	-1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // Top left
+	1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, // Top right
+	1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, // Bottom right
+	-1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, // Bottom left
+};
+
+static uint32_t plainQuadElems[] = {
+	0, 1, 2,
+	2, 3, 0
+};
+
+std::atomic<bool> SpriteComponent::hasCreatedResources(false);
+std::atomic<bool> SpriteComponent::hasFinishedCreatingResources(false);
+SpriteComponent::SpriteResources SpriteComponent::resources;
 
 SpriteComponent::SpriteComponent() noexcept
 {
@@ -25,6 +43,102 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 	auto img = resourceManager->LoadResource<Image>(j["file"]);
 	ret->receiveTicks = true;
 	ret->sprite = Sprite(nullptr, img);
+	
+	{
+		RenderCommand rc(RenderCommand::CreateResourceParams([ret, img](ResourceCreationContext& ctx) {
+			ret->uvs = ctx.CreateBuffer({
+				sizeof(glm::mat4) + 4 * sizeof(float)
+			});
+			float muhUVs[4] = {
+				0.f, 0.f,
+				1.f, 1.f
+			};
+			auto ubo = (float *)ctx.MapBuffer(ret->uvs, sizeof(glm::mat4), 4 * sizeof(float));
+			memcpy(ubo, muhUVs, sizeof(muhUVs));
+			ctx.UnmapBuffer(ret->uvs);
+
+			ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uvDescriptor = {
+				ret->uvs,
+				0,
+				sizeof(glm::mat4) + 4 * sizeof(float)
+			};
+
+			ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imgDescriptor = {
+				img->GetImageHandle()
+			};
+
+			ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
+				{
+					DescriptorType::UNIFORM_BUFFER,
+					0,
+					uvDescriptor
+				},
+				{
+					DescriptorType::SAMPLER,
+					1,
+					imgDescriptor
+				}
+			};
+
+			ret->descriptorSet = ctx.CreateDescriptorSet({
+				2,
+				descriptors
+			});
+		}));
+		resourceManager->PushRenderCommand(rc);
+	}
+	if (!hasCreatedResources.exchange(true)) {
+		resources.vbo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
+		resources.ebo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadEBO.buffer");
+
+		resources.vertexShader = resourceManager->GetResource<ShaderModuleHandle>("_Primitives/Shaders/passthrough-transform.vert");
+		resources.fragmentShader = resourceManager->GetResource<ShaderModuleHandle>("_Primitives/Shaders/passthrough.frag");
+
+		resources.vertexInputState = resourceManager->GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/passthrough-transform.state");
+		resources.pipeline = resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/passthrough-transform.pipe");
+
+		RenderCommand rc(RenderCommand::CreateResourceParams([](ResourceCreationContext& ctx) {
+			RenderPassHandle::AttachmentDescription attachment = {
+				0,
+				Format::RGBA8,
+				RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+				RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+				RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+				RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+				ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+				ImageLayout::COLOR_ATTACHMENT_OPTIMAL
+			};
+
+			RenderPassHandle::AttachmentReference reference = {
+				0,
+				ImageLayout::COLOR_ATTACHMENT_OPTIMAL
+			};
+
+			RenderPassHandle::SubpassDescription subpass = {
+				RenderPassHandle::PipelineBindPoint::GRAPHICS,
+				0,
+				nullptr,
+				1,
+				&reference,
+				nullptr,
+				nullptr,
+				0,
+				nullptr
+			};
+
+			resources.renderPass = ctx.CreateRenderPass({
+				1,
+				&attachment,
+				1,
+				&subpass,
+				0,
+				nullptr
+			});
+
+			hasFinishedCreatingResources = true;
+		}));
+		resourceManager->PushRenderCommand(rc);
+	}
 	return ret;
 }
 
@@ -32,8 +146,74 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "BeginPlay") {
 		sprite.transform = &(entity->transform);
-	} else if (name == "Tick") {
-		entity->scene->SubmitSprite(&sprite);
+	} else if (name == "GatherRenderCommands") {
+		if (hasFinishedCreatingResources && sprite.image->GetImageHandle()) {
+			auto camera = (SubmittedCamera *)args["camera"].asLuaSerializable;
+			auto ctx = Renderer::CreateCommandContext();
+			//TODO:
+			RenderCommandContext::RenderPassBeginInfo beginInfo = {
+				resources.renderPass,
+				&Renderer::Backbuffer,
+				{
+					{
+						0,
+						0
+					},
+					{
+						800,
+						600
+					}
+				},
+				0,
+				nullptr
+			};
+			ctx->CmdBeginRenderPass(&beginInfo, RenderCommandContext::SubpassContents::INLINE);
+			RenderCommandContext::Viewport viewPort = {
+				0.f,
+				0.f,
+				800.f,
+				600.f,
+				0.f,
+				1.f
+			};
+			ctx->CmdSetViewport(0, 1, &viewPort);
+
+			RenderCommandContext::Rect2D scissor = {
+				{
+					0,
+					0
+				},
+				{
+					800,
+					600
+				}
+			};
+			ctx->CmdSetScissor(0, 1, &scissor);
+
+			ctx->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS, resources.pipeline);
+
+			ctx->CmdBindIndexBuffer(resources.ebo, 0, RenderCommandContext::IndexType::UINT32);
+			ctx->CmdBindVertexBuffer(resources.vbo, 0, 0, 8 * sizeof(float));
+
+			//TODO: racy
+			cachedMVP = camera->projection * camera->view * entity->transform.GetLocalToWorldSpace();
+
+			ctx->CmdUpdateBuffer(uvs, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(cachedMVP));
+
+			ctx->CmdBindDescriptorSet(descriptorSet);
+
+			/*
+			ctx->CmdBindUniformBuffer(0, uvs, 0, sizeof(glm::mat4) + 4 * sizeof(float));
+			ctx->CmdBindUniformImage(1, sprite.image->GetImageHandle());
+			*/
+
+			ctx->CmdDrawIndexed(6, 1, 0, 0);
+
+			ctx->CmdEndRenderPass();
+
+			RenderCommand rc(RenderCommand::ExecuteCommandContextParams(std::move(ctx)));
+			entity->scene->PushRenderCommand(rc);
+		}
 	}
 }
 

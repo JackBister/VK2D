@@ -8,7 +8,7 @@ struct ResourceManager;
 
 struct BufferView
 {
-	friend class Accessor;
+	friend struct Accessor;
 	enum class Target
 	{
 		ARRAY_BUFFER = 34962,

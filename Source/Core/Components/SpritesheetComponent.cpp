@@ -20,8 +20,8 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 	ret->sprite = Sprite(nullptr, img);
 	glm::ivec2 frameSize = glm::ivec2(j["frameSize"]["x"], j["frameSize"]["y"]);
 	ret->frameSize = glm::vec2(frameSize.x / (float)img->GetWidth(), frameSize.y / (float)img->GetHeight());
-	for (int y = 0; y < img->GetHeight() / frameSize.y; ++y) {
-		for (int x = 0; x < img->GetWidth() / frameSize.x; ++x) {
+	for (uint32_t y = 0; y < img->GetHeight() / frameSize.y; ++y) {
+		for (uint32_t x = 0; x < img->GetWidth() / frameSize.x; ++x) {
 			ret->minUVs.push_back(glm::vec2(x * frameSize.x / (float)img->GetWidth(), y * frameSize.y / (float)img->GetHeight()));
 		}
 	}
@@ -73,7 +73,9 @@ void SpritesheetComponent::OnEvent(std::string name, EventArgs args)
 				sprite.minUV = minUVs[currentIndex];
 			}
 		}
-		entity->scene->SubmitSprite(&sprite);
+		if (sprite.image->GetImageHandle()) {
+			entity->scene->SubmitSprite(&sprite);
+		}
 	}
 }
 

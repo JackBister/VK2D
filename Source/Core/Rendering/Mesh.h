@@ -7,37 +7,23 @@
 #include "Core/Rendering/Material.h"
 #include "Core/Rendering/SubmittedMesh.h"
 
-struct Mesh : Deserializable
+struct Mesh
 {
-	struct Primitive
+	enum class Type
 	{
-		enum class Mode
-		{
-			POINTS,
-			LINES,
-			LINE_LOOP,
-			LINE_STRIP,
-			TRIANGLES,
-			TRIANGLE_STRIP,
-			TRIANGLE_FAN
-		};
-		Mode mode;
-
-		Primitive() noexcept;
-		Primitive(BufferView, std::shared_ptr<Material>, Mode) noexcept;
-
-		SubmittedMesh GetMeshSubmission() const noexcept;
-	private:
-		BufferView buffer;
-		std::shared_ptr<Material> material;
+		WITH_EBO,
+		WITHOUT_EBO
 	};
 
-	Mesh() noexcept;
-	Mesh(ResourceManager *, const std::string&) noexcept;
+	Mesh(BufferHandle * vbo, BufferHandle * ebo = nullptr);
 
-	Deserializable * Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc = Allocator::default_allocator) const final override;
+	Type GetType();
+	BufferHandle * GetEBO();
+	BufferHandle * GetVBO();
 
-	std::vector<Primitive> primitives;
+private:
+	BufferHandle * ebo;
+	BufferHandle * vbo;
+
+	Type type;
 };
-
-DESERIALIZABLE_IMPL(Mesh)

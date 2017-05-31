@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 
 #include "Core/Queue.h"
+#include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
 #include "Core/Rendering/OpenGL/OpenGLRendererData.h"
 #include "Core/Rendering/RenderCommand.h"
 
@@ -22,9 +23,12 @@ struct Sprite;
 
 struct Renderer
 {
-	void EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<SubmittedSprite>& sprites) noexcept;
 	Renderer(ResourceManager *, Queue<RenderCommand>::Reader&&, Queue<ViewDef *>::Writer&&, const char * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
 	~Renderer() noexcept;
+
+	static OpenGLRenderCommandContext * CreateCommandContext();
+
+	void EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<SubmittedSprite>& sprites) noexcept;
 	uint64_t GetFrameTime() noexcept;
 
 	void AddBuffer(RenderCommand::AddBufferParams) noexcept;
@@ -32,9 +36,6 @@ struct Renderer
 
 	void AddFramebuffer(Framebuffer * const) noexcept;
 	void DeleteFramebuffer(Framebuffer * const) noexcept;
-
-	void AddImage(Image * const) noexcept;
-	void DeleteImage(Image * const) noexcept;
 
 	void AddProgram(Program * const) noexcept;
 	void DeleteProgram(Program * const) noexcept;
@@ -46,6 +47,11 @@ struct Renderer
 
 	bool isAborting = false;
 	int abortCode = 0;
+
+	//TODO:
+	static OpenGLFramebufferHandle Backbuffer;
+	static OpenGLShaderModuleHandle ptVertexModule;
+	static OpenGLShaderModuleHandle ptFragmentModule;
 
 private:
 	ResourceManager * resourceManager;
@@ -61,6 +67,7 @@ private:
 	//The window
 	SDL_Window * window;
 
+	OpenGLImageHandle backbuffer;
 	ImageRendererData backbufferTexture;
 
 	std::shared_ptr<Image> backBufferImage;

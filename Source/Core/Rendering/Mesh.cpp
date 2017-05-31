@@ -1,40 +1,23 @@
 #include "Core/Rendering/Mesh.h"
 
-#include <glm/glm.hpp>
-#include <json.hpp>
-
-#include "Core/Rendering/Accessor.h"
-#include "Core/Rendering/Program.h"
-#include "Core/Maybe.h"
-
-Mesh::Mesh() noexcept
+Mesh::Mesh(BufferHandle * vbo, BufferHandle * ebo) : vbo(vbo), ebo(ebo), type(ebo != nullptr ? Type::WITH_EBO : Type::WITHOUT_EBO)
 {
+	assert(vbo != nullptr);
 }
 
-Mesh::Mesh(ResourceManager * resMan, const std::string& name) noexcept
+Mesh::Type Mesh::GetType()
 {
+	return type;
 }
 
-Deserializable * Mesh::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const
+BufferHandle * Mesh::GetEBO()
 {
-	void * mem = alloc.Allocate(sizeof(Mesh));
-	Mesh * ret = new (mem) Mesh();
-	return ret;
+	assert(ebo != nullptr);
+	return ebo;
 }
 
-Mesh::Primitive::Primitive() noexcept
+BufferHandle * Mesh::GetVBO()
 {
-}
-
-Mesh::Primitive::Primitive(BufferView bv, std::shared_ptr<Material> mat, Mode m) noexcept : mode(m), buffer(bv), material(mat)
-{
-}
-
-SubmittedMesh Mesh::Primitive::GetMeshSubmission() const noexcept
-{
-	return SubmittedMesh{
-		material->GetAccessor()->GetRendererData(),
-		buffer,
-		material->GetProgram()->GetRendererData()
-	};
+	assert(vbo != nullptr);
+	return vbo;
 }

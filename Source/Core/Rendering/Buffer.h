@@ -7,8 +7,8 @@ struct ResourceManager;
 
 struct Buffer
 {
-	friend class BufferPool;
-	friend class Renderer;
+	friend struct BufferPool;
+	friend struct Renderer;
 
 	enum class Type
 	{

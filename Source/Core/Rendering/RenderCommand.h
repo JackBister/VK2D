@@ -1,9 +1,17 @@
 #pragma once
 
+#include <utility>
+
+#if _MSC_VER && !__INTEL_COMPILER
+#include <variant>
+#else
 #include <experimental/variant.hpp>
+using std::variant = std::experimental::variant;
+#endif
 
 #include "Core/Maybe.h"
 #include "Core/Rendering/Buffer.h"
+#include "Core/Rendering/Context/RenderContext.h"
 #include "Core/Rendering/RendererData.h"
 #include "Core/Rendering/SubmittedCamera.h"
 #include "Core/Rendering/SubmittedSprite.h"
@@ -22,12 +30,12 @@ struct RenderCommand
 	{
 		NOP,
 		ABORT,
+		CREATE_RESOURCE,
+		EXECUTE_COMMAND_CONTEXT,
 		ADD_BUFFER,
 		DELETE_BUFFER,
 		ADD_FRAMEBUFFER,
 		DELETE_FRAMEBUFFER,
-		ADD_IMAGE,
-		DELETE_IMAGE,
 		ADD_PROGRAM,
 		DELETE_PROGRAM,
 		ADD_SHADER,
@@ -42,6 +50,18 @@ struct RenderCommand
 	{
 		int errorCode;
 		AbortParams(int errorCode) : errorCode(errorCode) {}
+	};
+
+	struct CreateResourceParams
+	{
+		std::function<void(ResourceCreationContext&)> fun;
+		CreateResourceParams(std::function<void(ResourceCreationContext&)> fun) : fun(fun) {}
+	};
+
+	struct ExecuteCommandContextParams
+	{
+		RenderCommandContext * ctx;
+		ExecuteCommandContextParams(RenderCommandContext *&& ctx) : ctx(ctx) {}
 	};
 
 	struct AddBufferParams
@@ -68,18 +88,6 @@ struct RenderCommand
 	{
 		Framebuffer * fb;
 		DeleteFramebufferParams(Framebuffer * fb) : fb(fb) {}
-	};
-
-	struct AddImageParams
-	{
-		Image * img;
-		AddImageParams(Image * img) : img(img) {}
-	};
-	
-	struct DeleteImageParams
-	{
-		Image * img;
-		DeleteImageParams(Image * img) : img(img) {}
 	};
 
 	struct AddProgramParams
@@ -120,8 +128,9 @@ struct RenderCommand
 		DrawViewParams(ViewDef * view) : view(view) {}
 	};
 
-	using RenderCommandParams = std::experimental::variant<None, AbortParams, AddBufferParams, DeleteBufferParams, AddFramebufferParams, DeleteFramebufferParams,
-														   AddImageParams, DeleteImageParams, AddProgramParams, DeleteProgramParams, AddShaderParams,
+	using RenderCommandParams = std::variant<None, AbortParams, CreateResourceParams, ExecuteCommandContextParams,
+														   AddBufferParams, DeleteBufferParams, AddFramebufferParams, DeleteFramebufferParams,
+														   AddProgramParams, DeleteProgramParams, AddShaderParams,
 														   DeleteShaderParams, EndFrameParams, DrawViewParams>;
 
 	RenderCommandParams params;

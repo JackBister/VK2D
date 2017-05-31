@@ -26,10 +26,11 @@ struct Entity;
 
 struct Component : LuaSerializable, Deserializable
 {
+	virtual ~Component();
+
+	virtual void OnEvent(std::string name, EventArgs args = {}) = 0;
+
 	Entity * entity;
 	bool isActive = true;
 	bool receiveTicks;
-	
-	virtual ~Component();
-	virtual void OnEvent(std::string name, EventArgs args = {}) = 0;
 };

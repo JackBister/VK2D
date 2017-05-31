@@ -95,7 +95,9 @@ Deserializable * PhysicsWorld::Deserialize(ResourceManager * resourceManager, co
 	PhysicsWorld * ret = new (mem) PhysicsWorld();
 	nlohmann::json j = nlohmann::json::parse(str);
 	ret->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
+
 	ret->dispatcher = std::make_unique<btCollisionDispatcher>(ret->collisionConfig.get());
+
 	ret->broadphase = std::make_unique<btDbvtBroadphase>();
 	ret->constraintSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
 	ret->world = std::make_unique<btDiscreteDynamicsWorld>(ret->dispatcher.get(), ret->broadphase.get(), ret->constraintSolver.get(), ret->collisionConfig.get());

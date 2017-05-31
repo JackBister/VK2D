@@ -26,8 +26,8 @@ struct CameraComponent;
 struct Entity;
 struct PhysicsWorld;
 struct ResourceManager;
-struct SceneCreateInfo;
 
+PROPERTY(LuaIndex, LuaNewIndex)
 struct Scene : LuaSerializable, Resource
 {
 	ResourceManager * resourceManager;
@@ -44,6 +44,7 @@ struct Scene : LuaSerializable, Resource
 	void SubmitCamera(CameraComponent *) noexcept;
 	void SubmitMesh(Mesh *) noexcept;
 	void SubmitSprite(Sprite *) noexcept;
+	void Tick() noexcept;
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;

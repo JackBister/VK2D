@@ -139,7 +139,6 @@ EventArg& EventArg::operator=(EventArg&& ea)
 	return *this;
 }
 
-
 EventArg::EventArg(std::string s) : type(Type::STRING), asString(new std::string(s))
 {
 }

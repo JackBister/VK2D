@@ -360,12 +360,35 @@ CXChildVisitResult AttributeVisitor(CXCursor cursor, CXCursor parent, CXClientDa
 	return CXChildVisit_Continue;
 }
 
+CXChildVisitResult InheritVisitor(CXCursor cursor, CXCursor parent, CXClientData clientData)
+{
+	if (clang_getCursorKind(cursor) == CXCursor_CXXBaseSpecifier) {
+		CXString s = clang_getCursorSpelling(cursor);
+		auto x = clang_getCursorType(cursor);
+		auto xs = clang_getTypeSpelling(x);
+		if (strcmp(clang_getCString(xs), "LuaSerializable") == 0) {
+			auto b = static_cast<bool *>(clientData);
+			*b = true;
+		}
+		clang_disposeString(xs);
+		clang_disposeString(s);
+		//Recursively check base class in case base class inherits LuaSerializable
+		//TODO: Problematic if base class implements the stuff
+		auto cType = clang_getCursorType(cursor);
+		auto cTypeDecl = clang_getTypeDeclaration(cType);
+		clang_visitChildren(cTypeDecl, InheritVisitor, clientData);
+	}
+	return CXChildVisit_Continue;
+}
+
 CXChildVisitResult DeclarationVisitor(CXCursor cursor, CXCursor parent, CXClientData clientData)
 {
 	if (!clang_Location_isFromMainFile(clang_getCursorLocation(cursor))) {
 		return CXChildVisit_Continue;
 	}
+
 	if (clang_isDeclaration(clang_getCursorKind(cursor))) {
+		auto fileAccumulator = static_cast<FileAccumulator *>(clientData);
 		Property p;
 		CXString ps = clang_getCursorSpelling(parent);
 		p.parent = std::string(clang_getCString(ps));
@@ -374,6 +397,13 @@ CXChildVisitResult DeclarationVisitor(CXCursor cursor, CXCursor parent, CXClient
 		CXString s = clang_getCursorSpelling(cursor);
 		p.name = std::string(clang_getCString(s));
 		clang_disposeString(s);
+		if (p.parent == fileAccumulator->fileName && clang_getCursorKind(cursor) == CXCursor_StructDecl || clang_getCursorKind(cursor) == CXCursor_ClassDecl) {
+			bool hasLuaSerializable = false;
+			clang_visitChildren(cursor, InheritVisitor, &hasLuaSerializable);
+			if (hasLuaSerializable) {
+				fileAccumulator->classes[p.name] = ClassAccumulator();
+			}
+		}
 		if (p.attrs.size() == 0) {
 			return CXChildVisit_Recurse;
 		}
@@ -387,7 +417,6 @@ CXChildVisitResult DeclarationVisitor(CXCursor cursor, CXCursor parent, CXClient
 		p.type = std::string(clang_getCString(ts));
 //		printf("%s %s\n", p.type.c_str(), p.name.c_str());
 		clang_disposeString(ts);
-		auto fileAccumulator = static_cast<FileAccumulator *>(clientData);
 		if (p.parent == fileAccumulator->fileName) {
 			//TODO:
 			//For some reason the class declaration gets the annotations of all its children, meaning one "property" with type = name and parent = filename will be created
@@ -499,6 +528,7 @@ void Generate_r(const boost::filesystem::path& output, const boost::filesystem::
 }
 
 int main(const int argc, const char *argv[]) {
+	using boost::filesystem::create_directories;
     using boost::filesystem::exists;
 	using boost::filesystem::is_directory;
 
@@ -508,9 +538,13 @@ int main(const int argc, const char *argv[]) {
     }
 
 	const boost::filesystem::path output(argv[1]);
-	if (!exists(output) || !is_directory(output)) {
-		printf("[ERROR] %s doesn't exist or isn't a directory.\n", argv[1]);
+	if (!is_directory(output)) {
+		printf("[ERROR] %s isn't a directory.\n", argv[1]);
 		return 1;
+	}
+
+	if (!exists(output)) {
+		create_directories(output);
 	}
 
     const boost::filesystem::path input(argv[2]);

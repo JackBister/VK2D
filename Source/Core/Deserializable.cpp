@@ -8,7 +8,7 @@ Deserializable * Deserializable::DeserializeString(ResourceManager * resourceMan
 	json j = json::parse(str);
 	//If your JSON is incorrect you will crash here. You deserve it.
 	std::string type = j["type"];
-	Deserializable * ret = Map()[type]->Deserialize(resourceManager, str, alloc);
+ 	Deserializable * ret = Map()[type]->Deserialize(resourceManager, str, alloc);
 	ret->type = type;
 	return ret;
 }

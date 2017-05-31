@@ -8,7 +8,7 @@ struct ResourceManager;
 
 struct Shader : Resource
 {
-	friend class Renderer;
+	friend struct Renderer;
 
 	enum class Type
 	{

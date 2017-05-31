@@ -12,7 +12,7 @@ struct Shader;
 //TODO:
 struct Program : Deserializable
 {
-	friend class Renderer;
+	friend struct Renderer;
 
 	Program() {}
 	Program(ResourceManager *, const std::string&);

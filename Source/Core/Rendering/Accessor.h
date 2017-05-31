@@ -8,7 +8,7 @@
 
 struct Accessor : Deserializable
 {
-	friend class Renderer;
+	friend struct Renderer;
 	
 	enum class ComponentType
 	{

@@ -10,6 +10,7 @@
 #include "Core/Rendering/Framebuffer.h"
 #include "Core/Rendering/Image.h"
 #include "Core/Rendering/OpenGL/OpenGLEnumConversions.h"
+#include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
 #include "Core/Rendering/Program.h"
 #include "Core/Rendering/Shader.h"
 #include "Core/Rendering/ViewDef.h"
@@ -19,6 +20,11 @@
 //The number of floats contained in one vertex
 //vec3 pos, vec3 normal, vec2 UV
 #define VERTEX_SIZE 8
+
+OpenGLFramebufferHandle Renderer::Backbuffer;
+OpenGLShaderModuleHandle Renderer::ptVertexModule;
+OpenGLShaderModuleHandle Renderer::ptFragmentModule;
+
 
 //Realistically this should only be used to represent different quads
 //Just wanted the convenience of putting VBO, EBO and verts together
@@ -55,6 +61,11 @@ Renderer::~Renderer() noexcept
 	SDL_DestroyWindow(window);
 }
 
+OpenGLRenderCommandContext * Renderer::CreateCommandContext()
+{
+	return new OpenGLRenderCommandContext(new std::allocator<uint8_t>());
+}
+
 void Renderer::EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<SubmittedSprite>& sprites) noexcept
 {
 	glBeginQuery(GL_TIME_ELAPSED, timeQuery);
@@ -72,11 +83,15 @@ void Renderer::EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<Submi
 		//TODO: Only needs to be done once
 		GLint minUVloc = glGetUniformLocation(ptProgram->rendererData.program, "minUV");
 		GLint sizeUVloc = glGetUniformLocation(ptProgram->rendererData.program, "sizeUV");
+		GLint mvpLoc = glGetUniformLocation(ptProgram->rendererData.program, "pvm");
+		GLint numberLoc = glGetUniformLocation(ptProgram->rendererData.program, "numbers.pvm");
+		/*
 		GLint mLoc = glGetUniformLocation(ptProgram->rendererData.program, "model");
 		GLint vLoc = glGetUniformLocation(ptProgram->rendererData.program, "view");
 		glUniformMatrix4fv(vLoc, 1, GL_FALSE, glm::value_ptr(camera.view));
 		GLint pLoc = glGetUniformLocation(ptProgram->rendererData.program, "projection");
 		glUniformMatrix4fv(pLoc, 1, GL_FALSE, glm::value_ptr(camera.projection));
+		*/
 		GLint texLoc = glGetUniformLocation(ptProgram->rendererData.program, "tex");
 		glUniform1i(texLoc, 0);
 		glActiveTexture(GL_TEXTURE0);
@@ -91,8 +106,9 @@ void Renderer::EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<Submi
 		for (auto& s : sprites) {
 			glUniform2f(minUVloc, s.minUV.x, s.minUV.y);
 			glUniform2f(sizeUVloc, s.sizeUV.x, s.sizeUV.y);
-			glUniformMatrix4fv(mLoc, 1, GL_FALSE, glm::value_ptr(s.transform));
-			glBindTexture(GL_TEXTURE_2D, s.rendererData.texture);
+			auto pvm = camera.projection * camera.view * s.transform;
+			glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(pvm));
+			glBindTexture(GL_TEXTURE_2D, ((OpenGLImageHandle *)s.img)->nativeHandle);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		}
 
@@ -101,7 +117,7 @@ void Renderer::EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<Submi
 			printf("EndFrame glGetError %d\n", err);
 		}
 	}
-	glBindTexture(GL_TEXTURE_2D, backbufferTexture.texture);
+	glBindTexture(GL_TEXTURE_2D, backbuffer.nativeHandle);
 	glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 0, 0, dimensions.x, dimensions.y, 0);
 	SDL_GL_SwapWindow(window);
 	auto currTime = std::chrono::high_resolution_clock::now();
@@ -135,8 +151,8 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 
 	glGenQueries(1, &timeQuery);
 
-	glGenTextures(1, &backbufferTexture.texture);
-	glBindTexture(GL_TEXTURE_2D, backbufferTexture.texture);
+	glGenTextures(1, &backbuffer.nativeHandle);
+	glBindTexture(GL_TEXTURE_2D, backbuffer.nativeHandle);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -145,11 +161,9 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 	//TODO: depth and stencil buffers as images
 	ImageCreateInfo backBufferTexCreateInfo = {
 		"__Scratch/Backbuffer.tex",
-		Image::Format::RGBA8,
 		h, w,
-		{},
 		resMan,
-		backbufferTexture
+		&backbuffer
 	};
 
 	backBufferImage = std::make_shared<Image>(backBufferTexCreateInfo);
@@ -183,6 +197,7 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 	pfShader = resourceManager->LoadResource<Shader>("shaders/passthrough.frag");
 	ptProgram = resourceManager->LoadResourceOrConstruct<Program>("__Scratch/Programs/passthrough.prog", ptvShader, pfShader);
 
+
 	glGenVertexArrays(1, &ptVAO);
 	glBindVertexArray(ptVAO);
 
@@ -197,6 +212,12 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	DrainQueue();
+
+	//TODO:
+	ptVertexModule.nativeHandle = ptvShader.get()->rendererData.shader;
+	ptFragmentModule.nativeHandle = pfShader.get()->rendererData.shader;
 
 	lastTime = std::chrono::high_resolution_clock::now();
 }
@@ -232,7 +253,7 @@ void Renderer::AddFramebuffer(Framebuffer * const fb) noexcept
 	glBindFramebuffer(GL_FRAMEBUFFER, fb->rendererData.framebuffer);
 	for (auto& kv : fb->GetImages()) {
 		GLenum attachment = AttachmentGL(kv.first);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, kv.second->GetRendererData().texture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, ((OpenGLImageHandle *)kv.second->GetImageHandle())->nativeHandle, 0);
 	}
 }
 
@@ -241,33 +262,8 @@ void Renderer::DeleteFramebuffer(Framebuffer * const fb) noexcept
 	glDeleteFramebuffers(1, &fb->GetRendererData().framebuffer);
 }
 
-void Renderer::AddImage(Image * const img) noexcept
-{
-	const Image::Format iFormat = img->format;
-	const Image::ImageParameters& iParams = img->params;
-	const GLenum format = FormatGL(iFormat);
-	const GLint internalFormat = InternalFormatGL(iFormat);
-
-	glGenTextures(1, &img->rendererData.texture);
-	glBindTexture(GL_TEXTURE_2D, img->rendererData.texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, img->GetWidth(), img->GetHeight(), 0, format, GL_UNSIGNED_BYTE, img->GetData().data());
-	glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, WrapModeGL(iParams.sWrapMode));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, WrapModeGL(iParams.tWrapMode));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, MagFilterGL(iParams.magFilter));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, MinFilterGL(iParams.minFilter));
-}
-
-void Renderer::DeleteImage(Image * const img) noexcept
-{
-	if (img->rendererData.texture != 0) {
-		glDeleteTextures(1, &img->rendererData.texture);
-	}
-}
-
 void Renderer::AddProgram(Program * const prog) noexcept
 {
-	printf("AddProgram start\n");
 	prog->rendererData.program = glCreateProgram();
 	if (prog->rendererData.program == 0) {
 		printf("[ERROR] AddProgram: glCreateProgram returned 0.\n");
@@ -289,7 +285,6 @@ void Renderer::AddProgram(Program * const prog) noexcept
 		prog->rendererData.program = 0;
 		printf("Program link failed\n %s\n", message);
 	}
-	printf("AddProgram end\n");
 }
 
 void Renderer::DeleteProgram(Program * const prog) noexcept
@@ -335,56 +330,63 @@ void Renderer::DrainQueue() noexcept
 	do {
 		renderCommand = renderQueue.Pop();
 		if (renderCommand.index() != 0) {
-			RenderCommand command = std::experimental::get<RenderCommand>(renderCommand);
+			RenderCommand command = std::get<RenderCommand>(renderCommand);
 			switch (command.params.index()) {
 			case RenderCommand::Type::NOP:
 				printf("[WARNING] NOP render command.\n");
 				break;
 			case RenderCommand::Type::ABORT:
 				isAborting = true;
-				abortCode = std::experimental::get<RenderCommand::AbortParams>(command.params).errorCode;
+				abortCode = std::get<RenderCommand::AbortParams>(command.params).errorCode;
 				break;
+			case RenderCommand::Type::CREATE_RESOURCE:
+			{
+				auto fun = std::get<RenderCommand::CreateResourceParams>(command.params).fun;
+				OpenGLResourceContext ctx;
+				fun(ctx);
+				break;
+			}
+			case RenderCommand::Type::EXECUTE_COMMAND_CONTEXT:
+			{
+				auto ctx = std::get<RenderCommand::ExecuteCommandContextParams>(command.params).ctx;
+				ctx->Execute();
+				break;
+			}
 			case RenderCommand::Type::ADD_BUFFER:
 			{
-				AddBuffer(std::experimental::get<RenderCommand::AddBufferParams>(command.params));
+				AddBuffer(std::get<RenderCommand::AddBufferParams>(command.params));
 				break;
 			}
 			case RenderCommand::Type::DELETE_BUFFER:
-				DeleteBuffer(std::experimental::get<RenderCommand::DeleteBufferParams>(command.params).rData);
+				DeleteBuffer(std::get<RenderCommand::DeleteBufferParams>(command.params).rData);
 				break;
 			case RenderCommand::Type::ADD_FRAMEBUFFER:
-				AddFramebuffer(std::experimental::get<RenderCommand::AddFramebufferParams>(command.params).fb);
+				AddFramebuffer(std::get<RenderCommand::AddFramebufferParams>(command.params).fb);
 				break;
 			case RenderCommand::Type::DELETE_FRAMEBUFFER:
-				DeleteFramebuffer(std::experimental::get<RenderCommand::DeleteFramebufferParams>(command.params).fb);
-				break;
-			case RenderCommand::Type::ADD_IMAGE:
-				AddImage(std::experimental::get<RenderCommand::AddImageParams>(command.params).img);
-				break;
-			case RenderCommand::Type::DELETE_IMAGE:
-				DeleteImage(std::experimental::get<RenderCommand::DeleteImageParams>(command.params).img);
+				DeleteFramebuffer(std::get<RenderCommand::DeleteFramebufferParams>(command.params).fb);
 				break;
 			case RenderCommand::Type::ADD_PROGRAM:
-				AddProgram(std::experimental::get<RenderCommand::AddProgramParams>(command.params).prog);
+				AddProgram(std::get<RenderCommand::AddProgramParams>(command.params).prog);
 				break;
 			case RenderCommand::Type::DELETE_PROGRAM:
-				DeleteProgram(std::experimental::get<RenderCommand::DeleteProgramParams>(command.params).prog);
+				DeleteProgram(std::get<RenderCommand::DeleteProgramParams>(command.params).prog);
 				break;
 			case RenderCommand::Type::ADD_SHADER:
-				AddShader(std::experimental::get<RenderCommand::AddShaderParams>(command.params).shader);
+				AddShader(std::get<RenderCommand::AddShaderParams>(command.params).shader);
 				break;
 			case RenderCommand::Type::DELETE_SHADER:
-				DeleteShader(std::experimental::get<RenderCommand::DeleteShaderParams>(command.params).shader);
+				DeleteShader(std::get<RenderCommand::DeleteShaderParams>(command.params).shader);
 				break;
 			case RenderCommand::Type::END_FRAME:
 			{
-				RenderCommand::EndFrameParams params = std::experimental::get<RenderCommand::EndFrameParams>(command.params);
-				EndFrame(params.cameras, params.sprites);
+				RenderCommand::EndFrameParams params = std::get<RenderCommand::EndFrameParams>(command.params);
+				//EndFrame(params.cameras, params.sprites);
 				break;
 			}
 			case RenderCommand::Type::DRAW_VIEW:
 			{
-				RenderCommand::DrawViewParams params = std::experimental::get<RenderCommand::DrawViewParams>(command.params);
+				RenderCommand::DrawViewParams params = std::get<RenderCommand::DrawViewParams>(command.params);
 				EndFrame(params.view->camera, params.view->sprites);
 				viewDefsToPush.push_back(params.view);
 				break;

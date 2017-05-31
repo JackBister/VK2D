@@ -11,7 +11,7 @@
 #if defined(_WIN32)
 //I hate this:
 #include <Windows.h>
-#define VK_USE_PLATFORM_WIN32_KHR
+#define USE_PLATFORM_WIN32_KHR
 #endif
 #include "vulkan/vulkan.h"
 
@@ -347,7 +347,7 @@ void VulkanRenderer::EndFrame()
 VkBool32 VKAPI_PTR dbgCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char * pLayerPrefix, const char * pMessage, void * pUserData)
 {
 	printf("[%s] %s\n", pLayerPrefix, pMessage);
-	return VK_FALSE;
+	return FALSE;
 }
 #endif
 
@@ -367,13 +367,13 @@ bool VulkanRenderer::Init(ResourceManager * resMan,  const char * title, const i
 	//The extensions the renderer needs
 	std::vector<const char *> instanceExtensions = {
 #if defined(_DEBUG)
-		VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+		EXT_DEBUG_REPORT_EXTENSION_NAME,
 #endif
 		VK_KHR_SURFACE_EXTENSION_NAME,
 		//TODO: Other WMs
-		#if defined(VK_USE_PLATFORM_WIN32_KHR)
-				VK_KHR_WIN32_SURFACE_EXTENSION_NAME
-		#endif
+#if defined(USE_PLATFORM_WIN32_KHR)
+		VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+#endif
 	};
 
 	if (!CheckVkInstanceExtensions(instanceExtensions)) {
@@ -383,10 +383,10 @@ bool VulkanRenderer::Init(ResourceManager * resMan,  const char * title, const i
 
 	std::vector<const char *> instanceLayers = {
 #if defined(_DEBUG)
-		"VK_LAYER_LUNARG_standard_validation",
+		"LAYER_LUNARG_standard_validation",
 #endif
 #if defined(VULKAN_API_DUMP)
-		"VK_LAYER_LUNARG_api_dump"
+		"LAYER_LUNARG_api_dump"
 #endif
 	};
 
@@ -429,9 +429,9 @@ bool VulkanRenderer::Init(ResourceManager * resMan,  const char * title, const i
 		(vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT"));
 
 	VkDebugReportCallbackCreateInfoEXT dbgInfo = {
-		VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+		STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
 		nullptr,
-		VK_DEBUG_REPORT_INFORMATION_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT,
+		DEBUG_REPORT_INFORMATION_BIT_EXT | DEBUG_REPORT_WARNING_BIT_EXT | DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | DEBUG_REPORT_ERROR_BIT_EXT | DEBUG_REPORT_DEBUG_BIT_EXT,
 		dbgCallback,
 		nullptr
 	};
@@ -449,16 +449,16 @@ bool VulkanRenderer::Init(ResourceManager * resMan,  const char * title, const i
 	/*
 		Platform specific surface creation
 		TODO: Other WMs
-		TODO: WTF: If this part of the code or the instance creation code is put in a block or lambda, vkGetPhysicalDeviceSurfaceCapabilitiesKHR will return VK_ERROR_SURFACE_LOST
+		TODO: WTF: If this part of the code or the instance creation code is put in a block or lambda, vkGetPhysicalDeviceSurfaceCapabilitiesKHR will return ERROR_SURFACE_LOST
 	*/
 	//bool surfaceResult = [] (const VkInstance& instance, const SDL_SysWMinfo& wmInfo, VkSurfaceKHR * const ret) -> bool {
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
+#if defined(USE_PLATFORM_WIN32_KHR)
 		//I hate Windows APIs
 		//TODO: I suspect this line of code is the cause of a lot of pain:
 	HINSTANCE win32Instance = (HINSTANCE)GetWindowLongPtr(wmInfo.info.win.window, GWLP_HINSTANCE);
 	VkWin32SurfaceCreateFlagsKHR win32SurfaceFlags = 0;
 	VkWin32SurfaceCreateInfoKHR win32SurfaceInfo = {
-		VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+		STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
 		nullptr,
 		win32SurfaceFlags,
 		win32Instance,
@@ -610,7 +610,7 @@ bool VulkanRenderer::Init(ResourceManager * resMan,  const char * title, const i
 
 	std::vector<const char *> deviceLayers = {
 #if defined(_DEBUG)
-		"VK_LAYER_LUNARG_standard_validation"
+		"LAYER_LUNARG_standard_validation"
 #endif
 	};
 
@@ -769,7 +769,7 @@ bool VulkanRenderer::Init(ResourceManager * resMan,  const char * title, const i
 			desiredTransform,
 			VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 			desiredPresentMode,
-			VK_TRUE,
+			TRUE,
 			VK_NULL_HANDLE
 		};
 
@@ -856,7 +856,7 @@ bool VulkanRenderer::Init(ResourceManager * resMan,  const char * title, const i
 		};
 
 		for (uint32_t i = 0; i < swapchainImageCount; ++i) {
-			//Memory barrier that moves from VK_IMAGE_LAYOUT_PRESENT_SOURCE_KHR to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+			//Memory barrier that moves from IMAGE_LAYOUT_PRESENT_SOURCE_KHR to IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 			VkImageMemoryBarrier barrierFromPresentToClear = {
 				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 				nullptr,
@@ -869,7 +869,7 @@ bool VulkanRenderer::Init(ResourceManager * resMan,  const char * title, const i
 				swapchainImages[i],
 				imgSubresourceRange
 			};
-			//Memory barrier that moves from VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL to VK_IMAGE_LAYOUT_PRESENT_SOURCE_KHR
+			//Memory barrier that moves from IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL to IMAGE_LAYOUT_PRESENT_SOURCE_KHR
 			VkImageMemoryBarrier barrierFromClearToPresent = {
 				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 				nullptr,
@@ -886,7 +886,7 @@ bool VulkanRenderer::Init(ResourceManager * resMan,  const char * title, const i
 			vkCmdPipelineBarrier(presentCmdbufs[i], VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrierFromPresentToClear);
 			//TODO: Replace with blit from graphics queue backbuffer?
 			vkCmdClearColorImage(presentCmdbufs[i], swapchainImages[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &imgSubresourceRange);
-			vkCmdPipelineBarrier(presentCmdbufs[i], VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrierFromClearToPresent);
+			vkCmdPipelineBarrier(presentCmdbufs[i], PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrierFromClearToPresent);
 			if (vkEndCommandBuffer(presentCmdbufs[i]) != VK_SUCCESS) {
 				printf("[ERROR] Vulkan: Unable to record present command buffer.\n");
 				return false;
@@ -898,13 +898,13 @@ bool VulkanRenderer::Init(ResourceManager * resMan,  const char * title, const i
 		{
 			0,
 			swapchain.format,
-			VK_SAMPLE_COUNT_1_BIT,
-			VK_ATTACHMENT_LOAD_OP_CLEAR,
-			VK_ATTACHMENT_STORE_OP_STORE,
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+		VK_SAMPLE_COUNT_1_BIT,
+		VK_ATTACHMENT_LOAD_OP_CLEAR,
+		VK_ATTACHMENT_STORE_OP_STORE,
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,
+		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
 		}
 	};
 

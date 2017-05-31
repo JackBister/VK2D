@@ -20,7 +20,13 @@ struct ResourceManager
 	ResourceManager(Queue<RenderCommand>::Writer&&, Allocator& a = Allocator::default_allocator);
 
 	template <typename T>
+	void AddResource(const std::string& name, const T * res);
+
+	template <typename T>
 	void AddResourceRefCounted(const std::string& name, const std::weak_ptr<T> res);
+
+	template <typename T>
+	T * GetResource(const std::string& name);
 
 	template<typename T>
 	std::shared_ptr<T> LoadResource(const std::string& fileName);
@@ -31,16 +37,32 @@ struct ResourceManager
 	void PushRenderCommand(const RenderCommand&);
 
 private:
+	std::unordered_map<std::string, void *> nonRCCache;
 	std::unordered_map<std::string, std::weak_ptr<void>> rcCache;
 	Allocator& allocator;
 	Queue<RenderCommand>::Writer renderQueue;
 };
 
 template <typename T>
+void ResourceManager::AddResource(const std::string& name, const T * res)
+{
+	nonRCCache[name] = (void *)res;
+}
+
+template <typename T>
 void ResourceManager::AddResourceRefCounted(const std::string& name, const std::weak_ptr<T> res)
 {
 	//TODO: Check if exists? Pointless?
 	rcCache[name] = res;
+}
+
+template <typename T>
+T * ResourceManager::GetResource(const std::string& name)
+{
+	if (nonRCCache.find(name) != nonRCCache.end() && nonRCCache[name] != nullptr) {
+		return (T *)nonRCCache[name];
+	}
+	return nullptr;
 }
 
 template<typename T>

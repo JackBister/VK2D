@@ -1,4 +1,4 @@
-#version 410 core
+#version 420
 
 layout (location = 0) in vec2 pos;
 layout (location = 1) in vec3 color;

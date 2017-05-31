@@ -31,7 +31,7 @@ void Input::Frame() noexcept
 	do {
 		evt = inputQueue.Pop();
 		if (evt.index() != 0) {
-			const SDL_Event& e = std::experimental::get<SDL_Event>(evt);
+			const SDL_Event& e = std::get<SDL_Event>(evt);
 			switch (e.type) {
 			case SDL_QUIT:
 			{

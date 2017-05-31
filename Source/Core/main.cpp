@@ -44,11 +44,7 @@ void MainThread(ResourceManager * resMan, Queue<SDL_Event>::Reader&& inputQueue,
 	scene.time.Start();
 	scene.BroadcastEvent("BeginPlay");
 	while (true) {
-		scene.input.Frame();
-		scene.time.Frame();
-		//TODO: substeps
-		scene.physicsWorld->world->stepSimulation(scene.time.GetDeltaTime());
-		scene.BroadcastEvent("Tick", {{"deltaTime", scene.time.GetDeltaTime()}});
+		scene.Tick();
 		scene.EndFrame();
 	}
 }
@@ -72,6 +68,7 @@ int main(int argc, char *argv[])
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			inputWriter.Push(e);
+			//printf("pushing\n");
 		}
 		const char * sdlErr = SDL_GetError();
 		if (*sdlErr != '\0') {
