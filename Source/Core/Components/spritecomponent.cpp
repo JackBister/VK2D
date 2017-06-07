@@ -84,6 +84,8 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 				2,
 				descriptors
 			});
+
+			ret->hasCreatedLocalResources = true;
 		}));
 		resourceManager->PushRenderCommand(rc);
 	}
@@ -96,48 +98,6 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 
 		resources.vertexInputState = resourceManager->GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/passthrough-transform.state");
 		resources.pipeline = resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/passthrough-transform.pipe");
-
-		RenderCommand rc(RenderCommand::CreateResourceParams([](ResourceCreationContext& ctx) {
-			RenderPassHandle::AttachmentDescription attachment = {
-				0,
-				Format::RGBA8,
-				RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
-				RenderPassHandle::AttachmentDescription::StoreOp::STORE,
-				RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
-				RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
-				ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-				ImageLayout::COLOR_ATTACHMENT_OPTIMAL
-			};
-
-			RenderPassHandle::AttachmentReference reference = {
-				0,
-				ImageLayout::COLOR_ATTACHMENT_OPTIMAL
-			};
-
-			RenderPassHandle::SubpassDescription subpass = {
-				RenderPassHandle::PipelineBindPoint::GRAPHICS,
-				0,
-				nullptr,
-				1,
-				&reference,
-				nullptr,
-				nullptr,
-				0,
-				nullptr
-			};
-
-			resources.renderPass = ctx.CreateRenderPass({
-				1,
-				&attachment,
-				1,
-				&subpass,
-				0,
-				nullptr
-			});
-
-			hasFinishedCreatingResources = true;
-		}));
-		resourceManager->PushRenderCommand(rc);
 	}
 	return ret;
 }
@@ -147,27 +107,11 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 	if (name == "BeginPlay") {
 		sprite.transform = &(entity->transform);
 	} else if (name == "GatherRenderCommands") {
-		if (hasFinishedCreatingResources && sprite.image->GetImageHandle()) {
+		if (hasCreatedLocalResources && sprite.image->GetImageHandle()) {
+			auto img = sprite.image->GetImageHandle();
+			img->DEBUGUINT = 0xdeadbeef;
 			auto camera = (SubmittedCamera *)args["camera"].asLuaSerializable;
 			auto ctx = Renderer::CreateCommandContext();
-			//TODO:
-			RenderCommandContext::RenderPassBeginInfo beginInfo = {
-				resources.renderPass,
-				&Renderer::Backbuffer,
-				{
-					{
-						0,
-						0
-					},
-					{
-						800,
-						600
-					}
-				},
-				0,
-				nullptr
-			};
-			ctx->CmdBeginRenderPass(&beginInfo, RenderCommandContext::SubpassContents::INLINE);
 			RenderCommandContext::Viewport viewPort = {
 				0.f,
 				0.f,
@@ -209,10 +153,7 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 
 			ctx->CmdDrawIndexed(6, 1, 0, 0);
 
-			ctx->CmdEndRenderPass();
-
-			RenderCommand rc(RenderCommand::ExecuteCommandContextParams(std::move(ctx)));
-			entity->scene->PushRenderCommand(rc);
+			entity->scene->SubmitCommandBuffer(ctx);
 		}
 	}
 }

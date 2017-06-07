@@ -74,7 +74,7 @@ void SpritesheetComponent::OnEvent(std::string name, EventArgs args)
 			}
 		}
 		if (sprite.image->GetImageHandle()) {
-			entity->scene->SubmitSprite(&sprite);
+			//entity->scene->SubmitSprite(&sprite);
 		}
 	}
 }

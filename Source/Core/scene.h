@@ -42,6 +42,7 @@ struct Scene : LuaSerializable, Resource
 	void EndFrame() noexcept;
 	void PushRenderCommand(const RenderCommand&) noexcept;
 	void SubmitCamera(CameraComponent *) noexcept;
+	void SubmitCommandBuffer(RenderCommandContext *);
 	void SubmitMesh(Mesh *) noexcept;
 	void SubmitSprite(Sprite *) noexcept;
 	void Tick() noexcept;
@@ -75,10 +76,8 @@ private:
 	std::vector<SubmittedCamera> camerasToSubmit;
 	std::vector<SubmittedMesh> meshesToSubmit;
 	std::vector<SubmittedSprite> spritesToSubmit;
+	void CreatePrimitives();
 
-	//TODO:
-	std::vector<std::shared_ptr<Accessor>> accessors;
-	std::vector<std::shared_ptr<Material>> materials;
-	std::vector<std::shared_ptr<Mesh>> meshes;
-	std::vector<std::shared_ptr<Program>> programs;
+	std::vector<RenderCommandContext *> command_buffers_;
+	RenderPassHandle * main_renderpass_;
 };

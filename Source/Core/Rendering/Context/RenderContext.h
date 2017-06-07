@@ -178,6 +178,8 @@ struct ImageHandle
 	Format format;
 	Type type;
 	uint32_t width, height, depth;
+
+	uint32_t DEBUGUINT = 0;
 };
 
 struct ImageViewHandle
@@ -374,6 +376,7 @@ struct RenderCommandContext
 	virtual void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) = 0;
 	virtual void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset) = 0;
 	virtual void CmdEndRenderPass() = 0;
+	virtual void CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers) = 0;
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, const Rect2D * pScissors) = 0;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, const Viewport * pViewports) = 0;
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData) = 0;
@@ -390,6 +393,7 @@ protected:
 		BIND_VERTEX_BUFFER,
 		DRAW_INDEXED,
 		END_RENDERPASS,
+		EXECUTE_COMMANDS,
 		SET_SCISSOR,
 		SET_VIEWPORT,
 		UPDATE_BUFFER

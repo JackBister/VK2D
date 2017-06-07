@@ -374,6 +374,7 @@ VertexInputStateHandle * OpenGLResourceContext::CreateVertexInputState(ResourceC
 
 		glVertexArrayAttribFormat(ret->nativeHandle, attributeDescription.location, attributeDescription.size, type, attributeDescription.normalized, attributeDescription.offset);
 		glVertexArrayAttribBinding(ret->nativeHandle, attributeDescription.location, attributeDescription.binding);
+		glEnableVertexArrayAttrib(ret->nativeHandle, attributeDescription.location);
 	}
 	return ret;
 }
@@ -472,6 +473,11 @@ void OpenGLRenderCommandContext::CmdEndRenderPass()
 {
 }
 
+void OpenGLRenderCommandContext::CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers)
+{
+	commandList.push_back(ExecuteCommandsArgs{ commandBufferCount, (OpenGLRenderCommandContext **)pCommandBuffers });
+}
+
 void OpenGLRenderCommandContext::CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, const RenderCommandContext::Rect2D *pScissors)
 {
 	auto cmd = SetScissorArgs{firstScissor, static_cast<int>(scissorCount), nullptr};
@@ -558,6 +564,15 @@ void OpenGLRenderCommandContext::Execute()
 			auto args = std::get<DrawIndexedArgs>(rc);
 			assert(indexBufferType == GL_UNSIGNED_SHORT || indexBufferType == GL_UNSIGNED_INT);
 			glDrawElementsInstanced(GL_TRIANGLES, args.count, indexBufferType, args.indices, args.primcount);
+			break;
+		}
+		case RenderCommandType::EXECUTE_COMMANDS:
+		{
+			auto args = std::get<ExecuteCommandsArgs>(rc);
+			assert(args.pCommandBuffers != nullptr);
+			for (uint32_t i = 0; i < args.commandBufferCount; ++i) {
+				args.pCommandBuffers[i]->Execute();
+			}
 			break;
 		}
 		case RenderCommandType::SET_SCISSOR:

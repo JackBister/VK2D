@@ -18,7 +18,7 @@
 
 #include "Core/scene.h.generated.h"
 
-static void CreatePrimitives(ResourceManager * resMan)
+void Scene::CreatePrimitives()
 {
 	using namespace std::chrono_literals;
 	const float plainQuadVerts[] = {
@@ -128,7 +128,7 @@ static void CreatePrimitives(ResourceManager * resMan)
 				VertexComponentType::FLOAT,
 				3,
 				false,
-				3
+				3 * sizeof(float)
 			},
 			{
 				0,
@@ -136,7 +136,7 @@ static void CreatePrimitives(ResourceManager * resMan)
 				VertexComponentType::FLOAT,
 				2,
 				false,
-				6
+				6 * sizeof(float)
 			}
 		};
 
@@ -153,23 +153,61 @@ static void CreatePrimitives(ResourceManager * resMan)
 			ptInputState
 		});
 
+		RenderPassHandle::AttachmentDescription attachment = {
+			0,
+			Format::RGBA8,
+			RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+			RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+			RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+			RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+			ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+			ImageLayout::COLOR_ATTACHMENT_OPTIMAL
+		};
+
+		RenderPassHandle::AttachmentReference reference = {
+			0,
+			ImageLayout::COLOR_ATTACHMENT_OPTIMAL
+		};
+
+		RenderPassHandle::SubpassDescription subpass = {
+			RenderPassHandle::PipelineBindPoint::GRAPHICS,
+			0,
+			nullptr,
+			1,
+			&reference,
+			nullptr,
+			nullptr,
+			0,
+			nullptr
+		};
+
+
+		this->main_renderpass_ = ctx.CreateRenderPass({
+			1,
+			&attachment,
+			1,
+			&subpass,
+			0,
+			nullptr
+		});
+
 		finishedJobs++;
 	}));
 
-	resMan->PushRenderCommand(rc);
+	resourceManager->PushRenderCommand(rc);
 
 	while (finishedJobs.load() < 1) {
 		std::this_thread::sleep_for(1ms);
 	}
 
-	resMan->AddResource("_Primitives/Buffers/QuadVBO.buffer", quadVerts);
-	resMan->AddResource("_Primitives/Buffers/QuadEBO.buffer", quadElems);
+	resourceManager->AddResource("_Primitives/Buffers/QuadVBO.buffer", quadVerts);
+	resourceManager->AddResource("_Primitives/Buffers/QuadEBO.buffer", quadElems);
 
-	resMan->AddResource("_Primitives/Shaders/passthrough-transform.vert", ptvShader);
-	resMan->AddResource("_Primitives/Shaders/passthrough.frag", pfShader);
+	resourceManager->AddResource("_Primitives/Shaders/passthrough-transform.vert", ptvShader);
+	resourceManager->AddResource("_Primitives/Shaders/passthrough.frag", pfShader);
 
-	resMan->AddResource("_Primitives/VertexInputStates/passthrough-transform.state", ptInputState);
-	resMan->AddResource("_Primitives/Pipelines/passthrough-transform.pipe", ptPipeline);
+	resourceManager->AddResource("_Primitives/VertexInputStates/passthrough-transform.state", ptInputState);
+	resourceManager->AddResource("_Primitives/Pipelines/passthrough-transform.pipe", ptPipeline);
 
 }
 
@@ -180,7 +218,7 @@ Scene::Scene(const std::string& name, ResourceManager * resMan, Queue<SDL_Event>
 	using nlohmann::json;
 	this->name = name;
 
-	CreatePrimitives(resMan);
+	CreatePrimitives();
 
 	json j = json::parse(serializedScene);
 
@@ -221,9 +259,11 @@ void Scene::EndFrame() noexcept
 	ViewDef * vd = std::get<ViewDef *>(nextViewDef);
 	std::swap(vd->camera, camerasToSubmit);
 	std::swap(vd->sprites, spritesToSubmit);
+	std::swap(vd->commandBuffers, command_buffers_);
 	PushRenderCommand(RenderCommand(RenderCommand::DrawViewParams(vd)));
 	camerasToSubmit.clear();
 	spritesToSubmit.clear();
+	command_buffers_.clear();
 }
 
 void Scene::PushRenderCommand(const RenderCommand& rc) noexcept
@@ -234,6 +274,11 @@ void Scene::PushRenderCommand(const RenderCommand& rc) noexcept
 void Scene::SubmitCamera(CameraComponent * cam) noexcept
 {
 	camerasToSubmit.emplace_back(cam->GetViewMatrix(), cam->GetProjectionMatrix(), cam->GetRenderTarget()->GetRendererData());
+}
+
+void Scene::SubmitCommandBuffer(RenderCommandContext * ctx)
+{
+	command_buffers_.push_back(ctx);
 }
 
 void Scene::SubmitSprite(Sprite * sprite) noexcept
@@ -249,9 +294,39 @@ void Scene::Tick() noexcept
 	physicsWorld->world->stepSimulation(time.GetDeltaTime());
 	BroadcastEvent("Tick", { { "deltaTime", time.GetDeltaTime() } });
 
+	auto ctx = Renderer::CreateCommandContext();
+	RenderCommandContext::RenderPassBeginInfo beginInfo = {
+		main_renderpass_,
+		&Renderer::Backbuffer,
+		{
+			{
+				0,
+				0
+			},
+			{
+				//TODO:
+				800,
+				600
+			}
+		},
+		0,
+		nullptr
+	};
+	ctx->CmdBeginRenderPass(&beginInfo, RenderCommandContext::SubpassContents::SECONDARY_COMMAND_BUFFERS);
+
 	for (auto& cc : camerasToSubmit) {
 		BroadcastEvent("GatherRenderCommands", { { "camera", &cc } });
 	}
+
+	//TODO: Assumes single thread
+	if (command_buffers_.size() > 0) {
+		ctx->CmdExecuteCommands(command_buffers_.size(), &command_buffers_[0]);
+	}
+
+	ctx->CmdEndRenderPass();
+
+	RenderCommand rc(RenderCommand::ExecuteCommandContextParams(std::move(ctx)));
+	renderQueue.Push(rc);
 }
 
 Entity * Scene::GetEntityByName(std::string name)

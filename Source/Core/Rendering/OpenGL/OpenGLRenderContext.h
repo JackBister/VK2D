@@ -26,6 +26,7 @@ struct OpenGLRenderCommandContext : RenderCommandContext
 	virtual void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) override;
 	virtual void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset) override;
 	virtual void CmdEndRenderPass() override;
+	virtual void CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers) override;
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, const RenderCommandContext::Rect2D *pScissors) override;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, const RenderCommandContext::Viewport *pViewports) override;
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData) override;
@@ -100,6 +101,11 @@ private:
 	struct EndRenderPassArgs
 	{
 	};
+	struct ExecuteCommandsArgs
+	{
+		uint32_t commandBufferCount;
+		OpenGLRenderCommandContext ** pCommandBuffers;
+	};
 	struct SetScissorArgs
 	{
 		GLuint first;
@@ -121,7 +127,7 @@ private:
 	};
 	using RenderCommand = std::variant<BeginRenderPassArgs, BindDescriptorSetArgs, BindIndexBufferArgs, BindPipelineArgs,
 									   BindUniformBufferArgs, BindUniformImageArgs, BindVertexBufferArgs,
-									   DrawIndexedArgs, EndRenderPassArgs, SetScissorArgs, SetViewportArgs,
+									   DrawIndexedArgs, EndRenderPassArgs, ExecuteCommandsArgs, SetScissorArgs, SetViewportArgs,
 									   UpdateBufferArgs> ;
 
 	/*

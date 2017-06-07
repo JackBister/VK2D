@@ -28,7 +28,7 @@ struct Renderer
 
 	static OpenGLRenderCommandContext * CreateCommandContext();
 
-	void EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<SubmittedSprite>& sprites) noexcept;
+	void EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<SubmittedSprite>& sprites, std::vector<RenderCommandContext *>& commandBuffers) noexcept;
 	uint64_t GetFrameTime() noexcept;
 
 	void AddBuffer(RenderCommand::AddBufferParams) noexcept;

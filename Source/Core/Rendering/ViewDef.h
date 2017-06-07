@@ -10,6 +10,9 @@ struct ViewDef
 {
 	//TODO: 1 viewdef = 1 camera (avoid sprite vector copying)
 	std::vector<SubmittedCamera> camera;
+	
 	std::vector<SubmittedMesh> meshes;
 	std::vector<SubmittedSprite> sprites;
+
+	std::vector<RenderCommandContext *> commandBuffers;
 };

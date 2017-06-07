@@ -66,9 +66,14 @@ OpenGLRenderCommandContext * Renderer::CreateCommandContext()
 	return new OpenGLRenderCommandContext(new std::allocator<uint8_t>());
 }
 
-void Renderer::EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<SubmittedSprite>& sprites) noexcept
+void Renderer::EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<SubmittedSprite>& sprites, std::vector<RenderCommandContext *>& commandBuffers) noexcept
 {
 	glBeginQuery(GL_TIME_ELAPSED, timeQuery);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	for (auto ctx : commandBuffers) {
+		ctx->Execute();
+	}
+#if 0
 	for (auto camera : cameras) {
 		GLenum err = glGetError();
 		if (err != 0) {
@@ -117,6 +122,7 @@ void Renderer::EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<Submi
 			printf("EndFrame glGetError %d\n", err);
 		}
 	}
+#endif
 	glBindTexture(GL_TEXTURE_2D, backbuffer.nativeHandle);
 	glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 0, 0, dimensions.x, dimensions.y, 0);
 	SDL_GL_SwapWindow(window);
@@ -387,7 +393,7 @@ void Renderer::DrainQueue() noexcept
 			case RenderCommand::Type::DRAW_VIEW:
 			{
 				RenderCommand::DrawViewParams params = std::get<RenderCommand::DrawViewParams>(command.params);
-				EndFrame(params.view->camera, params.view->sprites);
+				EndFrame(params.view->camera, params.view->sprites, params.view->commandBuffers);
 				viewDefsToPush.push_back(params.view);
 				break;
 			}
