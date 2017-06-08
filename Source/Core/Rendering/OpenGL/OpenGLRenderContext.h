@@ -43,6 +43,10 @@ private:
 	*/
 	struct BeginRenderPassArgs
 	{
+		RenderPassHandle * renderPass;
+		FramebufferHandle * framebuffer;
+		uint32_t clearValueCount;
+		ClearValue * pClearValues;
 	};
 	struct BindDescriptorSetArgs
 	{

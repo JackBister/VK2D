@@ -155,6 +155,9 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 
 			entity->scene->SubmitCommandBuffer(ctx);
 		}
+	} else if (name == "Tick") {
+		auto pos = entity->transform.GetPosition();
+		//entity->transform.SetPosition(Vec3(pos.x, pos.y + args["deltaTime"].asFloat, pos.z));
 	}
 }
 

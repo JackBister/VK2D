@@ -405,6 +405,13 @@ void OpenGLResourceContext::DestroyDescriptorSet(DescriptorSet * set)
 
 void OpenGLRenderCommandContext::CmdBeginRenderPass(RenderCommandContext::RenderPassBeginInfo *pRenderPassBegin, RenderCommandContext::SubpassContents contents)
 {
+	BeginRenderPassArgs args;
+	args.renderPass = pRenderPassBegin->renderPass;
+	args.framebuffer = pRenderPassBegin->framebuffer;
+	args.clearValueCount = pRenderPassBegin->clearValueCount;
+	args.pClearValues = (ClearValue *)allocator->allocate(args.clearValueCount * sizeof(const ClearValue));
+	memcpy(args.pClearValues, pRenderPassBegin->pClearValues, args.clearValueCount * sizeof(const ClearValue));
+	commandList.push_back(args);
 }
 
 void OpenGLRenderCommandContext::CmdBindDescriptorSet(DescriptorSet * set)
@@ -508,6 +515,25 @@ void OpenGLRenderCommandContext::Execute()
 {
 	for (auto& rc : commandList) {
 		switch (rc.index()) {
+		case RenderCommandType::BEGIN_RENDERPASS:
+		{
+			auto args = std::get<BeginRenderPassArgs>(rc);
+			glBindFramebuffer(GL_FRAMEBUFFER, ((OpenGLFramebufferHandle *)args.framebuffer)->nativeHandle);
+			for (uint32_t i = 0; i < args.clearValueCount; ++i) {
+				if (args.pClearValues[i].type == RenderCommandContext::ClearValue::Type::COLOR) {
+					auto& color = args.pClearValues[i].color.float32;
+					glClearColor(color[0], color[1], color[2], color[3]);
+					glClear(GL_COLOR_BUFFER_BIT);
+				} else if (args.pClearValues[i].type == RenderCommandContext::ClearValue::Type::DEPTH_STENCIL) {
+					auto& depthStencil = args.pClearValues[i].depthStencil;
+					glClearDepthf(depthStencil.depth);
+					glClearStencil(depthStencil.stencil);
+					glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+				}
+			}
+			allocator->destroy(args.pClearValues);
+			break;
+		}
 		case RenderCommandType::BIND_DESCRIPTOR_SET:
 		{
 			auto args = std::get<BindDescriptorSetArgs>(rc);
@@ -580,6 +606,7 @@ void OpenGLRenderCommandContext::Execute()
 			auto args = std::get<SetScissorArgs>(rc);
 			assert(args.v);
 			glScissorArrayv(args.first, args.count, args.v);
+			allocator->destroy(args.v);
 			break;
 		}
 		case RenderCommandType::SET_VIEWPORT:
@@ -587,6 +614,7 @@ void OpenGLRenderCommandContext::Execute()
 			auto args = std::get<SetViewportArgs>(rc);
 			assert(args.v);
 			glViewportArrayv(args.first, args.count, args.v);
+			allocator->destroy(args.v);
 			break;
 		}
 		case RenderCommandType::UPDATE_BUFFER:

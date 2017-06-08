@@ -319,19 +319,28 @@ struct RenderCommandContext
 		INLINE,
 		SECONDARY_COMMAND_BUFFERS
 	};
-	union ClearValue
+	struct ClearValue
 	{
+		enum class Type
+		{
+			COLOR,
+			DEPTH_STENCIL
+		};
+		Type type;
 		union
 		{
-			float float32[4];
-			int32_t int32[4];
-			uint32_t uint32[4];
-		} color;
-		struct
-		{
-			float depth;
-			uint32_t stencil;
-		} depthStencil;
+			union
+			{
+				float float32[4];
+				int32_t int32[4];
+				uint32_t uint32[4];
+			} color;
+			struct
+			{
+				float depth;
+				uint32_t stencil;
+			} depthStencil;
+		};
 	};
 	struct Rect2D
 	{

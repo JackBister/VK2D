@@ -43,8 +43,6 @@ struct Scene : LuaSerializable, Resource
 	void PushRenderCommand(const RenderCommand&) noexcept;
 	void SubmitCamera(CameraComponent *) noexcept;
 	void SubmitCommandBuffer(RenderCommandContext *);
-	void SubmitMesh(Mesh *) noexcept;
-	void SubmitSprite(Sprite *) noexcept;
 	void Tick() noexcept;
 
 	int LuaIndex(lua_State *) override;
@@ -74,8 +72,6 @@ private:
 	std::vector<ViewDef> viewDefs;
 	ViewDef * currentViewDef;
 	std::vector<SubmittedCamera> camerasToSubmit;
-	std::vector<SubmittedMesh> meshesToSubmit;
-	std::vector<SubmittedSprite> spritesToSubmit;
 	void CreatePrimitives();
 
 	std::vector<RenderCommandContext *> command_buffers_;

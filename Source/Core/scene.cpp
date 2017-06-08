@@ -257,12 +257,9 @@ void Scene::EndFrame() noexcept
 	} while (nextViewDef.index() == 0);
 
 	ViewDef * vd = std::get<ViewDef *>(nextViewDef);
-	std::swap(vd->camera, camerasToSubmit);
-	std::swap(vd->sprites, spritesToSubmit);
 	std::swap(vd->commandBuffers, command_buffers_);
 	PushRenderCommand(RenderCommand(RenderCommand::DrawViewParams(vd)));
 	camerasToSubmit.clear();
-	spritesToSubmit.clear();
 	command_buffers_.clear();
 }
 
@@ -281,11 +278,6 @@ void Scene::SubmitCommandBuffer(RenderCommandContext * ctx)
 	command_buffers_.push_back(ctx);
 }
 
-void Scene::SubmitSprite(Sprite * sprite) noexcept
-{
-	spritesToSubmit.emplace_back(sprite->transform->GetLocalToWorldSpace(), sprite->minUV, sprite->sizeUV, sprite->image->GetImageHandle());
-}
-
 void Scene::Tick() noexcept
 {
 	input.Frame();
@@ -295,6 +287,14 @@ void Scene::Tick() noexcept
 	BroadcastEvent("Tick", { { "deltaTime", time.GetDeltaTime() } });
 
 	auto ctx = Renderer::CreateCommandContext();
+	RenderCommandContext::ClearValue clearValues[] = {
+		{
+			RenderCommandContext::ClearValue::Type::COLOR,
+			{
+				0.f, 0.f, 0.f, 1.f
+			}
+		}
+	};
 	RenderCommandContext::RenderPassBeginInfo beginInfo = {
 		main_renderpass_,
 		&Renderer::Backbuffer,
@@ -309,8 +309,8 @@ void Scene::Tick() noexcept
 				600
 			}
 		},
-		0,
-		nullptr
+		1,
+		clearValues
 	};
 	ctx->CmdBeginRenderPass(&beginInfo, RenderCommandContext::SubpassContents::SECONDARY_COMMAND_BUFFERS);
 

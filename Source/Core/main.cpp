@@ -19,7 +19,7 @@
 #include "Core/transform.h"
 
 //TODO:
-const std::string sceneFile = "Examples/MM/main.scene";
+const std::string sceneFile = "Examples/FlappyPong/main.scene";
 
 //TODO: ResourceManager race conditions - Renderer has access to resMan,
 //but only uses it before main thread starts anyway so right now this is a non-issue.

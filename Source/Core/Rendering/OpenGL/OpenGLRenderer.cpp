@@ -25,7 +25,6 @@ OpenGLFramebufferHandle Renderer::Backbuffer;
 OpenGLShaderModuleHandle Renderer::ptVertexModule;
 OpenGLShaderModuleHandle Renderer::ptFragmentModule;
 
-
 //Realistically this should only be used to represent different quads
 //Just wanted the convenience of putting VBO, EBO and verts together
 struct Model
@@ -66,63 +65,13 @@ OpenGLRenderCommandContext * Renderer::CreateCommandContext()
 	return new OpenGLRenderCommandContext(new std::allocator<uint8_t>());
 }
 
-void Renderer::EndFrame(std::vector<SubmittedCamera>& cameras, std::vector<SubmittedSprite>& sprites, std::vector<RenderCommandContext *>& commandBuffers) noexcept
+void Renderer::EndFrame(std::vector<RenderCommandContext *>& commandBuffers) noexcept
 {
 	glBeginQuery(GL_TIME_ELAPSED, timeQuery);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	for (auto ctx : commandBuffers) {
 		ctx->Execute();
 	}
-#if 0
-	for (auto camera : cameras) {
-		GLenum err = glGetError();
-		if (err != 0) {
-			printf("EndFrame start glGetError %d\n", err);
-		}
-		glBindFramebuffer(GL_FRAMEBUFFER, camera.renderTarget.framebuffer);
-		//TODO: Maybe unnecessary
-		glBindVertexArray(ptVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, plainQuad.vbo);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, plainQuad.ebo);
-		glUseProgram(ptProgram->rendererData.program);
-		//TODO: Only needs to be done once
-		GLint minUVloc = glGetUniformLocation(ptProgram->rendererData.program, "minUV");
-		GLint sizeUVloc = glGetUniformLocation(ptProgram->rendererData.program, "sizeUV");
-		GLint mvpLoc = glGetUniformLocation(ptProgram->rendererData.program, "pvm");
-		GLint numberLoc = glGetUniformLocation(ptProgram->rendererData.program, "numbers.pvm");
-		/*
-		GLint mLoc = glGetUniformLocation(ptProgram->rendererData.program, "model");
-		GLint vLoc = glGetUniformLocation(ptProgram->rendererData.program, "view");
-		glUniformMatrix4fv(vLoc, 1, GL_FALSE, glm::value_ptr(camera.view));
-		GLint pLoc = glGetUniformLocation(ptProgram->rendererData.program, "projection");
-		glUniformMatrix4fv(pLoc, 1, GL_FALSE, glm::value_ptr(camera.projection));
-		*/
-		GLint texLoc = glGetUniformLocation(ptProgram->rendererData.program, "tex");
-		glUniform1i(texLoc, 0);
-		glActiveTexture(GL_TEXTURE0);
-
-		glClearColor(0.f, 0.f, 0.f, 1.f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		err = glGetError();
-		if (err != 0) {
-			printf("EndFrame pre loop glGetError %d\n", err);
-		}
-		//TODO: Switch frag shader depending on components
-		for (auto& s : sprites) {
-			glUniform2f(minUVloc, s.minUV.x, s.minUV.y);
-			glUniform2f(sizeUVloc, s.sizeUV.x, s.sizeUV.y);
-			auto pvm = camera.projection * camera.view * s.transform;
-			glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(pvm));
-			glBindTexture(GL_TEXTURE_2D, ((OpenGLImageHandle *)s.img)->nativeHandle);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		}
-
-		err = glGetError();
-		if (err != 0) {
-			printf("EndFrame glGetError %d\n", err);
-		}
-	}
-#endif
 	glBindTexture(GL_TEXTURE_2D, backbuffer.nativeHandle);
 	glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 0, 0, dimensions.x, dimensions.y, 0);
 	SDL_GL_SwapWindow(window);
@@ -393,7 +342,7 @@ void Renderer::DrainQueue() noexcept
 			case RenderCommand::Type::DRAW_VIEW:
 			{
 				RenderCommand::DrawViewParams params = std::get<RenderCommand::DrawViewParams>(command.params);
-				EndFrame(params.view->camera, params.view->sprites, params.view->commandBuffers);
+				EndFrame(params.view->commandBuffers);
 				viewDefsToPush.push_back(params.view);
 				break;
 			}
