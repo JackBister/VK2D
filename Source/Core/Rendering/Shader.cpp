@@ -29,16 +29,14 @@ Shader::Shader(ResourceManager * resMan, const std::string& name, const std::vec
 {
 	this->name = name;
 	this->type = TypeFromFileName(name);
-	RenderCommand rc(RenderCommand::AddShaderParams(this));
-	resMan->PushRenderCommand(rc);
+	resMan->PushRenderCommand(RenderCommand(RenderCommand::AddShaderParams(this)));
 }
 
 Shader::Shader(ResourceManager * resMan, const std::string&, Type type, const std::string& src)
 	: type(type), src(src)
 {
 	this->name = name;
-	RenderCommand rc(RenderCommand::AddShaderParams(this));
-	resMan->PushRenderCommand(rc);
+	resMan->PushRenderCommand(RenderCommand(RenderCommand::AddShaderParams(this)));
 }
 
 Shader::Type Shader::GetType() const

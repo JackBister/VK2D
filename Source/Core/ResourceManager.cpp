@@ -4,7 +4,7 @@ ResourceManager::ResourceManager(Queue<RenderCommand>::Writer&& writer, Allocato
 {
 }
 
-void ResourceManager::PushRenderCommand(const RenderCommand& c)
+void ResourceManager::PushRenderCommand(RenderCommand&& c)
 {
-	renderQueue.Push(c);
+	renderQueue.Push(std::move(c));
 }

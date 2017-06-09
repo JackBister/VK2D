@@ -60,8 +60,8 @@ struct RenderCommand
 
 	struct ExecuteCommandContextParams
 	{
-		RenderCommandContext * ctx;
-		ExecuteCommandContextParams(RenderCommandContext *&& ctx) : ctx(ctx) {}
+		std::unique_ptr<RenderCommandContext> ctx;
+		ExecuteCommandContextParams(std::unique_ptr<RenderCommandContext>&& ctx) : ctx(std::move(ctx)) {}
 	};
 
 	struct AddBufferParams
@@ -136,5 +136,21 @@ struct RenderCommand
 	RenderCommandParams params;
 
 	RenderCommand() : params(None{}) {}
-	RenderCommand(const RenderCommandParams& params) : params(params) {}
+	//Unfortunately compiling MoodyCamel's queue requires this to be implemented even if it will never be used
+	RenderCommand(const RenderCommand&)
+	{
+		assert(false);
+	}
+	RenderCommand(RenderCommand&& rc) : params(std::move(rc.params)) {}
+	RenderCommand(RenderCommandParams&& params) : params(std::move(params)) {}
+
+	void operator=(const RenderCommand& rc)
+	{
+		assert(false);
+		//params = rc.params;
+	}
+	void operator=(RenderCommand&& rc)
+	{
+		params = std::move(rc.params);
+	}
 };

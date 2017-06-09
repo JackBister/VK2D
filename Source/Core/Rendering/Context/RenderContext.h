@@ -372,6 +372,10 @@ struct RenderCommandContext
 		float minDepth;
 		float maxDepth;
 	};
+
+	RenderCommandContext(std::allocator<uint8_t> * allocator) : allocator(allocator) {}
+	virtual ~RenderCommandContext() {}
+
 	virtual void CmdBeginRenderPass(RenderPassBeginInfo * pRenderPassBegin, SubpassContents contents) = 0;
 	virtual void CmdBindDescriptorSet(DescriptorSet *) = 0;
 	/*
@@ -386,11 +390,14 @@ struct RenderCommandContext
 	virtual void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset) = 0;
 	virtual void CmdEndRenderPass() = 0;
 	virtual void CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers) = 0;
+	//TODO:
+	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) = 0;
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, const Rect2D * pScissors) = 0;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, const Viewport * pViewports) = 0;
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData) = 0;
 
 protected:
+	virtual void Execute() = 0;
 	enum RenderCommandType
 	{
 		BEGIN_RENDERPASS,
@@ -403,16 +410,13 @@ protected:
 		DRAW_INDEXED,
 		END_RENDERPASS,
 		EXECUTE_COMMANDS,
+		EXECUTE_COMMANDS_VECTOR,
 		SET_SCISSOR,
 		SET_VIEWPORT,
 		UPDATE_BUFFER
 	};
 
-	RenderCommandContext(std::allocator<uint8_t> * allocator) : allocator(allocator) {}
-
 	//TODO: Stack allocator for throwaway arrays
-	virtual void Execute() = 0;
-
 	std::allocator<uint8_t> * allocator;
 };
 

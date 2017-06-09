@@ -6,8 +6,7 @@
 Framebuffer::Framebuffer(ResourceManager * resMan, const std::string& name) : imgs({{Framebuffer::Attachment::COLOR0, resMan->LoadResource<Image>(name + ".COLOR0.tex")}})
 {
 	this->name = name;
-	RenderCommand rc(RenderCommand::AddFramebufferParams(this));
-	resMan->PushRenderCommand(rc);
+	resMan->PushRenderCommand(RenderCommand(RenderCommand::AddFramebufferParams(this)));
 }
 
 Framebuffer::Framebuffer(const FramebufferCreateInfo& createInfo) : imgs(createInfo.imgs)
@@ -15,8 +14,7 @@ Framebuffer::Framebuffer(const FramebufferCreateInfo& createInfo) : imgs(createI
 	this->name = createInfo.name;
 
 	if (createInfo.rendererData.index() == 0) {
-		RenderCommand rc(RenderCommand::AddFramebufferParams(this));
-		createInfo.resMan->PushRenderCommand(rc);
+		createInfo.resMan->PushRenderCommand(RenderCommand(RenderCommand::AddFramebufferParams(this)));
 	} else {
 		rendererData = std::get<FramebufferRendererData>(createInfo.rendererData);
 	}

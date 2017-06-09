@@ -45,7 +45,7 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 	ret->sprite = Sprite(nullptr, img);
 	
 	{
-		RenderCommand rc(RenderCommand::CreateResourceParams([ret, img](ResourceCreationContext& ctx) {
+		resourceManager->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([ret, img](ResourceCreationContext& ctx) {
 			ret->uvs = ctx.CreateBuffer({
 				sizeof(glm::mat4) + 4 * sizeof(float)
 			});
@@ -86,8 +86,7 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 			});
 
 			ret->hasCreatedLocalResources = true;
-		}));
-		resourceManager->PushRenderCommand(rc);
+		})));
 	}
 	if (!hasCreatedResources.exchange(true)) {
 		resources.vbo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
@@ -153,7 +152,7 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 
 			ctx->CmdDrawIndexed(6, 1, 0, 0);
 
-			entity->scene->SubmitCommandBuffer(ctx);
+			entity->scene->SubmitCommandBuffer(std::move(ctx));
 		}
 	} else if (name == "Tick") {
 		auto pos = entity->transform.GetPosition();

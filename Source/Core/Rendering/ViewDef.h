@@ -8,5 +8,5 @@
 
 struct ViewDef
 {
-	std::vector<RenderCommandContext *> commandBuffers;
+	std::vector<std::unique_ptr<RenderCommandContext>> commandBuffers;
 };

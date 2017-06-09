@@ -15,8 +15,11 @@ struct OpenGLRenderCommandContext : RenderCommandContext
 {
 	friend struct Renderer;
 
-	OpenGLRenderCommandContext() = delete;
-	// Inherited via RenderCommandContext
+	OpenGLRenderCommandContext() : RenderCommandContext(new std::allocator<uint8_t>) {}
+	OpenGLRenderCommandContext(std::allocator<uint8_t> * allocator) : RenderCommandContext(allocator) {}
+
+	virtual ~OpenGLRenderCommandContext() { delete allocator; }
+
 	virtual void CmdBeginRenderPass(RenderCommandContext::RenderPassBeginInfo *pRenderPassBegin, RenderCommandContext::SubpassContents contents) override;
 	virtual void CmdBindDescriptorSet(DescriptorSet *) override;
 	virtual void CmdBindIndexBuffer(BufferHandle *buffer, size_t offset, RenderCommandContext::IndexType indexType) override;
@@ -27,17 +30,14 @@ struct OpenGLRenderCommandContext : RenderCommandContext
 	virtual void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset) override;
 	virtual void CmdEndRenderPass() override;
 	virtual void CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers) override;
+	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) override;
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, const RenderCommandContext::Rect2D *pScissors) override;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, const RenderCommandContext::Viewport *pViewports) override;
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData) override;
 
-	// Inherited via RenderCommandContext
-
 protected:
-	// Inherited via RenderCommandContext
 	virtual void Execute() override;
 private:
-	OpenGLRenderCommandContext(std::allocator<uint8_t> * allocator) : RenderCommandContext(allocator) {}
 	/*
 		Render command types and args:
 	*/
@@ -110,6 +110,10 @@ private:
 		uint32_t commandBufferCount;
 		OpenGLRenderCommandContext ** pCommandBuffers;
 	};
+	struct ExecuteCommandsVectorArgs
+	{
+		std::vector<std::unique_ptr<RenderCommandContext>> commandBuffers;
+	};
 	struct SetScissorArgs
 	{
 		GLuint first;
@@ -131,8 +135,8 @@ private:
 	};
 	using RenderCommand = std::variant<BeginRenderPassArgs, BindDescriptorSetArgs, BindIndexBufferArgs, BindPipelineArgs,
 									   BindUniformBufferArgs, BindUniformImageArgs, BindVertexBufferArgs,
-									   DrawIndexedArgs, EndRenderPassArgs, ExecuteCommandsArgs, SetScissorArgs, SetViewportArgs,
-									   UpdateBufferArgs> ;
+									   DrawIndexedArgs, EndRenderPassArgs, ExecuteCommandsArgs, ExecuteCommandsVectorArgs, SetScissorArgs, SetViewportArgs,
+									   UpdateBufferArgs>;
 
 	/*
 		The list of commands to execute

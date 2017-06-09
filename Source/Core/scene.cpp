@@ -58,7 +58,7 @@ void Scene::CreatePrimitives()
 	VertexInputStateHandle * ptInputState;
 	PipelineHandle * ptPipeline;
 
-	RenderCommand rc(RenderCommand::CreateResourceParams([&](ResourceCreationContext& ctx) {
+	resourceManager->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([&](ResourceCreationContext& ctx) {
 		/*
 			Create quad resources
 		*/
@@ -192,9 +192,7 @@ void Scene::CreatePrimitives()
 		});
 
 		finishedJobs++;
-	}));
-
-	resourceManager->PushRenderCommand(rc);
+	})));
 
 	while (finishedJobs.load() < 1) {
 		std::this_thread::sleep_for(1ms);
@@ -263,9 +261,9 @@ void Scene::EndFrame() noexcept
 	command_buffers_.clear();
 }
 
-void Scene::PushRenderCommand(const RenderCommand& rc) noexcept
+void Scene::PushRenderCommand(RenderCommand&& rc) noexcept
 {
-	renderQueue.Push(rc);
+	renderQueue.Push(std::move(rc));
 }
 
 void Scene::SubmitCamera(CameraComponent * cam) noexcept
@@ -273,9 +271,9 @@ void Scene::SubmitCamera(CameraComponent * cam) noexcept
 	camerasToSubmit.emplace_back(cam->GetViewMatrix(), cam->GetProjectionMatrix(), cam->GetRenderTarget()->GetRendererData());
 }
 
-void Scene::SubmitCommandBuffer(RenderCommandContext * ctx)
+void Scene::SubmitCommandBuffer(std::unique_ptr<RenderCommandContext>&& ctx)
 {
-	command_buffers_.push_back(ctx);
+	command_buffers_.push_back(std::move(ctx));
 }
 
 void Scene::Tick() noexcept
@@ -320,13 +318,14 @@ void Scene::Tick() noexcept
 
 	//TODO: Assumes single thread
 	if (command_buffers_.size() > 0) {
-		ctx->CmdExecuteCommands(command_buffers_.size(), &command_buffers_[0]);
+		//ctx->CmdExecuteCommands(command_buffers_.size(), &command_buffers_[0]);
+		ctx->CmdExecuteCommands(std::move(command_buffers_));
+		command_buffers_ = std::vector<std::unique_ptr<RenderCommandContext>>();
 	}
 
 	ctx->CmdEndRenderPass();
 
-	RenderCommand rc(RenderCommand::ExecuteCommandContextParams(std::move(ctx)));
-	renderQueue.Push(rc);
+	renderQueue.Push(RenderCommand(RenderCommand::ExecuteCommandContextParams(std::move(ctx))));
 }
 
 Entity * Scene::GetEntityByName(std::string name)

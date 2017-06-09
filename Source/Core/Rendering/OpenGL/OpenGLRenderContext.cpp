@@ -485,6 +485,11 @@ void OpenGLRenderCommandContext::CmdExecuteCommands(uint32_t commandBufferCount,
 	commandList.push_back(ExecuteCommandsArgs{ commandBufferCount, (OpenGLRenderCommandContext **)pCommandBuffers });
 }
 
+void OpenGLRenderCommandContext::CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers)
+{
+	commandList.push_back(ExecuteCommandsVectorArgs{ std::move(commandBuffers) });
+}
+
 void OpenGLRenderCommandContext::CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, const RenderCommandContext::Rect2D *pScissors)
 {
 	auto cmd = SetScissorArgs{firstScissor, static_cast<int>(scissorCount), nullptr};
@@ -531,7 +536,7 @@ void OpenGLRenderCommandContext::Execute()
 					glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 				}
 			}
-			allocator->destroy(args.pClearValues);
+			allocator->deallocate((uint8_t *)args.pClearValues, args.clearValueCount * sizeof(const ClearValue));
 			break;
 		}
 		case RenderCommandType::BIND_DESCRIPTOR_SET:
@@ -601,12 +606,21 @@ void OpenGLRenderCommandContext::Execute()
 			}
 			break;
 		}
+		case RenderCommandType::EXECUTE_COMMANDS_VECTOR:
+		{
+			auto args = std::move(std::get<ExecuteCommandsVectorArgs>(rc));
+
+			for (auto& ctx : args.commandBuffers) {
+				((OpenGLRenderCommandContext *)ctx.get())->Execute();
+			}
+			break;
+		}
 		case RenderCommandType::SET_SCISSOR:
 		{
 			auto args = std::get<SetScissorArgs>(rc);
 			assert(args.v);
 			glScissorArrayv(args.first, args.count, args.v);
-			allocator->destroy(args.v);
+			allocator->deallocate((uint8_t *)args.v, args.count * 4 * sizeof(GLint));
 			break;
 		}
 		case RenderCommandType::SET_VIEWPORT:
@@ -614,7 +628,7 @@ void OpenGLRenderCommandContext::Execute()
 			auto args = std::get<SetViewportArgs>(rc);
 			assert(args.v);
 			glViewportArrayv(args.first, args.count, args.v);
-			allocator->destroy(args.v);
+			allocator->deallocate((uint8_t *)args.v, args.count * 6 * sizeof(GLfloat));
 			break;
 		}
 		case RenderCommandType::UPDATE_BUFFER:

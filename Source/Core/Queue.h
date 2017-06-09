@@ -45,9 +45,9 @@ struct Queue
 	struct Writer
 	{
 		friend struct Queue;
-		void Push(T val)
+		void Push(T&& val)
 		{
-			queue->enqueue(token, val);
+			queue->enqueue(token, std::move(val));
 		}
 
 		Writer(Writer&& rhs) : queue(rhs.queue), token(std::move(rhs.token)) {}

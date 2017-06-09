@@ -60,16 +60,16 @@ Renderer::~Renderer() noexcept
 	SDL_DestroyWindow(window);
 }
 
-OpenGLRenderCommandContext * Renderer::CreateCommandContext()
+std::unique_ptr<OpenGLRenderCommandContext> Renderer::CreateCommandContext()
 {
-	return new OpenGLRenderCommandContext(new std::allocator<uint8_t>());
+	return std::make_unique<OpenGLRenderCommandContext>(new std::allocator<uint8_t>());
 }
 
-void Renderer::EndFrame(std::vector<RenderCommandContext *>& commandBuffers) noexcept
+void Renderer::EndFrame(std::vector<std::unique_ptr<RenderCommandContext>>& commandBuffers) noexcept
 {
 	glBeginQuery(GL_TIME_ELAPSED, timeQuery);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	for (auto ctx : commandBuffers) {
+	for (auto& ctx : commandBuffers) {
 		ctx->Execute();
 	}
 	glBindTexture(GL_TEXTURE_2D, backbuffer.nativeHandle);
@@ -283,9 +283,9 @@ void Renderer::DrainQueue() noexcept
 	std::vector<ViewDef *> viewDefsToPush;
 	Maybe<RenderCommand> renderCommand;
 	do {
-		renderCommand = renderQueue.Pop();
+		renderCommand = std::move(renderQueue.Pop());
 		if (renderCommand.index() != 0) {
-			RenderCommand command = std::get<RenderCommand>(renderCommand);
+			RenderCommand command = std::move(std::get<RenderCommand>(renderCommand));
 			switch (command.params.index()) {
 			case RenderCommand::Type::NOP:
 				printf("[WARNING] NOP render command.\n");
@@ -303,7 +303,7 @@ void Renderer::DrainQueue() noexcept
 			}
 			case RenderCommand::Type::EXECUTE_COMMAND_CONTEXT:
 			{
-				auto ctx = std::get<RenderCommand::ExecuteCommandContextParams>(command.params).ctx;
+				auto ctx = std::move(std::get<RenderCommand::ExecuteCommandContextParams>(command.params).ctx);
 				ctx->Execute();
 				break;
 			}
@@ -357,6 +357,6 @@ void Renderer::DrainQueue() noexcept
 	} while (renderCommand.index() != 0);
 
 	for (auto vd : viewDefsToPush) {
-		viewDefQueue.Push(vd);
+		viewDefQueue.Push(std::move(vd));
 	}
 }

@@ -16,8 +16,7 @@ Program::Program(ResourceManager * resMan, const std::string& name, std::shared_
 	shaders.push_back(vShader);
 	shaders.push_back(fShader);
 
-	RenderCommand rc(RenderCommand::AddProgramParams(this));
-	resMan->PushRenderCommand(rc);
+	resMan->PushRenderCommand(RenderCommand(RenderCommand::AddProgramParams(this)));
 }
 
 Deserializable * Program::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const

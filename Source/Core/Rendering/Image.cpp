@@ -10,7 +10,7 @@ Image::Image(ResourceManager * resMan, const std::string& name) noexcept
 	this->name = name;
 	this->data = std::vector<uint8_t>(128 * 128 * 4, 0xFF);
 
-	RenderCommand rc(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
+	resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
 		ResourceCreationContext::ImageCreateInfo ic = {
 			Format::RGBA8,
 			ImageHandle::Type::TYPE_2D,
@@ -22,8 +22,7 @@ Image::Image(ResourceManager * resMan, const std::string& name) noexcept
 		ctx.ImageData(tmp, this->data);
 		this->img = tmp;
 		printf("post createimage\n");
-	}));
-	resMan->PushRenderCommand(rc);
+	})));
 }
 
 Image::Image(const ImageCreateInfo& info) noexcept
@@ -33,7 +32,7 @@ Image::Image(const ImageCreateInfo& info) noexcept
 	this->height = info.height;
 	if (info.data.index() == 0) {
 		this->data = std::get<std::vector<uint8_t>>(info.data);
-		RenderCommand rc(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
+		info.resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
 			ResourceCreationContext::ImageCreateInfo ic = {
 				Format::RGBA8,
 				ImageHandle::Type::TYPE_2D,
@@ -45,8 +44,7 @@ Image::Image(const ImageCreateInfo& info) noexcept
 			ctx.ImageData(tmp, this->data);
 			this->img = tmp;
 			printf("post createimage\n");
-		}));
-		info.resMan->PushRenderCommand(rc);
+		})));
 	} else {
 		this->img = std::get<ImageHandle *>(info.data);
 	}
@@ -77,7 +75,7 @@ Image::Image(ResourceManager * resMan, const std::string& name, const std::vecto
 		printf("[ERROR] Loading image %s: Unknown format %d.\n", name.c_str(), n);
 		break;
 	}
-	RenderCommand rc(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
+	resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
 		ResourceCreationContext::ImageCreateInfo ic = {
 			Format::RGBA8,
 			ImageHandle::Type::TYPE_2D,
@@ -89,8 +87,7 @@ Image::Image(ResourceManager * resMan, const std::string& name, const std::vecto
 		ctx.ImageData(tmp, this->data);
 		this->img = tmp;
 		printf("post createimage\n");
-	}));
-	resMan->PushRenderCommand(rc);
+	})));
 }
 
 const std::vector<uint8_t>& Image::GetData() const noexcept

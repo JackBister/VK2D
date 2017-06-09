@@ -34,7 +34,7 @@ struct ResourceManager
 	template<typename T, typename ... ArgTypes>
 	std::shared_ptr<T> LoadResourceOrConstruct(const std::string& fileName, ArgTypes&& ... args);
 
-	void PushRenderCommand(const RenderCommand&);
+	void PushRenderCommand(RenderCommand&&);
 
 private:
 	std::unordered_map<std::string, void *> nonRCCache;

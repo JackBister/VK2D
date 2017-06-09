@@ -40,9 +40,9 @@ struct Scene : LuaSerializable, Resource
 	Scene(const std::string&, ResourceManager *, Queue<SDL_Event>::Reader&&, Queue<RenderCommand>::Writer&&, Queue<ViewDef *>::Reader&&, const std::string&) noexcept;
 
 	void EndFrame() noexcept;
-	void PushRenderCommand(const RenderCommand&) noexcept;
+	void PushRenderCommand(RenderCommand&&) noexcept;
 	void SubmitCamera(CameraComponent *) noexcept;
-	void SubmitCommandBuffer(RenderCommandContext *);
+	void SubmitCommandBuffer(std::unique_ptr<RenderCommandContext>&&);
 	void Tick() noexcept;
 
 	int LuaIndex(lua_State *) override;
@@ -74,6 +74,6 @@ private:
 	std::vector<SubmittedCamera> camerasToSubmit;
 	void CreatePrimitives();
 
-	std::vector<RenderCommandContext *> command_buffers_;
+	std::vector<std::unique_ptr<RenderCommandContext>> command_buffers_;
 	RenderPassHandle * main_renderpass_;
 };

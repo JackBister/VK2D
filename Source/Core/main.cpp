@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 	while (!renderer.isAborting) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
-			inputWriter.Push(e);
+			inputWriter.Push(std::move(e));
 			//printf("pushing\n");
 		}
 		const char * sdlErr = SDL_GetError();
