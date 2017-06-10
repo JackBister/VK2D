@@ -394,6 +394,8 @@ struct RenderCommandContext
 	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) = 0;
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, const Rect2D * pScissors) = 0;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, const Viewport * pViewports) = 0;
+	//In Vulkan there's that whole swapchain business. If it's not exposed the renderer will always be double buffered.
+	virtual void CmdSwapWindow() = 0;
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData) = 0;
 
 protected:
@@ -413,6 +415,7 @@ protected:
 		EXECUTE_COMMANDS_VECTOR,
 		SET_SCISSOR,
 		SET_VIEWPORT,
+		SWAP_WINDOW,
 		UPDATE_BUFFER
 	};
 

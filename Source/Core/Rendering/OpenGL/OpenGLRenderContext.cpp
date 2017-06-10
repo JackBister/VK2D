@@ -506,6 +506,11 @@ void OpenGLRenderCommandContext::CmdSetViewport(uint32_t firstViewport, uint32_t
 	commandList.push_back(cmd);
 }
 
+void OpenGLRenderCommandContext::CmdSwapWindow()
+{
+	commandList.push_back(SwapWindowArgs{});
+}
+
 void OpenGLRenderCommandContext::CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData)
 {
 	commandList.push_back(UpdateBufferArgs{
@@ -517,6 +522,11 @@ void OpenGLRenderCommandContext::CmdUpdateBuffer(BufferHandle * buffer, size_t o
 }
 
 void OpenGLRenderCommandContext::Execute()
+{
+	Execute(nullptr);
+}
+
+void OpenGLRenderCommandContext::Execute(SDL_Window * win)
 {
 	for (auto& rc : commandList) {
 		switch (rc.index()) {
@@ -629,6 +639,13 @@ void OpenGLRenderCommandContext::Execute()
 			assert(args.v);
 			glViewportArrayv(args.first, args.count, args.v);
 			allocator->deallocate((uint8_t *)args.v, args.count * 6 * sizeof(GLfloat));
+			break;
+		}
+		case RenderCommandType::SWAP_WINDOW:
+		{
+			if (win != nullptr) {
+				SDL_GL_SwapWindow(win);
+			}
 			break;
 		}
 		case RenderCommandType::UPDATE_BUFFER:

@@ -323,6 +323,8 @@ void Scene::Tick() noexcept
 		command_buffers_ = std::vector<std::unique_ptr<RenderCommandContext>>();
 	}
 
+	ctx->CmdSwapWindow();
+
 	ctx->CmdEndRenderPass();
 
 	renderQueue.Push(RenderCommand(RenderCommand::ExecuteCommandContextParams(std::move(ctx))));

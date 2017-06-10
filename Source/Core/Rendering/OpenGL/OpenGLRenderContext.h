@@ -10,6 +10,7 @@
 using std::variant = std::experimental::variant;
 #endif
 #include <gl/glew.h>
+#include <SDL/SDL.h>
 
 struct OpenGLRenderCommandContext : RenderCommandContext
 {
@@ -33,10 +34,12 @@ struct OpenGLRenderCommandContext : RenderCommandContext
 	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) override;
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, const RenderCommandContext::Rect2D *pScissors) override;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, const RenderCommandContext::Viewport *pViewports) override;
+	virtual void CmdSwapWindow() override;
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData) override;
 
 protected:
-	virtual void Execute() override;
+	void Execute() override;
+	void Execute(SDL_Window *);
 private:
 	/*
 		Render command types and args:
@@ -126,6 +129,9 @@ private:
 		GLsizei count;
 		const GLfloat * v;
 	};
+	struct SwapWindowArgs
+	{
+	};
 	struct UpdateBufferArgs
 	{
 		GLuint buffer;
@@ -136,7 +142,7 @@ private:
 	using RenderCommand = std::variant<BeginRenderPassArgs, BindDescriptorSetArgs, BindIndexBufferArgs, BindPipelineArgs,
 									   BindUniformBufferArgs, BindUniformImageArgs, BindVertexBufferArgs,
 									   DrawIndexedArgs, EndRenderPassArgs, ExecuteCommandsArgs, ExecuteCommandsVectorArgs, SetScissorArgs, SetViewportArgs,
-									   UpdateBufferArgs>;
+									   SwapWindowArgs, UpdateBufferArgs>;
 
 	/*
 		The list of commands to execute
