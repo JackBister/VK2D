@@ -38,8 +38,8 @@ struct OpenGLRenderCommandContext : RenderCommandContext
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData) override;
 
 protected:
-	void Execute() override;
-	void Execute(SDL_Window *);
+	void Execute(Renderer *) override;
+	//void Execute(SDL_Window *);
 private:
 	/*
 		Render command types and args:

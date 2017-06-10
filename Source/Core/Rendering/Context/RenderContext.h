@@ -399,7 +399,7 @@ struct RenderCommandContext
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData) = 0;
 
 protected:
-	virtual void Execute() = 0;
+	virtual void Execute(Renderer *) = 0;
 	enum RenderCommandType
 	{
 		BEGIN_RENDERPASS,

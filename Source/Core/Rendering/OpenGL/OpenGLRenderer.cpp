@@ -70,7 +70,7 @@ void Renderer::EndFrame(std::vector<std::unique_ptr<RenderCommandContext>>& comm
 	glBeginQuery(GL_TIME_ELAPSED, timeQuery);
 	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	for (auto& ctx : commandBuffers) {
-		((OpenGLRenderCommandContext *)ctx.get())->Execute(window);
+		((OpenGLRenderCommandContext *)ctx.get())->Execute(this);
 	}
 	glBindTexture(GL_TEXTURE_2D, backbuffer.nativeHandle);
 	glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 0, 0, dimensions.x, dimensions.y, 0);
@@ -304,7 +304,7 @@ void Renderer::DrainQueue() noexcept
 			case RenderCommand::Type::EXECUTE_COMMAND_CONTEXT:
 			{
 				auto ctx = std::move(std::get<RenderCommand::ExecuteCommandContextParams>(command.params).ctx);
-				((OpenGLRenderCommandContext *)ctx.get())->Execute(window);
+				((OpenGLRenderCommandContext *)ctx.get())->Execute(this);
 				break;
 			}
 			case RenderCommand::Type::ADD_BUFFER:

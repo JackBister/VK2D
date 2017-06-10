@@ -53,6 +53,9 @@ struct Renderer
 	static OpenGLShaderModuleHandle ptVertexModule;
 	static OpenGLShaderModuleHandle ptFragmentModule;
 
+	//The window
+	SDL_Window * window;
+
 private:
 	ResourceManager * resourceManager;
 
@@ -64,8 +67,6 @@ private:
 	float aspectRatio;
 	//The dimensions of the screen, in pixels
 	glm::ivec2 dimensions;
-	//The window
-	SDL_Window * window;
 
 	OpenGLImageHandle backbuffer;
 	ImageRendererData backbufferTexture;

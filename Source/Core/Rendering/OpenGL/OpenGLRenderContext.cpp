@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <gl/glew.h>
 
+#include "Core/Rendering/Renderer.h"
+
 template <typename T>
 static typename std::underlying_type<T>::type ToUnderlyingType(T in)
 {
@@ -521,12 +523,7 @@ void OpenGLRenderCommandContext::CmdUpdateBuffer(BufferHandle * buffer, size_t o
 	});
 }
 
-void OpenGLRenderCommandContext::Execute()
-{
-	Execute(nullptr);
-}
-
-void OpenGLRenderCommandContext::Execute(SDL_Window * win)
+void OpenGLRenderCommandContext::Execute(Renderer * renderer)
 {
 	for (auto& rc : commandList) {
 		switch (rc.index()) {
@@ -612,7 +609,7 @@ void OpenGLRenderCommandContext::Execute(SDL_Window * win)
 			auto args = std::get<ExecuteCommandsArgs>(rc);
 			assert(args.pCommandBuffers != nullptr);
 			for (uint32_t i = 0; i < args.commandBufferCount; ++i) {
-				args.pCommandBuffers[i]->Execute();
+				args.pCommandBuffers[i]->Execute(renderer);
 			}
 			break;
 		}
@@ -621,7 +618,7 @@ void OpenGLRenderCommandContext::Execute(SDL_Window * win)
 			auto args = std::move(std::get<ExecuteCommandsVectorArgs>(rc));
 
 			for (auto& ctx : args.commandBuffers) {
-				((OpenGLRenderCommandContext *)ctx.get())->Execute();
+				((OpenGLRenderCommandContext *)ctx.get())->Execute(renderer);
 			}
 			break;
 		}
@@ -643,9 +640,7 @@ void OpenGLRenderCommandContext::Execute(SDL_Window * win)
 		}
 		case RenderCommandType::SWAP_WINDOW:
 		{
-			if (win != nullptr) {
-				SDL_GL_SwapWindow(win);
-			}
+			SDL_GL_SwapWindow(renderer->window);
 			break;
 		}
 		case RenderCommandType::UPDATE_BUFFER:
