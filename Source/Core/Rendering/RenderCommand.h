@@ -22,7 +22,6 @@ struct Image;
 struct Program;
 struct Shader;
 struct Sprite;
-struct ViewDef;
 
 struct RenderCommand
 {
@@ -40,8 +39,6 @@ struct RenderCommand
 		DELETE_PROGRAM,
 		ADD_SHADER,
 		DELETE_SHADER,
-		END_FRAME,
-		DRAW_VIEW
 	};
 
 	//TODO: Could template most of this stuff pretty easily
@@ -114,24 +111,10 @@ struct RenderCommand
 		DeleteShaderParams(Shader * shader) : shader(shader) {}
 	};
 
-	struct EndFrameParams
-	{
-		std::vector<SubmittedCamera> cameras;
-		//TODO: This won't be necessary in the future with custom mesh stuff.
-		std::vector<SubmittedSprite> sprites;
-		EndFrameParams(std::vector<SubmittedCamera>& cameras, std::vector<SubmittedSprite>& sprites) : cameras(cameras), sprites(sprites) {}
-	};
-
-	struct DrawViewParams
-	{
-		ViewDef * view;
-		DrawViewParams(ViewDef * view) : view(view) {}
-	};
-
 	using RenderCommandParams = std::variant<None, AbortParams, CreateResourceParams, ExecuteCommandContextParams,
 														   AddBufferParams, DeleteBufferParams, AddFramebufferParams, DeleteFramebufferParams,
 														   AddProgramParams, DeleteProgramParams, AddShaderParams,
-														   DeleteShaderParams, EndFrameParams, DrawViewParams>;
+														   DeleteShaderParams>;
 
 	RenderCommandParams params;
 

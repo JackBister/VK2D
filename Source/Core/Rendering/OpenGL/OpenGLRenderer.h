@@ -18,12 +18,13 @@ struct Image;
 struct Program;
 struct ResourceManager;
 struct SDL_Window;
+struct Semaphore;
 struct Shader;
 struct Sprite;
 
 struct Renderer
 {
-	Renderer(ResourceManager *, Queue<RenderCommand>::Reader&&, Queue<ViewDef *>::Writer&&, const char * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
+	Renderer(ResourceManager *, Queue<RenderCommand>::Reader&&, Semaphore * swapSem, const char * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
 	~Renderer() noexcept;
 
 	static std::unique_ptr<OpenGLRenderCommandContext> CreateCommandContext();
@@ -56,11 +57,18 @@ struct Renderer
 	//The window
 	SDL_Window * window;
 
+	//Total time between swapbuffers
+	float frameTime;
+	std::chrono::high_resolution_clock::time_point lastTime;
+	//Time spent on GPU in a frame
+	GLuint timeQuery;
+
+	bool swap;
+
 private:
 	ResourceManager * resourceManager;
 
 	Queue<RenderCommand>::Reader renderQueue;
-	Queue<ViewDef *>::Writer viewDefQueue;
 
 	//The aspect ratio of the viewport
 	//TODO: Should this be attached to the camera?
@@ -81,9 +89,5 @@ private:
 	std::shared_ptr<Program> ptProgram;
 	GLuint ptVAO;
 
-	//Total time between swapbuffers
-	float frameTime;
-	std::chrono::high_resolution_clock::time_point lastTime;
-	//Time spent on GPU in a frame
-	GLuint timeQuery;
+	Semaphore * swapSem;
 };

@@ -383,8 +383,6 @@ struct RenderCommandContext
 	*/
 	virtual void CmdBindIndexBuffer(BufferHandle * buffer, size_t offset, IndexType indexType) = 0;
 	virtual void CmdBindPipeline(RenderPassHandle::PipelineBindPoint, PipelineHandle *) = 0;
-	virtual void CmdBindUniformBuffer(uint32_t binding, BufferHandle *, uint32_t offset, uint32_t size) = 0;
-	virtual void CmdBindUniformImage(uint32_t binding, ImageHandle *) = 0;
 	//TODO: Stride not necessary in Vulkan - Can hack around it in OpenGL too
 	virtual void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) = 0;
 	virtual void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset) = 0;
@@ -406,8 +404,6 @@ protected:
 		BIND_DESCRIPTOR_SET,
 		BIND_INDEX_BUFFER,
 		BIND_PIPELINE,
-		BIND_UNIFORM_BUFFER,
-		BIND_UNIFORM_IMAGE,
 		BIND_VERTEX_BUFFER,
 		DRAW_INDEXED,
 		END_RENDERPASS,

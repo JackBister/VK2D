@@ -210,8 +210,8 @@ void Scene::CreatePrimitives()
 }
 
 Scene::Scene(const std::string& name, ResourceManager * resMan, Queue<SDL_Event>::Reader&& inputQueue,
-			 Queue<RenderCommand>::Writer&& writer, Queue<ViewDef *>::Reader&& viewDefQueue, const std::string& serializedScene) noexcept
-	: resourceManager(resMan), input(std::move(inputQueue)), renderQueue(std::move(writer)), viewDefQueue(std::move(viewDefQueue))
+			 Queue<RenderCommand>::Writer&& writer, const std::string& serializedScene) noexcept
+	: resourceManager(resMan), input(std::move(inputQueue)), renderQueue(std::move(writer))
 {
 	using nlohmann::json;
 	this->name = name;
@@ -229,36 +229,10 @@ Scene::Scene(const std::string& name, ResourceManager * resMan, Queue<SDL_Event>
 		tmp->scene = this;
 		this->entities.push_back(tmp);
 	}
-
-	//TODO: parametrize
-	viewDefs = std::vector<ViewDef>(2);
-	for (auto& vd : viewDefs) {
-		PushRenderCommand(RenderCommand(RenderCommand::DrawViewParams(&vd)));
-	}
 }
 
 void Scene::EndFrame() noexcept
 {
-	Maybe<ViewDef *> nextViewDef;
-	//TODO: We can either wait for view def to become available or skip
-	//Skipping can starve GPU thread, waiting can stall CPU thread
-	//Optimally want to just fire DRAW_VIEWs and let GPU thread work out which one to use.
-	/*
-	if (nextViewDef.index() == 0) {
-		camerasToSubmit.clear();
-		spritesToSubmit.clear();
-		return;
-	}
-	*/
-	do {
-		nextViewDef = viewDefQueue.Pop();
-	} while (nextViewDef.index() == 0);
-
-	ViewDef * vd = std::get<ViewDef *>(nextViewDef);
-	std::swap(vd->commandBuffers, command_buffers_);
-	PushRenderCommand(RenderCommand(RenderCommand::DrawViewParams(vd)));
-	camerasToSubmit.clear();
-	command_buffers_.clear();
 }
 
 void Scene::PushRenderCommand(RenderCommand&& rc) noexcept
@@ -280,6 +254,11 @@ void Scene::Tick() noexcept
 {
 	input.Frame();
 	time.Frame();
+	printf("%f\n", time.GetDeltaTime());
+
+	camerasToSubmit.clear();
+	command_buffers_.clear();
+
 	//TODO: substeps
 	physicsWorld->world->stepSimulation(time.GetDeltaTime());
 	BroadcastEvent("Tick", { { "deltaTime", time.GetDeltaTime() } });

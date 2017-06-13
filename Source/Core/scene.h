@@ -15,7 +15,6 @@
 #include "Core/Rendering/Mesh.h"
 #include "Core/Rendering/Program.h"
 #include "Core/Rendering/RenderCommand.h"
-#include "Core/Rendering/ViewDef.h"
 #include "Core/Resource.h"
 
 #include "Tools/HeaderGenerator/headergenerator.h"
@@ -37,7 +36,7 @@ struct Scene : LuaSerializable, Resource
 	Time time;
 	std::vector<Entity *> entities;
 
-	Scene(const std::string&, ResourceManager *, Queue<SDL_Event>::Reader&&, Queue<RenderCommand>::Writer&&, Queue<ViewDef *>::Reader&&, const std::string&) noexcept;
+	Scene(const std::string&, ResourceManager *, Queue<SDL_Event>::Reader&&, Queue<RenderCommand>::Writer&&, const std::string&) noexcept;
 
 	void EndFrame() noexcept;
 	void PushRenderCommand(RenderCommand&&) noexcept;
@@ -64,13 +63,6 @@ struct Scene : LuaSerializable, Resource
 
 private:
 	Queue<RenderCommand>::Writer renderQueue;
-	Queue<ViewDef *>::Reader viewDefQueue;
-	/*
-		The scene allocates an array of ViewDefs (depending on if it's double buffered or triple), but may only write into one of them at a time.
-		Any ViewDef that isn't the current ViewDef belongs to the renderer, so messing with it can cause crazy results.
-	*/
-	std::vector<ViewDef> viewDefs;
-	ViewDef * currentViewDef;
 	std::vector<SubmittedCamera> camerasToSubmit;
 	void CreatePrimitives();
 

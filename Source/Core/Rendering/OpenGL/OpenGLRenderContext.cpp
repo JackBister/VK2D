@@ -4,6 +4,7 @@
 #include <gl/glew.h>
 
 #include "Core/Rendering/Renderer.h"
+#include "Core/Semaphore.h"
 
 template <typename T>
 static typename std::underlying_type<T>::type ToUnderlyingType(T in)
@@ -108,23 +109,19 @@ ImageHandle * OpenGLResourceContext::CreateImage(ImageCreateInfo ic)
 	ret->width = ic.width;
 	ret->height = ic.height;
 	ret->depth = ic.depth;
-	glGenTextures(1, &ret->nativeHandle);
 	switch (ic.type) {
 	case ImageHandle::Type::TYPE_1D:
 		ret->height = 1;
 		ret->depth = 1;
-		glBindTexture(GL_TEXTURE_1D, ret->nativeHandle);
-		glTexStorage1D(GL_TEXTURE_1D, ic.mipLevels, InternalFormatGL(ic.format), ic.width);
+		glCreateTextures(GL_TEXTURE_1D, 1, &ret->nativeHandle);
+		glTextureStorage1D(ret->nativeHandle, ic.mipLevels, InternalFormatGL(ic.format), ic.width);
 		break;
 	case ImageHandle::Type::TYPE_2D:
 		ret->depth = 1;
-		glBindTexture(GL_TEXTURE_2D, ret->nativeHandle);
-		glTexStorage2D(GL_TEXTURE_2D, ic.mipLevels, InternalFormatGL(ic.format), ic.width, ic.height);	
+		glCreateTextures(GL_TEXTURE_2D, 1, &ret->nativeHandle);
+		glTextureStorage2D(ret->nativeHandle, ic.mipLevels, InternalFormatGL(ic.format), ic.width, ic.height);
 		break;
 	}
-
-	//TODO:
-
 	return ret;
 }
 
@@ -576,6 +573,7 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer)
 			glBindVertexArray(args.vao);
 			break;
 		}
+		/*
 		case RenderCommandType::BIND_UNIFORM_BUFFER:
 		{
 			auto args = std::get<BindUniformBufferArgs>(rc);
@@ -590,6 +588,7 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer)
 			glBindTexture(GL_TEXTURE_2D, args.image);
 			break;
 		}
+		*/
 		case RenderCommandType::BIND_VERTEX_BUFFER:
 		{
 			auto args = std::get<BindVertexBufferArgs>(rc);
@@ -640,7 +639,11 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer)
 		}
 		case RenderCommandType::SWAP_WINDOW:
 		{
-			SDL_GL_SwapWindow(renderer->window);
+			auto currTime = std::chrono::high_resolution_clock::now();
+			renderer->frameTime = std::chrono::duration<float>(currTime - renderer->lastTime).count();
+			renderer->lastTime = currTime;
+			//SDL_GL_SwapWindow(renderer->window);
+			renderer->swap = true;
 			break;
 		}
 		case RenderCommandType::UPDATE_BUFFER:
@@ -654,24 +657,6 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer)
 			break;
 		}
 	}
-}
-
-void OpenGLRenderCommandContext::CmdBindUniformBuffer(uint32_t binding, BufferHandle * buffer, uint32_t offset, uint32_t size)
-{
-	commandList.push_back(BindUniformBufferArgs{
-		binding,
-		((OpenGLBufferHandle *)buffer)->nativeHandle,
-		offset,
-		size
-	});
-}
-
-void OpenGLRenderCommandContext::CmdBindUniformImage(uint32_t binding, ImageHandle * img)
-{
-	commandList.push_back(BindUniformImageArgs{
-		binding,
-		((OpenGLImageHandle *)img)->nativeHandle
-	});
 }
 
 void OpenGLRenderCommandContext::CmdBindPipeline(RenderPassHandle::PipelineBindPoint bp, PipelineHandle * handle)

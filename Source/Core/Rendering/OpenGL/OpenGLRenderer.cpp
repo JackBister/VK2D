@@ -13,8 +13,8 @@
 #include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
 #include "Core/Rendering/Program.h"
 #include "Core/Rendering/Shader.h"
-#include "Core/Rendering/ViewDef.h"
 #include "Core/ResourceManager.h"
+#include "Core/Semaphore.h"
 #include "Core/Sprite.h"
 
 //The number of floats contained in one vertex
@@ -75,15 +75,17 @@ void Renderer::EndFrame(std::vector<std::unique_ptr<RenderCommandContext>>& comm
 	glBindTexture(GL_TEXTURE_2D, backbuffer.nativeHandle);
 	glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 0, 0, dimensions.x, dimensions.y, 0);
 	//SDL_GL_SwapWindow(window);
+	/*
 	auto currTime = std::chrono::high_resolution_clock::now();
 	frameTime = std::chrono::duration<float>(currTime - lastTime).count();
 	lastTime = currTime;
+	*/
 	glEndQuery(GL_TIME_ELAPSED);
 }
 
-Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& reader, Queue<ViewDef *>::Writer&& viewDefQueue,
+Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& reader, Semaphore * sem,
 				   const char * title, const int winX, const int winY, const int w, const int h, const uint32_t flags) noexcept
-	: renderQueue(std::move(reader)), viewDefQueue(std::move(viewDefQueue))
+	: swapSem(sem), renderQueue(std::move(reader))
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -94,6 +96,7 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 	dimensions = glm::ivec2(w, h);
 	window = SDL_CreateWindow(title, winX, winY, w, h, flags | SDL_WINDOW_OPENGL);
 	SDL_GL_CreateContext(window);
+	SDL_GL_SetSwapInterval(1);
 
 	glewExperimental = GL_TRUE;
 	GLenum err = glewInit();
@@ -277,86 +280,73 @@ void Renderer::DeleteShader(Shader * const s) noexcept
 
 void Renderer::DrainQueue() noexcept
 {
-	//TODO: This is currently used to delay pushing viewdefs back to CPU thread so we wont get stuck in an infinite loop here
-	//If the CPU thread sends viewdefs faster than we can render them the renderqueue will become infinite.
-	//Alternatively, the GPU could return after rendering a set number of frames, but would cause frame time spikes and uneven input polling.
-	std::vector<ViewDef *> viewDefsToPush;
-	Maybe<RenderCommand> renderCommand;
-	do {
-		renderCommand = std::move(renderQueue.Pop());
-		if (renderCommand.index() != 0) {
-			RenderCommand command = std::move(std::get<RenderCommand>(renderCommand));
-			switch (command.params.index()) {
-			case RenderCommand::Type::NOP:
-				printf("[WARNING] NOP render command.\n");
-				break;
-			case RenderCommand::Type::ABORT:
-				isAborting = true;
-				abortCode = std::get<RenderCommand::AbortParams>(command.params).errorCode;
-				break;
-			case RenderCommand::Type::CREATE_RESOURCE:
-			{
-				auto fun = std::get<RenderCommand::CreateResourceParams>(command.params).fun;
-				OpenGLResourceContext ctx;
-				fun(ctx);
-				break;
-			}
-			case RenderCommand::Type::EXECUTE_COMMAND_CONTEXT:
-			{
-				auto ctx = std::move(std::get<RenderCommand::ExecuteCommandContextParams>(command.params).ctx);
-				((OpenGLRenderCommandContext *)ctx.get())->Execute(this);
-				break;
-			}
-			case RenderCommand::Type::ADD_BUFFER:
-			{
-				AddBuffer(std::get<RenderCommand::AddBufferParams>(command.params));
-				break;
-			}
-			case RenderCommand::Type::DELETE_BUFFER:
-				DeleteBuffer(std::get<RenderCommand::DeleteBufferParams>(command.params).rData);
-				break;
-			case RenderCommand::Type::ADD_FRAMEBUFFER:
-				AddFramebuffer(std::get<RenderCommand::AddFramebufferParams>(command.params).fb);
-				break;
-			case RenderCommand::Type::DELETE_FRAMEBUFFER:
-				DeleteFramebuffer(std::get<RenderCommand::DeleteFramebufferParams>(command.params).fb);
-				break;
-			case RenderCommand::Type::ADD_PROGRAM:
-				AddProgram(std::get<RenderCommand::AddProgramParams>(command.params).prog);
-				break;
-			case RenderCommand::Type::DELETE_PROGRAM:
-				DeleteProgram(std::get<RenderCommand::DeleteProgramParams>(command.params).prog);
-				break;
-			case RenderCommand::Type::ADD_SHADER:
-				AddShader(std::get<RenderCommand::AddShaderParams>(command.params).shader);
-				break;
-			case RenderCommand::Type::DELETE_SHADER:
-				DeleteShader(std::get<RenderCommand::DeleteShaderParams>(command.params).shader);
-				break;
-			case RenderCommand::Type::END_FRAME:
-			{
-				RenderCommand::EndFrameParams params = std::get<RenderCommand::EndFrameParams>(command.params);
-				//EndFrame(params.cameras, params.sprites);
-				break;
-			}
-			case RenderCommand::Type::DRAW_VIEW:
-			{
-				RenderCommand::DrawViewParams params = std::get<RenderCommand::DrawViewParams>(command.params);
-				EndFrame(params.view->commandBuffers);
-				viewDefsToPush.push_back(params.view);
-				break;
-			}
-			default:
-				printf("[WARNING] Unimplemented render command: %zu\n", command.params.index());
-			}
-			GLenum err = glGetError();
-			if (err) {
-				printf("RenderQueue pop error %u. RenderCommand %zu.\n", err, command.params.index());
-			}
-		}
-	} while (renderCommand.index() != 0);
 
-	for (auto vd : viewDefsToPush) {
-		viewDefQueue.Push(std::move(vd));
+	using namespace std::literals::chrono_literals;
+	RenderCommand command = renderQueue.Wait();
+	switch (command.params.index()) {
+	case RenderCommand::Type::NOP:
+		printf("[WARNING] NOP render command.\n");
+		break;
+	case RenderCommand::Type::ABORT:
+		isAborting = true;
+		abortCode = std::get<RenderCommand::AbortParams>(command.params).errorCode;
+		break;
+	case RenderCommand::Type::CREATE_RESOURCE:
+	{
+		auto fun = std::get<RenderCommand::CreateResourceParams>(command.params).fun;
+		OpenGLResourceContext ctx;
+		fun(ctx);
+		break;
+	}
+	case RenderCommand::Type::EXECUTE_COMMAND_CONTEXT:
+	{
+		auto ctx = std::move(std::get<RenderCommand::ExecuteCommandContextParams>(command.params).ctx);
+		((OpenGLRenderCommandContext *)ctx.get())->Execute(this);
+		break;
+	}
+	case RenderCommand::Type::ADD_BUFFER:
+	{
+		AddBuffer(std::get<RenderCommand::AddBufferParams>(command.params));
+		break;
+	}
+	case RenderCommand::Type::DELETE_BUFFER:
+		DeleteBuffer(std::get<RenderCommand::DeleteBufferParams>(command.params).rData);
+		break;
+	case RenderCommand::Type::ADD_FRAMEBUFFER:
+		AddFramebuffer(std::get<RenderCommand::AddFramebufferParams>(command.params).fb);
+		break;
+	case RenderCommand::Type::DELETE_FRAMEBUFFER:
+		DeleteFramebuffer(std::get<RenderCommand::DeleteFramebufferParams>(command.params).fb);
+		break;
+	case RenderCommand::Type::ADD_PROGRAM:
+		AddProgram(std::get<RenderCommand::AddProgramParams>(command.params).prog);
+		break;
+	case RenderCommand::Type::DELETE_PROGRAM:
+		DeleteProgram(std::get<RenderCommand::DeleteProgramParams>(command.params).prog);
+		break;
+	case RenderCommand::Type::ADD_SHADER:
+		AddShader(std::get<RenderCommand::AddShaderParams>(command.params).shader);
+		break;
+	case RenderCommand::Type::DELETE_SHADER:
+		DeleteShader(std::get<RenderCommand::DeleteShaderParams>(command.params).shader);
+		break;
+	default:
+		printf("[WARNING] Unimplemented render command: %zu\n", command.params.index());
+	}
+	GLenum err = glGetError();
+	if (err) {
+		printf("RenderQueue pop error %u. RenderCommand %zu.\n", err, command.params.index());
+	}
+	if (swap) {
+		SDL_GL_SwapWindow(window);
+		swapSem->Signal();
+		swap = false;
+		auto now = std::chrono::high_resolution_clock::now();
+		auto res = now - lastTime;
+		if (now - lastTime < 8.333334ms) {
+			std::this_thread::sleep_for(7.333334ms - (now - lastTime));
+		}
+		frameTime = res.count();
+		lastTime = now;
 	}
 }

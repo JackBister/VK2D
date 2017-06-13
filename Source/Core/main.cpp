@@ -12,9 +12,9 @@
 #include "Core/Rendering/RenderCommand.h"
 #include "Core/Rendering/Renderer.h"
 #include "Core/Rendering/Shader.h"
-#include "Core/Rendering/ViewDef.h"
 #include "Core/ResourceManager.h"
 #include "Core/scene.h"
+#include "Core/Semaphore.h"
 #include "Core/sprite.h"
 #include "Core/transform.h"
 
@@ -24,7 +24,7 @@ const std::string sceneFile = "Examples/FlappyPong/main.scene";
 //TODO: ResourceManager race conditions - Renderer has access to resMan,
 //but only uses it before main thread starts anyway so right now this is a non-issue.
 void MainThread(ResourceManager * resMan, Queue<SDL_Event>::Reader&& inputQueue, Queue<RenderCommand>::Writer&& renderQueue,
-				Queue<ViewDef *>::Reader&& viewDefQueue) noexcept
+				Semaphore * swapSync) noexcept
 {
 	FILE * f = fopen(sceneFile.c_str(), "rb");
 	std::string serializedScene;
@@ -39,36 +39,40 @@ void MainThread(ResourceManager * resMan, Queue<SDL_Event>::Reader&& inputQueue,
 		renderQueue.Push(RenderCommand(RenderCommand::AbortParams(1)));
 	}
 
-	Scene scene(sceneFile, resMan, std::move(inputQueue), std::move(renderQueue), std::move(viewDefQueue), serializedScene);
+	Scene scene(sceneFile, resMan, std::move(inputQueue), std::move(renderQueue), serializedScene);
 
 	scene.time.Start();
 	scene.BroadcastEvent("BeginPlay");
 	while (true) {
+		swapSync->Wait();
 		scene.Tick();
-		scene.EndFrame();
+		//scene.EndFrame();
 	}
 }
 
 #undef main
 int main(int argc, char *argv[])
 {
+	using namespace std::literals::chrono_literals;
 	//Sends input from GPU thread -> main thread
 	Queue<SDL_Event> inputQueue;
 	//Sends commands from main thread -> GPU thread
 	Queue<RenderCommand> renderQueue;
-	//Sends ViewDefs available for the scene to use from GPU thread -> main thread
-	Queue<ViewDef *> viewDefQueue;
 	ResourceManager * resMan = new ResourceManager(renderQueue.GetWriter());
 	SDL_Init(SDL_INIT_EVERYTHING);
-	Renderer renderer(resMan, renderQueue.GetReader(), viewDefQueue.GetWriter(), "SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
-	auto mainThread = std::thread(MainThread, resMan, inputQueue.GetReader(), renderQueue.GetWriter(), viewDefQueue.GetReader());
+	Semaphore sem;
+	Renderer renderer(resMan, renderQueue.GetReader(), &sem, "SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
+	auto mainThread = std::thread(MainThread, resMan, inputQueue.GetReader(), renderQueue.GetWriter(), &sem);
 	auto inputWriter = inputQueue.GetWriter();
+
+	for (int i = 0; i < 2; ++i) {
+		sem.Signal();
+	}
 
 	while (!renderer.isAborting) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			inputWriter.Push(std::move(e));
-			//printf("pushing\n");
 		}
 		const char * sdlErr = SDL_GetError();
 		if (*sdlErr != '\0') {

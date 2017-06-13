@@ -25,8 +25,6 @@ struct OpenGLRenderCommandContext : RenderCommandContext
 	virtual void CmdBindDescriptorSet(DescriptorSet *) override;
 	virtual void CmdBindIndexBuffer(BufferHandle *buffer, size_t offset, RenderCommandContext::IndexType indexType) override;
 	virtual void CmdBindPipeline(RenderPassHandle::PipelineBindPoint, PipelineHandle *) override;
-	virtual void CmdBindUniformBuffer(uint32_t binding, BufferHandle *, uint32_t offset, uint32_t size) override;
-	virtual void CmdBindUniformImage(uint32_t binding, ImageHandle *) override;
 	virtual void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) override;
 	virtual void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset) override;
 	virtual void CmdEndRenderPass() override;
@@ -39,7 +37,6 @@ struct OpenGLRenderCommandContext : RenderCommandContext
 
 protected:
 	void Execute(Renderer *) override;
-	//void Execute(SDL_Window *);
 private:
 	/*
 		Render command types and args:
@@ -78,18 +75,6 @@ private:
 	{
 		GLuint program;
 		GLuint vao;
-	};
-	struct BindUniformBufferArgs
-	{
-		GLuint index;
-		GLuint buffer;
-		GLintptr offset;
-		GLsizeiptr size;
-	};
-	struct BindUniformImageArgs
-	{
-		uint32_t binding;
-		GLuint image;
 	};
 	struct BindVertexBufferArgs
 	{
@@ -140,9 +125,8 @@ private:
 		const void * data;
 	};
 	using RenderCommand = std::variant<BeginRenderPassArgs, BindDescriptorSetArgs, BindIndexBufferArgs, BindPipelineArgs,
-									   BindUniformBufferArgs, BindUniformImageArgs, BindVertexBufferArgs,
-									   DrawIndexedArgs, EndRenderPassArgs, ExecuteCommandsArgs, ExecuteCommandsVectorArgs, SetScissorArgs, SetViewportArgs,
-									   SwapWindowArgs, UpdateBufferArgs>;
+									   BindVertexBufferArgs, DrawIndexedArgs, EndRenderPassArgs, ExecuteCommandsArgs,
+									   ExecuteCommandsVectorArgs, SetScissorArgs, SetViewportArgs, SwapWindowArgs, UpdateBufferArgs>;
 
 	/*
 		The list of commands to execute
