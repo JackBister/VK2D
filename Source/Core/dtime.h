@@ -2,17 +2,17 @@
 
 #include <chrono>
 
-struct Time
+class Time
 {
-	float timeScale;
-
-	void Start(float timeScale = 1.f);
+public:
 	void Frame();
-	float GetDeltaTime();
-	std::chrono::high_resolution_clock::time_point GetLastTime();
+	float get_delta_time();
+	std::chrono::high_resolution_clock::time_point get_last_time();
+	void Start(float timeScale = 1.f);
 
+	float time_scale_;
 private:
-	float deltaTime;
-	std::chrono::high_resolution_clock::time_point lastTime;
-	std::chrono::high_resolution_clock::time_point startTime;
+	float delta_time_;
+	std::chrono::high_resolution_clock::time_point last_time_;
+	std::chrono::high_resolution_clock::time_point start_time_;
 };

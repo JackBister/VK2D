@@ -11,31 +11,31 @@ using std::variant = std::experimental::variant;
 #endif
 
 #include "Core/Rendering/Context/RenderContext.h"
-#include "Core/Rendering/RendererData.h"
 #include "Core/Resource.h"
 
 struct ImageCreateInfo;
-struct ResourceManager;
+class ResourceManager;
 
-struct Image : Resource
+class Image : public Resource
 {
-	friend struct Renderer;
+public:
+	friend class Renderer;
 
 	Image() = delete;
-	Image(ResourceManager *, const std::string&) noexcept;
-	Image(const ImageCreateInfo&) noexcept;
-	Image(ResourceManager *, const std::string&, const std::vector<uint8_t>&) noexcept;
+	Image(ResourceManager *, std::string const&) noexcept;
+	Image(ImageCreateInfo const&) noexcept;
+	Image(ResourceManager *, std::string const&, std::vector<uint8_t> const&) noexcept;
 
-	const std::vector<uint8_t>& GetData() const noexcept;
-	uint32_t GetHeight() const noexcept;
-	ImageHandle * GetImageHandle();
-	uint32_t GetWidth() const noexcept;
+	std::vector<uint8_t> const& get_data() const noexcept;
+	uint32_t get_height() const noexcept;
+	ImageHandle * get_image_handle();
+	uint32_t get_width() const noexcept;
 
 private:
-	std::vector<uint8_t> data;
+	std::vector<uint8_t> data_;
 
-	uint32_t width, height;
-	ImageHandle * img;
+	uint32_t width_, height_;
+	ImageHandle * img_;
 };
 
 struct ImageCreateInfo

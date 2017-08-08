@@ -4,44 +4,36 @@
 
 #include "Core/Components/component.h"
 
-struct Framebuffer;
-struct Image;
-
-struct CameraComponent : Component
+class CameraComponent : public Component
 {
 public:
 	CameraComponent() noexcept;
 
-
-	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
-
-	PROPERTY(LuaRead)
-	float GetAspect();
-
-	const glm::mat4& GetProjectionMatrix();
-	std::shared_ptr<Framebuffer> GetRenderTarget() const;
-	const glm::mat4& GetViewMatrix();
-
-	PROPERTY(LuaRead)
-	float GetViewSize();
-
-	void OnEvent(std::string name, EventArgs args = {}) override;
-
-	PROPERTY(LuaRead)
-	void SetAspect(float);
-
-	PROPERTY(LuaRead)
-	void SetViewSize(float);
+	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;
-private:
-	float aspect;
-	bool dirtyProj = true;
-	bool dirtyView = true;
-	glm::mat4 projMatrix;
-	std::shared_ptr<Framebuffer> renderTarget;
-	glm::mat4 viewMatrix;
-	float viewSize;
 
+	void OnEvent(std::string name, EventArgs args = {}) override;
+
+	glm::mat4 const& projection();
+	glm::mat4 const& view();
+
+	PROPERTY(LuaRead)
+	float aspect();
+	PROPERTY(LuaRead)
+	void set_aspect(float);
+
+	PROPERTY(LuaRead)
+	float view_size();
+	PROPERTY(LuaRead)
+	void set_view_size(float);
+
+private:
+	float aspect_;
+	bool is_projection_dirty_ = true;
+	bool is_view_dirty_ = true;
+	glm::mat4 projection_;
+	glm::mat4 view_;
+	float view_size_;
 };

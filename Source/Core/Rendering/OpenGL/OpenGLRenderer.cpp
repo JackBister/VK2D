@@ -7,12 +7,8 @@
 #include <stb_image.h>
 
 #include "Core/Components/CameraComponent.h"
-#include "Core/Rendering/Framebuffer.h"
 #include "Core/Rendering/Image.h"
-#include "Core/Rendering/OpenGL/OpenGLEnumConversions.h"
 #include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
-#include "Core/Rendering/Program.h"
-#include "Core/Rendering/Shader.h"
 #include "Core/ResourceManager.h"
 #include "Core/Semaphore.h"
 #include "Core/Sprite.h"
@@ -53,7 +49,7 @@ static float plainQuadVerts[] = {
 };
 
 //The passthrough-transform program
-static Program ptProgram;
+//static Program ptProgram;
 
 Renderer::~Renderer() noexcept
 {
@@ -84,7 +80,7 @@ void Renderer::EndFrame(std::vector<std::unique_ptr<RenderCommandContext>>& comm
 }
 
 Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& reader, Semaphore * sem,
-				   const char * title, const int winX, const int winY, const int w, const int h, const uint32_t flags) noexcept
+				   char const * title, int const winX, int const winY, int const w, int const h, uint32_t const flags) noexcept
 	: swapSem(sem), renderQueue(std::move(reader))
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -128,6 +124,7 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 
 	resMan->AddResourceRefCounted<Image>("__Scratch/Backbuffer.tex", backBufferImage);
 
+	/*
 	FramebufferCreateInfo backbufferFBCreateInfo = {
 		"__Scratch/Backbuffer.rendertarget",
 		{{Framebuffer::Attachment::COLOR0, backBufferImage}},
@@ -137,6 +134,7 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 
 	backbufferRenderTarget = std::make_shared<Framebuffer>(backbufferFBCreateInfo);
 	resMan->AddResourceRefCounted<Framebuffer>("__Scratch/Backbuffer.rendertarget", backbufferRenderTarget);
+	*/
 
 	glReadBuffer(GL_BACK);
 
@@ -151,9 +149,11 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 	plainQuad.elements = plainQuadElems;
 	plainQuad.elementsLength = 6;
 
+	/*
 	ptvShader = resourceManager->LoadResource<Shader>("shaders/passthrough-transform.vert");
 	pfShader = resourceManager->LoadResource<Shader>("shaders/passthrough.frag");
 	ptProgram = resourceManager->LoadResourceOrConstruct<Program>("__Scratch/Programs/passthrough.prog", ptvShader, pfShader);
+	*/
 
 
 	glGenVertexArrays(1, &ptVAO);
@@ -171,11 +171,11 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	DrainQueue();
+	//DrainQueue();
 
 	//TODO:
-	ptVertexModule.nativeHandle = ptvShader.get()->rendererData.shader;
-	ptFragmentModule.nativeHandle = pfShader.get()->rendererData.shader;
+	//ptVertexModule.nativeHandle = ptvShader.get()->rendererData.shader;
+	//ptFragmentModule.nativeHandle = pfShader.get()->rendererData.shader;
 
 	lastTime = std::chrono::high_resolution_clock::now();
 }
@@ -187,6 +187,7 @@ uint64_t Renderer::GetFrameTime() noexcept
 	return ret;
 }
 
+/*
 void Renderer::AddBuffer(RenderCommand::AddBufferParams params) noexcept
 {
 	//Only copy the handle to rData when we've finished uploading
@@ -219,7 +220,9 @@ void Renderer::DeleteFramebuffer(Framebuffer * const fb) noexcept
 {
 	glDeleteFramebuffers(1, &fb->GetRendererData().framebuffer);
 }
+*/
 
+/*
 void Renderer::AddProgram(Program * const prog) noexcept
 {
 	prog->rendererData.program = glCreateProgram();
@@ -277,10 +280,10 @@ void Renderer::DeleteShader(Shader * const s) noexcept
 		glDeleteShader(s->rendererData.shader);
 	}
 }
+*/
 
 void Renderer::DrainQueue() noexcept
 {
-
 	using namespace std::literals::chrono_literals;
 	RenderCommand command = renderQueue.Wait();
 	switch (command.params.index()) {
@@ -304,6 +307,7 @@ void Renderer::DrainQueue() noexcept
 		((OpenGLRenderCommandContext *)ctx.get())->Execute(this);
 		break;
 	}
+	/*
 	case RenderCommand::Type::ADD_BUFFER:
 	{
 		AddBuffer(std::get<RenderCommand::AddBufferParams>(command.params));
@@ -330,6 +334,7 @@ void Renderer::DrainQueue() noexcept
 	case RenderCommand::Type::DELETE_SHADER:
 		DeleteShader(std::get<RenderCommand::DeleteShaderParams>(command.params).shader);
 		break;
+	*/
 	default:
 		printf("[WARNING] Unimplemented render command: %zu\n", command.params.index());
 	}
@@ -338,15 +343,26 @@ void Renderer::DrainQueue() noexcept
 		printf("RenderQueue pop error %u. RenderCommand %zu.\n", err, command.params.index());
 	}
 	if (swap) {
+		auto preSwap = std::chrono::high_resolution_clock::now();
+		auto res = preSwap - lastTime;
+		auto avgSwapTime = totalSwapTime / frameCount;
+		if (res + avgSwapTime < 8.333334ms) {
+			std::this_thread::sleep_for((totalSwapTime / frameCount) - 0.5ms);
+		}
+		//With Aero enabled in Windows 7, this doesn't busy wait.
+		//With Aero disabled, it does, causing 100% use on the GPU thread. Crazy.
 		SDL_GL_SwapWindow(window);
+		//TODO: These are both necessary to reduce CPU usage
+		//My understanding is that without these SwapWindow returns instantly and spins up its own thread(?) that spinlocks, borking our totalSwapTime. 
+		glFlush();
+		glFinish();
 		swapSem->Signal();
 		swap = false;
-		auto now = std::chrono::high_resolution_clock::now();
-		auto res = now - lastTime;
-		if (now - lastTime < 8.333334ms) {
-			std::this_thread::sleep_for(7.333334ms - (now - lastTime));
-		}
-		frameTime = res.count();
-		lastTime = now;
+		auto postSwap = std::chrono::high_resolution_clock::now();
+		frameTime = static_cast<float>((postSwap - lastTime).count());
+		lastTime = postSwap;
+
+		frameCount++;
+		totalSwapTime += std::chrono::duration_cast<std::chrono::milliseconds>(postSwap - preSwap);
 	}
 }

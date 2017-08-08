@@ -9,22 +9,22 @@
 
 #include "Core/Queue.h"
 #include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
-#include "Core/Rendering/OpenGL/OpenGLRendererData.h"
 #include "Core/Rendering/RenderCommand.h"
 
-struct CameraComponent;
-struct Framebuffer;
-struct Image;
-struct Program;
-struct ResourceManager;
+class CameraComponent;
+class Framebuffer;
+class Image;
+class Program;
+class ResourceManager;
 struct SDL_Window;
-struct Semaphore;
-struct Shader;
-struct Sprite;
+class Semaphore;
+class Shader;
+class Sprite;
 
-struct Renderer
+class Renderer
 {
-	Renderer(ResourceManager *, Queue<RenderCommand>::Reader&&, Semaphore * swapSem, const char * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
+public:
+	Renderer(ResourceManager *, Queue<RenderCommand>::Reader&&, Semaphore * swapSem, char const * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
 	~Renderer() noexcept;
 
 	static std::unique_ptr<OpenGLRenderCommandContext> CreateCommandContext();
@@ -32,9 +32,10 @@ struct Renderer
 	void EndFrame(std::vector<std::unique_ptr<RenderCommandContext>>& commandBuffers) noexcept;
 	uint64_t GetFrameTime() noexcept;
 
-	void AddBuffer(RenderCommand::AddBufferParams) noexcept;
-	void DeleteBuffer(BufferRendererData *) noexcept;
+	//void AddBuffer(RenderCommand::AddBufferParams) noexcept;
+	//void DeleteBuffer(BufferRendererData *) noexcept;
 
+	/*
 	void AddFramebuffer(Framebuffer * const) noexcept;
 	void DeleteFramebuffer(Framebuffer * const) noexcept;
 
@@ -43,6 +44,7 @@ struct Renderer
 
 	void AddShader(Shader * const) noexcept;
 	void DeleteShader(Shader * const) noexcept;
+	*/
 
 	void DrainQueue() noexcept;
 
@@ -77,7 +79,6 @@ private:
 	glm::ivec2 dimensions;
 
 	OpenGLImageHandle backbuffer;
-	ImageRendererData backbufferTexture;
 
 	std::shared_ptr<Image> backBufferImage;
 	std::shared_ptr<Framebuffer> backbufferRenderTarget;
@@ -90,4 +91,7 @@ private:
 	GLuint ptVAO;
 
 	Semaphore * swapSem;
+
+	uint32_t frameCount = 1;
+	std::chrono::milliseconds totalSwapTime = std::chrono::milliseconds(0);
 };

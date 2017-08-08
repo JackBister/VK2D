@@ -10,10 +10,6 @@
 #include "Core/input.h"
 #include "Core/Lua/luaserializable.h"
 #include "Core/Queue.h"
-#include "Core/Rendering/Accessor.h"
-#include "Core/Rendering/Material.h"
-#include "Core/Rendering/Mesh.h"
-#include "Core/Rendering/Program.h"
 #include "Core/Rendering/RenderCommand.h"
 #include "Core/Resource.h"
 
@@ -21,31 +17,27 @@
 
 //TODO: Allocate all entities/components from same block for cache
 
-struct CameraComponent;
-struct Entity;
-struct PhysicsWorld;
-struct ResourceManager;
+class CameraComponent;
+class Entity;
+class PhysicsWorld;
+class ResourceManager;
 
 PROPERTY(LuaIndex, LuaNewIndex)
-struct Scene : LuaSerializable, Resource
+class Scene : public LuaSerializable, public Resource
 {
-	ResourceManager * resourceManager;
-	PROPERTY(LuaRead)
-	Input input;
-	PhysicsWorld * physicsWorld;
-	Time time;
-	std::vector<Entity *> entities;
+public:
 
-	Scene(const std::string&, ResourceManager *, Queue<SDL_Event>::Reader&&, Queue<RenderCommand>::Writer&&, const std::string&) noexcept;
+	Scene(std::string const&, ResourceManager *, Queue<SDL_Event>::Reader&&, Queue<RenderCommand>::Writer&&, std::string const&) noexcept;
 
 	void EndFrame() noexcept;
+
+	int LuaIndex(lua_State *) override;
+	int LuaNewIndex(lua_State *) override;
+
 	void PushRenderCommand(RenderCommand&&) noexcept;
 	void SubmitCamera(CameraComponent *) noexcept;
 	void SubmitCommandBuffer(std::unique_ptr<RenderCommandContext>&&);
 	void Tick() noexcept;
-
-	int LuaIndex(lua_State *) override;
-	int LuaNewIndex(lua_State *) override;
 
 	/*
 		Returns the entity with the given name, or nullptr if an entity with that name does not exist.
@@ -61,10 +53,18 @@ struct Scene : LuaSerializable, Resource
 	void BroadcastEvent(std::string ename, EventArgs eas = {});
 	static int BroadcastEvent_Lua(lua_State *);
 
+	ResourceManager * resource_manager_;
+	PROPERTY(LuaRead)
+	Input input_;
+	PhysicsWorld * physics_world_;
+	Time time_;
+	std::vector<Entity *> entities_;
+
 private:
-	Queue<RenderCommand>::Writer renderQueue;
-	std::vector<SubmittedCamera> camerasToSubmit;
 	void CreatePrimitives();
+
+	Queue<RenderCommand>::Writer render_queue_;
+	std::vector<SubmittedCamera> cameras_to_submit_;
 
 	std::vector<std::unique_ptr<RenderCommandContext>> command_buffers_;
 	RenderPassHandle * main_renderpass_;

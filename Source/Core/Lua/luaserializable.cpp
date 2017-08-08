@@ -19,9 +19,7 @@ int LuaSerializable::StaticLuaIndex(lua_State * L)
 {
 	void ** vpp = static_cast<void **>(lua_touserdata(L, 1));
 	LuaSerializable * lsp = static_cast<LuaSerializable *>(*vpp);
-	int r = lsp->LuaIndex(L);
-	return r;
-	//return lsp->LuaIndex(L);
+	return lsp->LuaIndex(L);
 }
 
 int LuaSerializable::StaticLuaNewIndex(lua_State * L)

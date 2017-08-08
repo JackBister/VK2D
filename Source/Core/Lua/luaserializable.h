@@ -18,13 +18,14 @@
 	of returning it assign the value at -1 to it. This function should never return anything, wether the index exists or not.
 */
 
-struct LuaSerializable
+class LuaSerializable
 {
+public:
 	virtual ~LuaSerializable();
-	void PushToLua(lua_State *);
 
 	virtual int LuaIndex(lua_State *) = 0;
 	virtual int LuaNewIndex(lua_State *) = 0;
+	void PushToLua(lua_State *);
 
 	static int StaticLuaIndex(lua_State *);
 	static int StaticLuaNewIndex(lua_State *);

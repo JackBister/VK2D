@@ -5,10 +5,10 @@
 
 #include "Core/ResourceManager.h"
 
-Image::Image(ResourceManager * resMan, const std::string& name) noexcept
+Image::Image(ResourceManager * resMan, std::string const& name) noexcept
 {
 	this->name = name;
-	this->data = std::vector<uint8_t>(128 * 128 * 4, 0xFF);
+	this->data_ = std::vector<uint8_t>(128 * 128 * 4, 0xFF);
 
 	resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
 		ResourceCreationContext::ImageCreateInfo ic = {
@@ -19,44 +19,44 @@ Image::Image(ResourceManager * resMan, const std::string& name) noexcept
 		};
 		printf("pre createimage\n");
 		auto tmp = ctx.CreateImage(ic);
-		ctx.ImageData(tmp, this->data);
-		this->img = tmp;
+		ctx.ImageData(tmp, this->data_);
+		this->img_ = tmp;
 		printf("post createimage\n");
 	})));
 }
 
-Image::Image(const ImageCreateInfo& info) noexcept
+Image::Image(ImageCreateInfo const& info) noexcept
 {
 	this->name = info.name;
-	this->width = info.width;
-	this->height = info.height;
+	this->width_ = info.width;
+	this->height_ = info.height;
 	if (info.data.index() == 0) {
-		this->data = std::get<std::vector<uint8_t>>(info.data);
+		this->data_ = std::get<std::vector<uint8_t>>(info.data);
 		info.resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
 			ResourceCreationContext::ImageCreateInfo ic = {
 				Format::RGBA8,
 				ImageHandle::Type::TYPE_2D,
-				this->width, this->height, 1,
+				this->width_, this->height_, 1,
 				1
 			};
 			printf("pre createimage\n");
 			auto tmp = ctx.CreateImage(ic);
-			ctx.ImageData(tmp, this->data);
-			this->img = tmp;
+			ctx.ImageData(tmp, this->data_);
+			this->img_ = tmp;
 			printf("post createimage\n");
 		})));
 	} else {
-		this->img = std::get<ImageHandle *>(info.data);
+		this->img_ = std::get<ImageHandle *>(info.data);
 	}
 }
 
-Image::Image(ResourceManager * resMan, const std::string& name, const std::vector<uint8_t>& input) noexcept
+Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint8_t> const& input) noexcept
 {
 	this->name = name;
 	int n;
-	const uint8_t * imageData = stbi_load_from_memory((const stbi_uc *)&input[0], input.size(), (int *)&width, (int *)&height, &n, 0);
-	data = std::vector<uint8_t>(width * height * n);
-	memcpy(&data[0], imageData, width * height * n);
+	uint8_t const * imageData = stbi_load_from_memory((stbi_uc const *)&input[0], input.size(), (int *)&width_, (int *)&height_, (int *)&n, 0);
+	data_ = std::vector<uint8_t>(width_ * height_ * n);
+	memcpy(&data_[0], imageData, width_ * height_ * n);
 	Format format;
 	switch (n) {
 	case 1:
@@ -79,33 +79,33 @@ Image::Image(ResourceManager * resMan, const std::string& name, const std::vecto
 		ResourceCreationContext::ImageCreateInfo ic = {
 			Format::RGBA8,
 			ImageHandle::Type::TYPE_2D,
-			this->width, this->height, 1,
+			this->width_, this->height_, 1,
 			1
 		};
 		printf("pre createimage\n");
 		auto tmp = ctx.CreateImage(ic);
-		ctx.ImageData(tmp, this->data);
-		this->img = tmp;
+		ctx.ImageData(tmp, this->data_);
+		this->img_ = tmp;
 		printf("post createimage\n");
 	})));
 }
 
-const std::vector<uint8_t>& Image::GetData() const noexcept
+std::vector<uint8_t> const& Image::get_data() const noexcept
 {
-	return data;
+	return data_;
 }
 
-uint32_t Image::GetHeight() const noexcept
+uint32_t Image::get_height() const noexcept
 {
-	return height;
+	return height_;
 }
 
-ImageHandle * Image::GetImageHandle()
+ImageHandle * Image::get_image_handle()
 {
-	return img;
+	return img_;
 }
 
-uint32_t Image::GetWidth() const noexcept
+uint32_t Image::get_width() const noexcept
 {
-	return width;
+	return width_;
 }

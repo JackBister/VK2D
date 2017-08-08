@@ -6,7 +6,7 @@
 #include <vector>
 
 struct ImageViewHandle;
-struct Renderer;
+class Renderer;
 struct VertexInputStateHandle;
 
 enum class AccessFlagBits
@@ -164,7 +164,7 @@ struct DescriptorSetLayoutHandle
 struct FramebufferHandle
 {
 	uint32_t attachmentCount;
-	const ImageViewHandle ** pAttachments;
+	ImageViewHandle const ** pAttachments;
 	uint32_t width, height, layers;
 };
 
@@ -270,13 +270,13 @@ struct RenderPassHandle
 	{
 		PipelineBindPoint pipelineBindPoint;
 		uint32_t inputAttachmentCount;
-		const AttachmentReference * pInputAttachments;
+		AttachmentReference const * pInputAttachments;
 		uint32_t colorAttachmentCount;
-		const AttachmentReference * pColorAttachments;
-		const AttachmentReference * pResolveAttachments;
-		const AttachmentReference * pDepthStencilAttachments;
+		AttachmentReference const * pColorAttachments;
+		AttachmentReference const * pResolveAttachments;
+		AttachmentReference const * pDepthStencilAttachments;
 		uint32_t preserveAttachmentCount;
-		const uint32_t * pPreserveAttachments;
+		uint32_t const * pPreserveAttachments;
 	};
 	
 	struct SubpassDependency
@@ -305,9 +305,10 @@ struct VertexInputStateHandle
 {
 };
 
-struct RenderCommandContext
+class RenderCommandContext
 {
-	friend struct Renderer;
+	friend class Renderer;
+public:
 
 	enum class IndexType
 	{
@@ -361,7 +362,7 @@ struct RenderCommandContext
 		FramebufferHandle * framebuffer;
 		Rect2D renderArea;
 		uint32_t clearValueCount;
-		const ClearValue * pClearValues;
+		ClearValue const * pClearValues;
 	};
 	struct Viewport
 	{
@@ -390,11 +391,11 @@ struct RenderCommandContext
 	virtual void CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers) = 0;
 	//TODO:
 	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) = 0;
-	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, const Rect2D * pScissors) = 0;
-	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, const Viewport * pViewports) = 0;
+	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, Rect2D const * pScissors) = 0;
+	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, Viewport const * pViewports) = 0;
 	//In Vulkan there's that whole swapchain business. If it's not exposed the renderer will always be double buffered.
 	virtual void CmdSwapWindow() = 0;
-	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData) = 0;
+	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) = 0;
 
 protected:
 	virtual void Execute(Renderer *) = 0;
@@ -419,8 +420,9 @@ protected:
 	std::allocator<uint8_t> * allocator;
 };
 
-struct ResourceCreationContext
+class ResourceCreationContext
 {
+public:
 	/*
 		OpenGL: glGenBuffers + glBufferData
 		Vulkan: vkCreateBuffer (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) + vkAllocateMemory + vkBindBufferMemory
@@ -481,7 +483,7 @@ struct ResourceCreationContext
 			uint32_t stageFlags;
 		};
 		uint32_t bindingCount;
-		const Binding * pBinding;
+		Binding const * pBinding;
 	};
 	virtual DescriptorSetLayoutHandle * CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo) = 0;
 	virtual void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle *) = 0;	
@@ -490,7 +492,7 @@ struct ResourceCreationContext
 	{
 		RenderPassHandle * renderPass;
 		uint32_t attachmentCount;
-		const ImageViewHandle ** pAttachments;
+		ImageViewHandle const ** pAttachments;
 		uint32_t width, height, layers;
 	};
 	virtual FramebufferHandle * CreateFramebuffer(FramebufferCreateInfo) = 0;
@@ -510,7 +512,7 @@ struct ResourceCreationContext
 	};
 	virtual ImageHandle * CreateImage(ImageCreateInfo) = 0;
 	virtual void DestroyImage(ImageHandle *) = 0;
-	virtual void ImageData(ImageHandle *, const std::vector<uint8_t>&) = 0;
+	virtual void ImageData(ImageHandle *, std::vector<uint8_t> const&) = 0;
 
 	struct ImageViewCreateInfo
 	{
@@ -542,11 +544,11 @@ struct ResourceCreationContext
 	struct RenderPassCreateInfo
 	{
 		uint32_t attachmentCount;
-		const RenderPassHandle::AttachmentDescription * pAttachments;
+		RenderPassHandle::AttachmentDescription const * pAttachments;
 		uint32_t subpassCount;
-		const RenderPassHandle::SubpassDescription * pSubpasses;
+		RenderPassHandle::SubpassDescription const * pSubpasses;
 		uint32_t dependencyCount;
-		const RenderPassHandle::SubpassDependency * pDependencies;
+		RenderPassHandle::SubpassDependency const * pDependencies;
 	};
 	virtual RenderPassHandle * CreateRenderPass(RenderPassCreateInfo) = 0;
 	virtual void DestroyRenderPass(RenderPassHandle *) = 0;
@@ -569,7 +571,7 @@ struct ResourceCreationContext
 		};
 		Type type;
 		size_t codeSize;
-		const uint8_t * pCode;
+		uint8_t const * pCode;
 	};
 	virtual ShaderModuleHandle * CreateShaderModule(ShaderModuleCreateInfo) = 0;
 	virtual void DestroyShaderModule(ShaderModuleHandle *) = 0;
@@ -593,9 +595,9 @@ struct ResourceCreationContext
 		};
 
 		uint32_t vertexBindingDescriptionCount;
-		const VertexBindingDescription * pVertexBindingDescriptions;
+		VertexBindingDescription const * pVertexBindingDescriptions;
 		uint32_t vertexAttributeDescriptionCount;
-		const VertexAttributeDescription * pVertexAttributeDescriptions;
+		VertexAttributeDescription const * pVertexAttributeDescriptions;
 	};
 	virtual VertexInputStateHandle * CreateVertexInputState(VertexInputStateCreateInfo) = 0;
 	virtual void DestroyVertexInputState(VertexInputStateCreateInfo *) = 0;

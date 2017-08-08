@@ -14,16 +14,16 @@ function OnEvent(component, name, args)
 	end
 
 	if name == "Tick" then
-		if transform.position.y <= -60.0 + transform.scale.y and velocityY <= 0.0 then
+		if transform.position_.y <= -60.0 + transform.scale_.y and velocityY <= 0.0 then
 			return
 		end
-		if transform.position.y >= 60.0 - transform.scale.y and velocityY >= 0.0 then
+		if transform.position_.y >= 60.0 - transform.scale_.y and velocityY >= 0.0 then
 			velocityY = 0.0
 		end
 		if not isColliding then
-			transform.position.y = transform.position.y + velocityY * args.deltaTime
-			transform.isToParentDirty = true
-			transform.isToWorldDirty = true
+			transform.position_.y = transform.position_.y + velocityY * args.deltaTime
+			transform.is_parent_dirty_ = true
+			transform.is_world_dirty_= true
 			velocityY = velocityY - gravity * args.deltaTime
 		end
 	end

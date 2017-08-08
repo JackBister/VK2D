@@ -9,17 +9,18 @@
 #include "Core/collisioninfo.h"
 #include "Core/Deserializable.h"
 
-struct Entity;
+class Entity;
 
-struct PhysicsWorld : Deserializable
+class PhysicsWorld : public Deserializable
 {
-	std::unique_ptr<btDiscreteDynamicsWorld> world;
-	std::unique_ptr<btCollisionConfiguration> collisionConfig;
-	std::unique_ptr<btCollisionDispatcher> dispatcher;
-	std::unique_ptr<btBroadphaseInterface> broadphase;
-	std::unique_ptr<btConstraintSolver> constraintSolver;
+public:
+	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
 
-	std::unordered_map<Entity *, std::unordered_map<Entity *, CollisionInfo>> collisionsLastFrame;
+	std::unique_ptr<btDiscreteDynamicsWorld> world_;
+	std::unique_ptr<btCollisionConfiguration> collision_config_;
+	std::unique_ptr<btCollisionDispatcher> dispatcher_;
+	std::unique_ptr<btBroadphaseInterface> broadphase_;
+	std::unique_ptr<btConstraintSolver> constraint_solver_;
 
-	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
+	std::unordered_map<Entity *, std::unordered_map<Entity *, CollisionInfo>> collisions_last_frame_;
 };

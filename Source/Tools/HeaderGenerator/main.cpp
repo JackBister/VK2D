@@ -72,6 +72,9 @@ bool ContainsWrite(std::vector<std::string> v)
 std::string TypeCheck(CXType type)
 {
 	std::string ts = clang_getCString(clang_getTypeSpelling(type));
+	if (auto const p = ts.find("const ") != ts.npos) {
+		ts = ts.replace(p-1, 6, "");
+	}
 	switch (type.kind) {
 	case CXType_Bool:
 		return "lua_isboolean";
@@ -91,10 +94,13 @@ std::string TypeCheck(CXType type)
 		if (ts == "std::string") {
 			return "lua_isstring";
 		}
+		break;
+	case CXType_LValueReference:
+		return TypeCheck(clang_getPointeeType(type));
 	default:
 		printf("[ERROR] Unhandled type %s in TypeCheck.\n", clang_getCString(clang_getTypeKindSpelling(type.kind)));
-		return "";
 	}
+	return "";
 }
 
 std::string TypeCheckFunc(CXType function)
@@ -115,6 +121,9 @@ std::string TypeCheckFunc(CXType function)
 std::string Pull(CXType type)
 {
 	std::string ts = clang_getCString(clang_getTypeSpelling(type));
+	if (auto const p = ts.find("const ") != ts.npos) {
+		ts = ts.replace(p-1, 6, "");
+	}
 	switch (type.kind) {
 	case CXType_Bool:
 		return "lua_toboolean";
@@ -137,15 +146,21 @@ std::string Pull(CXType type)
 		if (ts == "std::string") {
 			return "lua_tostring";
 		}
+		break;
+	case CXType_LValueReference:
+		return Pull(clang_getPointeeType(type));
 	default:
 		printf("[ERROR] Unhandled type %s in Pull.\n", clang_getCString(clang_getTypeKindSpelling(type.kind)));
-		return "";
 	}
+	return "";
 }
 
 //TODO: is recursive
 std::string Push(Property p)
 {
+	if (auto const po = p.type.find("const ") != p.type.npos) {
+		p.type = p.type.replace(po-1, 6, "");
+	}
 	std::stringstream ss;
 	//TODO:
 	switch (p.cxType.kind) {
@@ -533,7 +548,7 @@ int main(const int argc, const char *argv[]) {
 	using boost::filesystem::is_directory;
 
     if (argc != 3) {
-        printf("Usage: %s <output directory> <input directory/file>\n", argv[0]);
+        printf("Usage: %s <output directory> <input directory/file_>\n", argv[0]);
         return 1;
     }
 

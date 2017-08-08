@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-
+#if 0
 struct CameraComponent;
 struct Framebuffer;
 struct Image;
@@ -16,7 +16,7 @@ struct Renderer {
 	virtual void EndFrame() = 0;
 	//Return elapsed GPU time on last frame if available, 0 if not.
 	virtual uint64_t GetFrameTime() = 0;
-	virtual bool Init(ResourceManager *, const char * title, int winX, int winY, int w, int h, uint32_t flags) = 0;
+	virtual bool Init(ResourceManager *, char const * title, int winX, int winY, int w, int h, uint32_t flags) = 0;
 	virtual void RenderCamera(CameraComponent * const) = 0;
 
 	virtual void AddSprite(Sprite * const) = 0;
@@ -39,3 +39,4 @@ extern Renderer * Render_currentRenderer;
 
 Renderer * GetOpenGLRenderer();
 Renderer * GetVulkanRenderer();
+#endif

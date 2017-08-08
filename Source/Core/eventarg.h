@@ -5,8 +5,8 @@
 
 #include "lua/lua.hpp"
 
-struct EventArg;
-struct LuaSerializable;
+class EventArg;
+class LuaSerializable;
 
 typedef class std::unordered_map<std::string, EventArg> EventArgs;
 
@@ -23,8 +23,9 @@ typedef class std::unordered_map<std::string, EventArg> EventArgs;
 	the expected type.
 */
 
-struct EventArg
+class EventArg
 {
+public:
 	enum Type
 	{
 		STRING,
@@ -36,43 +37,44 @@ struct EventArg
 		EVENTARGS,
 		VECTOR,
 	};
-	Type type;
-	union
-	{
-		std::string * asString;
-		int asInt;
-		float asFloat;
-		double asDouble;
-		LuaSerializable * asLuaSerializable;
-		lua_CFunction asLuaCFunction;
-		EventArgs * asEventArgs;
-		std::vector<EventArg> * asVector;
-	};
 
 	//For string pointer
 	~EventArg();
 	//Necessary to work in initializer list for unordered_map
 	EventArg();
-	EventArg(const EventArg&);
+	EventArg(EventArg const&);
 	EventArg(EventArg&&);
 	EventArg(std::string);
-	EventArg(const char *);
+	EventArg(char const *);
 	EventArg(int);
 	EventArg(float);
 	EventArg(double);
 	EventArg(LuaSerializable *);
 	EventArg(lua_CFunction);
 	EventArg(EventArgs);
-	EventArg(const std::vector<EventArg>&);
+	EventArg(std::vector<EventArg> const&);
+
+	EventArg& operator=(EventArg const&);
+	EventArg& operator=(EventArg&& ea);
 
 	/*
 		EventArgs does not push userdata, instead it directly pushes the wrapped value.
 	*/
 	//TODO: This may still be necessary and usable
 	void PushToLua(lua_State *);
-	EventArg& operator=(const EventArg&);
-	EventArg& operator=(EventArg&& ea);
 
+	Type type;
+	union
+	{
+		std::string * as_string_;
+		int as_int_;
+		float as_float_;
+		double as_double_;
+		LuaSerializable * as_LuaSerializable_;
+		lua_CFunction as_lua_cfunction_;
+		EventArgs * as_EventArgs_;
+		std::vector<EventArg> * as_vector_;
+	};
 private:
 	void Delete();
 };

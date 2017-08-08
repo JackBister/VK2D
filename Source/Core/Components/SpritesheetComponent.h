@@ -7,10 +7,11 @@
 #include "Core/Components/component.h"
 #include "Core/sprite.h"
 
-struct SpritesheetComponent : Component
+class SpritesheetComponent : public Component
 {
-	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
-	glm::vec2 GetFrameSize() const;
+public:
+	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
+	glm::vec2 get_frame_size() const;
 	void OnEvent(std::string, EventArgs) override;
 	void PlayAnimationByName(std::string name);
 
@@ -18,18 +19,34 @@ struct SpritesheetComponent : Component
 	int LuaNewIndex(lua_State *) override;
 
 	PROPERTY(LuaRead)
-		Sprite sprite;
+		Sprite sprite_;
 
 	PROPERTY(LuaReadWrite)
-		bool isFlipped;
+		bool is_flipped_;
 
-	std::vector<float> frameTimes;
+	std::vector<float> frame_times_;
 private:
-	std::unordered_map<std::string, std::vector<size_t>> animations;
-	size_t currentIndex = 0;
-	std::string currentNamedAnim;
-	size_t currentNamedAnimIndex;
-	glm::vec2 frameSize;
-	std::vector<glm::vec2> minUVs;
-	float timeSinceUpdate = 0.f;
+	struct SpriteResources
+	{
+		BufferHandle * ebo;
+		BufferHandle * vbo;
+
+		PipelineHandle * pipeline;
+	};
+
+	static bool has_created_resources_;
+	static SpriteResources resources_;
+
+	glm::mat4 cached_MVP_;
+	DescriptorSet * descriptor_set_;
+	std::atomic<bool> has_created_local_resources_{ false };
+	BufferHandle * uvs_;
+
+	std::unordered_map<std::string, std::vector<size_t>> animations_;
+	size_t current_index_ = 0;
+	std::string current_named_anim_;
+	size_t current_named_anim_index_;
+	glm::vec2 frame_size_;
+	std::vector<glm::vec2> min_uvs_;
+	float time_since_update_ = 0.f;
 };

@@ -20,5 +20,5 @@ private:
 		}
 	};
 
-	std::unique_ptr<SDL_sem, SemDestructor> sem;
+	std::unique_ptr<SDL_sem, SemDestructor> sem_;
 };

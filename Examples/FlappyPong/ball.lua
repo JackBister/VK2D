@@ -34,16 +34,16 @@ function OnEvent(component, name, args)
 	end
 
 	if name == "Tick" then
-		if transform.position.y <= -60.0 + transform.scale.y or transform.position.y >= 60 -transform.scale.y then
+		if transform.position_.y <= -60.0 + transform.scale_.y or transform.position_.y >= 60 -transform.scale_.y then
 			velocityDir.y = -velocityDir.y
 		end
-		if transform.position.x <= -80 - transform.scale.x or transform.position.x >= 80 + transform.scale.x then
-			transform.position.x = 0
+		if transform.position_.x <= -80 - transform.scale_.x or transform.position_.x >= 80 + transform.scale_.x then
+			transform.position_.x = 0
 		end
-		transform.position.x = transform.position.x + velocityDir.x * moveSpeed * args.deltaTime;
-		transform.position.y = transform.position.y + velocityDir.y * moveSpeed * args.deltaTime;
-		transform.isToParentDirty = true
-		transform.isToWorldDirty = true
+		transform.position_.x = transform.position_.x + velocityDir.x * moveSpeed * args.deltaTime;
+		transform.position_.y = transform.position_.y + velocityDir.y * moveSpeed * args.deltaTime;
+		transform.is_parent_dirty_ = true
+		transform.is_world_dirty_ = true
 	end
 
 	if name == "OnCollisionStart" then

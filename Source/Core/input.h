@@ -14,13 +14,18 @@
 
 typedef std::unordered_map<Keycode, bool, std::hash<int>> Keymap;
 
-struct Input : LuaSerializable
+class Input : public LuaSerializable
 {
-
+public:
 	Input(Queue<SDL_Event>::Reader&&) noexcept;
 	//Call every frame
 	//TODO: This could/should be static and push events to all Input instances - question is if that's meaningful in any way.
 	void Frame() noexcept;
+
+	void AddKeybind(std::string const&, Keycode);
+	static int AddKeybind_Lua(lua_State *);
+
+	void DeserializeInPlace(std::string const&) noexcept;
 
 	//TODO: Make Keycode a class with implicit std::string constructor for ez Lua interaction
 	//TODO: Modifier keys?
@@ -32,27 +37,23 @@ struct Input : LuaSerializable
 	static int GetKeyUp_Lua(lua_State *);
 
 	PROPERTY(LuaRead)
-	bool GetButton(std::string);
+	bool GetButton(std::string const&);
 	PROPERTY(LuaRead)
-	bool GetButtonDown(std::string);
+	bool GetButtonDown(std::string const&);
 	PROPERTY(LuaRead)
-	bool GetButtonUp(std::string);
-
-	void AddKeybind(std::string, Keycode);
-	static int AddKeybind_Lua(lua_State *);
-	void RemoveKeybind(std::string, Keycode);
-	static int RemoveKeybind_Lua(lua_State *);
+	bool GetButtonUp(std::string const&);
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;
 
-	void DeserializeInPlace(const std::string&) noexcept;
+	void RemoveKeybind(std::string const&, Keycode);
+	static int RemoveKeybind_Lua(lua_State *);
 
 private:
-	Queue<SDL_Event>::Reader inputQueue;
+	Queue<SDL_Event>::Reader input_queue_;
 	//TODO: vector means you can have infinite keys bound
-	std::unordered_map<std::string, std::vector<Keycode>> buttonMap;
-	Keymap downKeys;
-	Keymap heldKeys;
-	Keymap upKeys;
+	std::unordered_map<std::string, std::vector<Keycode>> button_map_;
+	Keymap down_keys_;
+	Keymap held_keys_;
+	Keymap up_keys_;
 };

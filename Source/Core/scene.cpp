@@ -11,8 +11,7 @@
 #include "Core/entity.h"
 #include "Core/input.h"
 #include "Core/physicsworld.h"
-#include "Core/Rendering/Framebuffer.h"
-#include "Core/Rendering/Mesh.h"
+#include "Core/Rendering/Renderer.h"
 #include "Core/sprite.h"
 #include "Core/transform.h"
 
@@ -21,7 +20,7 @@
 void Scene::CreatePrimitives()
 {
 	using namespace std::chrono_literals;
-	const float plainQuadVerts[] = {
+	float const plainQuadVerts[] = {
 		//vec3 pos, vec3 color, vec2 texcoord
 		-1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, // Top left
 		1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, // Top right
@@ -29,7 +28,7 @@ void Scene::CreatePrimitives()
 		-1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, // Bottom left
 	};
 
-	const uint32_t plainQuadElems[] = {
+	uint32_t const plainQuadElems[] = {
 		0, 1, 2,
 		2, 3, 0
 	};
@@ -58,7 +57,7 @@ void Scene::CreatePrimitives()
 	VertexInputStateHandle * ptInputState;
 	PipelineHandle * ptPipeline;
 
-	resourceManager->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([&](ResourceCreationContext& ctx) {
+	resource_manager_->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([&](ResourceCreationContext& ctx) {
 		/*
 			Create quad resources
 		*/
@@ -198,36 +197,35 @@ void Scene::CreatePrimitives()
 		std::this_thread::sleep_for(1ms);
 	}
 
-	resourceManager->AddResource("_Primitives/Buffers/QuadVBO.buffer", quadVerts);
-	resourceManager->AddResource("_Primitives/Buffers/QuadEBO.buffer", quadElems);
+	resource_manager_->AddResource("_Primitives/Buffers/QuadVBO.buffer", quadVerts);
+	resource_manager_->AddResource("_Primitives/Buffers/QuadEBO.buffer", quadElems);
 
-	resourceManager->AddResource("_Primitives/Shaders/passthrough-transform.vert", ptvShader);
-	resourceManager->AddResource("_Primitives/Shaders/passthrough.frag", pfShader);
+	resource_manager_->AddResource("_Primitives/Shaders/passthrough-transform.vert", ptvShader);
+	resource_manager_->AddResource("_Primitives/Shaders/passthrough.frag", pfShader);
 
-	resourceManager->AddResource("_Primitives/VertexInputStates/passthrough-transform.state", ptInputState);
-	resourceManager->AddResource("_Primitives/Pipelines/passthrough-transform.pipe", ptPipeline);
+	resource_manager_->AddResource("_Primitives/VertexInputStates/passthrough-transform.state", ptInputState);
+	resource_manager_->AddResource("_Primitives/Pipelines/passthrough-transform.pipe", ptPipeline);
 
 }
 
-Scene::Scene(const std::string& name, ResourceManager * resMan, Queue<SDL_Event>::Reader&& inputQueue,
-			 Queue<RenderCommand>::Writer&& writer, const std::string& serializedScene) noexcept
-	: resourceManager(resMan), input(std::move(inputQueue)), renderQueue(std::move(writer))
+Scene::Scene(std::string const& name, ResourceManager * resMan, Queue<SDL_Event>::Reader&& inputQueue,
+			 Queue<RenderCommand>::Writer&& writer, std::string const& serializedScene) noexcept
+	: resource_manager_(resMan), input_(std::move(inputQueue)), render_queue_(std::move(writer))
 {
-	using nlohmann::json;
 	this->name = name;
 
 	CreatePrimitives();
 
-	json j = json::parse(serializedScene);
+	auto const j = nlohmann::json::parse(serializedScene);
 
-	input.DeserializeInPlace(j["input"].dump());
+	input_.DeserializeInPlace(j["input"].dump());
 
-	this->physicsWorld = static_cast<PhysicsWorld *>(Deserializable::DeserializeString(resourceManager, j["physics"].dump()));
+	this->physics_world_ = static_cast<PhysicsWorld *>(Deserializable::DeserializeString(resource_manager_, j["physics"].dump()));
 
 	for (auto& je : j["entities"]) {
-		Entity * tmp = static_cast<Entity *>(Deserializable::DeserializeString(resourceManager, je.dump()));
-		tmp->scene = this;
-		this->entities.push_back(tmp);
+		Entity * tmp = static_cast<Entity *>(Deserializable::DeserializeString(resource_manager_, je.dump()));
+		tmp->scene_ = this;
+		this->entities_.push_back(tmp);
 	}
 }
 
@@ -237,12 +235,12 @@ void Scene::EndFrame() noexcept
 
 void Scene::PushRenderCommand(RenderCommand&& rc) noexcept
 {
-	renderQueue.Push(std::move(rc));
+	render_queue_.Push(std::move(rc));
 }
 
 void Scene::SubmitCamera(CameraComponent * cam) noexcept
 {
-	camerasToSubmit.emplace_back(cam->GetViewMatrix(), cam->GetProjectionMatrix(), cam->GetRenderTarget()->GetRendererData());
+	cameras_to_submit_.emplace_back(cam->view(), cam->projection());
 }
 
 void Scene::SubmitCommandBuffer(std::unique_ptr<RenderCommandContext>&& ctx)
@@ -252,16 +250,16 @@ void Scene::SubmitCommandBuffer(std::unique_ptr<RenderCommandContext>&& ctx)
 
 void Scene::Tick() noexcept
 {
-	input.Frame();
-	time.Frame();
-	printf("%f\n", time.GetDeltaTime());
+	input_.Frame();
+	time_.Frame();
+	//printf("%f\n", time.GetDeltaTime());
 
-	camerasToSubmit.clear();
+	cameras_to_submit_.clear();
 	command_buffers_.clear();
 
 	//TODO: substeps
-	physicsWorld->world->stepSimulation(time.GetDeltaTime());
-	BroadcastEvent("Tick", { { "deltaTime", time.GetDeltaTime() } });
+	physics_world_->world_->stepSimulation(time_.get_delta_time());
+	BroadcastEvent("Tick", { { "deltaTime", time_.get_delta_time() } });
 
 	auto ctx = Renderer::CreateCommandContext();
 	RenderCommandContext::ClearValue clearValues[] = {
@@ -291,7 +289,7 @@ void Scene::Tick() noexcept
 	};
 	ctx->CmdBeginRenderPass(&beginInfo, RenderCommandContext::SubpassContents::SECONDARY_COMMAND_BUFFERS);
 
-	for (auto& cc : camerasToSubmit) {
+	for (auto& cc : cameras_to_submit_) {
 		BroadcastEvent("GatherRenderCommands", { { "camera", &cc } });
 	}
 
@@ -306,13 +304,13 @@ void Scene::Tick() noexcept
 
 	ctx->CmdEndRenderPass();
 
-	renderQueue.Push(RenderCommand(RenderCommand::ExecuteCommandContextParams(std::move(ctx))));
+	render_queue_.Push(RenderCommand(RenderCommand::ExecuteCommandContextParams(std::move(ctx))));
 }
 
 Entity * Scene::GetEntityByName(std::string name)
 {
-	for (auto& ep : entities) {
-		if (ep->name == name) {
+	for (auto& ep : entities_) {
+		if (ep->name_ == name) {
 			return ep;
 		}
 	}
@@ -321,7 +319,7 @@ Entity * Scene::GetEntityByName(std::string name)
 
 void Scene::BroadcastEvent(std::string ename, EventArgs eas)
 {
-	for (auto& ep : entities) {
+	for (auto& ep : entities_) {
 		ep->FireEvent(ename, eas);
 	}
 }

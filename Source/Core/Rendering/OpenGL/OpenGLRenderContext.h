@@ -12,9 +12,10 @@ using std::variant = std::experimental::variant;
 #include <gl/glew.h>
 #include <SDL/SDL.h>
 
-struct OpenGLRenderCommandContext : RenderCommandContext
+class OpenGLRenderCommandContext : public RenderCommandContext
 {
-	friend struct Renderer;
+	friend class Renderer;
+public:
 
 	OpenGLRenderCommandContext() : RenderCommandContext(new std::allocator<uint8_t>) {}
 	OpenGLRenderCommandContext(std::allocator<uint8_t> * allocator) : RenderCommandContext(allocator) {}
@@ -30,10 +31,10 @@ struct OpenGLRenderCommandContext : RenderCommandContext
 	virtual void CmdEndRenderPass() override;
 	virtual void CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers) override;
 	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) override;
-	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, const RenderCommandContext::Rect2D *pScissors) override;
-	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, const RenderCommandContext::Viewport *pViewports) override;
+	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, RenderCommandContext::Rect2D const * pScissors) override;
+	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, RenderCommandContext::Viewport const * pViewports) override;
 	virtual void CmdSwapWindow() override;
-	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData) override;
+	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) override;
 
 protected:
 	void Execute(Renderer *) override;
@@ -87,7 +88,7 @@ private:
 	{
 		GLsizei count;
 		//Why the hell does OpenGL want a pointer for this?
-		const void * indices;
+		void const * indices;
 		GLsizei primcount;
 	};
 	struct EndRenderPassArgs
@@ -106,13 +107,13 @@ private:
 	{
 		GLuint first;
 		GLsizei count;
-		const GLint * v;
+		GLint const * v;
 	};
 	struct SetViewportArgs
 	{
 		GLuint first;
 		GLsizei count;
-		const GLfloat * v;
+		GLfloat const * v;
 	};
 	struct SwapWindowArgs
 	{
@@ -122,7 +123,7 @@ private:
 		GLuint buffer;
 		GLintptr offset;
 		GLsizeiptr size;
-		const void * data;
+		void const * data;
 	};
 	using RenderCommand = std::variant<BeginRenderPassArgs, BindDescriptorSetArgs, BindIndexBufferArgs, BindPipelineArgs,
 									   BindVertexBufferArgs, DrawIndexedArgs, EndRenderPassArgs, ExecuteCommandsArgs,
@@ -140,15 +141,16 @@ private:
 	GLenum indexBufferType;
 };
 
-struct OpenGLResourceContext : ResourceCreationContext
+class OpenGLResourceContext : public ResourceCreationContext
 {
+public:
 	BufferHandle * CreateBuffer(BufferCreateInfo) final override;
 	void DestroyBuffer(BufferHandle *) final override;
 	uint8_t * MapBuffer(BufferHandle *, size_t, size_t) final override;
 	void UnmapBuffer(BufferHandle *) final override;
 	ImageHandle * CreateImage(ImageCreateInfo) final override;
 	void DestroyImage(ImageHandle *) final override;
-	void ImageData(ImageHandle *, const std::vector<uint8_t>&) final override;
+	void ImageData(ImageHandle *, std::vector<uint8_t> const&) final override;
 
 	// Inherited via ResourceCreationContext
 	virtual RenderPassHandle * CreateRenderPass(ResourceCreationContext::RenderPassCreateInfo);

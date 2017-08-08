@@ -11,23 +11,13 @@
 
 #include "Tools/HeaderGenerator/headergenerator.h"
 
-struct Component;
-struct Scene;
+class Component;
+class Scene;
 
-//The 11th commandment: Thou shalt not inherit from the Entity class; use components like a normal person instead.
-struct Entity final : LuaSerializable, Deserializable
+class Entity final : public LuaSerializable, public Deserializable
 {
-	PROPERTY(LuaReadWrite)
-	std::string name;
-	//TODO: Necessary for now
-	PROPERTY(LuaRead)
-	Scene * scene;
-	PROPERTY(LuaReadWrite)
-	Transform transform;
-
-	std::vector<Component *> components;
-
-	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc) const override;
+public:
+	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc) const override;
 	PROPERTY(LuaRead)
 	void FireEvent(std::string name, EventArgs args = {});
 	PROPERTY(LuaRead)
@@ -35,4 +25,15 @@ struct Entity final : LuaSerializable, Deserializable
 
 	int LuaIndex(lua_State *) override;
 	int LuaNewIndex(lua_State *) override;
+
+
+	PROPERTY(LuaReadWrite)
+	std::string name_;
+	//TODO: Necessary for now
+	PROPERTY(LuaRead)
+	Scene * scene_;
+	PROPERTY(LuaReadWrite)
+	Transform transform_;
+
+	std::vector<Component *> components_;
 };

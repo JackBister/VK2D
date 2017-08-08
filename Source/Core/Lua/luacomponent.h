@@ -8,21 +8,12 @@
 
 #include "Tools/HeaderGenerator/headergenerator.h"
 
-struct LuaComponent : Component
+class LuaComponent : public Component
 {
+public:
 	LuaComponent();
-
-	PROPERTY(LuaRead)
-	std::string file;
-	//TODO: Each component has its own state - I'm not sure if that's good or if it's a waste.
-	lua_State * state;
-
-	//The args passed for the current OnEvent call.
-	//When an event call is received, the args are saved here so that the lua script can use getter functions to retreive them
-	//TODO: Note that this means that a LuaComponent can't run multiple OnEvents concurrently, although that may also be problematic for other reasons.
-	EventArgs args;
 	
-	Deserializable * Deserialize(ResourceManager *, const std::string& str, Allocator& alloc = Allocator::default_allocator) const override;
+	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
 	void OnEvent(std::string name, EventArgs args) override;
 
 	int LuaIndex(lua_State *) override;
@@ -35,4 +26,13 @@ struct LuaComponent : Component
 		static auto ret = std::unordered_map<lua_State *, LuaComponent *>();
 		return ret;
 	}
+
+private:
+	PROPERTY(LuaRead)
+	std::string file_;
+	lua_State * state_;
+
+	//The args passed for the current OnEvent call.
+	//When an event call is received, the args are saved here so that the lua script can use getter functions to retreive them
+	EventArgs args;
 };

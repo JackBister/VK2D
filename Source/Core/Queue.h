@@ -2,6 +2,7 @@
 
 #include <concurrentqueue.h>
 #if _MSC_VER && !__INTEL_COMPILER
+#include <optional>
 #include <variant>
 #else
 #include <experimental/variant.hpp>
@@ -21,23 +22,25 @@ using std::variant = std::experimental::variant;
 */
 
 template<typename T, bool UseSemaphore = true>
-struct Queue
+class Queue
 {
 };
 
 template<typename T>
-struct Queue<T, false>
+class Queue<T, false>
 {
-	struct Reader
+public:
+	class Reader
 	{
-		friend struct Queue;
-		Maybe<T> Pop()
+		friend class Queue;
+	public:
+		std::optional<T> Pop()
 		{
 			T ret;
 			if (queue->try_dequeue(token, ret)) {
 				return ret;
 			}
-			return None{};
+			return {};
 		}
 
 		Reader(Reader&& rhs) : queue(rhs.queue), token(std::move(rhs.token)) {}
@@ -47,9 +50,10 @@ struct Queue<T, false>
 		moodycamel::ConsumerToken token;
 	};
 
-	struct Writer
+	class Writer
 	{
-		friend struct Queue;
+		friend class Queue;
+	public:
 		void Push(T&& val)
 		{
 			queue->enqueue(token, std::move(val));
@@ -77,19 +81,21 @@ private:
 
 
 template<typename T>
-struct Queue<T, true>
+class Queue<T, true>
 {
-	struct Reader
+public:
+	class Reader
 	{
-		friend struct Queue;
-		Maybe<T> Pop()
+		friend class Queue;
+	public:
+		std::optional<T> Pop()
 		{
 			T ret;
 			if (queue->try_dequeue(token, ret)) {
 				sem->Wait();
 				return ret;
 			}
-			return None{};
+			return {};
 		}
 
 		T Wait()
@@ -111,9 +117,10 @@ struct Queue<T, true>
 		Semaphore * sem;
 	};
 
-	struct Writer
+	class Writer
 	{
-		friend struct Queue;
+		friend class Queue;
+	public:
 		void Push(T&& val)
 		{
 			queue->enqueue(token, std::move(val));

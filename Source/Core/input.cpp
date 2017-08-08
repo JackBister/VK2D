@@ -8,30 +8,27 @@
 
 #include "Core/input.h.generated.h"
 
-using nlohmann::json;
-using namespace std;
-
 Input::Input(Queue<SDL_Event>::Reader&& reader) noexcept
-	: inputQueue(std::move(reader))
+	: input_queue_(std::move(reader))
 {
 }
 
 void Input::Frame() noexcept
 {
-	for (auto& kbp : downKeys) {
+	for (auto const& kbp : down_keys_) {
 		//If key was down last frame, it's held this frame
 		if (kbp.second) {
-			heldKeys[kbp.first] = true;
+			held_keys_[kbp.first] = true;
 		}
 	}
-	downKeys.clear();
-	upKeys.clear();
+	down_keys_.clear();
+	up_keys_.clear();
 
-	Maybe<SDL_Event> evt;
+	std::optional<SDL_Event> evt;
 	do {
-		evt = inputQueue.Pop();
-		if (evt.index() != 0) {
-			const SDL_Event& e = std::get<SDL_Event>(evt);
+		evt = input_queue_.Pop();
+		if (evt.has_value()) {
+			SDL_Event const& e = evt.value();
 			switch (e.type) {
 			case SDL_QUIT:
 			{
@@ -41,65 +38,64 @@ void Input::Frame() noexcept
 			case SDL_KEYDOWN:
 			{
 				if (!e.key.repeat) {
-					downKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
+					down_keys_[static_cast<Keycode>(e.key.keysym.sym)] = true;
 				}
 				break;
 			}
 			case SDL_KEYUP:
 			{
-				//if key up, it's no longer held
-				heldKeys[static_cast<Keycode>(e.key.keysym.sym)] = false;
-				upKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
+				held_keys_[static_cast<Keycode>(e.key.keysym.sym)] = false;
+				up_keys_[static_cast<Keycode>(e.key.keysym.sym)] = true;
 				break;
 			}
 			case SDL_MOUSEBUTTONDOWN:
 			{
-				downKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
+				down_keys_[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
 				break;
 			}
 			case SDL_MOUSEBUTTONUP:
 			{
-				heldKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = false;
-				upKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
+				held_keys_[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = false;
+				up_keys_[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
 			}
 			}
 		}
-	} while (evt.index() != 0);
+	} while (evt.has_value());
 }
 
-bool Input::GetKey(Keycode kc)
+bool Input::GetKey(Keycode const kc)
 {
-	return heldKeys[kc];
+	return held_keys_[kc];
 }
 
-int Input::GetKey_Lua(lua_State * L)
+int Input::GetKey_Lua(lua_State * const L)
 {
 	INPUT_GET(GetKey, KEY)
 }
 
-bool Input::GetKeyDown(Keycode kc)
+bool Input::GetKeyDown(Keycode const kc)
 {
-	return downKeys[kc];
+	return down_keys_[kc];
 }
 
-int Input::GetKeyDown_Lua(lua_State * L)
+int Input::GetKeyDown_Lua(lua_State * const L)
 {
 	INPUT_GET(GetKeyDown, KEY)
 }
 
-bool Input::GetKeyUp(Keycode kc)
+bool Input::GetKeyUp(Keycode const kc)
 {
-	return upKeys[kc];
+	return up_keys_[kc];
 }
 
-int Input::GetKeyUp_Lua(lua_State * L)
+int Input::GetKeyUp_Lua(lua_State * const L)
 {
 	INPUT_GET(GetKeyUp, KEY)
 }
 
-bool Input::GetButton(string b)
+bool Input::GetButton(std::string const& b)
 {
-	for (auto& kc : buttonMap[b]) {
+	for (auto const& kc : button_map_[b]) {
 		if (GetKey(kc)) {
 			return true;
 		}
@@ -107,9 +103,9 @@ bool Input::GetButton(string b)
 	return false;
 }
 
-bool Input::GetButtonDown(string b)
+bool Input::GetButtonDown(std::string const& b)
 {
-	for (auto& kc : buttonMap[b]) {
+	for (auto const& kc : button_map_[b]) {
 		if (GetKeyDown(kc)) {
 			return true;
 		}
@@ -117,9 +113,9 @@ bool Input::GetButtonDown(string b)
 	return false;
 }
 
-bool Input::GetButtonUp(string b)
+bool Input::GetButtonUp(std::string const& b)
 {
-	for (auto& kc : buttonMap[b]) {
+	for (auto const& kc : button_map_[b]) {
 		if (GetKeyUp(kc)) {
 			return true;
 		}
@@ -127,19 +123,19 @@ bool Input::GetButtonUp(string b)
 	return false;
 }
 
-void Input::AddKeybind(string s, Keycode kc)
+void Input::AddKeybind(std::string const& s, Keycode kc)
 {
-	buttonMap[s].push_back(kc);
+	button_map_[s].push_back(kc);
 }
 
-int Input::AddKeybind_Lua(lua_State *L)
+int Input::AddKeybind_Lua(lua_State * const L)
 {
 	INPUT_KEYBIND(AddKeybind)
 }
 
-void Input::RemoveKeybind(string s, Keycode kc)
+void Input::RemoveKeybind(std::string const& s, Keycode kc)
 {
-	vector<Keycode>& v = buttonMap[s];
+	std::vector<Keycode>& v = button_map_[s];
 	for (auto it = v.begin(); it != v.end(); ++it) {
 		if (*it == kc) {
 			v.erase(it);
@@ -147,17 +143,17 @@ void Input::RemoveKeybind(string s, Keycode kc)
 	}
 }
 
-int Input::RemoveKeybind_Lua(lua_State * L)
+int Input::RemoveKeybind_Lua(lua_State * const L)
 {
 	INPUT_KEYBIND(RemoveKeybind)
 }
 
-void Input::DeserializeInPlace(const std::string& serializedInput) noexcept
+void Input::DeserializeInPlace(std::string const& serializedInput) noexcept
 {
-	json j = json::parse(serializedInput);
-	for (auto& js : j["keybinds"]) {
-		string name = js["name"];
-		for (auto& kjs : js["keys"]) {
+	auto j = nlohmann::json::parse(serializedInput);
+	for (auto const& js : j["keybinds"]) {
+		std::string name = js["name"];
+		for (auto const& kjs : js["keys"]) {
 			this->AddKeybind(name, strToKeycode[kjs]);
 		}
 	}

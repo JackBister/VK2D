@@ -20,7 +20,7 @@
 								} \
 								void ** vpp = static_cast<void **>(lua_touserdata(L, -2)); \
 								Input * ptr = static_cast<Input *>(*vpp); \
-								const char * key = lua_tostring(L, -1); \
+								char const * key = lua_tostring(L, -1); \
 								INPUSH(fncname, type); \
 								return 1;
 
@@ -35,7 +35,7 @@
 									} \
 									void ** vpp = static_cast<void **>(lua_touserdata(L, -3)); \
 									Input * ptr = static_cast<Input *>(*vpp); \
-									const char * button = lua_tostring(L, -2); \
-									const char * kc = lua_tostring(L, -1); \
+									char const * button = lua_tostring(L, -2); \
+									char const * kc = lua_tostring(L, -1); \
 									ptr->fncname(button, strToKeycode[kc]); \
 									return 0;

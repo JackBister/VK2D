@@ -12,20 +12,18 @@
 
 #include "Core/entity.h.generated.h"
 
-using nlohmann::json;
-
 DESERIALIZABLE_IMPL(Entity)
 
 void Entity::FireEvent(std::string ename, EventArgs args)
 {
-	for (auto c : components) {
-		if (c->isActive) {
-			//Only send tick event if component::receiveTicks is true
-			if (ename != "Tick" || c->receiveTicks) {
+	for (auto const c : components_) {
+		if (c->is_active_) {
+			//Only send tick event if component::receive_ticks_ is true
+			if (ename != "Tick" || c->receive_ticks_) {
 				c->OnEvent(ename, args);
 			}
 			if (ename == "EndPlay") {
-				c->isActive = false;
+				c->is_active_ = false;
 			}
 		}
 	}
@@ -33,7 +31,7 @@ void Entity::FireEvent(std::string ename, EventArgs args)
 
 Component * Entity::GetComponent(std::string type) const
 {
-	for (auto c : components) {
+	for (auto const c : components_) {
 		if (c->type == type) {
 			return c;
 		}
@@ -41,18 +39,18 @@ Component * Entity::GetComponent(std::string type) const
 	return nullptr;
 }
 
-Deserializable * Entity::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const
+Deserializable * Entity::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc) const
 {
-	void * mem = alloc.Allocate(sizeof(Entity));
-	Entity * ret = new (mem) Entity();
-	json j = json::parse(str);
-	ret->name = j["name"].get<std::string>();
-	ret->transform = Transform::Deserialize(j["transform"].dump());
-	json t = j["components"];
-	for (auto& js : j["components"]) {
-		Component * c = static_cast<Component *>(Deserializable::DeserializeString(resourceManager, js.dump(), alloc));
-		c->entity = ret;
-		ret->components.push_back(c);
+	void * const mem = alloc.Allocate(sizeof(Entity));
+	Entity * const ret = new (mem) Entity();
+	auto const j = nlohmann::json::parse(str);
+	ret->name_ = j["name"].get<std::string>();
+	ret->transform_ = Transform::Deserialize(j["transform"].dump());
+	auto const t = j["components"];
+	for (auto const& js : j["components"]) {
+		Component * const c = static_cast<Component *>(Deserializable::DeserializeString(resourceManager, js.dump(), alloc));
+		c->entity_ = ret;
+		ret->components_.push_back(c);
 	}
 	return ret;
 }

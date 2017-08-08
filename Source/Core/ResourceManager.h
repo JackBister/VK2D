@@ -9,30 +9,28 @@
 
 #include "Core/Allocator.h"
 #include "Core/Queue.h"
-#include "Core/Rendering/BufferPool.h"
 #include "Core/Rendering/RenderCommand.h"
 #include "Core/Resource.h"
 
-struct ResourceManager
+class ResourceManager
 {
-	BufferPool bufferPool;
-
+public:
 	ResourceManager(Queue<RenderCommand>::Writer&&, Allocator& a = Allocator::default_allocator);
 
 	template <typename T>
-	void AddResource(const std::string& name, const T * res);
+	void AddResource(std::string const& name, T * res);
 
 	template <typename T>
-	void AddResourceRefCounted(const std::string& name, const std::weak_ptr<T> res);
+	void AddResourceRefCounted(std::string const& name, std::weak_ptr<T> const res);
 
 	template <typename T>
-	T * GetResource(const std::string& name);
+	T * GetResource(std::string const& name);
 
 	template<typename T>
-	std::shared_ptr<T> LoadResource(const std::string& fileName);
+	std::shared_ptr<T> LoadResource(std::string const& fileName);
 
 	template<typename T, typename ... ArgTypes>
-	std::shared_ptr<T> LoadResourceOrConstruct(const std::string& fileName, ArgTypes&& ... args);
+	std::shared_ptr<T> LoadResourceOrConstruct(std::string const& fileName, ArgTypes&& ... args);
 
 	void PushRenderCommand(RenderCommand&&);
 
@@ -44,20 +42,20 @@ private:
 };
 
 template <typename T>
-void ResourceManager::AddResource(const std::string& name, const T * res)
+void ResourceManager::AddResource(std::string const& name, T * res)
 {
 	nonRCCache[name] = (void *)res;
 }
 
 template <typename T>
-void ResourceManager::AddResourceRefCounted(const std::string& name, const std::weak_ptr<T> res)
+void ResourceManager::AddResourceRefCounted(std::string const& name, std::weak_ptr<T> const res)
 {
 	//TODO: Check if exists? Pointless?
 	rcCache[name] = res;
 }
 
 template <typename T>
-T * ResourceManager::GetResource(const std::string& name)
+T * ResourceManager::GetResource(std::string const& name)
 {
 	if (nonRCCache.find(name) != nonRCCache.end() && nonRCCache[name] != nullptr) {
 		return (T *)nonRCCache[name];
@@ -66,7 +64,7 @@ T * ResourceManager::GetResource(const std::string& name)
 }
 
 template<typename T>
-std::shared_ptr<T> ResourceManager::LoadResource(const std::string& fileName)
+std::shared_ptr<T> ResourceManager::LoadResource(std::string const& fileName)
 {
 	if (rcCache.find(fileName) != rcCache.end() && !rcCache[fileName].expired()) {
 		auto ret = std::static_pointer_cast<T>(rcCache[fileName].lock());
@@ -107,7 +105,7 @@ std::shared_ptr<T> ResourceManager::LoadResource(const std::string& fileName)
 }
 
 template<typename T, typename ... ArgTypes>
-std::shared_ptr<T> ResourceManager::LoadResourceOrConstruct(const std::string& fileName, ArgTypes&& ... args)
+std::shared_ptr<T> ResourceManager::LoadResourceOrConstruct(std::string const& fileName, ArgTypes&& ... args)
 {
 	if (rcCache.find(fileName) != rcCache.end() && !rcCache[fileName].expired()) {
 		auto ret = std::static_pointer_cast<T>(rcCache[fileName].lock());

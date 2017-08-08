@@ -42,37 +42,37 @@ std::string SerializeShapeType(BroadphaseNativeTypes i)
 	}
 }
 
-Deserializable * PhysicsComponent::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const
+Deserializable * PhysicsComponent::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc) const
 {
 	void * mem = alloc.Allocate(sizeof(PhysicsComponent));
 	PhysicsComponent * ret = new (mem) PhysicsComponent();
 	auto j = nlohmann::json::parse(str);
-	ret->mass = j["mass"];
-	ret->shapeType = DeserializeShapeType(j["shapeType"]);
-	switch (ret->shapeType) {
+	ret->mass_ = j["mass_"];
+	ret->shape_type_ = DeserializeShapeType(j["shape_type_"]);
+	switch (ret->shape_type_) {
 	case BOX_2D_SHAPE_PROXYTYPE:
 	{
 		//1.f might as well be 0.f or any number really.
-		btVector3 shapeInfo(j["shapeInfo"]["x"], j["shapeInfo"]["y"], 1.f);
-		ret->shape = new btBox2dShape(shapeInfo);
+		btVector3 shape_info(j["shape_info_"]["x"], j["shape_info_"]["y"], 1.f);
+		ret->shape_ = std::make_unique<btBox2dShape>(shape_info);
 		break;
 	}
 	case BOX_SHAPE_PROXYTYPE:
 	{
-		btVector3 shapeInfo(j["shapeInfo"]["x"], j["shapeInfo"]["y"], j["shapeInfo"]["z"]);
-		ret->shape = new btBoxShape(shapeInfo);
+		btVector3 shape_info(j["shape_info_"]["x"], j["shape_info_"]["y"], j["shape_info_"]["z"]);
+		ret->shape_ = std::make_unique<btBoxShape>(shape_info);
 		break;
 	}
 	case INVALID_SHAPE_PROXYTYPE:
 		//TODO: Error handling. I mean, the engine's going to crash sooner or later anyway but this isn't very clean.
-		printf("[ERROR] PhysicsComponent: Invalid shapeType %s.", j["shapeType"].get<std::string>().c_str());
+		printf("[ERROR] PhysicsComponent: Invalid shape_type_ %s.", j["shape_type_"].get<std::string>().c_str());
 		return nullptr;
 	default:
-		printf("[ERROR] PhysicsComponent: Unhandled shapeType %s.", j["shapeType"].get<std::string>().c_str());
+		printf("[ERROR] PhysicsComponent: Unhandled shape_type_ %s.", j["shape_type_"].get<std::string>().c_str());
 		return nullptr;
 	}
-	if (j.find("isKinematic") != j.end()) {
-		ret->isKinematic = j["isKinematic"];
+	if (j.find("is_kinematic_") != j.end()) {
+		ret->is_kinematic_ = j["is_kinematic_"];
 	}
 	return ret;
 }
@@ -81,19 +81,18 @@ void PhysicsComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "BeginPlay") {
 		btVector3 localInertia;
-		shape->calculateLocalInertia(mass, localInertia);
-		btRigidBody::btRigidBodyConstructionInfo constructionInfo(mass, this, shape, localInertia);
-		rigidBody = new btRigidBody(constructionInfo);
-		rigidBody->setAngularFactor(btVector3(0.f, 0.f, 1.f));
-		rigidBody->setLinearFactor(btVector3(1.f, 1.f, 0.f));
-		rigidBody->setUserPointer(this);
-		if (isKinematic) {
-			rigidBody->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+		shape_->calculateLocalInertia(mass_, localInertia);
+		btRigidBody::btRigidBodyConstructionInfo constructionInfo(mass_, this, shape_.get(), localInertia);
+		rigidbody_ = std::make_unique<btRigidBody>(constructionInfo);
+		rigidbody_->setAngularFactor(btVector3(0.f, 0.f, 1.f));
+		rigidbody_->setLinearFactor(btVector3(1.f, 1.f, 0.f));
+		rigidbody_->setUserPointer(this);
+		if (is_kinematic_) {
+			rigidbody_->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
 		}
-		rigidBody->setActivationState(DISABLE_DEACTIVATION);
-		entity->scene->physicsWorld->world->addRigidBody(rigidBody);
+		entity_->scene_->physics_world_->world_->addRigidBody(rigidbody_.get());
 		//Needed for kinematics to register collision events
-		btBroadphaseProxy *bproxy = rigidBody->getBroadphaseHandle();
+		btBroadphaseProxy *bproxy = rigidbody_->getBroadphaseHandle();
 		if (bproxy) {
 			bproxy->m_collisionFilterGroup = short(btBroadphaseProxy::DefaultFilter);
 			bproxy->m_collisionFilterMask = short(btBroadphaseProxy::AllFilter);
@@ -101,28 +100,28 @@ void PhysicsComponent::OnEvent(std::string name, EventArgs args)
 	}
 
 	if (name == "EndPlay") {
-		if (rigidBody != nullptr) {
-			entity->scene->physicsWorld->world->removeCollisionObject(rigidBody);
+		if (rigidbody_ != nullptr) {
+			entity_->scene_->physics_world_->world_->removeCollisionObject(rigidbody_.get());
 		}
 	}
 }
 
 void PhysicsComponent::getWorldTransform(btTransform& worldTransform) const
 {
-	const Vec3& pos = entity->transform.GetPosition();
+	Vec3 const& pos = entity_->transform_.get_position();
 	worldTransform.setOrigin(btVector3(pos.x, pos.y, pos.z));
-	const Quat& rot = entity->transform.GetRotation();
+	Quat const& rot = entity_->transform_.get_rotation();
 	worldTransform.setRotation(btQuaternion(rot.x, rot.y, rot.z, rot.w));
-//	const Vec3& scale = entity->transform.scale;
 	//TODO:
+//	const Vec3& scale = entity->transform.scale;
 	//rigidBody->getCollisionShape()->setLocalScaling(btVector3(scale.x, scale.y, scale.z));
 }
 
-void PhysicsComponent::setWorldTransform(const btTransform& worldTransform)
+void PhysicsComponent::setWorldTransform(btTransform const& worldTransform)
 {
-	const btVector3& pos = worldTransform.getOrigin();
-	entity->transform.SetPosition(Vec3(pos.x(), pos.y(), pos.z()));
-	const btQuaternion& rot = worldTransform.getRotation();
+	auto const& pos = worldTransform.getOrigin();
+	entity_->transform_.set_position(Vec3(pos.x(), pos.y(), pos.z()));
+	auto const& rot = worldTransform.getRotation();
 	//I don't know why, but for some reason the components of the rotation are shifted one step when they're returned here, which is why x = w, etc.
-	entity->transform.SetRotation(Quat(rot.w(), rot.x(), rot.y(), rot.z()));
+	entity_->transform_.set_rotation(Quat(rot.w(), rot.x(), rot.y(), rot.z()));
 }

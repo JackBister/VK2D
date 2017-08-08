@@ -4,84 +4,79 @@
 #include "json.hpp"
 
 #include "Core/entity.h"
-#include "Core/Rendering/Framebuffer.h"
-#include "Core/Rendering/Image.h"
 #include "Core/scene.h"
 
 #include "Core/Components/cameracomponent.h.generated.h"
-
-using nlohmann::json;
 
 COMPONENT_IMPL(CameraComponent)
 
 CameraComponent::CameraComponent() noexcept
 {
-	receiveTicks = true;
+	receive_ticks_ = true;
 }
 
-float CameraComponent::GetAspect()
+float CameraComponent::aspect()
 {
-	return aspect;
+	return aspect_;
 }
 
-void CameraComponent::SetAspect(float f)
+void CameraComponent::set_aspect(float f)
 {
-	if (f != aspect) {
-		dirtyProj = true;
+	if (f != aspect_) {
+		is_projection_dirty_ = true;
 	}
-	aspect = f;
+	aspect_ = f;
 }
 
-float CameraComponent::GetViewSize()
+float CameraComponent::view_size()
 {
-	return viewSize;
+	return view_size_;
 }
 
-void CameraComponent::SetViewSize(float f)
+void CameraComponent::set_view_size(float f)
 {
-	if (f != viewSize) {
-		dirtyProj = true;
+	if (f != view_size_) {
+		is_projection_dirty_ = true;
 	}
-	viewSize = f;
+	view_size_ = f;
 }
 
-const glm::mat4& CameraComponent::GetProjectionMatrix()
+glm::mat4 const& CameraComponent::projection()
 {
-	if (dirtyProj) {
-		projMatrix = glm::ortho(-viewSize / aspect, viewSize / aspect, -viewSize, viewSize);
+	if (is_projection_dirty_) {
+		projection_ = glm::ortho(-view_size_ / aspect_, view_size_ / aspect_, -view_size_, view_size_);
 	}
-	return projMatrix;
+	return projection_;
 }
 
-std::shared_ptr<Framebuffer> CameraComponent::GetRenderTarget() const
+glm::mat4 const& CameraComponent::view()
 {
-	return renderTarget;
-}
-
-const glm::mat4& CameraComponent::GetViewMatrix()
-{
-	if (dirtyView) {
-		viewMatrix = glm::inverse(entity->transform.GetLocalToWorldSpace());
+	if (is_view_dirty_) {
+		view_ = glm::inverse(entity_->transform_.local_to_world());
 	}
-	return viewMatrix;
+	return view_;
 }
 
-Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager, const std::string& str, Allocator& alloc) const
+Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc) const
 {
 	void * mem = alloc.Allocate(sizeof(CameraComponent));
 	CameraComponent * ret = new (mem) CameraComponent();
-	json j = json::parse(str);
-	ret->aspect = j["aspect"];
-	ret->viewSize = j["viewSize"];
+	auto const j = nlohmann::json::parse(str);
+	ret->aspect_ = j["aspect"];
+	ret->view_size_ = j["viewSize"];
+	
+#if 0
 	if (j.find("renderTarget") != j.end()) {
 		ret->renderTarget = resourceManager->LoadResource<Framebuffer>(j["renderTarget"]);
 	}
+#endif
+
 	return ret;
 }
 
 void CameraComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "Tick") {
-		entity->scene->SubmitCamera(this);
+		entity_->scene_->SubmitCamera(this);
 	}
 }

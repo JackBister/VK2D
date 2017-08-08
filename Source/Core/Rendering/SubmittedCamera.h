@@ -3,17 +3,11 @@
 #include <glm/glm.hpp>
 
 #include "Core/Lua/luaserializable.h"
-#include "Core/Rendering/RendererData.h"
 
 struct SubmittedCamera : LuaSerializable
 {
-	glm::mat4 view;
-	glm::mat4 projection;
-
-	FramebufferRendererData renderTarget;
-
-	SubmittedCamera(const glm::mat4& view, const glm::mat4& projection, const FramebufferRendererData& renderTarget)
-		: view(view), projection(projection), renderTarget(renderTarget)
+	SubmittedCamera(glm::mat4 const& view, glm::mat4 const& projection)
+		: view(view), projection(projection)
 	{
 	}
 
@@ -28,4 +22,7 @@ struct SubmittedCamera : LuaSerializable
 		printf("[STUB] SubmittedCamera::LuaNewIndex\n");
 		return 0;
 	}
+
+	glm::mat4 view;
+	glm::mat4 projection;
 };

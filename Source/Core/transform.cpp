@@ -5,96 +5,94 @@
 
 #include "Core/transform.h.generated.h"
 
-using nlohmann::json;
-
-const glm::mat4& Transform::GetLocalToParentSpace()
+glm::mat4 const& Transform::local_to_parent()
 {
-	glm::mat4 trans = glm::translate(glm::mat4(), position);
-	glm::mat4 rotXYZ = glm::mat4_cast(rotation);
+	glm::mat4 trans = glm::translate(glm::mat4(), position_);
+	glm::mat4 rotXYZ = glm::mat4_cast(rotation_);
 	glm::mat4 transrot = trans * rotXYZ;
-	glm::mat4 scalem = glm::scale(glm::mat4(), scale);
-	toParentSpace = transrot * scalem;
-	isToParentDirty = false;
-	return toParentSpace;
+	glm::mat4 scalem = glm::scale(glm::mat4(), scale_);
+	to_parent_ = transrot * scalem;
+	is_parent_dirty_ = false;
+	return to_parent_;
 }
 
-const glm::mat4& Transform::GetLocalToWorldSpace()
+glm::mat4 const& Transform::local_to_world()
 {
-	if (isToWorldDirty) {
+	if (is_world_dirty_) {
 		if (parent == nullptr) {
-			toWorldSpace = GetLocalToParentSpace();
+			to_world_ = local_to_parent();
 		} else {
-			toWorldSpace = parent->GetLocalToWorldSpace() * GetLocalToParentSpace();
+			to_world_ = parent->local_to_world() * local_to_parent();
 		}
-		isToWorldDirty = false;
+		is_world_dirty_ = false;
 	}
-	return toWorldSpace;
+	return to_world_;
 }
 
-Transform * Transform::GetParent() const
+Transform * Transform::get_parent() const
 {
 	return parent;
 }
 
-const Vec3& Transform::GetPosition() const
+Vec3 const& Transform::get_position() const
 {
-	return position;
+	return position_;
 }
 
-const Quat& Transform::GetRotation() const
+Quat const& Transform::get_rotation() const
 {
-	return rotation;
+	return rotation_;
 }
 
-const Vec3& Transform::GetScale() const
+Vec3 const& Transform::get_scale() const
 {
-	return scale;
+	return scale_;
 }
 
-void Transform::SetParent(Transform * p)
+void Transform::set_parent(Transform * p)
 {
 	parent = p;
-	isToParentDirty = true;
-	isToWorldDirty = true;
+	is_parent_dirty_ = true;
+	is_world_dirty_ = true;
 }
 
-void Transform::SetPosition(const Vec3& p)
+void Transform::set_position(Vec3 const& p)
 {
-	position = p;
-	isToParentDirty = true;
-	isToWorldDirty = true;
+	position_ = p;
+	is_parent_dirty_ = true;
+	is_world_dirty_ = true;
 }
 
-void Transform::SetRotation(const Quat& r)
+void Transform::set_rotation(Quat const& r)
 {
-	rotation = r;
-	isToParentDirty = true;
-	isToWorldDirty = true;
+	rotation_ = r;
+	is_parent_dirty_ = true;
+	is_world_dirty_ = true;
 }
 
-void Transform::SetScale(const Vec3& s)
+void Transform::set_scale(Vec3 const& s)
 {
-	scale = s;
-	isToParentDirty = true;
-	isToWorldDirty = true;
+	scale_ = s;
+	is_parent_dirty_ = true;
+	is_world_dirty_ = true;
 }
 
-Transform Transform::Deserialize(std::string s)
+Transform Transform::Deserialize(std::string const& s)
 {
 	Transform ret;
-	json j = json::parse(s);
-	ret.position.x = j["position"]["x"];
-	ret.position.y = j["position"]["y"];
-	ret.position.z = j["position"]["z"];
+	auto j = nlohmann::json::parse(s);
+	ret.position_.x = j["position"]["x"];
+	ret.position_.y = j["position"]["y"];
+	ret.position_.z = j["position"]["z"];
 
-	ret.rotation.x = j["rotation"]["x"];
-	ret.rotation.y = j["rotation"]["y"];
-	ret.rotation.z = j["rotation"]["z"];
-	ret.rotation.w = j["rotation"]["w"];
+	ret.rotation_.x = j["rotation"]["x"];
+	ret.rotation_.y = j["rotation"]["y"];
+	ret.rotation_.z = j["rotation"]["z"];
+	ret.rotation_.w = j["rotation"]["w"];
 
-	ret.scale.x = j["scale"]["x"];
-	ret.scale.y = j["scale"]["y"];
-	ret.scale.z = j["scale"]["z"];
+	ret.scale_.x = j["scale"]["x"];
+	ret.scale_.y = j["scale"]["y"];
+	ret.scale_.z = j["scale"]["z"];
 
 	return ret;
 }

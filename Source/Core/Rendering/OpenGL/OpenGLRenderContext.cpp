@@ -131,7 +131,7 @@ void OpenGLResourceContext::DestroyImage(ImageHandle * handle)
 	allocator.destroy(handle);
 }
 
-void OpenGLResourceContext::ImageData(ImageHandle * handle, const std::vector<uint8_t>& data)
+void OpenGLResourceContext::ImageData(ImageHandle * handle, std::vector<uint8_t> const& data)
 {
 	switch (handle->type) {
 	case ImageHandle::Type::TYPE_1D:
@@ -272,7 +272,7 @@ ShaderModuleHandle * OpenGLResourceContext::CreateShaderModule(ResourceCreationC
 		printf("[ERROR] Unknown shader module type %d.\n", ToUnderlyingType(ci.type));
 	}
 	ret->nativeHandle = glCreateShader(type);
-	const GLchar * src = (GLchar *)ci.pCode;
+	GLchar const * src = (GLchar *)ci.pCode;
 	glShaderSource(ret->nativeHandle, 1, &src, nullptr);
 	printf("post shadersource err %d\n", glGetError());
 	glCompileShader(ret->nativeHandle);
@@ -408,8 +408,8 @@ void OpenGLRenderCommandContext::CmdBeginRenderPass(RenderCommandContext::Render
 	args.renderPass = pRenderPassBegin->renderPass;
 	args.framebuffer = pRenderPassBegin->framebuffer;
 	args.clearValueCount = pRenderPassBegin->clearValueCount;
-	args.pClearValues = (ClearValue *)allocator->allocate(args.clearValueCount * sizeof(const ClearValue));
-	memcpy(args.pClearValues, pRenderPassBegin->pClearValues, args.clearValueCount * sizeof(const ClearValue));
+	args.pClearValues = (ClearValue *)allocator->allocate(args.clearValueCount * sizeof(ClearValue const));
+	memcpy(args.pClearValues, pRenderPassBegin->pClearValues, args.clearValueCount * sizeof(ClearValue const));
 	commandList.push_back(args);
 }
 
@@ -472,7 +472,7 @@ void OpenGLRenderCommandContext::CmdBindVertexBuffer(BufferHandle * buffer, uint
 
 void OpenGLRenderCommandContext::CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset)
 {
-	commandList.push_back(DrawIndexedArgs{static_cast<int>(indexCount), (const void *)firstIndex, static_cast<int>(instanceCount)});
+	commandList.push_back(DrawIndexedArgs{static_cast<int>(indexCount), (void const *)firstIndex, static_cast<int>(instanceCount)});
 }
 
 void OpenGLRenderCommandContext::CmdEndRenderPass()
@@ -489,7 +489,7 @@ void OpenGLRenderCommandContext::CmdExecuteCommands(std::vector<std::unique_ptr<
 	commandList.push_back(ExecuteCommandsVectorArgs{ std::move(commandBuffers) });
 }
 
-void OpenGLRenderCommandContext::CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, const RenderCommandContext::Rect2D *pScissors)
+void OpenGLRenderCommandContext::CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, RenderCommandContext::Rect2D const * pScissors)
 {
 	auto cmd = SetScissorArgs{firstScissor, static_cast<int>(scissorCount), nullptr};
 	cmd.v = (GLint *)allocator->allocate(scissorCount * 4 * sizeof(GLint));
@@ -497,7 +497,7 @@ void OpenGLRenderCommandContext::CmdSetScissor(uint32_t firstScissor, uint32_t s
 	commandList.push_back(cmd);
 }
 
-void OpenGLRenderCommandContext::CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, const RenderCommandContext::Viewport *pViewports)
+void OpenGLRenderCommandContext::CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, RenderCommandContext::Viewport const * pViewports)
 {
 	auto cmd = SetViewportArgs{firstViewport, static_cast<int>(viewportCount), nullptr};
 	cmd.v = (GLfloat *)allocator->allocate(viewportCount * 6 * sizeof(GLfloat));
@@ -510,7 +510,7 @@ void OpenGLRenderCommandContext::CmdSwapWindow()
 	commandList.push_back(SwapWindowArgs{});
 }
 
-void OpenGLRenderCommandContext::CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, const uint32_t * pData)
+void OpenGLRenderCommandContext::CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData)
 {
 	commandList.push_back(UpdateBufferArgs{
 		((OpenGLBufferHandle *)buffer)->nativeHandle,
@@ -540,7 +540,7 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer)
 					glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 				}
 			}
-			allocator->deallocate((uint8_t *)args.pClearValues, args.clearValueCount * sizeof(const ClearValue));
+			allocator->deallocate((uint8_t *)args.pClearValues, args.clearValueCount * sizeof(ClearValue const));
 			break;
 		}
 		case RenderCommandType::BIND_DESCRIPTOR_SET:
@@ -640,8 +640,10 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer)
 		case RenderCommandType::SWAP_WINDOW:
 		{
 			auto currTime = std::chrono::high_resolution_clock::now();
+			/*
 			renderer->frameTime = std::chrono::duration<float>(currTime - renderer->lastTime).count();
 			renderer->lastTime = currTime;
+			*/
 			//SDL_GL_SwapWindow(renderer->window);
 			renderer->swap = true;
 			break;

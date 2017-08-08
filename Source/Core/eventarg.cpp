@@ -7,14 +7,14 @@
 //We need to do this both in the move assignment and in destructor
 void EventArg::Delete()
 {
-	if (type == Type::STRING && asString != nullptr) {
-		delete asString;
+	if (type == Type::STRING && as_string_ != nullptr) {
+		delete as_string_;
 	}
-	if (type == Type::EVENTARGS && asEventArgs != nullptr) {
-		delete asEventArgs;
+	if (type == Type::EVENTARGS && as_EventArgs_ != nullptr) {
+		delete as_EventArgs_;
 	}
-	if (type == Type::VECTOR && asVector != nullptr) {
-		delete asVector;
+	if (type == Type::VECTOR && as_vector_ != nullptr) {
+		delete as_vector_;
 	}
 }
 
@@ -27,32 +27,32 @@ EventArg::EventArg()
 {
 }
 
-EventArg::EventArg(const EventArg& ea) : type(ea.type)
+EventArg::EventArg(EventArg const& ea) : type(ea.type)
 {
 	switch (type) {
 	case Type::STRING:
-		asString = new std::string(*ea.asString);
+		as_string_ = new std::string(*ea.as_string_);
 		break;
 	case Type::INT:
-		asInt = ea.asInt;
+		as_int_ = ea.as_int_;
 		break;
 	case Type::FLOAT:
-		asFloat = ea.asFloat;
+		as_float_ = ea.as_float_;
 		break;
 	case Type::DOUBLE:
-		asDouble = ea.asDouble;
+		as_double_ = ea.as_double_;
 		break;
 	case Type::LUASERIALIZABLE:
-		asLuaSerializable = ea.asLuaSerializable;
+		as_LuaSerializable_ = ea.as_LuaSerializable_;
 		break;
 	case Type::LUA_CFUNCTION:
-		asLuaCFunction = ea.asLuaCFunction;
+		as_lua_cfunction_ = ea.as_lua_cfunction_;
 		break;
 	case Type::EVENTARGS:
-		asEventArgs = new EventArgs(*ea.asEventArgs);
+		as_EventArgs_ = new EventArgs(*ea.as_EventArgs_);
 		break;
 	case Type::VECTOR:
-		asVector = new std::vector<EventArg>(*ea.asVector);
+		as_vector_ = new std::vector<EventArg>(*ea.as_vector_);
 		break;
 	default:
 		printf("[ERROR] Unknown EventArg::type %d\n", type);
@@ -63,38 +63,38 @@ EventArg::EventArg(EventArg&& ea) : type(ea.type)
 {
 	switch (type) {
 	case Type::STRING:
-		asString = ea.asString;
-		ea.asString = nullptr;
+		as_string_ = ea.as_string_;
+		ea.as_string_ = nullptr;
 		break;
 	case Type::INT:
-		asInt = ea.asInt;
+		as_int_ = ea.as_int_;
 		break;
 	case Type::FLOAT:
-		asFloat = ea.asFloat;
+		as_float_ = ea.as_float_;
 		break;
 	case Type::DOUBLE:
-		asDouble = ea.asDouble;
+		as_double_ = ea.as_double_;
 		break;
 	case Type::LUASERIALIZABLE:
-		asLuaSerializable = ea.asLuaSerializable;
+		as_LuaSerializable_ = ea.as_LuaSerializable_;
 		break;
 	case Type::LUA_CFUNCTION:
-		asLuaCFunction = ea.asLuaCFunction;
+		as_lua_cfunction_ = ea.as_lua_cfunction_;
 		break;
 	case Type::EVENTARGS:
-		asEventArgs = ea.asEventArgs;
-		ea.asEventArgs = nullptr;
+		as_EventArgs_ = ea.as_EventArgs_;
+		ea.as_EventArgs_ = nullptr;
 		break;
 	case Type::VECTOR:
-		asVector = ea.asVector;
-		ea.asVector = nullptr;
+		as_vector_ = ea.as_vector_;
+		ea.as_vector_ = nullptr;
 		break;
 	default:
 		printf("[ERROR] Unknown EventArg::type %d\n", type);
 	}
 }
 
-EventArg& EventArg::operator=(const EventArg& ea)
+EventArg& EventArg::operator=(EventArg const& ea)
 {
 	EventArg tmp(ea);
 	*this = std::move(tmp);
@@ -107,31 +107,31 @@ EventArg& EventArg::operator=(EventArg&& ea)
 	type = ea.type;
 	switch (type) {
 	case Type::STRING:
-		asString = ea.asString;
-		ea.asString = nullptr;
+		as_string_ = ea.as_string_;
+		ea.as_string_ = nullptr;
 		break;
 	case Type::INT:
-		asInt = ea.asInt;
+		as_int_ = ea.as_int_;
 		break;
 	case Type::FLOAT:
-		asFloat = ea.asFloat;
+		as_float_ = ea.as_float_;
 		break;
 	case Type::DOUBLE:
-		asDouble = ea.asDouble;
+		as_double_ = ea.as_double_;
 		break;
 	case Type::LUASERIALIZABLE:
-		asLuaSerializable = ea.asLuaSerializable;
+		as_LuaSerializable_ = ea.as_LuaSerializable_;
 		break;
 	case Type::LUA_CFUNCTION:
-		asLuaCFunction = ea.asLuaCFunction;
+		as_lua_cfunction_ = ea.as_lua_cfunction_;
 		break;
 	case Type::EVENTARGS:
-		asEventArgs = ea.asEventArgs;
-		ea.asEventArgs = nullptr;
+		as_EventArgs_ = ea.as_EventArgs_;
+		ea.as_EventArgs_ = nullptr;
 		break;
 	case Type::VECTOR:
-		asVector = ea.asVector;
-		ea.asVector = nullptr;
+		as_vector_ = ea.as_vector_;
+		ea.as_vector_ = nullptr;
 		break;
 	default:
 		printf("[ERROR] Unknown EventArg::type %d\n", type);
@@ -139,38 +139,38 @@ EventArg& EventArg::operator=(EventArg&& ea)
 	return *this;
 }
 
-EventArg::EventArg(std::string s) : type(Type::STRING), asString(new std::string(s))
+EventArg::EventArg(std::string s) : type(Type::STRING), as_string_(new std::string(s))
 {
 }
 
-EventArg::EventArg(const char * s) : type(Type::STRING), asString(new std::string(s))
+EventArg::EventArg(char const * s) : type(Type::STRING), as_string_(new std::string(s))
 {
 }
-EventArg::EventArg(int i) : type(Type::INT), asInt(i)
-{
-}
-
-EventArg::EventArg(float f) : type(Type::FLOAT), asFloat(f)
+EventArg::EventArg(int i) : type(Type::INT), as_int_(i)
 {
 }
 
-EventArg::EventArg(double d) : type(Type::DOUBLE), asDouble(d)
+EventArg::EventArg(float f) : type(Type::FLOAT), as_float_(f)
 {
 }
 
-EventArg::EventArg(LuaSerializable * l) : type(Type::LUASERIALIZABLE), asLuaSerializable(l)
+EventArg::EventArg(double d) : type(Type::DOUBLE), as_double_(d)
 {
 }
 
-EventArg::EventArg(lua_CFunction cf) : type(Type::LUA_CFUNCTION), asLuaCFunction(cf)
+EventArg::EventArg(LuaSerializable * l) : type(Type::LUASERIALIZABLE), as_LuaSerializable_(l)
 {
 }
 
-EventArg::EventArg(EventArgs ea) : type(Type::EVENTARGS), asEventArgs(new EventArgs(ea))
+EventArg::EventArg(lua_CFunction cf) : type(Type::LUA_CFUNCTION), as_lua_cfunction_(cf)
 {
 }
 
-EventArg::EventArg(const std::vector<EventArg>& v) : type(Type::VECTOR), asVector(new std::vector<EventArg>(v))
+EventArg::EventArg(EventArgs ea) : type(Type::EVENTARGS), as_EventArgs_(new EventArgs(ea))
+{
+}
+
+EventArg::EventArg(std::vector<EventArg> const& v) : type(Type::VECTOR), as_vector_(new std::vector<EventArg>(v))
 {
 }
 
@@ -178,39 +178,39 @@ void EventArg::PushToLua(lua_State * L)
 {
 	switch (type) {
 	case Type::STRING:
-		lua_pushstring(L, asString->c_str());
+		lua_pushstring(L, as_string_->c_str());
 		break;
 	case Type::INT:
-		lua_pushnumber(L, asInt);
+		lua_pushnumber(L, as_int_);
 		break;
 	case Type::FLOAT:
-		lua_pushnumber(L, asFloat);
+		lua_pushnumber(L, as_float_);
 		break;
 	case Type::DOUBLE:
-		lua_pushnumber(L, asDouble);
+		lua_pushnumber(L, as_double_);
 		break;
 	case Type::LUASERIALIZABLE:
-		asLuaSerializable->PushToLua(L);
+		as_LuaSerializable_->PushToLua(L);
 		break;
 	case Type::LUA_CFUNCTION:
-		lua_pushcfunction(L, asLuaCFunction);
+		lua_pushcfunction(L, as_lua_cfunction_);
 		break;
 	case Type::EVENTARGS:
-		lua_createtable(L, 0, static_cast<int>(asEventArgs->size()));
-		for (auto& eap : *asEventArgs) {
+		lua_createtable(L, 0, static_cast<int>(as_EventArgs_->size()));
+		for (auto& eap : *as_EventArgs_) {
 			lua_pushstring(L, eap.first.c_str());
 			eap.second.PushToLua(L);
 			lua_settable(L, -3);
 		}
 		break;
 	case Type::VECTOR:
-		if (asVector->size() == 0) {
+		if (as_vector_->size() == 0) {
 			lua_pushnil(L);
 		} else {
-			lua_createtable(L, 0, static_cast<int>(asVector->size()));
-			for (size_t i = 0; i < asVector->size(); ++i) {
-				lua_pushnumber(L, i + 1);
-				(*asVector)[i].PushToLua(L);
+			lua_createtable(L, 0, static_cast<int>(as_vector_->size()));
+			for (size_t i = 0; i < as_vector_->size(); ++i) {
+				lua_pushnumber(L, static_cast<lua_Number>(i + 1));
+				(*as_vector_)[i].PushToLua(L);
 				lua_settable(L, -3);
 			}
 		}
@@ -229,7 +229,7 @@ EventArgs PullEventArgs(lua_State * L, int i)
 		if (lua_type(L, -2) != LUA_TSTRING) {
 			continue;
 		}
-		const char * key = lua_tostring(L, -2);
+		char const * key = lua_tostring(L, -2);
 		switch (lua_type(L, -1)) {
 		case LUA_TNUMBER:
 			eargs[key] = lua_tonumber(L, -1);
