@@ -4,6 +4,7 @@
 #include "glm/glm.hpp"
 #include "SDL/SDL.h"
 
+#include "Core/Components/CameraComponent.h"
 #include "Core/Components/component.h"
 #include "Core/entity.h"
 #include "Core/input.h"

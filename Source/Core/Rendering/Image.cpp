@@ -15,7 +15,8 @@ Image::Image(ResourceManager * resMan, std::string const& name) noexcept
 			Format::RGBA8,
 			ImageHandle::Type::TYPE_2D,
 			128, 128, 1,
-			1
+			1,
+			ImageUsageFlagBits::SAMPLED_BIT
 		};
 		printf("pre createimage\n");
 		auto tmp = ctx.CreateImage(ic);
@@ -37,7 +38,8 @@ Image::Image(ImageCreateInfo const& info) noexcept
 				Format::RGBA8,
 				ImageHandle::Type::TYPE_2D,
 				this->width_, this->height_, 1,
-				1
+				1,
+				ImageUsageFlagBits::SAMPLED_BIT
 			};
 			printf("pre createimage\n");
 			auto tmp = ctx.CreateImage(ic);
@@ -80,7 +82,8 @@ Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint
 			Format::RGBA8,
 			ImageHandle::Type::TYPE_2D,
 			this->width_, this->height_, 1,
-			1
+			1,
+			ImageUsageFlagBits::SAMPLED_BIT
 		};
 		printf("pre createimage\n");
 		auto tmp = ctx.CreateImage(ic);

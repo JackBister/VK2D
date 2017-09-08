@@ -96,6 +96,17 @@ enum class ImageLayout
 	PRESENT_SRC_KHR
 };
 
+enum ImageUsageFlagBits {
+	TRANSFER_SRC_BIT = 0x00000001,
+	TRANSFER_DST_BIT = 0x00000002,
+	SAMPLED_BIT = 0x00000004,
+	STORAGE_BIT = 0x00000008,
+	COLOR_ATTACHMENT_BIT = 0x00000010,
+	DEPTH_STENCIL_ATTACHMENT_BIT = 0x00000020,
+	TRANSIENT_ATTACHMENT_BIT = 0x00000040,
+	INPUT_ATTACHMENT_BIT = 0x00000080,
+};
+
 enum class Filter
 {
 	NEAREST = 0,
@@ -500,8 +511,6 @@ public:
 	/*
 		OpenGL: glGenTextures + glTexStorage
 		Vulkan: vkCreateImage + vkAllocateMemory + vkBindImageMemory
-		OpenGL: glTexSubImage
-		Vulkan: vkMapMemory + memcpy + vkUnmapMemory
 	*/
 	struct ImageCreateInfo
 	{
@@ -509,9 +518,14 @@ public:
 		ImageHandle::Type type;
 		uint32_t width, height, depth;
 		uint32_t mipLevels;
+		ImageUsageFlagBits usage;
 	};
 	virtual ImageHandle * CreateImage(ImageCreateInfo) = 0;
 	virtual void DestroyImage(ImageHandle *) = 0;
+	/*
+		OpenGL: glTexSubImage
+		Vulkan: vkMapMemory + memcpy + vkUnmapMemory
+	*/
 	virtual void ImageData(ImageHandle *, std::vector<uint8_t> const&) = 0;
 
 	struct ImageViewCreateInfo

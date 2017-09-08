@@ -2,8 +2,25 @@
 
 #include "json.hpp"
 #include "lua/lua.hpp"
+#include "rttr/registration.h"
 
 #include "Core/transform.h.generated.h"
+
+RTTR_REGISTRATION
+{
+	rttr::registration::class_<Transform>("Transform")
+	.constructor<>()
+	.method("local_to_parent", &Transform::local_to_parent)
+	.method("local_to_world", &Transform::local_to_world)
+	.method("get_parent", &Transform::get_parent)
+	.method("get_position", &Transform::get_position)
+	.method("get_rotation", &Transform::get_rotation)
+	.method("get_scale", &Transform::get_scale)
+	.method("set_parent", &Transform::set_parent)
+	.method("set_position", &Transform::set_position)
+	.method("set_rotation", &Transform::set_rotation)
+	.method("set_scale", &Transform::set_scale);
+}
 
 glm::mat4 const& Transform::local_to_parent()
 {

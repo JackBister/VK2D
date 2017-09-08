@@ -51,10 +51,7 @@ public:
 	bool isAborting = false;
 	int abortCode = 0;
 
-	//TODO:
 	static OpenGLFramebufferHandle Backbuffer;
-	static OpenGLShaderModuleHandle ptVertexModule;
-	static OpenGLShaderModuleHandle ptFragmentModule;
 
 	//The window
 	SDL_Window * window;
@@ -68,17 +65,15 @@ public:
 	bool swap;
 
 private:
-	ResourceManager * resourceManager;
+	ResourceManager * resource_manager_;
 
-	Queue<RenderCommand>::Reader renderQueue;
+	Queue<RenderCommand>::Reader render_queue_;
 
 	//The aspect ratio of the viewport
 	//TODO: Should this be attached to the camera?
-	float aspectRatio;
+	float aspect_ratio_;
 	//The dimensions of the screen, in pixels
-	glm::ivec2 dimensions;
-
-	OpenGLImageHandle backbuffer;
+	glm::ivec2 dimensions_;
 
 	std::shared_ptr<Image> backBufferImage;
 	std::shared_ptr<Framebuffer> backbufferRenderTarget;
@@ -90,7 +85,11 @@ private:
 	std::shared_ptr<Program> ptProgram;
 	GLuint ptVAO;
 
-	Semaphore * swapSem;
+	OpenGLImageHandle backbuffer;
+	OpenGLShaderModuleHandle ptVertexModule;
+	OpenGLShaderModuleHandle ptFragmentModule;
+
+	Semaphore * swap_sem_;
 
 	uint32_t frameCount = 1;
 	std::chrono::milliseconds totalSwapTime = std::chrono::milliseconds(0);

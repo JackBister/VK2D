@@ -18,8 +18,6 @@
 #define VERTEX_SIZE 8
 
 OpenGLFramebufferHandle Renderer::Backbuffer;
-OpenGLShaderModuleHandle Renderer::ptVertexModule;
-OpenGLShaderModuleHandle Renderer::ptFragmentModule;
 
 //Realistically this should only be used to represent different quads
 //Just wanted the convenience of putting VBO, EBO and verts together
@@ -69,7 +67,7 @@ void Renderer::EndFrame(std::vector<std::unique_ptr<RenderCommandContext>>& comm
 		((OpenGLRenderCommandContext *)ctx.get())->Execute(this);
 	}
 	glBindTexture(GL_TEXTURE_2D, backbuffer.nativeHandle);
-	glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 0, 0, dimensions.x, dimensions.y, 0);
+	glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 0, 0, dimensions_.x, dimensions_.y, 0);
 	//SDL_GL_SwapWindow(window);
 	/*
 	auto currTime = std::chrono::high_resolution_clock::now();
@@ -81,15 +79,15 @@ void Renderer::EndFrame(std::vector<std::unique_ptr<RenderCommandContext>>& comm
 
 Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& reader, Semaphore * sem,
 				   char const * title, int const winX, int const winY, int const w, int const h, uint32_t const flags) noexcept
-	: swapSem(sem), renderQueue(std::move(reader))
+	: swap_sem_(sem), render_queue_(std::move(reader))
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-	resourceManager = resMan;
-	aspectRatio = static_cast<float>(w) / static_cast<float>(h);
-	dimensions = glm::ivec2(w, h);
+	resource_manager_ = resMan;
+	aspect_ratio_ = static_cast<float>(w) / static_cast<float>(h);
+	dimensions_ = glm::ivec2(w, h);
 	window = SDL_CreateWindow(title, winX, winY, w, h, flags | SDL_WINDOW_OPENGL);
 	SDL_GL_CreateContext(window);
 	SDL_GL_SetSwapInterval(1);
@@ -285,7 +283,7 @@ void Renderer::DeleteShader(Shader * const s) noexcept
 void Renderer::DrainQueue() noexcept
 {
 	using namespace std::literals::chrono_literals;
-	RenderCommand command = renderQueue.Wait();
+	RenderCommand command = render_queue_.Wait();
 	switch (command.params.index()) {
 	case RenderCommand::Type::NOP:
 		printf("[WARNING] NOP render command.\n");
@@ -356,7 +354,7 @@ void Renderer::DrainQueue() noexcept
 		//My understanding is that without these SwapWindow returns instantly and spins up its own thread(?) that spinlocks, borking our totalSwapTime. 
 		glFlush();
 		glFinish();
-		swapSem->Signal();
+		swap_sem_->Signal();
 		swap = false;
 		auto postSwap = std::chrono::high_resolution_clock::now();
 		frameTime = static_cast<float>((postSwap - lastTime).count());

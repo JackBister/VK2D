@@ -2,11 +2,24 @@
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "json.hpp"
+#include "rttr/registration.h"
 
 #include "Core/entity.h"
 #include "Core/scene.h"
 
 #include "Core/Components/cameracomponent.h.generated.h"
+
+RTTR_REGISTRATION
+{
+	rttr::registration::class_<CameraComponent>("CameraComponent")
+	.constructor<>()
+	.method("projection", &CameraComponent::projection)
+	.method("view", &CameraComponent::view)
+	.method("aspect", &CameraComponent::aspect)
+	.method("set_aspect", &CameraComponent::set_aspect)
+	.method("view_size", &CameraComponent::view_size)
+	.method("set_view_size", &CameraComponent::set_view_size);
+}
 
 COMPONENT_IMPL(CameraComponent)
 
