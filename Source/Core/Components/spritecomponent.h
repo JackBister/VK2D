@@ -10,9 +10,6 @@ public:
 
 	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
 
-	int LuaIndex(lua_State *) override;
-	int LuaNewIndex(lua_State *) override;
-
 	void OnEvent(std::string name, EventArgs args) override;
 
 	Sprite sprite_;

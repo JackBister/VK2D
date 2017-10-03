@@ -6,11 +6,19 @@
 #include <vector>
 
 #include "json.hpp"
+#include "rttr/registration.h"
 
 #include "Core/Components/component.h"
 #include "Core/scene.h"
 
-#include "Core/entity.h.generated.h"
+RTTR_REGISTRATION
+{
+	rttr::registration::class_<Entity>("Entity")
+	.method("FireEvent", &Entity::FireEvent)
+	.method("GetComponent", &Entity::GetComponent)
+	.property("name_", &Entity::name_)
+	.property("transform_", &Entity::transform_);
+}
 
 DESERIALIZABLE_IMPL(Entity)
 

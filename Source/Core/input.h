@@ -16,6 +16,7 @@ typedef std::unordered_map<Keycode, bool, std::hash<int>> Keymap;
 
 class Input : public LuaSerializable
 {
+	RTTR_ENABLE(LuaSerializable)
 public:
 	Input(Queue<SDL_Event>::Reader&&) noexcept;
 	//Call every frame
@@ -42,9 +43,6 @@ public:
 	bool GetButtonDown(std::string const&);
 	PROPERTY(LuaRead)
 	bool GetButtonUp(std::string const&);
-
-	int LuaIndex(lua_State *) override;
-	int LuaNewIndex(lua_State *) override;
 
 	void RemoveKeybind(std::string const&, Keycode);
 	static int RemoveKeybind_Lua(lua_State *);

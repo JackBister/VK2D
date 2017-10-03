@@ -3,6 +3,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "rttr/rttr_enable.h"
+
 #include "Core/Deserializable.h"
 #include "Core/eventarg.h"
 #include "Core/Lua/luaserializable.h"
@@ -26,6 +28,7 @@ class Entity;
 
 class Component : public LuaSerializable, public Deserializable
 {
+	RTTR_ENABLE(LuaSerializable)
 public:
 	virtual ~Component();
 

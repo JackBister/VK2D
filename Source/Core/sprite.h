@@ -12,12 +12,10 @@
 
 class Sprite : public LuaSerializable
 {
+	RTTR_ENABLE(LuaSerializable)
 public:
 	Sprite() = default;
 	Sprite(std::shared_ptr<Image>);
-
-	int LuaIndex(lua_State *) override;
-	int LuaNewIndex(lua_State *) override;
 
 	//The bottom left UV coordinate of what we want to render
 	glm::vec2 min_uv_ = glm::vec2(0.f, 0.f);

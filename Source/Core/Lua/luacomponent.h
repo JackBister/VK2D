@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 #include "lua/lua.hpp"
+#include "rttr/rttr_enable.h"
 
 #include "Core/Components/component.h"
 
@@ -10,14 +11,12 @@
 
 class LuaComponent : public Component
 {
+	RTTR_ENABLE(Component)
 public:
 	LuaComponent();
 	
 	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
 	void OnEvent(std::string name, EventArgs args) override;
-
-	int LuaIndex(lua_State *) override;
-	int LuaNewIndex(lua_State *) override;
 
 	//This maps a lua_State to a LuaComponent. This is necessary to conform with the lua_CFunction prototype but still be able to access different parameters.
 	//This is ugly.

@@ -1,9 +1,9 @@
 #include "Core/Rendering/Vulkan/VulkanRenderer.h"
 
+#include <SDL/SDL_vulkan.h>
 #include <stb_image.h>
 #include <vulkan/vulkan.h>
 
-#include "Core/Rendering/Vulkan/SDL_vulkan.h"
 
 #if defined(_DEBUG)
 static VkBool32 VKAPI_PTR DbgCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char * pLayerPrefix, const char * pMessage, void * pUserData)
@@ -161,7 +161,7 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 	render_queue_(std::move(reader)),
 	resource_manager_(resMan),
 	swap_sem_(sem),
-	window(SDL_CreateWindow(title, winX, winY, w, h, flags))
+	window(SDL_CreateWindow(title, winX, winY, w, h, flags | SDL_WINDOW_VULKAN))
 {
 	stbi_set_flip_vertically_on_load(true);
 
@@ -229,11 +229,9 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 	}
 #endif
 
-	auto surfaceOptional = SDL_VK_CreateSurface(window, vk_instance_);
-	if (!surfaceOptional.has_value()) {
-		throw std::exception("SDL_VK_CreateSurface failed.");
+	if (!SDL_Vulkan_CreateSurface(window, vk_instance_, &vk_surface_)) {
+		throw std::exception("Unable to create Vulkan surface.");
 	}
-	vk_surface_ = surfaceOptional.value();
 
 	auto physDeviceOptional = ChoosePhysicalDevice(vk_instance_);
 	if (!physDeviceOptional.has_value()) {

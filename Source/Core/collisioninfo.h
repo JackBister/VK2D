@@ -9,9 +9,6 @@
 class CollisionInfo : public LuaSerializable
 {
 public:
-	int LuaIndex(lua_State *) override;
-	int LuaNewIndex(lua_State *) override;
-
 	Entity * other_;
 	bool collision_start_ = true;
 	std::vector<Vec3> normals_;

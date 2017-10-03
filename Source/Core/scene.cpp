@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "json.hpp"
+#include "rttr/registration.h"
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/entity.h"
@@ -15,7 +16,14 @@
 #include "Core/sprite.h"
 #include "Core/transform.h"
 
-#include "Core/scene.h.generated.h"
+RTTR_REGISTRATION
+{
+	rttr::registration::class_<Scene>("Scene")
+	//.method("GetEntityByName", &Scene::GetEntityByName)
+	.method("GetEntityByName", static_cast<Entity*(Scene::*)(std::string)>(&Scene::GetEntityByName))
+	//.method("GetEntityByName", static_cast<Entity*(Scene::*)(char const *)>(&Scene::GetEntityByName))
+	.method("BroadcastEvent", &Scene::BroadcastEvent);
+}
 
 void Scene::CreatePrimitives()
 {
@@ -316,6 +324,13 @@ Entity * Scene::GetEntityByName(std::string name)
 	}
 	return nullptr;
 }
+
+#if 0
+Entity * Scene::GetEntityByName(char const * c)
+{
+	return GetEntityByName(std::string(c));
+}
+#endif
 
 void Scene::BroadcastEvent(std::string ename, EventArgs eas)
 {

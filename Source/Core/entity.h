@@ -16,16 +16,13 @@ class Scene;
 
 class Entity final : public LuaSerializable, public Deserializable
 {
+	RTTR_ENABLE(LuaSerializable)
 public:
 	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc) const override;
 	PROPERTY(LuaRead)
 	void FireEvent(std::string name, EventArgs args = {});
 	PROPERTY(LuaRead)
 	Component * GetComponent(std::string type) const;
-
-	int LuaIndex(lua_State *) override;
-	int LuaNewIndex(lua_State *) override;
-
 
 	PROPERTY(LuaReadWrite)
 	std::string name_;

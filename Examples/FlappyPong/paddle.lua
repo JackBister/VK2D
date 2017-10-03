@@ -14,18 +14,20 @@ function OnEvent(component, name, args)
 	end
 
 	if name == "Tick" then
-		if transform.position_.y <= -60.0 + transform.scale_.y and velocityY <= 0.0 then
+		local position = transform:get_position()
+		local scale = transform:get_scale()
+		if position.y <= -60.0 + scale.y and velocityY <= 0.0 then
 			return
 		end
-		if transform.position_.y >= 60.0 - transform.scale_.y and velocityY >= 0.0 then
+		if position.y >= 60.0 - scale.y and velocityY >= 0.0 then
 			velocityY = 0.0
 		end
 		if not isColliding then
-			transform.position_.y = transform.position_.y + velocityY * args.deltaTime
-			transform.is_parent_dirty_ = true
-			transform.is_world_dirty_= true
+			position.y = position.y + velocityY * args.deltaTime
+			
 			velocityY = velocityY - gravity * args.deltaTime
 		end
+		transform:set_position(position)
 	end
 
 	if name == "OnCollisionStart" then

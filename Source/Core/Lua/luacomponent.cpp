@@ -2,12 +2,17 @@
 
 #include "json.hpp"
 #include "lua/lua.hpp"
+#include "rttr/registration.h"
 
 #include "Core/entity.h"
 #include "Core/input.h"
 #include "Core/scene.h"
 
-#include "Core/Lua/luacomponent.h.generated.h"
+RTTR_REGISTRATION
+{
+	rttr::registration::class_<LuaComponent>("LuaComponent")
+	.constructor<>();
+}
 
 COMPONENT_IMPL(LuaComponent)
 

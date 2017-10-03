@@ -25,14 +25,12 @@ class ResourceManager;
 PROPERTY(LuaIndex, LuaNewIndex)
 class Scene : public LuaSerializable, public Resource
 {
+	RTTR_ENABLE(LuaSerializable)
 public:
 
 	Scene(std::string const&, ResourceManager *, Queue<SDL_Event>::Reader&&, Queue<RenderCommand>::Writer&&, std::string const&) noexcept;
 
 	void EndFrame() noexcept;
-
-	int LuaIndex(lua_State *) override;
-	int LuaNewIndex(lua_State *) override;
 
 	void PushRenderCommand(RenderCommand&&) noexcept;
 	void SubmitCamera(CameraComponent *) noexcept;
@@ -44,6 +42,7 @@ public:
 	*/
 	PROPERTY(LuaRead)
 	Entity * GetEntityByName(std::string);
+	//Entity * GetEntityByName(char const *);
 	static int GetEntityByName_Lua(lua_State *);
 
 	/*

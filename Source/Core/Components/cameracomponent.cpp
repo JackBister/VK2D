@@ -7,8 +7,6 @@
 #include "Core/entity.h"
 #include "Core/scene.h"
 
-#include "Core/Components/cameracomponent.h.generated.h"
-
 RTTR_REGISTRATION
 {
 	rttr::registration::class_<CameraComponent>("CameraComponent")

@@ -2,12 +2,16 @@
 
 #include "BulletCollision/CollisionShapes/btBox2dShape.h"
 #include "json.hpp"
+#include "rttr/registration.h"
 
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
 #include "Core/scene.h"
 
-#include "Core/Components/physicscomponent.h.generated.h"
+RTTR_REGISTRATION
+{
+	rttr::registration::class_<PhysicsComponent>("PhysicsComponent");
+}
 
 COMPONENT_IMPL(PhysicsComponent)
 

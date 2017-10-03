@@ -1,6 +1,13 @@
 #pragma once
 
+#include <assert.h>
+
 #include "lua/lua.hpp"
+#include "rttr/method.h"
+#include "rttr/property.h"
+#include "rttr/rttr_enable.h"
+#include "rttr/type.h"
+#include "rttr/variant.h"
 
 /*
 	A LuaSerializable must do the following:
@@ -18,15 +25,29 @@
 	of returning it assign the value at -1 to it. This function should never return anything, wether the index exists or not.
 */
 
+int TypeError(lua_State * L);
+
+int VPushToLua(lua_State * L, rttr::variant const& v);
+
 class LuaSerializable
 {
+	RTTR_ENABLE()
 public:
-	virtual ~LuaSerializable();
+	virtual ~LuaSerializable() {}
 
-	virtual int LuaIndex(lua_State *) = 0;
-	virtual int LuaNewIndex(lua_State *) = 0;
-	void PushToLua(lua_State *);
+	int LuaIndex(lua_State * L);
 
-	static int StaticLuaIndex(lua_State *);
-	static int StaticLuaNewIndex(lua_State *);
+
+	int LuaNewIndex(lua_State * L);
+	void PushToLua(void * Lx);
+
+
+	static int StaticLuaIndex(lua_State * L);
+
+	static int StaticLuaNewIndex(lua_State * L);
+
+
+	static int StaticStackLuaIndex(lua_State * L);
+
+	static int StaticStackLuaNewIndex(lua_State * L);
 };

@@ -67,6 +67,7 @@ solution "Vulkan2D"
 			debugdir "."
 			symbols "On"
 
+			--[[
 		--HEADERGENERATOR PREPROCESS--
 		if _ACTION == 'vs2017' then
 			filter 'files:**.h'
@@ -84,4 +85,6 @@ solution "Vulkan2D"
 				buildoutputs {
 					'build/include/' .. '%{file.relpath}.generated.h'
 				}
+			
 		end
+		]]--

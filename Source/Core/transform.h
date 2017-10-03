@@ -5,6 +5,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/quaternion.hpp"
+#include "rttr/rttr_enable.h"
 
 #include "Core/Math/mathtypes.h"
 #include "Core/Lua/luaserializable.h"
@@ -13,6 +14,7 @@
 
 class Transform final : public LuaSerializable
 {
+	RTTR_ENABLE(LuaSerializable)
 public:
 	static Transform Deserialize(std::string const&);
 
@@ -23,11 +25,9 @@ public:
 	Quat const& get_rotation() const;
 	Vec3 const& get_scale() const;
 
-	int LuaIndex(lua_State *) override;
-	int LuaNewIndex(lua_State *) override;
-
 	void set_parent(Transform *);
 	void set_position(Vec3 const&);
+	void set_position(Vec3 *);
 	void set_rotation(Quat const&);
 	void set_scale(Vec3 const&);
 

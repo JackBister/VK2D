@@ -1,18 +1,17 @@
 #pragma once
 
 #include "glm/glm.hpp"
+#include "rttr/rttr_enable.h"
 
 #include "Core/Components/component.h"
 
 class CameraComponent : public Component
 {
+	RTTR_ENABLE(Component)
 public:
 	CameraComponent() noexcept;
 
 	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
-
-	int LuaIndex(lua_State *) override;
-	int LuaNewIndex(lua_State *) override;
 
 	void OnEvent(std::string name, EventArgs args = {}) override;
 

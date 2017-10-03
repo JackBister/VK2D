@@ -127,32 +127,3 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 		}
 	}
 }
-
-int SpriteComponent::LuaIndex(lua_State * L)
-{
-	void ** this_ptr = static_cast<void **>(lua_touserdata(L, 1));
-	SpriteComponent * ptr = static_cast<SpriteComponent *>(*this_ptr);
-	char const * idx = lua_tostring(L, 2);
-	if (ptr == nullptr || idx == nullptr) {
-		lua_pushnil(L);
-		return 1;
-	}
-	if (strcmp(idx, "entity_") == 0) {
-		ptr->entity_->PushToLua(L);
-	} else if (strcmp(idx, "type") == 0) {
-		lua_pushstring(L, ptr->type.c_str());
-	} else if(strcmp(idx, "is_active_") == 0) {
-		lua_pushboolean(L, ptr->is_active_);
-	} else if (strcmp(idx, "sprite_") == 0) {
-		ptr->sprite_.PushToLua(L);
-	} else {
-		lua_pushnil(L);
-	}
-	return 1;
-}
-
-//TODO:
-int SpriteComponent::LuaNewIndex(lua_State *)
-{
-	return 0;
-}

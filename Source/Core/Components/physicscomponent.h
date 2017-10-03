@@ -2,17 +2,16 @@
 #include <vector>
 
 #include "btBulletDynamicsCommon.h"
+#include "rttr/rttr_enable.h"
 
 #include "Core/Components/component.h"
 #include "Tools/HeaderGenerator/headergenerator.h"
 
 class PhysicsComponent : public Component, public btMotionState
 {
+	RTTR_ENABLE(Component)
 public:
 	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
-
-	int LuaIndex(lua_State *) override;
-	int LuaNewIndex(lua_State *) override;
 
 	void OnEvent(std::string name, EventArgs args = {}) override;
 

@@ -2,11 +2,18 @@
 #include "Core/input.h"
 
 #include "json.hpp"
+#include "rttr/registration.h"
 
 #include "Core/Lua/input_cfuncs.h"
 #include "Core/Maybe.h"
 
-#include "Core/input.h.generated.h"
+RTTR_REGISTRATION
+{
+	rttr::registration::class_<Input>("Input")
+	.method("GetButton", &Input::GetButton)
+	.method("GetButtonDown", &Input::GetButtonDown)
+	.method("GetButtonUp", &Input::GetButtonUp);
+}
 
 Input::Input(Queue<SDL_Event>::Reader&& reader) noexcept
 	: input_queue_(std::move(reader))
