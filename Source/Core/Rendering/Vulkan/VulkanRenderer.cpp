@@ -469,7 +469,7 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 		desiredTransform,
 		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		desiredPresentMode,
-		TRUE,
+		true,
 		VK_NULL_HANDLE
 	};
 
@@ -490,7 +490,6 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 	if (!CreateVkCommandPool(vk_device_, presentQueueIdx, &vk_pool_present_)) {
 		throw std::exception("Unable to create present pool.");
 	}
-
 
 	/*
 	Create present command buffers
