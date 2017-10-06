@@ -30,6 +30,7 @@ public:
 protected:
 	void Execute(Renderer *) override;
 private:
+	VkCommandBuffer buffer_;
 };
 
 class VulkanResourceContext : public ResourceCreationContext

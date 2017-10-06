@@ -115,12 +115,12 @@ void Scene::CreatePrimitives()
 		};
 
 
-		OpenGLResourceContext::VertexInputStateCreateInfo::VertexBindingDescription binding = {
+		ResourceCreationContext::VertexInputStateCreateInfo::VertexBindingDescription binding = {
 			0,
 			8 * sizeof(float)
 		};
 
-		OpenGLResourceContext::VertexInputStateCreateInfo::VertexAttributeDescription attributes[3] = {
+		ResourceCreationContext::VertexInputStateCreateInfo::VertexAttributeDescription attributes[3] = {
 			{
 				0,
 				0,

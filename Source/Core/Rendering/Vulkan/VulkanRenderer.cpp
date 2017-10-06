@@ -4,6 +4,7 @@
 #include <stb_image.h>
 #include <vulkan/vulkan.h>
 
+VulkanFramebufferHandle Renderer::Backbuffer;
 
 #if defined(_DEBUG)
 static VkBool32 VKAPI_PTR DbgCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char * pLayerPrefix, const char * pMessage, void * pUserData)
@@ -199,7 +200,6 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 	};
 
 	if (vkCreateInstance(&vulkanInfo, nullptr, &vk_instance_) != VK_SUCCESS) {
-		printf("[ERROR] Vulkan: Failed to create instance\n");
 		throw std::exception("vkCreateInstance failed.");
 	}
 

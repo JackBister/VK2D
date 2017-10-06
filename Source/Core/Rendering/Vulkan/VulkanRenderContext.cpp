@@ -33,6 +33,16 @@ static constexpr VkComponentMapping ToVulkanComponentMapping(ImageViewHandle::Co
 	};
 }
 
+static constexpr VkDescriptorType ToVulkanDescriptorType(DescriptorType descriptorType) {
+	switch (descriptorType) {
+	case DescriptorType::SAMPLER:
+		return VK_DESCRIPTOR_TYPE_SAMPLER;
+	case DescriptorType::UNIFORM_BUFFER:
+		return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	}
+	return VK_DESCRIPTOR_TYPE_SAMPLER;
+}
+
 static constexpr VkImageSubresourceRange ToVulkanSubResourceRange(ImageViewHandle::ImageSubresourceRange range) {
 	return VkImageSubresourceRange{
 		range.aspectMask,
@@ -172,7 +182,7 @@ void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> co
 	}(info);
 
 	uint8_t * const mappedMemory = [this](VkDeviceMemory const& memory, size_t size) {
-		uint8_t * ret;
+		uint8_t * ret = nullptr;
 		vkMapMemory(renderer->vk_device_, memory, 0, size, 0, (void **)&ret);
 		return ret;
 	}(memory, memoryRequirements.size);
@@ -367,4 +377,40 @@ SamplerHandle * VulkanResourceContext::CreateSampler(ResourceCreationContext::Sa
 
 	};
 	return nullptr;
+}
+
+void VulkanResourceContext::DestroySampler(SamplerHandle * sampler)
+{
+	assert(sampler != nullptr);
+	vkDestroySampler(renderer->vk_device_, ((VulkanSamplerHandle *)sampler)->sampler_, nullptr);
+}
+
+DescriptorSetLayoutHandle * VulkanResourceContext::CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo info)
+{
+	std::vector<VkDescriptorSetLayoutBinding> bindings;
+	bindings.reserve(info.bindingCount);
+	for (uint32_t i = 0; i < info.bindingCount; ++i) {
+		bindings.push_back(VkDescriptorSetLayoutBinding{
+			info.pBinding[i].binding,
+			ToVulkanDescriptorType(info.pBinding[i].descriptorType),
+			1,
+			info.pBinding[i].stageFlags,
+			nullptr
+		});
+	}
+	VkDescriptorSetLayoutCreateInfo ci{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+		nullptr,
+		0,
+		info.bindingCount,
+		&bindings[0]
+	};
+	auto ret = (VulkanDescriptorSetLayoutHandle *)allocator.allocate(sizeof(VulkanDescriptorSetLayoutHandle));
+	auto res = vkCreateDescriptorSetLayout(renderer->vk_device_, &ci, nullptr, &(ret->layout_));
+	assert(res == VK_SUCCESS);
+	return ret;
+}
+
+void VulkanRenderCommandContext::Execute(Renderer * renderer)
+{
 }

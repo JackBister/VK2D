@@ -40,6 +40,8 @@ public:
 
 	bool swap;
 
+	static VulkanFramebufferHandle Backbuffer;
+
 private:
 	struct VulkanSwapchain
 	{
