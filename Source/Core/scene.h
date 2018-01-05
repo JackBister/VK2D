@@ -28,10 +28,11 @@ class Scene : public LuaSerializable, public Resource
 	RTTR_ENABLE(LuaSerializable)
 public:
 
-	Scene(std::string const&, ResourceManager *, Queue<SDL_Event>::Reader&&, Queue<RenderCommand>::Writer&&, std::string const&) noexcept;
+	Scene(std::string const&, ResourceManager *, Queue<SDL_Event>::Reader&&, Queue<RenderCommand>::Writer&&, std::string const&, Renderer * renderer) noexcept;
 
 	void EndFrame() noexcept;
 
+	std::unique_ptr<RenderCommandContext> GetSecondaryCommandContext(bool inMainRenderPass);
 	void PushRenderCommand(RenderCommand&&) noexcept;
 	void SubmitCamera(CameraComponent *) noexcept;
 	void SubmitCommandBuffer(std::unique_ptr<RenderCommandContext>&&);
@@ -65,6 +66,16 @@ private:
 	Queue<RenderCommand>::Writer render_queue_;
 	std::vector<SubmittedCamera> cameras_to_submit_;
 
+	Queue<std::unique_ptr<RenderCommandContext>> free_command_buffers_;
+	Queue<std::unique_ptr<RenderCommandContext>>::Reader get_free_command_buffers_;
+	Queue<std::unique_ptr<RenderCommandContext>>::Writer put_free_command_buffers_;
 	std::vector<std::unique_ptr<RenderCommandContext>> command_buffers_;
+	uint32_t current_subpass_;
+	std::unique_ptr<RenderCommandContext> main_command_context_;
 	RenderPassHandle * main_renderpass_;
+	SemaphoreHandle * main_renderpass_finished_;
+	std::unique_ptr<RenderCommandContext> pre_renderpass_context_;
+	SemaphoreHandle * pre_renderpass_finished_;
+	Renderer * renderer_;
+	SemaphoreHandle * swap_finished_;
 };

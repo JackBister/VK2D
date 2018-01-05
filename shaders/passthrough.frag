@@ -1,9 +1,12 @@
 #version 420 
+#extension GL_GOOGLE_include_directive : require
 
-in vec3 Color;
-in vec2 Texcoord;
+#include "Specialization.h"
 
-out vec4 outColor;
+layout (location = 0) in vec3 Color;
+layout (location = 1) in vec2 Texcoord;
+
+layout (location = 0) out vec4 outColor;
 
 layout (std140, binding = 0) uniform numbers {
 	mat4 pvm;

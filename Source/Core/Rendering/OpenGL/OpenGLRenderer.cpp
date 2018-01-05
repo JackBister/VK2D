@@ -1,3 +1,4 @@
+#ifndef USE_VULKAN_RENDERER
 #include "Core/Rendering/OpenGL/OpenGLRenderer.h"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -54,11 +55,6 @@ Renderer::~Renderer() noexcept
 	SDL_DestroyWindow(window);
 }
 
-std::unique_ptr<OpenGLRenderCommandContext> Renderer::CreateCommandContext()
-{
-	return std::make_unique<OpenGLRenderCommandContext>(new std::allocator<uint8_t>());
-}
-
 void Renderer::EndFrame(std::vector<std::unique_ptr<RenderCommandContext>>& commandBuffers) noexcept
 {
 	glBeginQuery(GL_TIME_ELAPSED, timeQuery);
@@ -83,7 +79,7 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 	resource_manager_ = resMan;
 	aspect_ratio_ = static_cast<float>(w) / static_cast<float>(h);
@@ -302,7 +298,7 @@ void Renderer::DrainQueue() noexcept
 	case RenderCommand::Type::EXECUTE_COMMAND_CONTEXT:
 	{
 		auto ctx = std::move(std::get<RenderCommand::ExecuteCommandContextParams>(command.params).ctx);
-		((OpenGLRenderCommandContext *)ctx.get())->Execute(this);
+		ctx->Execute(this);
 		break;
 	}
 	/*
@@ -364,3 +360,4 @@ void Renderer::DrainQueue() noexcept
 		totalSwapTime += std::chrono::duration_cast<std::chrono::milliseconds>(postSwap - preSwap);
 	}
 }
+#endif

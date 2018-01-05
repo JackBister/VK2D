@@ -1,4 +1,5 @@
 #pragma once
+#ifndef USE_VULKAN_RENDERER
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -26,8 +27,6 @@ class Renderer
 public:
 	Renderer(ResourceManager *, Queue<RenderCommand>::Reader&&, Semaphore * swapSem, char const * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
 	~Renderer() noexcept;
-
-	static std::unique_ptr<OpenGLRenderCommandContext> CreateCommandContext();
 
 	void EndFrame(std::vector<std::unique_ptr<RenderCommandContext>>& commandBuffers) noexcept;
 	uint64_t GetFrameTime() noexcept;
@@ -94,3 +93,4 @@ private:
 	uint32_t frameCount = 1;
 	std::chrono::milliseconds totalSwapTime = std::chrono::milliseconds(0);
 };
+#endif

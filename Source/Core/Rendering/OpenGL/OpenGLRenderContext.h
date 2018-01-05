@@ -1,4 +1,5 @@
 #pragma once
+#ifndef USE_VULKAN_RENDERER
 #include "Core/Rendering/Context/RenderContext.h"
 
 #include <vector>
@@ -21,6 +22,9 @@ public:
 	OpenGLRenderCommandContext(std::allocator<uint8_t> * allocator) : RenderCommandContext(allocator) {}
 
 	virtual ~OpenGLRenderCommandContext() { delete allocator; }
+
+	virtual void BeginRecording(InheritanceInfo *) override;
+	virtual void EndRecording() override;
 
 	virtual void CmdBeginRenderPass(RenderCommandContext::RenderPassBeginInfo *pRenderPassBegin, RenderCommandContext::SubpassContents contents) override;
 	virtual void CmdBindDescriptorSet(DescriptorSet *) override;
@@ -144,6 +148,10 @@ private:
 class OpenGLResourceContext : public ResourceCreationContext
 {
 public:
+	virtual std::unique_ptr<RenderCommandContext> CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
+	virtual void DestroyCommandContext(std::unique_ptr<RenderCommandContext>) final override;
+
+	void BufferSubData(BufferHandle *, uint8_t *, size_t, size_t) final override;
 	BufferHandle * CreateBuffer(BufferCreateInfo) final override;
 	void DestroyBuffer(BufferHandle *) final override;
 	uint8_t * MapBuffer(BufferHandle *, size_t, size_t) final override;
@@ -178,7 +186,7 @@ public:
 	virtual DescriptorSetLayoutHandle * CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo) override;
 	virtual void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle *);
 	virtual VertexInputStateHandle * CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo);
-	virtual void DestroyVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo *);
+	virtual void DestroyVertexInputState(VertexInputStateHandle *);
 
 	virtual DescriptorSet * CreateDescriptorSet(DescriptorSetCreateInfo) override;
 	virtual void DestroyDescriptorSet(DescriptorSet *) override;
@@ -241,3 +249,4 @@ struct OpenGLVertexInputStateHandle : VertexInputStateHandle
 	//TODO: Is a VAO sufficient?
 	GLuint nativeHandle;
 };
+#endif

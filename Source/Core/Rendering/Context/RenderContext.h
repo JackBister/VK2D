@@ -39,6 +39,19 @@ enum class AddressMode
 	MIRROR_CLAMP_TO_EDGE = 4,
 };
 
+enum BufferUsageFlags
+{
+	TRANSFER_SRC_BIT = 0x00000001,
+	TRANSFER_DST_BIT = 0x00000002,
+	UNIFORM_TEXEL_BUFFER_BIT = 0x00000004,
+	STORAGE_TEXEL_BUFFER_BIT = 0x00000008,
+	UNIFORM_BUFFER_BIT = 0x00000010,
+	STORAGE_BUFFER_BIT = 0x00000020,
+	INDEX_BUFFER_BIT = 0x00000040,
+	VERTEX_BUFFER_BIT = 0x00000080,
+	INDIRECT_BUFFER_BIT = 0x00000100,
+};
+
 enum class ComponentSwizzle
 {
 	IDENTITY,
@@ -57,9 +70,11 @@ enum class DependencyFlagBits
 
 enum class DescriptorType
 {
-	SAMPLER = 0,
 	/*
+	SAMPLER = 0,
+	*/
 	COMBINED_IMAGE_SAMPLER = 1,
+	/*
 	SAMPLED_IMAGE = 2,
 	STORAGE_IMAGE = 3,
 	UNIFORM_TEXEL_BUFFER = 4,
@@ -76,6 +91,8 @@ enum class DescriptorType
 
 enum class Format
 {
+	B8G8R8A8_UNORM,
+
 	R8,
 	RG8,
 	RGB8,
@@ -97,14 +114,14 @@ enum class ImageLayout
 };
 
 enum ImageUsageFlagBits {
-	TRANSFER_SRC_BIT = 0x00000001,
-	TRANSFER_DST_BIT = 0x00000002,
-	SAMPLED_BIT = 0x00000004,
-	STORAGE_BIT = 0x00000008,
-	COLOR_ATTACHMENT_BIT = 0x00000010,
-	DEPTH_STENCIL_ATTACHMENT_BIT = 0x00000020,
-	TRANSIENT_ATTACHMENT_BIT = 0x00000040,
-	INPUT_ATTACHMENT_BIT = 0x00000080,
+	IMAGE_USAGE_FLAG_TRANSFER_SRC_BIT = 0x00000001,
+	IMAGE_USAGE_FLAG_TRANSFER_DST_BIT = 0x00000002,
+	IMAGE_USAGE_FLAG_SAMPLED_BIT = 0x00000004,
+	IMAGE_USAGE_FLAG_STORAGE_BIT = 0x00000008,
+	IMAGE_USAGE_FLAG_COLOR_ATTACHMENT_BIT = 0x00000010,
+	IMAGE_USAGE_FLAG_DEPTH_STENCIL_ATTACHMENT_BIT = 0x00000020,
+	IMAGE_USAGE_FLAG_TRANSIENT_ATTACHMENT_BIT = 0x00000040,
+	IMAGE_USAGE_FLAG_INPUT_ATTACHMENT_BIT = 0x00000080,
 };
 
 enum class Filter
@@ -113,7 +130,16 @@ enum class Filter
 	LINEAR = 1
 };
 
-enum class PipelineStageFlagBits
+enum MemoryPropertyFlagBits
+{
+	DEVICE_LOCAL_BIT = 0x00000001,
+	HOST_VISIBLE_BIT = 0x00000002,
+	HOST_COHERENT_BIT = 0x00000004,
+	HOST_CACHED_BIT = 0x00000008,
+	LAZILY_ALLOCATED_BIT = 0x00000010,
+};
+
+enum PipelineStageFlagBits
 {
 	TOP_OF_PIPE_BIT = 0x00000001,
 	DRAW_INDIRECT_BIT = 0x00000002,
@@ -132,6 +158,12 @@ enum class PipelineStageFlagBits
 	HOST_BIT = 0x00004000,
 	ALL_GRAPHICS_BIT = 0x00008000,
 	ALL_COMMANDS_BIT = 0x00010000,
+};
+
+enum class RenderCommandContextLevel
+{
+	PRIMARY,
+	SECONDARY
 };
 
 enum ShaderStageFlagBits
@@ -175,6 +207,7 @@ struct DescriptorSetLayoutHandle
 struct FramebufferHandle
 {
 	uint32_t attachmentCount;
+	Format format;
 	ImageViewHandle const ** pAttachments;
 	uint32_t width, height, layers;
 };
@@ -248,7 +281,7 @@ struct RenderPassHandle
 	{
 		enum class Flags : uint8_t
 		{
-			MAY_ALIAS_BIT,
+			MAY_ALIAS_BIT = 0x01,
 		};
 		enum class LoadOp
 		{
@@ -285,7 +318,7 @@ struct RenderPassHandle
 		uint32_t colorAttachmentCount;
 		AttachmentReference const * pColorAttachments;
 		AttachmentReference const * pResolveAttachments;
-		AttachmentReference const * pDepthStencilAttachments;
+		AttachmentReference const * pDepthStencilAttachment;
 		uint32_t preserveAttachmentCount;
 		uint32_t const * pPreserveAttachments;
 	};
@@ -298,14 +331,17 @@ struct RenderPassHandle
 		uint32_t dstStageMask;
 		uint32_t srcAccessMask;
 		uint32_t dstAccessMask;
-		DependencyFlagBits dependencyFlags;
+		uint32_t dependencyFlags;
 	};
 
 };
 
 struct SamplerHandle
 {
+};
 
+struct SemaphoreHandle
+{
 };
 
 struct ShaderModuleHandle
@@ -315,6 +351,7 @@ struct ShaderModuleHandle
 struct VertexInputStateHandle
 {
 };
+
 
 class RenderCommandContext
 {
@@ -388,6 +425,16 @@ public:
 	RenderCommandContext(std::allocator<uint8_t> * allocator) : allocator(allocator) {}
 	virtual ~RenderCommandContext() {}
 
+	struct InheritanceInfo
+	{
+		RenderPassHandle * renderPass;
+		uint32_t subpass;
+		FramebufferHandle * framebuffer;
+	};
+	virtual void BeginRecording(InheritanceInfo *) = 0;
+	virtual void EndRecording() = 0;
+	virtual void Reset() = 0;
+
 	virtual void CmdBeginRenderPass(RenderPassBeginInfo * pRenderPassBegin, SubpassContents contents) = 0;
 	virtual void CmdBindDescriptorSet(DescriptorSet *) = 0;
 	/*
@@ -406,10 +453,11 @@ public:
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, Viewport const * pViewports) = 0;
 	//In Vulkan there's that whole swapchain business. If it's not exposed the renderer will always be double buffered.
 	virtual void CmdSwapWindow() = 0;
+
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) = 0;
 
 protected:
-	virtual void Execute(Renderer *) = 0;
+	virtual void Execute(Renderer *, SemaphoreHandle * waitSem, SemaphoreHandle * signalSem) = 0;
 	enum RenderCommandType
 	{
 		BEGIN_RENDERPASS,
@@ -434,6 +482,14 @@ protected:
 class ResourceCreationContext
 {
 public:
+	struct RenderCommandContextCreateInfo
+	{
+		RenderCommandContextLevel level;
+	};
+	virtual std::unique_ptr<RenderCommandContext> CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) = 0;
+	virtual void DestroyCommandContext(std::unique_ptr<RenderCommandContext>) = 0;
+
+	virtual void BufferSubData(BufferHandle *, uint8_t *, size_t offset, size_t size) = 0;
 	/*
 		OpenGL: glGenBuffers + glBufferData
 		Vulkan: vkCreateBuffer (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) + vkAllocateMemory + vkBindBufferMemory
@@ -443,6 +499,8 @@ public:
 	struct BufferCreateInfo
 	{
 		size_t size;
+		uint32_t usage;
+		MemoryPropertyFlagBits memoryProperties;
 	};
 	virtual BufferHandle * CreateBuffer(BufferCreateInfo) = 0;
 	virtual void DestroyBuffer(BufferHandle *) = 0;
@@ -478,6 +536,8 @@ public:
 
 		size_t descriptorCount;
 		Descriptor * descriptors;
+		//TODO: optional
+		DescriptorSetLayoutHandle * layout;
 	};
 	virtual DescriptorSet * CreateDescriptorSet(DescriptorSetCreateInfo) = 0;
 	virtual void DestroyDescriptorSet(DescriptorSet *) = 0;
@@ -518,7 +578,7 @@ public:
 		ImageHandle::Type type;
 		uint32_t width, height, depth;
 		uint32_t mipLevels;
-		ImageUsageFlagBits usage;
+		uint32_t usage;
 	};
 	virtual ImageHandle * CreateImage(ImageCreateInfo) = 0;
 	virtual void DestroyImage(ImageHandle *) = 0;
@@ -551,6 +611,8 @@ public:
 		PipelineShaderStageCreateInfo * pStages;
 		VertexInputStateHandle * vertexInputState;
 		DescriptorSetLayoutHandle * descriptorSetLayout;
+		RenderPassHandle * renderPass;
+		uint32_t subpass;
 	};
 	virtual PipelineHandle * CreateGraphicsPipeline(GraphicsPipelineCreateInfo) = 0;
 	virtual void DestroyPipeline(PipelineHandle *) = 0;
@@ -575,6 +637,9 @@ public:
 	};
 	virtual SamplerHandle * CreateSampler(SamplerCreateInfo) = 0;
 	virtual void DestroySampler(SamplerHandle *) = 0;
+
+	virtual SemaphoreHandle * CreateSemaphore() = 0;
+	virtual void DestroySemaphore(SemaphoreHandle *) = 0;
 
 	struct ShaderModuleCreateInfo
 	{
@@ -614,7 +679,7 @@ public:
 		VertexAttributeDescription const * pVertexAttributeDescriptions;
 	};
 	virtual VertexInputStateHandle * CreateVertexInputState(VertexInputStateCreateInfo) = 0;
-	virtual void DestroyVertexInputState(VertexInputStateCreateInfo *) = 0;
+	virtual void DestroyVertexInputState(VertexInputStateHandle *) = 0;
 
 protected:
 	std::allocator<uint8_t> allocator;	

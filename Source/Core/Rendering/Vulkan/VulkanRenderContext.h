@@ -1,41 +1,17 @@
 #pragma once
+#ifdef USE_VULKAN_RENDERER
 #include "Core/Rendering/Context/RenderContext.h"
 
 #include <vulkan/vulkan.h>
 
-class VulkanRenderCommandContext : public RenderCommandContext
+class VulkanResourceContext : public ResourceCreationContext
 {
 	friend class Renderer;
 public:
+	std::unique_ptr<RenderCommandContext> CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
+	void DestroyCommandContext(std::unique_ptr<RenderCommandContext>) final override;
 
-	VulkanRenderCommandContext() : RenderCommandContext(new std::allocator<uint8_t>) {}
-	VulkanRenderCommandContext(std::allocator<uint8_t> * allocator) : RenderCommandContext(allocator) {}
-
-	virtual ~VulkanRenderCommandContext() { delete allocator; }
-
-	virtual void CmdBeginRenderPass(RenderCommandContext::RenderPassBeginInfo *pRenderPassBegin, RenderCommandContext::SubpassContents contents) override;
-	virtual void CmdBindDescriptorSet(DescriptorSet *) override;
-	virtual void CmdBindIndexBuffer(BufferHandle *buffer, size_t offset, RenderCommandContext::IndexType indexType) override;
-	virtual void CmdBindPipeline(RenderPassHandle::PipelineBindPoint, PipelineHandle *) override;
-	virtual void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) override;
-	virtual void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset) override;
-	virtual void CmdEndRenderPass() override;
-	virtual void CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers) override;
-	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) override;
-	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, RenderCommandContext::Rect2D const * pScissors) override;
-	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, RenderCommandContext::Viewport const * pViewports) override;
-	virtual void CmdSwapWindow() override;
-	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) override;
-
-protected:
-	void Execute(Renderer *) override;
-private:
-	VkCommandBuffer buffer_;
-};
-
-class VulkanResourceContext : public ResourceCreationContext
-{
-public:
+	void BufferSubData(BufferHandle *, uint8_t *, size_t offset, size_t size) final override;
 	BufferHandle * CreateBuffer(BufferCreateInfo) final override;
 	void DestroyBuffer(BufferHandle *) final override;
 	uint8_t * MapBuffer(BufferHandle *, size_t, size_t) final override;
@@ -66,11 +42,14 @@ public:
 	virtual SamplerHandle * CreateSampler(ResourceCreationContext::SamplerCreateInfo);
 	virtual void DestroySampler(SamplerHandle *);
 
+	virtual SemaphoreHandle * CreateSemaphore() override;
+	virtual void DestroySemaphore(SemaphoreHandle *) override;
+
 	// Inherited via ResourceCreationContext
 	virtual DescriptorSetLayoutHandle * CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo) override;
 	virtual void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle *);
 	virtual VertexInputStateHandle * CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo);
-	virtual void DestroyVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo *);
+	virtual void DestroyVertexInputState(VertexInputStateHandle *);
 
 	virtual DescriptorSet * CreateDescriptorSet(DescriptorSetCreateInfo) override;
 	virtual void DestroyDescriptorSet(DescriptorSet *) override;
@@ -91,6 +70,8 @@ struct VulkanBufferHandle : BufferHandle
 
 struct VulkanDescriptorSet : DescriptorSet
 {
+	VkDescriptorSetLayout layout_;
+	VkPipelineLayout pipeline_layout_;
 	VkDescriptorSet set_;
 };
 
@@ -134,8 +115,14 @@ struct VulkanShaderModuleHandle : ShaderModuleHandle
 	VkShaderModule shader_;
 };
 
+struct VulkanSemaphoreHandle : SemaphoreHandle
+{
+	VkSemaphore semaphore_;
+};
+
 struct VulkanVertexInputStateHandle : VertexInputStateHandle
 {
 	//Saved until the handle is used in the create pipeline call - bad?
 	ResourceCreationContext::VertexInputStateCreateInfo create_info_;
 };
+#endif

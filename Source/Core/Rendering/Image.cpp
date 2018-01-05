@@ -16,7 +16,7 @@ Image::Image(ResourceManager * resMan, std::string const& name) noexcept
 			ImageHandle::Type::TYPE_2D,
 			128, 128, 1,
 			1,
-			ImageUsageFlagBits::SAMPLED_BIT
+			IMAGE_USAGE_FLAG_SAMPLED_BIT | IMAGE_USAGE_FLAG_TRANSFER_DST_BIT
 		};
 		printf("pre createimage\n");
 		auto tmp = ctx.CreateImage(ic);
@@ -39,7 +39,7 @@ Image::Image(ImageCreateInfo const& info) noexcept
 				ImageHandle::Type::TYPE_2D,
 				this->width_, this->height_, 1,
 				1,
-				ImageUsageFlagBits::SAMPLED_BIT
+				IMAGE_USAGE_FLAG_SAMPLED_BIT | IMAGE_USAGE_FLAG_TRANSFER_DST_BIT
 			};
 			printf("pre createimage\n");
 			auto tmp = ctx.CreateImage(ic);
@@ -59,14 +59,16 @@ Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint
 	uint8_t const * imageData = stbi_load_from_memory((stbi_uc const *)&input[0], input.size(), (int *)&width_, (int *)&height_, (int *)&n, 0);
 	data_ = std::vector<uint8_t>(width_ * height_ * n);
 	memcpy(&data_[0], imageData, width_ * height_ * n);
-	Format format;
+	Format format = Format::RGBA8;
+#if 0
 	switch (n) {
 	case 1:
 		format = Format::R8;
 		break;
-	case 2:
+	case 2: {
 		format = Format::RG8;
 		break;
+	}
 	case 3:
 		format = Format::RGB8;
 		break;
@@ -77,13 +79,30 @@ Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint
 		printf("[ERROR] Loading image %s: Unknown format %d.\n", name.c_str(), n);
 		break;
 	}
+#endif
+	//TODO: pads to RGBA8 in a terrible way
+	{
+		auto idx = 1;
+		auto pad = data_.size() % 4;
+		for (auto it = data_.begin(); it != data_.end(); ++it) {
+			if (idx % 4 == pad) {
+				for (auto i = 0; i < 4 - pad; ++i) {
+					it = data_.insert(++it, 0xFF);
+					idx++;
+				}
+			} else {
+				idx++;
+			}
+		}
+	}
+	//TODO:
 	resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
 		ResourceCreationContext::ImageCreateInfo ic = {
 			Format::RGBA8,
 			ImageHandle::Type::TYPE_2D,
 			this->width_, this->height_, 1,
 			1,
-			ImageUsageFlagBits::SAMPLED_BIT
+			IMAGE_USAGE_FLAG_SAMPLED_BIT | IMAGE_USAGE_FLAG_TRANSFER_DST_BIT
 		};
 		printf("pre createimage\n");
 		auto tmp = ctx.CreateImage(ic);

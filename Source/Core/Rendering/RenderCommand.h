@@ -28,6 +28,7 @@ struct RenderCommand
 		ABORT,
 		CREATE_RESOURCE,
 		EXECUTE_COMMAND_CONTEXT,
+		SWAP_WINDOW
 	};
 
 	struct AbortParams
@@ -44,11 +45,21 @@ struct RenderCommand
 
 	struct ExecuteCommandContextParams
 	{
-		std::unique_ptr<RenderCommandContext> ctx;
-		ExecuteCommandContextParams(std::unique_ptr<RenderCommandContext>&& ctx) : ctx(std::move(ctx)) {}
+		SemaphoreHandle * waitSem;
+		SemaphoreHandle * signalSem;
+		RenderCommandContext * ctx;
+		ExecuteCommandContextParams(RenderCommandContext * ctx, SemaphoreHandle * waitSem = nullptr, SemaphoreHandle * signalSem = nullptr)
+			: ctx(ctx), waitSem(waitSem), signalSem(signalSem) {}
 	};
 
-	using RenderCommandParams = std::variant<None, AbortParams, CreateResourceParams, ExecuteCommandContextParams>;
+	struct SwapWindowParams
+	{
+		SemaphoreHandle * waitSem;
+		SemaphoreHandle * signalSem;
+		SwapWindowParams(SemaphoreHandle * waitSem, SemaphoreHandle * signalSem) : waitSem(waitSem), signalSem(signalSem) {}
+	};
+
+	using RenderCommandParams = std::variant<None, AbortParams, CreateResourceParams, ExecuteCommandContextParams, SwapWindowParams>;
 	RenderCommandParams params;
 
 	RenderCommand() : params(None{}) {}

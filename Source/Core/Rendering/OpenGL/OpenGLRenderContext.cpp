@@ -1,3 +1,4 @@
+#ifndef USE_VULKAN_RENDERER
 #include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
 
 #include <assert.h>
@@ -78,6 +79,21 @@ static GLint InternalFormatGL(Format format)
 	}
 }
 
+std::unique_ptr<RenderCommandContext> OpenGLResourceContext::CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo)
+{
+	return std::make_unique<OpenGLRenderCommandContext>(new std::allocator<uint8_t>());
+}
+
+void OpenGLResourceContext::DestroyCommandContext(std::unique_ptr<RenderCommandContext>)
+{
+}
+
+void OpenGLResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data, size_t offset, size_t size)
+{
+	auto nativeHandle = (OpenGLBufferHandle *)buffer;
+	glNamedBufferSubData(nativeHandle->nativeHandle, offset, size, &data[0]);
+}
+
 BufferHandle * OpenGLResourceContext::CreateBuffer(BufferCreateInfo bc)
 {
 	auto ret = (OpenGLBufferHandle *)allocator.allocate(sizeof(OpenGLBufferHandle));
@@ -148,7 +164,6 @@ void OpenGLResourceContext::ImageData(ImageHandle * handle, std::vector<uint8_t>
 RenderPassHandle * OpenGLResourceContext::CreateRenderPass(ResourceCreationContext::RenderPassCreateInfo ci)
 {
 	auto ret = (OpenGLRenderPassHandle *)allocator.allocate(sizeof(OpenGLRenderPassHandle));
-
 	return ret;
 }
 
@@ -273,9 +288,15 @@ ShaderModuleHandle * OpenGLResourceContext::CreateShaderModule(ResourceCreationC
 	}
 	ret->nativeHandle = glCreateShader(type);
 	GLchar const * src = (GLchar *)ci.pCode;
-	glShaderSource(ret->nativeHandle, 1, &src, nullptr);
+	//glShaderSource(ret->nativeHandle, 1, &src, nullptr);
 	printf("post shadersource err %d\n", glGetError());
-	glCompileShader(ret->nativeHandle);
+	//glCompileShader(ret->nativeHandle);
+	glShaderBinary(1, &ret->nativeHandle, GL_SHADER_BINARY_FORMAT_SPIR_V, src, ci.codeSize);
+
+	uint32_t specializationConstantIndexes[] = {0};
+	uint32_t specializationConstantValues[] = {1};
+
+	glSpecializeShader(ret->nativeHandle, "main", 1, specializationConstantIndexes, specializationConstantValues);
 	GLint compileOk;
 	glGetShaderiv(ret->nativeHandle, GL_COMPILE_STATUS, &compileOk);
 	if (compileOk != GL_TRUE) {
@@ -320,9 +341,10 @@ void OpenGLResourceContext::DestroySampler(SamplerHandle * handle)
 
 DescriptorSetLayoutHandle * OpenGLResourceContext::CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo ci)
 {
-	auto ret = (OpenGLDescriptorSetLayoutHandle *)allocator.allocate(sizeof(OpenGLDescriptorSetLayoutHandle));
+	auto mem = (void *)allocator.allocate(sizeof(OpenGLDescriptorSetLayoutHandle));
+	auto ret = new (mem) OpenGLDescriptorSetLayoutHandle();
 	ret->bindings = std::vector<ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding>(ci.bindingCount);
-	memcpy(&ret->bindings[0], ci.pBinding, sizeof(ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding) * ci.bindingCount);
+	memcpy(&(ret->bindings[0]), ci.pBinding, sizeof(ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding) * ci.bindingCount);
 	return ret;
 }
 
@@ -378,7 +400,7 @@ VertexInputStateHandle * OpenGLResourceContext::CreateVertexInputState(ResourceC
 	return ret;
 }
 
-void OpenGLResourceContext::DestroyVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo * handle)
+void OpenGLResourceContext::DestroyVertexInputState(VertexInputStateHandle * handle)
 {
 	assert(handle != nullptr);
 	auto nativeHandle = (OpenGLVertexInputStateHandle *)handle;
@@ -390,7 +412,7 @@ void OpenGLResourceContext::DestroyVertexInputState(ResourceCreationContext::Ver
 DescriptorSet * OpenGLResourceContext::CreateDescriptorSet(DescriptorSetCreateInfo ci)
 {
 	auto mem = allocator.allocate(sizeof(OpenGLDescriptorSet));
-	auto ret = (OpenGLDescriptorSet *)new (mem) OpenGLDescriptorSet();
+	auto ret = new (mem) OpenGLDescriptorSet();
 	ret->descriptors = std::vector<ResourceCreationContext::DescriptorSetCreateInfo::Descriptor>(ci.descriptorCount);
 	memcpy(&(ret->descriptors[0]), ci.descriptors, ci.descriptorCount * sizeof(ResourceCreationContext::DescriptorSetCreateInfo::Descriptor));
 	return ret;
@@ -400,6 +422,14 @@ void OpenGLResourceContext::DestroyDescriptorSet(DescriptorSet * set)
 {
 	assert(set != nullptr);
 	allocator.destroy(set);
+}
+
+void OpenGLRenderCommandContext::BeginRecording(InheritanceInfo *)
+{
+}
+
+void OpenGLRenderCommandContext::EndRecording()
+{
 }
 
 void OpenGLRenderCommandContext::CmdBeginRenderPass(RenderCommandContext::RenderPassBeginInfo *pRenderPassBegin, RenderCommandContext::SubpassContents contents)
@@ -419,7 +449,7 @@ void OpenGLRenderCommandContext::CmdBindDescriptorSet(DescriptorSet * set)
 	BindDescriptorSetArgs args;
 	for (auto& d : nativeSet->descriptors) {
 		switch (d.type) {
-		case DescriptorType::SAMPLER:
+		case DescriptorType::COMBINED_IMAGE_SAMPLER:
 			args.images.push_back({
 				d.binding,
 				((OpenGLImageHandle *)std::get<1>(d.descriptor).img)->nativeHandle
@@ -659,6 +689,7 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer)
 			break;
 		}
 	}
+	commandList.clear();
 }
 
 void OpenGLRenderCommandContext::CmdBindPipeline(RenderPassHandle::PipelineBindPoint bp, PipelineHandle * handle)
@@ -668,3 +699,4 @@ void OpenGLRenderCommandContext::CmdBindPipeline(RenderPassHandle::PipelineBindP
 		((OpenGLVertexInputStateHandle *)handle->vertexInputState)->nativeHandle
 	});
 }
+#endif

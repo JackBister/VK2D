@@ -4,7 +4,7 @@ solution "Vulkan2D"
 	configurations { "Debug", "Release" }
 	
 	platforms { "x86", "x86_64" }
-		
+
 	project "HeaderGenerator"
 		kind "ConsoleApp"
 		language "C++"
@@ -37,6 +37,7 @@ solution "Vulkan2D"
 		defines { "GLEW_STATIC" }
 		dependson { "HeaderGenerator" }
 		files { "Source/Core/**.h", "Source/Core/**.cpp", "glew.c",
+				"shaders/*",
 				--Should be cleaned up in the future to be a separate project
 				"Examples/**.h", "Examples/**.cpp" }
 		--flags { "C++14" }
@@ -58,7 +59,8 @@ solution "Vulkan2D"
 		configuration { "vs*", "Debug" }
 			buildoptions { "/std:c++latest" }
 			links { "libs/VS/SDL2main.lib", "libs/VS/SDL2.lib", "libs/VS/liblua.lib", "libs/VS/vulkan-1.lib", "libs/VS/libBulletDynamics.lib", "libs/VS/libBulletCollision.lib",
-					"libs/VS/libLinearMath.lib", "libs/VS/libboost_filesystem-vc140-mt-gd-1_61.lib", "libs/VS/libboost_filesystem.lib", "libs/VS/libboost_system-vc140-mt-gd-1_61.lib", "libs/VS/libboost_system.lib" }
+					"libs/VS/libLinearMath.lib", "libs/VS/librttr_core_s_d.lib",
+					"libs/VS/libboost_filesystem-vc140-mt-gd-1_61.lib", "libs/VS/libboost_filesystem.lib", "libs/VS/libboost_system-vc140-mt-gd-1_61.lib", "libs/VS/libboost_system.lib" }
 		
 		configuration { "vs*", "Release" }
 		
@@ -66,6 +68,31 @@ solution "Vulkan2D"
 		configuration "Debug"
 			debugdir "."
 			symbols "On"
+
+		filter { 'files:**.vert', 'action:vs2017' }
+			buildmessage 'Compiling %{file.relpath} to SPIR-V'
+			buildcommands {
+				'@echo on',
+				path.translate('glslc -o "%{file.relpath}.spv" "%{file.relpath}"'),
+				'xxd -i "%{file.relpath}.spv" > "Source/Core/Rendering/Shaders/%{file.name}.spv.h"'
+			}
+			buildoutputs {
+				'%{file.relpath}.spv',
+				'Source/Core/Rendering/Shaders/%{file.name}.spv.h'
+			}
+		
+		filter { 'files:**.frag', 'action:vs2017' }
+			buildmessage 'Compiling %{file.relpath} to SPIR-V'
+			buildcommands {
+				'@echo on',
+				path.translate('glslc -o "%{file.relpath}.spv" "%{file.relpath}"'),
+				'xxd -i "%{file.relpath}.spv" > "Source/Core/Rendering/Shaders/%{file.name}.spv.h"'
+			}
+			buildoutputs {
+				'%{file.relpath}.spv',
+				'Source/Core/Rendering/Shaders/%{file.name}.spv.h'
+			}
+
 
 			--[[
 		--HEADERGENERATOR PREPROCESS--

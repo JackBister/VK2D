@@ -51,21 +51,22 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 
 	{
 		resourceManager->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([ret, img](ResourceCreationContext& ctx) {
-			float full_uv[4] = {
+			std::vector<float> full_uv {
 				0.f, 0.f,
 				1.f, 1.f
 			};
 			ret->uvs_ = ctx.CreateBuffer({
-				sizeof(glm::mat4) + sizeof(full_uv)
+				sizeof(glm::mat4) + full_uv.size() * sizeof(float),
+				BufferUsageFlags::UNIFORM_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
+				DEVICE_LOCAL_BIT
 			});
-			auto ubo = (float *)ctx.MapBuffer(ret->uvs_, sizeof(glm::mat4), sizeof(full_uv));
-			memcpy(ubo, full_uv, sizeof(full_uv));
-			ctx.UnmapBuffer(ret->uvs_);
+
+			ctx.BufferSubData(ret->uvs_, (uint8_t *)&full_uv[0], sizeof(glm::mat4), full_uv.size() * sizeof(float));
 
 			ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uv_descriptor = {
 				ret->uvs_,
 				0,
-				sizeof(glm::mat4) + sizeof(full_uv)
+				sizeof(glm::mat4) + full_uv.size() * sizeof(float)
 			};
 
 			ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor img_descriptor = {
@@ -79,7 +80,7 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 					uv_descriptor
 				},
 				{
-					DescriptorType::SAMPLER,
+					DescriptorType::COMBINED_IMAGE_SAMPLER,
 					1,
 					img_descriptor
 				}
@@ -132,7 +133,7 @@ void SpritesheetComponent::OnEvent(std::string name, EventArgs args)
 			}
 		}
 	}
-	if (name == "GatherRenderCommands") {
+	if (name == "MainRenderPass") {
 
 	}
 }
