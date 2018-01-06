@@ -86,22 +86,28 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 
 void SpriteComponent::OnEvent(std::string name, EventArgs args)
 {
-	if (name == "PreRenderPass") {
-		if (has_created_local_resources_ && sprite_.image_->get_image_handle()) {
-			auto ctx = this->entity_->scene_->GetSecondaryCommandContext(false);
-			auto camera = (SubmittedCamera *)args["camera"].as_LuaSerializable_;
-			//TODO: racy
-			cached_MVP_ = camera->projection * camera->view * entity_->transform_.local_to_world();
-			ctx->CmdUpdateBuffer(uvs_, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(cached_MVP_));
-			ctx->EndRecording();
-			entity_->scene_->SubmitCommandBuffer(std::move(ctx));
+	if (name == "BeginPlay") {
+		frameInfo = std::vector<FrameInfo>(entity_->scene_->GetSwapCount());
+		auto mainCommands = entity_->scene_->CreateSecondaryCommandContexts();
+		auto preRenderCommands = entity_->scene_->CreateSecondaryCommandContexts();
+		for (size_t i = 0; i < frameInfo.size(); ++i) {
+			frameInfo[i].mainCommandContext = std::move(mainCommands[i]);
+			frameInfo[i].preRenderCommandContext = std::move(preRenderCommands[i]);
 		}
-	}
-	if (name == "MainRenderPass") {
+	} else if (name == "PreRenderPass") {
+		if (has_created_local_resources_ && sprite_.image_->get_image_handle()) {
+			auto camera = (SubmittedCamera *)args["camera"].as_LuaSerializable_;
+			frameInfo[entity_->scene_->GetCurrFrame()].pvm = camera->projection * camera->view * entity_->transform_.local_to_world();
+			frameInfo[entity_->scene_->GetCurrFrame()].preRenderCommandContext->BeginRecording(nullptr);
+			frameInfo[entity_->scene_->GetCurrFrame()].preRenderCommandContext->CmdUpdateBuffer(uvs_, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(frameInfo[entity_->scene_->GetCurrFrame()].pvm));
+			frameInfo[entity_->scene_->GetCurrFrame()].preRenderCommandContext->EndRecording();
+			entity_->scene_->SubmitCommandBuffer(std::move(frameInfo[entity_->scene_->GetCurrFrame()].preRenderCommandContext));
+		}
+	} else if (name == "MainRenderPass") {
 		if (has_created_local_resources_ && sprite_.image_->get_image_handle()) {
 			auto img = sprite_.image_->get_image_handle();
 			auto camera = (SubmittedCamera *)args["camera"].as_LuaSerializable_;
-			auto ctx = this->entity_->scene_->GetSecondaryCommandContext(true);
+			auto& ctx = frameInfo[entity_->scene_->GetCurrFrame()].mainCommandContext;
 			RenderCommandContext::Viewport viewport = {
 				0.f,
 				0.f,

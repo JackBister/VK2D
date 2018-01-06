@@ -13,6 +13,7 @@
 #include "Core/ResourceManager.h"
 #include "Core/Semaphore.h"
 #include "Core/Sprite.h"
+#include "..\Vulkan\VulkanRenderer.h"
 
 //The number of floats contained in one vertex
 //vec3 pos, vec3 normal, vec2 UV
@@ -55,27 +56,9 @@ Renderer::~Renderer() noexcept
 	SDL_DestroyWindow(window);
 }
 
-void Renderer::EndFrame(std::vector<std::unique_ptr<RenderCommandContext>>& commandBuffers) noexcept
-{
-	glBeginQuery(GL_TIME_ELAPSED, timeQuery);
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	for (auto& ctx : commandBuffers) {
-		((OpenGLRenderCommandContext *)ctx.get())->Execute(this);
-	}
-	glBindTexture(GL_TEXTURE_2D, backbuffer.nativeHandle);
-	glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 0, 0, dimensions_.x, dimensions_.y, 0);
-	//SDL_GL_SwapWindow(window);
-	/*
-	auto currTime = std::chrono::high_resolution_clock::now();
-	frameTime = std::chrono::duration<float>(currTime - lastTime).count();
-	lastTime = currTime;
-	*/
-	glEndQuery(GL_TIME_ELAPSED);
-}
-
-Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& reader, Semaphore * sem,
+Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& reader,
 				   char const * title, int const winX, int const winY, int const w, int const h, uint32_t const flags) noexcept
-	: swap_sem_(sem), render_queue_(std::move(reader))
+	: render_queue_(std::move(reader))
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -179,6 +162,11 @@ uint64_t Renderer::GetFrameTime() noexcept
 	uint64_t ret = 0;
 	glGetQueryObjectui64v(timeQuery, GL_QUERY_RESULT, &ret);
 	return ret;
+}
+
+uint32_t Renderer::GetSwapCount()
+{
+	return 1;
 }
 
 /*
@@ -297,8 +285,41 @@ void Renderer::DrainQueue() noexcept
 	}
 	case RenderCommand::Type::EXECUTE_COMMAND_CONTEXT:
 	{
-		auto ctx = std::move(std::get<RenderCommand::ExecuteCommandContextParams>(command.params).ctx);
-		ctx->Execute(this);
+		auto params = std::get<RenderCommand::ExecuteCommandContextParams>(command.params);
+		params.ctx->Execute(this, params.waitSem, params.signalSem);
+		break;
+	}
+	case RenderCommand::Type::SWAP_WINDOW:
+	{
+		auto params = std::get<RenderCommand::SwapWindowParams>(command.params);
+		auto nativeWait = (OpenGLSemaphoreHandle *)params.waitSem;
+		auto nativeSignal = (OpenGLFenceHandle *)params.signalFence;
+		auto preSwap = std::chrono::high_resolution_clock::now();
+		auto res = preSwap - lastTime;
+		auto avgSwapTime = totalSwapTime / frameCount;
+		if (res + avgSwapTime < 8.333334ms) {
+			std::this_thread::sleep_for((totalSwapTime / frameCount) - 0.5ms);
+		}
+		if (nativeWait != nullptr) {
+			nativeWait->sem.Wait();
+		}
+		//With Aero enabled in Windows 7, this doesn't busy wait.
+		//With Aero disabled, it does, causing 100% use on the GPU thread. Crazy.
+		SDL_GL_SwapWindow(window);
+		//TODO: These are both necessary to reduce CPU usage
+		//My understanding is that without these SwapWindow returns instantly and spins up its own thread(?) that spinlocks, borking our totalSwapTime. 
+		glFlush();
+		glFinish();
+		auto postSwap = std::chrono::high_resolution_clock::now();
+		frameTime = static_cast<float>((postSwap - lastTime).count());
+		lastTime = postSwap;
+
+		if (nativeSignal != nullptr) {
+			nativeSignal->sem.Signal();
+		}
+
+		frameCount++;
+		totalSwapTime += std::chrono::duration_cast<std::chrono::milliseconds>(postSwap - preSwap);
 		break;
 	}
 	/*
@@ -335,29 +356,6 @@ void Renderer::DrainQueue() noexcept
 	GLenum err = glGetError();
 	if (err) {
 		printf("RenderQueue pop error %u. RenderCommand %zu.\n", err, command.params.index());
-	}
-	if (swap) {
-		auto preSwap = std::chrono::high_resolution_clock::now();
-		auto res = preSwap - lastTime;
-		auto avgSwapTime = totalSwapTime / frameCount;
-		if (res + avgSwapTime < 8.333334ms) {
-			std::this_thread::sleep_for((totalSwapTime / frameCount) - 0.5ms);
-		}
-		//With Aero enabled in Windows 7, this doesn't busy wait.
-		//With Aero disabled, it does, causing 100% use on the GPU thread. Crazy.
-		SDL_GL_SwapWindow(window);
-		//TODO: These are both necessary to reduce CPU usage
-		//My understanding is that without these SwapWindow returns instantly and spins up its own thread(?) that spinlocks, borking our totalSwapTime. 
-		glFlush();
-		glFinish();
-		swap_sem_->Signal();
-		swap = false;
-		auto postSwap = std::chrono::high_resolution_clock::now();
-		frameTime = static_cast<float>((postSwap - lastTime).count());
-		lastTime = postSwap;
-
-		frameCount++;
-		totalSwapTime += std::chrono::duration_cast<std::chrono::milliseconds>(postSwap - preSwap);
 	}
 }
 #endif

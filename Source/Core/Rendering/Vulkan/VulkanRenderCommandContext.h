@@ -27,7 +27,6 @@ public:
 	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) override;
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, RenderCommandContext::Rect2D const * pScissors) override;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, RenderCommandContext::Viewport const * pViewports) override;
-	virtual void CmdSwapWindow() override;
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) override;
 
 	//TODO: Probably not necessary in final code
@@ -36,8 +35,7 @@ public:
 
 	VkCommandBuffer buffer_;
 protected:
-	void Execute(Renderer *, SemaphoreHandle * waitSem, SemaphoreHandle * signalSem) override;
-private:
+	void Execute(Renderer *, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem) override;
 };
 
 #endif

@@ -15,6 +15,13 @@ public:
 	Sprite sprite_;
 
 private:
+	struct FrameInfo
+	{
+		std::unique_ptr<RenderCommandContext> preRenderCommandContext;
+		std::unique_ptr<RenderCommandContext> mainCommandContext;
+		glm::mat4 pvm;
+	};
+
 	struct SpriteResources
 	{
 		BufferHandle * ebo;
@@ -26,9 +33,12 @@ private:
 	static bool has_created_resources_;
 	static SpriteResources resources_;
 
-	glm::mat4 cached_MVP_;
+	//glm::mat4 cached_MVP_;
 	DescriptorSet * descriptor_set_;
 	std::atomic<bool> has_created_local_resources_{ false };
+	//TODO: FrameInfo?
 	BufferHandle * uvs_;
-	std::unique_ptr<RenderCommandContext> command_context_;
+	//std::unique_ptr<RenderCommandContext> command_context_;
+	
+	std::vector<FrameInfo> frameInfo;
 };

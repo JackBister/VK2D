@@ -6,7 +6,7 @@
 #include <vector>
 
 struct ImageViewHandle;
-class Renderer;
+class RenderCommandContext;
 struct VertexInputStateHandle;
 
 enum class AccessFlagBits
@@ -196,12 +196,28 @@ struct BufferHandle
 {
 };
 
+struct CommandContextAllocator
+{
+	struct RenderCommandContextCreateInfo
+	{
+		RenderCommandContextLevel level;
+	};
+	virtual std::unique_ptr<RenderCommandContext> CreateContext(RenderCommandContextCreateInfo * pCreateInfo) = 0;
+	virtual void DestroyContext(std::unique_ptr<RenderCommandContext>) = 0;
+	virtual void Reset() = 0;
+};
+
 struct DescriptorSet
 {
 };
 
 struct DescriptorSetLayoutHandle
 {
+};
+
+struct FenceHandle
+{
+	virtual bool Wait(uint64_t timeOut) = 0;
 };
 
 struct FramebufferHandle
@@ -352,7 +368,6 @@ struct VertexInputStateHandle
 {
 };
 
-
 class RenderCommandContext
 {
 	friend class Renderer;
@@ -451,13 +466,11 @@ public:
 	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) = 0;
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, Rect2D const * pScissors) = 0;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, Viewport const * pViewports) = 0;
-	//In Vulkan there's that whole swapchain business. If it's not exposed the renderer will always be double buffered.
-	virtual void CmdSwapWindow() = 0;
 
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) = 0;
 
 protected:
-	virtual void Execute(Renderer *, SemaphoreHandle * waitSem, SemaphoreHandle * signalSem) = 0;
+	virtual void Execute(Renderer *, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem) = 0;
 	enum RenderCommandType
 	{
 		BEGIN_RENDERPASS,
@@ -482,6 +495,9 @@ protected:
 class ResourceCreationContext
 {
 public:
+	virtual CommandContextAllocator * CreateCommandContextAllocator() = 0;
+	virtual void DestroyCommandContextAllocator(CommandContextAllocator *) = 0;
+
 	struct RenderCommandContextCreateInfo
 	{
 		RenderCommandContextLevel level;
@@ -558,6 +574,9 @@ public:
 	};
 	virtual DescriptorSetLayoutHandle * CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo) = 0;
 	virtual void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle *) = 0;	
+
+	virtual FenceHandle * CreateFence(bool startSignaled) = 0;
+	virtual void DestroyFence(FenceHandle *) = 0;
 
 	struct FramebufferCreateInfo
 	{

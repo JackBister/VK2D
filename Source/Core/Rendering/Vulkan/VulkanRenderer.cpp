@@ -160,6 +160,11 @@ Renderer::~Renderer()
 	SDL_DestroyWindow(window);
 }
 
+uint32_t Renderer::GetSwapCount()
+{
+	return (uint32_t)vk_swapchain_.images.size();
+}
+
 #if 0
 std::unique_ptr<VulkanRenderCommandContext> Renderer::CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo)
 {
@@ -626,7 +631,7 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 		VkPhysicalDeviceMemoryProperties memoryProperties;
 		vkGetPhysicalDeviceMemoryProperties(vk_physical_device_, &memoryProperties);
 
-		auto memoryIndex = FindMemoryType(memoryRequirements.memoryTypeBits, 0);
+		auto memoryIndex = this->FindMemoryType(memoryRequirements.memoryTypeBits, 0);
 
 		VkMemoryAllocateInfo const info{
 			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -674,7 +679,7 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 		}(stagingMemory, stagingRequirements.size);
 
 		for (size_t i = 0; i < memoryRequirements.size; ++i) {
-			mappedMemory[i] = 0.5f;
+			mappedMemory[i] = 0;
 		}
 
 		vkUnmapMemory(vk_device_, stagingMemory);
@@ -1085,10 +1090,16 @@ void Renderer::DrainQueue() noexcept
 		VkPipelineStageFlags stageMasks[] = { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
 		submitInfo.pWaitDstStageMask = stageMasks;
 		//TODO: !!!
-		submitInfo.signalSemaphoreCount = 2;
-		VkSemaphore signalSems[] = {ready_for_present_, ((VulkanSemaphoreHandle *)params.signalSem)->semaphore_ };
+		submitInfo.signalSemaphoreCount = 1;
+		VkSemaphore signalSems[] = {ready_for_present_};
 		submitInfo.pSignalSemaphores = signalSems;
-		vkQueueSubmit(vk_queue_graphics_, 1, &submitInfo, VK_NULL_HANDLE);
+		if (params.signalFence != nullptr) {
+			auto nativeHandle = (VulkanFenceHandle *)params.signalFence;
+			vkQueueSubmit(vk_queue_graphics_, 1, &submitInfo, nativeHandle->fence);
+			nativeHandle->Signal();
+		} else {
+			vkQueueSubmit(vk_queue_graphics_, 1, &submitInfo, VK_NULL_HANDLE);
+		}
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1099,9 +1110,6 @@ void Renderer::DrainQueue() noexcept
 		presentInfo.pImageIndices = &imageIndex;
 
 		res = vkQueuePresentKHR(vk_queue_present_, &presentInfo);
-
-		vkQueueWaitIdle(vk_queue_graphics_);
-		vkQueueWaitIdle(vk_queue_present_);
 
 		break;
 	}

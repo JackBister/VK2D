@@ -13,6 +13,8 @@ using std::variant = std::experimental::variant;
 #include <gl/glew.h>
 #include <SDL/SDL.h>
 
+#include "Core/Semaphore.h"
+
 class OpenGLRenderCommandContext : public RenderCommandContext
 {
 	friend class Renderer;
@@ -37,11 +39,10 @@ public:
 	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) override;
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, RenderCommandContext::Rect2D const * pScissors) override;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, RenderCommandContext::Viewport const * pViewports) override;
-	virtual void CmdSwapWindow() override;
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) override;
 
 protected:
-	void Execute(Renderer *) override;
+	void Execute(Renderer *, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem) override;
 private:
 	/*
 		Render command types and args:
@@ -143,6 +144,9 @@ private:
 	*/
 	size_t indexBufferOffset;
 	GLenum indexBufferType;
+
+	// Inherited via RenderCommandContext
+	virtual void Reset();
 };
 
 class OpenGLResourceContext : public ResourceCreationContext
@@ -190,6 +194,16 @@ public:
 
 	virtual DescriptorSet * CreateDescriptorSet(DescriptorSetCreateInfo) override;
 	virtual void DestroyDescriptorSet(DescriptorSet *) override;
+
+	// Inherited via ResourceCreationContext
+	virtual SemaphoreHandle * CreateSemaphore();
+	virtual void DestroySemaphore(SemaphoreHandle *);
+
+	// Inherited via ResourceCreationContext
+	virtual CommandContextAllocator * CreateCommandContextAllocator();
+	virtual void DestroyCommandContextAllocator(CommandContextAllocator *);
+	virtual FenceHandle * CreateFence(bool startSignaled);
+	virtual void DestroyFence(FenceHandle *);
 };
 
 struct OpenGLBufferHandle : BufferHandle
@@ -197,6 +211,16 @@ struct OpenGLBufferHandle : BufferHandle
 	GLuint nativeHandle = 0;
 	size_t offset = 0;
 	GLenum elementType = 0;
+};
+
+struct OpenGLCommandContextAllocator : CommandContextAllocator
+{
+	std::unique_ptr<RenderCommandContext> CreateContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
+
+	void DestroyContext(std::unique_ptr<RenderCommandContext>) final override;
+
+	void Reset() final override;
+
 };
 
 struct OpenGLDescriptorSet : DescriptorSet
@@ -207,6 +231,13 @@ struct OpenGLDescriptorSet : DescriptorSet
 struct OpenGLDescriptorSetLayoutHandle : DescriptorSetLayoutHandle
 {
 	std::vector<ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding> bindings;
+};
+
+struct OpenGLFenceHandle : FenceHandle
+{
+	bool Wait(uint64_t timeOut) final override;
+
+	Semaphore sem;
 };
 
 struct OpenGLFramebufferHandle : FramebufferHandle
@@ -237,6 +268,11 @@ struct OpenGLPipelineHandle : PipelineHandle
 struct OpenGLSamplerHandle : SamplerHandle
 {
 	GLuint nativeHandle;
+};
+
+struct OpenGLSemaphoreHandle : SemaphoreHandle
+{
+	Semaphore sem;
 };
 
 struct OpenGLShaderModuleHandle : ShaderModuleHandle

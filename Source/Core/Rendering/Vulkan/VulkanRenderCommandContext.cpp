@@ -10,22 +10,22 @@ static constexpr VkRect2D ToVulkanRect2D(RenderCommandContext::Rect2D const& rec
 	};
 }
 
-void VulkanRenderCommandContext::Execute(Renderer * renderer, SemaphoreHandle * waitSem, SemaphoreHandle * signalSem)
+void VulkanRenderCommandContext::Execute(Renderer * renderer, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem)
 {
+	std::vector<VkSemaphore> vulkanWaitSems(waitSem.size());
+	std::transform(waitSem.begin(), waitSem.end(), vulkanWaitSems.begin(), [](SemaphoreHandle * sem) { return ((VulkanSemaphoreHandle *)sem)->semaphore_; });
+	std::vector<VkSemaphore> vulkanSignalSems(signalSem.size());
+	std::transform(signalSem.begin(), signalSem.end(), vulkanSignalSems.begin(), [](SemaphoreHandle * sem) { return ((VulkanSemaphoreHandle *)sem)->semaphore_; });
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &this->buffer_;
-	if (waitSem != nullptr) {
-		VkPipelineStageFlags flag = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		submitInfo.pWaitDstStageMask = &flag;
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &((VulkanSemaphoreHandle *)waitSem)->semaphore_;
-	}
-	if (signalSem != nullptr) {
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &((VulkanSemaphoreHandle *)signalSem)->semaphore_;
-	}
+	VkPipelineStageFlags flag = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	submitInfo.pWaitDstStageMask = &flag;
+	submitInfo.waitSemaphoreCount = vulkanWaitSems.size();
+	submitInfo.pWaitSemaphores = vulkanWaitSems.size() > 0 ? &vulkanWaitSems[0] : nullptr;
+	submitInfo.signalSemaphoreCount = vulkanSignalSems.size();
+	submitInfo.pSignalSemaphores = vulkanSignalSems.size() > 0 ? &vulkanSignalSems[0] : nullptr;
 	auto res = vkQueueSubmit(renderer->vk_queue_graphics_, 1, &submitInfo, VK_NULL_HANDLE);
 	assert(res == VK_SUCCESS);
 }
@@ -210,11 +210,6 @@ void VulkanRenderCommandContext::CmdSetViewport(uint32_t firstViewport, uint32_t
 	});
 
 	vkCmdSetViewport(this->buffer_, firstViewport, viewportCount, &vkViewports[0]);
-}
-
-void VulkanRenderCommandContext::CmdSwapWindow()
-{
-	//TODO
 }
 
 void VulkanRenderCommandContext::CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData)

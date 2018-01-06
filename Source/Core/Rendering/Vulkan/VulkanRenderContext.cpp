@@ -168,6 +168,27 @@ static VkFormat ToVulkanFormat(Format const& format) {
 	}
 }
 
+CommandContextAllocator * VulkanResourceContext::CreateCommandContextAllocator()
+{
+	auto mem = allocator.allocate(sizeof(VulkanCommandContextAllocator));
+	auto ret = new (mem) VulkanCommandContextAllocator();
+	ret->device = renderer->vk_device_;
+	ret->renderer = renderer;
+	VkCommandPoolCreateInfo createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	createInfo.queueFamilyIndex = renderer->vk_queue_graphics_idx_;
+	createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	vkCreateCommandPool(renderer->vk_device_, &createInfo, nullptr, &ret->commandPool);
+	return ret;
+}
+
+void VulkanResourceContext::DestroyCommandContextAllocator(CommandContextAllocator * pool)
+{
+	assert(pool != nullptr);
+	auto nativeHandle = (VulkanCommandContextAllocator *)pool;
+	vkDestroyCommandPool(renderer->vk_device_, nativeHandle->commandPool, nullptr);
+}
+
 std::unique_ptr<RenderCommandContext> VulkanResourceContext::CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo)
 {
 	auto ret = renderer->CreateCommandBuffer(pCreateInfo->level == RenderCommandContextLevel::PRIMARY ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY);
@@ -907,6 +928,27 @@ void VulkanResourceContext::DestroyDescriptorSetLayout(DescriptorSetLayoutHandle
 	allocator.destroy(layout);
 }
 
+FenceHandle * VulkanResourceContext::CreateFence(bool startSignaled)
+{
+	VkFenceCreateInfo ci = {};
+	ci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	ci.flags = startSignaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
+	
+	auto mem = allocator.allocate(sizeof(VulkanFenceHandle));
+	auto ret = new (mem) VulkanFenceHandle();
+	ret->device = renderer->vk_device_;
+	auto res = vkCreateFence(renderer->vk_device_, &ci, nullptr, &ret->fence);
+	assert(res == VK_SUCCESS);
+	return ret;
+}
+
+void VulkanResourceContext::DestroyFence(FenceHandle * fence)
+{
+	assert(fence != nullptr);
+	auto nativeHandle = (VulkanFenceHandle *)fence;
+	vkDestroyFence(renderer->vk_device_, nativeHandle->fence, nullptr);
+}
+
 VertexInputStateHandle * VulkanResourceContext::CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo info)
 {
 	auto ret = (VulkanVertexInputStateHandle *)allocator.allocate(sizeof(VulkanVertexInputStateHandle));
@@ -1079,4 +1121,47 @@ void VulkanResourceContext::DestroyDescriptorSet(DescriptorSet * set)
 	vkDestroyDescriptorSetLayout(renderer->vk_device_, nativeDescriptorSet->layout_, nullptr);
 	allocator.destroy(set);
 }
+
+std::unique_ptr<RenderCommandContext> VulkanCommandContextAllocator::CreateContext(RenderCommandContextCreateInfo * pCreateInfo)
+{
+	VkCommandBufferAllocateInfo allocateInfo = {};
+	allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocateInfo.commandBufferCount = 1;
+	allocateInfo.commandPool = commandPool;
+	allocateInfo.level = pCreateInfo->level == RenderCommandContextLevel::PRIMARY ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+
+	VkCommandBuffer ret;
+	vkAllocateCommandBuffers(device, &allocateInfo, &ret);
+	auto retx = std::make_unique<VulkanRenderCommandContext>(ret, new std::allocator<uint8_t>());
+	retx->level_ = pCreateInfo->level;
+	retx->renderer_ = renderer;
+	return retx;
+}
+
+void VulkanCommandContextAllocator::DestroyContext(std::unique_ptr<RenderCommandContext> ctx)
+{
+	assert(ctx != nullptr);
+	auto nativeHandle = (VulkanRenderCommandContext *)ctx.get();
+	vkFreeCommandBuffers(device, commandPool, 1, &nativeHandle->buffer_);
+}
+
+void VulkanCommandContextAllocator::Reset()
+{
+	vkResetCommandPool(device, commandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+}
+
+bool VulkanFenceHandle::Wait(uint64_t timeOut)
+{
+	while (locked);
+	locked = true;
+	auto res = vkWaitForFences(device, 1, &fence, VK_TRUE, timeOut);
+	vkResetFences(device, 1, &fence);
+	return res != VK_TIMEOUT;
+}
+
+void VulkanFenceHandle::Signal()
+{
+	locked = false;
+}
+
 #endif

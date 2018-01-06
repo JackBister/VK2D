@@ -1,5 +1,7 @@
 build
+Debug
 include
 libs
 obj
 glew.c
+Trash

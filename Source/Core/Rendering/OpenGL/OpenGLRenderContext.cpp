@@ -424,6 +424,50 @@ void OpenGLResourceContext::DestroyDescriptorSet(DescriptorSet * set)
 	allocator.destroy(set);
 }
 
+SemaphoreHandle * OpenGLResourceContext::CreateSemaphore()
+{
+	auto mem = allocator.allocate(sizeof(OpenGLSemaphoreHandle));
+	auto ret = new (mem) OpenGLSemaphoreHandle;
+	return ret;
+}
+
+void OpenGLResourceContext::DestroySemaphore(SemaphoreHandle * sem)
+{
+	auto nativeHandle = (OpenGLSemaphoreHandle *)sem;
+	allocator.deallocate((uint8_t *)nativeHandle, sizeof(OpenGLSemaphoreHandle));
+}
+
+CommandContextAllocator * OpenGLResourceContext::CreateCommandContextAllocator()
+{
+	auto mem = allocator.allocate(sizeof(OpenGLCommandContextAllocator));
+	auto ret = new (mem) OpenGLCommandContextAllocator();
+	return ret;
+}
+
+void OpenGLResourceContext::DestroyCommandContextAllocator(CommandContextAllocator * alloc)
+{
+	assert(alloc != nullptr);
+	allocator.deallocate((uint8_t *)alloc, sizeof(OpenGLCommandContextAllocator));
+}
+
+FenceHandle * OpenGLResourceContext::CreateFence(bool startSignaled)
+{
+	auto mem = allocator.allocate(sizeof(OpenGLFenceHandle));
+	auto ret = new (mem) OpenGLFenceHandle();
+	if (startSignaled) {
+		ret->sem.Signal();
+	}
+	return ret;
+}
+
+void OpenGLResourceContext::DestroyFence(FenceHandle * fence)
+{
+	assert(fence != nullptr);
+	auto nativeHandle = (OpenGLFenceHandle *)fence;
+	//TODO: Probably unsafe since sem needs to be destroyed
+	allocator.deallocate((uint8_t *)fence, sizeof(OpenGLFenceHandle));
+}
+
 void OpenGLRenderCommandContext::BeginRecording(InheritanceInfo *)
 {
 }
@@ -535,11 +579,6 @@ void OpenGLRenderCommandContext::CmdSetViewport(uint32_t firstViewport, uint32_t
 	commandList.push_back(cmd);
 }
 
-void OpenGLRenderCommandContext::CmdSwapWindow()
-{
-	commandList.push_back(SwapWindowArgs{});
-}
-
 void OpenGLRenderCommandContext::CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData)
 {
 	commandList.push_back(UpdateBufferArgs{
@@ -550,8 +589,14 @@ void OpenGLRenderCommandContext::CmdUpdateBuffer(BufferHandle * buffer, size_t o
 	});
 }
 
-void OpenGLRenderCommandContext::Execute(Renderer * renderer)
+void OpenGLRenderCommandContext::Execute(Renderer * renderer, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem)
 {
+	for (auto s : waitSem) {
+		auto nativeWait = (OpenGLSemaphoreHandle *)s;
+		if (nativeWait != nullptr) {
+			nativeWait->sem.Wait();
+		}
+	}
 	for (auto& rc : commandList) {
 		switch (rc.index()) {
 		case RenderCommandType::BEGIN_RENDERPASS:
@@ -638,7 +683,7 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer)
 			auto args = std::get<ExecuteCommandsArgs>(rc);
 			assert(args.pCommandBuffers != nullptr);
 			for (uint32_t i = 0; i < args.commandBufferCount; ++i) {
-				args.pCommandBuffers[i]->Execute(renderer);
+				args.pCommandBuffers[i]->Execute(renderer, {}, {});
 			}
 			break;
 		}
@@ -647,7 +692,7 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer)
 			auto args = std::move(std::get<ExecuteCommandsVectorArgs>(rc));
 
 			for (auto& ctx : args.commandBuffers) {
-				((OpenGLRenderCommandContext *)ctx.get())->Execute(renderer);
+				((OpenGLRenderCommandContext *)ctx.get())->Execute(renderer, {}, {});
 			}
 			break;
 		}
@@ -690,6 +735,17 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer)
 		}
 	}
 	commandList.clear();
+	for (auto s : signalSem) {
+		auto nativeSignal = (OpenGLSemaphoreHandle *)s;
+		if (nativeSignal != nullptr) {
+			nativeSignal->sem.Signal();
+		}
+	}
+}
+
+void OpenGLRenderCommandContext::Reset()
+{
+	commandList.clear();
 }
 
 void OpenGLRenderCommandContext::CmdBindPipeline(RenderPassHandle::PipelineBindPoint bp, PipelineHandle * handle)
@@ -699,4 +755,26 @@ void OpenGLRenderCommandContext::CmdBindPipeline(RenderPassHandle::PipelineBindP
 		((OpenGLVertexInputStateHandle *)handle->vertexInputState)->nativeHandle
 	});
 }
+
+bool OpenGLFenceHandle::Wait(uint64_t timeOut)
+{
+	sem.Wait();
+	return true;
+}
+
+std::unique_ptr<RenderCommandContext> OpenGLCommandContextAllocator::CreateContext(RenderCommandContextCreateInfo * pCreateInfo)
+{
+	return std::make_unique<OpenGLRenderCommandContext>(new std::allocator<uint8_t>());
+}
+
+void OpenGLCommandContextAllocator::DestroyContext(std::unique_ptr<RenderCommandContext> ctx)
+{
+	assert(ctx != nullptr);
+}
+
+void OpenGLCommandContextAllocator::Reset()
+{
+}
+
+
 #endif

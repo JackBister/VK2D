@@ -9,13 +9,14 @@
 #include <vulkan/vulkan.h>
 
 #include "Core/Queue.h"
+#include "Core/Rendering/AbstractRenderer.h"
 #include "Core/Rendering/RenderCommand.h"
 #include "Core/Rendering/Vulkan/VulkanRenderCommandContext.h"
 #include "Core/Rendering/Vulkan/VulkanRenderContext.h"
 
 class ResourceManager;
 
-class Renderer
+class Renderer : IRenderer
 {
 	friend class VulkanRenderContext;
 	friend class VulkanRenderCommandContext;
@@ -23,6 +24,8 @@ class Renderer
 public:
 	Renderer(ResourceManager *, Queue<RenderCommand>::Reader&&, char const * title, int winX, int winY, int w, int h, uint32_t flags);
 	~Renderer() noexcept;
+
+	uint32_t GetSwapCount() final override;
 
 	uint64_t GetFrameTime() noexcept;
 	void DrainQueue() noexcept;

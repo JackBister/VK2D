@@ -11,6 +11,7 @@
 #include "Core/Lua/luaserializable.h"
 #include "Core/Queue.h"
 #include "Core/Rendering/RenderCommand.h"
+#include "Core/Rendering/Context/RenderContext.h"
 #include "Core/Resource.h"
 
 #include "Tools/HeaderGenerator/headergenerator.h"
@@ -32,7 +33,10 @@ public:
 
 	void EndFrame() noexcept;
 
-	std::unique_ptr<RenderCommandContext> GetSecondaryCommandContext(bool inMainRenderPass);
+	void BeginSecondaryCommandContext(RenderCommandContext *);
+	std::vector<std::unique_ptr<RenderCommandContext>> CreateSecondaryCommandContexts();
+	size_t GetSwapCount();
+	size_t GetCurrFrame();
 	void PushRenderCommand(RenderCommand&&) noexcept;
 	void SubmitCamera(CameraComponent *) noexcept;
 	void SubmitCommandBuffer(std::unique_ptr<RenderCommandContext>&&);
@@ -61,21 +65,43 @@ public:
 	std::vector<Entity *> entities_;
 
 private:
+	struct FrameInfo
+	{
+		std::vector<SubmittedCamera> cameras_to_submit_;
+		std::vector<std::unique_ptr<RenderCommandContext>> command_buffers_;
+
+		RenderPassHandle * main_renderpass_;
+		uint32_t current_subpass_;
+
+		std::unique_ptr<RenderCommandContext> main_command_context_;
+		std::unique_ptr<RenderCommandContext> pre_renderpass_context_;
+
+		FenceHandle * can_start_frame_;
+		SemaphoreHandle * pre_renderpass_finished_;
+		SemaphoreHandle * main_renderpass_finished_;
+
+		CommandContextAllocator * commandContextAllocator;
+	};
+
 	void CreatePrimitives();
 
 	Queue<RenderCommand>::Writer render_queue_;
-	std::vector<SubmittedCamera> cameras_to_submit_;
 
+	/*
 	Queue<std::unique_ptr<RenderCommandContext>> free_command_buffers_;
 	Queue<std::unique_ptr<RenderCommandContext>>::Reader get_free_command_buffers_;
 	Queue<std::unique_ptr<RenderCommandContext>>::Writer put_free_command_buffers_;
 	std::vector<std::unique_ptr<RenderCommandContext>> command_buffers_;
-	uint32_t current_subpass_;
-	std::unique_ptr<RenderCommandContext> main_command_context_;
-	RenderPassHandle * main_renderpass_;
-	SemaphoreHandle * main_renderpass_finished_;
-	std::unique_ptr<RenderCommandContext> pre_renderpass_context_;
-	SemaphoreHandle * pre_renderpass_finished_;
+	*/
+	//uint32_t current_subpass_;
+	//std::unique_ptr<RenderCommandContext> main_command_context_;
+	//RenderPassHandle * main_renderpass_;
+	//SemaphoreHandle * main_renderpass_finished_;
+	//std::unique_ptr<RenderCommandContext> pre_renderpass_context_;
+	//SemaphoreHandle * pre_renderpass_finished_;
 	Renderer * renderer_;
-	SemaphoreHandle * swap_finished_;
+	//SemaphoreHandle * swap_finished_;
+
+	size_t currFrameInfo = 0;
+	std::vector<FrameInfo> frameInfo;
 };

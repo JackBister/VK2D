@@ -1,5 +1,7 @@
 #include "Core/Lua/luaserializable.h"
 
+#include <algorithm>
+
 #include "rttr/instance.h"
 #include "rttr/registration.h"
 #include "rttr/variant.h"
@@ -195,9 +197,9 @@ int LuaSerializable::LuaIndex(lua_State * L)
 	auto prop = tfmType.get_property(idx);
 	if (!prop.is_valid()) {
 		auto meths = tfmType.get_methods();
-		std::remove_if(meths.begin(), meths.end(), [idx](rttr::method m) {
+		meths.erase(std::remove_if(meths.begin(), meths.end(), [idx](rttr::method m) {
 			return strcmp(m.get_name().c_str(), idx);
-		});
+		}), meths.end());
 		if (meths.size() == 0) {
 			//TODO: Could return an error here, but nil seems more in line with Lua/JS semantics?
 			lua_pushnil(L);

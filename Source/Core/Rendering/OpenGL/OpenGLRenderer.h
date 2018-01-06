@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 
 #include "Core/Queue.h"
+#include "Core/Rendering/AbstractRenderer.h"
 #include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
 #include "Core/Rendering/RenderCommand.h"
 
@@ -22,14 +23,14 @@ class Semaphore;
 class Shader;
 class Sprite;
 
-class Renderer
+class Renderer : IRenderer
 {
 public:
-	Renderer(ResourceManager *, Queue<RenderCommand>::Reader&&, Semaphore * swapSem, char const * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
+	Renderer(ResourceManager *, Queue<RenderCommand>::Reader&&, char const * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
 	~Renderer() noexcept;
 
-	void EndFrame(std::vector<std::unique_ptr<RenderCommandContext>>& commandBuffers) noexcept;
 	uint64_t GetFrameTime() noexcept;
+	uint32_t GetSwapCount() final override;
 
 	//void AddBuffer(RenderCommand::AddBufferParams) noexcept;
 	//void DeleteBuffer(BufferRendererData *) noexcept;

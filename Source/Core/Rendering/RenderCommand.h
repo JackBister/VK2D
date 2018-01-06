@@ -45,18 +45,19 @@ struct RenderCommand
 
 	struct ExecuteCommandContextParams
 	{
-		SemaphoreHandle * waitSem;
-		SemaphoreHandle * signalSem;
+		std::vector<SemaphoreHandle *> waitSem;
+		std::vector<SemaphoreHandle *> signalSem;
 		RenderCommandContext * ctx;
-		ExecuteCommandContextParams(RenderCommandContext * ctx, SemaphoreHandle * waitSem = nullptr, SemaphoreHandle * signalSem = nullptr)
+		ExecuteCommandContextParams(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem)
 			: ctx(ctx), waitSem(waitSem), signalSem(signalSem) {}
 	};
 
 	struct SwapWindowParams
 	{
 		SemaphoreHandle * waitSem;
-		SemaphoreHandle * signalSem;
-		SwapWindowParams(SemaphoreHandle * waitSem, SemaphoreHandle * signalSem) : waitSem(waitSem), signalSem(signalSem) {}
+		FenceHandle * signalFence;
+		SwapWindowParams(SemaphoreHandle * waitSem, FenceHandle * signalFence) : waitSem(waitSem), signalFence(signalFence) {
+		}
 	};
 
 	using RenderCommandParams = std::variant<None, AbortParams, CreateResourceParams, ExecuteCommandContextParams, SwapWindowParams>;
