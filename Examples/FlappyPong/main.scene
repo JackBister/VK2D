@@ -11,9 +11,6 @@
 			}	
 		]
 	},
-	"JavascriptFiles": [
-		"Examples/FlappyPong/test.js"
-	],
 	"physics": {
 		"type": "PhysicsWorld",
 		"gravity": {
@@ -96,11 +93,6 @@
 						"x": 4.0,
 						"y": 4.0
 					}
-				},
-				{
-					"type": "JavascriptComponent",
-					"className": "Test",
-					"constructorArgs": []
 				}
 			]
 		},
