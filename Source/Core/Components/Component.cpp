@@ -6,8 +6,7 @@
 RTTR_REGISTRATION
 {
 	rttr::registration::class_<Component>("Component")
-	.property("is_active", &Component::is_active_);
+	.property("is_active", &Component::isActive);
 }
-
 
 Component::~Component() {}

@@ -11,61 +11,61 @@ RTTR_REGISTRATION
 {
 	rttr::registration::class_<CameraComponent>("CameraComponent")
 	.constructor<>()
-	.method("projection", &CameraComponent::projection)
-	.method("view", &CameraComponent::view)
-	.method("aspect", &CameraComponent::aspect)
-	.method("set_aspect", &CameraComponent::set_aspect)
-	.method("view_size", &CameraComponent::view_size)
-	.method("set_view_size", &CameraComponent::set_view_size);
+	.method("projection", &CameraComponent::GetProjection)
+	.method("view", &CameraComponent::GetView)
+	.method("aspect", &CameraComponent::GetAspect)
+	.method("set_aspect", &CameraComponent::SetAspect)
+	.method("view_size", &CameraComponent::GetViewSize)
+	.method("set_view_size", &CameraComponent::SetViewSize);
 }
 
 COMPONENT_IMPL(CameraComponent)
 
 CameraComponent::CameraComponent() noexcept
 {
-	receive_ticks_ = true;
+	receiveTicks = true;
 }
 
-float CameraComponent::aspect()
+float CameraComponent::GetAspect()
 {
-	return aspect_;
+	return aspect;
 }
 
-void CameraComponent::set_aspect(float f)
+void CameraComponent::SetAspect(float f)
 {
-	if (f != aspect_) {
-		is_projection_dirty_ = true;
+	if (f != aspect) {
+		isProjectionDirty = true;
 	}
-	aspect_ = f;
+	aspect = f;
 }
 
-float CameraComponent::view_size()
+float CameraComponent::GetViewSize()
 {
-	return view_size_;
+	return viewSize;
 }
 
-void CameraComponent::set_view_size(float f)
+void CameraComponent::SetViewSize(float f)
 {
-	if (f != view_size_) {
-		is_projection_dirty_ = true;
+	if (f != viewSize) {
+		isProjectionDirty = true;
 	}
-	view_size_ = f;
+	viewSize = f;
 }
 
-glm::mat4 const& CameraComponent::projection()
+glm::mat4 const& CameraComponent::GetProjection()
 {
-	if (is_projection_dirty_) {
-		projection_ = glm::ortho(-view_size_ / aspect_, view_size_ / aspect_, -view_size_, view_size_);
+	if (isProjectionDirty) {
+		projection = glm::ortho(-viewSize / aspect, viewSize / aspect, -viewSize, viewSize);
 	}
-	return projection_;
+	return projection;
 }
 
-glm::mat4 const& CameraComponent::view()
+glm::mat4 const& CameraComponent::GetView()
 {
-	if (is_view_dirty_) {
-		view_ = glm::inverse(entity_->transform_.local_to_world());
+	if (isViewDirty) {
+		view = glm::inverse(entity->transform.GetLocalToWorld());
 	}
-	return view_;
+	return view;
 }
 
 Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc) const
@@ -73,14 +73,8 @@ Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager,
 	void * mem = alloc.Allocate(sizeof(CameraComponent));
 	CameraComponent * ret = new (mem) CameraComponent();
 	auto const j = nlohmann::json::parse(str);
-	ret->aspect_ = j["aspect"];
-	ret->view_size_ = j["viewSize"];
-	
-#if 0
-	if (j.find("renderTarget") != j.end()) {
-		ret->renderTarget = resourceManager->LoadResource<Framebuffer>(j["renderTarget"]);
-	}
-#endif
+	ret->aspect = j["aspect"];
+	ret->viewSize = j["viewSize"];
 
 	return ret;
 }
@@ -88,6 +82,6 @@ Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager,
 void CameraComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "Tick") {
-		entity_->scene_->SubmitCamera(this);
+		entity->scene->SubmitCamera(this);
 	}
 }

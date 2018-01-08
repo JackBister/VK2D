@@ -1,24 +1,10 @@
 #pragma once
 
 #include <utility>
-
-#if _MSC_VER && !__INTEL_COMPILER
 #include <variant>
-#else
-#include <experimental/variant.hpp>
-using std::variant = std::experimental::variant;
-#endif
 
-#include "Core/Maybe.h"
 #include "Core/Rendering/Context/RenderContext.h"
 #include "Core/Rendering/SubmittedCamera.h"
-
-class CameraComponent;
-class Framebuffer;
-class Image;
-class Program;
-class Shader;
-class Sprite;
 
 struct RenderCommand
 {
@@ -53,6 +39,10 @@ struct RenderCommand
 			: ctx(ctx), waitSem(waitSem), signalSem(signalSem), signalFence(signalFence) {}
 	};
 
+	struct NopParams
+	{
+	};
+
 	struct SwapWindowParams
 	{
 		SemaphoreHandle * waitSem;
@@ -61,12 +51,15 @@ struct RenderCommand
 		}
 	};
 
-	using RenderCommandParams = std::variant<None, AbortParams, CreateResourceParams, ExecuteCommandContextParams, SwapWindowParams>;
+	using RenderCommandParams = std::variant<NopParams, AbortParams, CreateResourceParams, ExecuteCommandContextParams, SwapWindowParams>;
 	RenderCommandParams params;
 
-	RenderCommand() : params(None{}) {}
+	RenderCommand() : params(NopParams())
+	{
+	}
+
 	//Unfortunately compiling MoodyCamel's queue requires this to be implemented even if it will never be used
-	RenderCommand(RenderCommand const&)
+	RenderCommand(RenderCommand const& rc)
 	{
 		assert(false);
 	}

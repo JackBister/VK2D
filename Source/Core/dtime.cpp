@@ -4,24 +4,24 @@ using std::chrono::high_resolution_clock;
 
 void Time::Start(float ts)
 {
-	time_scale_ = ts;
-	start_time_ = high_resolution_clock::now();
-	last_time_ = start_time_;
+	timeScale = ts;
+	startTime = high_resolution_clock::now();
+	lastTime = startTime;
 }
 
 void Time::Frame()
 {
 	high_resolution_clock::time_point currTime = high_resolution_clock::now();
-	delta_time_ = time_scale_ * std::chrono::duration<float>(currTime - last_time_).count();
-	last_time_ = currTime;
+	deltaTime = timeScale * std::chrono::duration<float>(currTime - lastTime).count();
+	lastTime = currTime;
 }
 
-float Time::get_delta_time()
+float Time::GetDeltaTime()
 {
-	return delta_time_;
+	return deltaTime;
 }
 
-std::chrono::high_resolution_clock::time_point Time::get_last_time()
+std::chrono::high_resolution_clock::time_point Time::GetLastTime()
 {
-	return last_time_;
+	return lastTime;
 }

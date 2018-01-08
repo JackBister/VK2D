@@ -5,7 +5,6 @@
 #include "rttr/registration.h"
 
 #include "Core/Lua/input_cfuncs.h"
-#include "Core/Maybe.h"
 
 RTTR_REGISTRATION
 {
@@ -16,24 +15,24 @@ RTTR_REGISTRATION
 }
 
 Input::Input(Queue<SDL_Event>::Reader&& reader) noexcept
-	: input_queue_(std::move(reader))
+	: inputQueue(std::move(reader))
 {
 }
 
 void Input::Frame() noexcept
 {
-	for (auto const& kbp : down_keys_) {
+	for (auto const& kbp : downKeys) {
 		//If key was down last frame, it's held this frame
 		if (kbp.second) {
-			held_keys_[kbp.first] = true;
+			heldKeys[kbp.first] = true;
 		}
 	}
-	down_keys_.clear();
-	up_keys_.clear();
+	downKeys.clear();
+	upKeys.clear();
 
 	std::optional<SDL_Event> evt;
 	do {
-		evt = input_queue_.Pop();
+		evt = inputQueue.Pop();
 		if (evt.has_value()) {
 			SDL_Event const& e = evt.value();
 			switch (e.type) {
@@ -45,25 +44,25 @@ void Input::Frame() noexcept
 			case SDL_KEYDOWN:
 			{
 				if (!e.key.repeat) {
-					down_keys_[static_cast<Keycode>(e.key.keysym.sym)] = true;
+					downKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
 				}
 				break;
 			}
 			case SDL_KEYUP:
 			{
-				held_keys_[static_cast<Keycode>(e.key.keysym.sym)] = false;
-				up_keys_[static_cast<Keycode>(e.key.keysym.sym)] = true;
+				heldKeys[static_cast<Keycode>(e.key.keysym.sym)] = false;
+				upKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
 				break;
 			}
 			case SDL_MOUSEBUTTONDOWN:
 			{
-				down_keys_[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
+				downKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
 				break;
 			}
 			case SDL_MOUSEBUTTONUP:
 			{
-				held_keys_[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = false;
-				up_keys_[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
+				heldKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = false;
+				upKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
 			}
 			}
 		}
@@ -72,37 +71,22 @@ void Input::Frame() noexcept
 
 bool Input::GetKey(Keycode const kc)
 {
-	return held_keys_[kc];
-}
-
-int Input::GetKey_Lua(lua_State * const L)
-{
-	INPUT_GET(GetKey, KEY)
+	return heldKeys[kc];
 }
 
 bool Input::GetKeyDown(Keycode const kc)
 {
-	return down_keys_[kc];
-}
-
-int Input::GetKeyDown_Lua(lua_State * const L)
-{
-	INPUT_GET(GetKeyDown, KEY)
+	return downKeys[kc];
 }
 
 bool Input::GetKeyUp(Keycode const kc)
 {
-	return up_keys_[kc];
-}
-
-int Input::GetKeyUp_Lua(lua_State * const L)
-{
-	INPUT_GET(GetKeyUp, KEY)
+	return upKeys[kc];
 }
 
 bool Input::GetButton(std::string const& b)
 {
-	for (auto const& kc : button_map_[b]) {
+	for (auto const& kc : buttonMap[b]) {
 		if (GetKey(kc)) {
 			return true;
 		}
@@ -112,7 +96,7 @@ bool Input::GetButton(std::string const& b)
 
 bool Input::GetButtonDown(std::string const& b)
 {
-	for (auto const& kc : button_map_[b]) {
+	for (auto const& kc : buttonMap[b]) {
 		if (GetKeyDown(kc)) {
 			return true;
 		}
@@ -122,7 +106,7 @@ bool Input::GetButtonDown(std::string const& b)
 
 bool Input::GetButtonUp(std::string const& b)
 {
-	for (auto const& kc : button_map_[b]) {
+	for (auto const& kc : buttonMap[b]) {
 		if (GetKeyUp(kc)) {
 			return true;
 		}
@@ -132,27 +116,17 @@ bool Input::GetButtonUp(std::string const& b)
 
 void Input::AddKeybind(std::string const& s, Keycode kc)
 {
-	button_map_[s].push_back(kc);
-}
-
-int Input::AddKeybind_Lua(lua_State * const L)
-{
-	INPUT_KEYBIND(AddKeybind)
+	buttonMap[s].push_back(kc);
 }
 
 void Input::RemoveKeybind(std::string const& s, Keycode kc)
 {
-	std::vector<Keycode>& v = button_map_[s];
+	std::vector<Keycode>& v = buttonMap[s];
 	for (auto it = v.begin(); it != v.end(); ++it) {
 		if (*it == kc) {
 			v.erase(it);
 		}
 	}
-}
-
-int Input::RemoveKeybind_Lua(lua_State * const L)
-{
-	INPUT_KEYBIND(RemoveKeybind)
 }
 
 void Input::DeserializeInPlace(std::string const& serializedInput) noexcept

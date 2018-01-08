@@ -99,9 +99,6 @@ void Renderer::DrainQueue() noexcept
 	using namespace std::literals::chrono_literals;
 	RenderCommand command = rendQueueRead.Wait();
 	switch (command.params.index()) {
-	case RenderCommand::Type::NOP:
-		printf("[WARNING] NOP render command.\n");
-		break;
 	case RenderCommand::Type::ABORT:
 		isAborting = true;
 		abortCode = std::get<RenderCommand::AbortParams>(command.params).errorCode;

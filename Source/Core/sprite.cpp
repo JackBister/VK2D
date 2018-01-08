@@ -7,9 +7,9 @@ RTTR_REGISTRATION
 {
 	rttr::registration::class_<Sprite>("Sprite")
 	.constructor<std::shared_ptr<Image>>()
-	.property("is_visible_", &Sprite::is_visible_);
+	.property("isVisible", &Sprite::isVisible);
 }
 
-Sprite::Sprite(std::shared_ptr<Image> img) : image_(img)
+Sprite::Sprite(std::shared_ptr<Image> img) : image(img)
 {
 }

@@ -23,14 +23,14 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 	void * mem = alloc.Allocate(sizeof(SpritesheetComponent));
 	SpritesheetComponent * ret = new (mem) SpritesheetComponent();
 	auto j = nlohmann::json::parse(str);
-	ret->receive_ticks_ = true;
+	ret->receiveTicks = true;
 	auto img = resourceManager->LoadResource<Image>(j["file_"]);
 	ret->sprite_ = Sprite(img);
 	glm::ivec2 frame_size = glm::ivec2(j["frame_size_"]["x"], j["frame_size_"]["y"]);
-	ret->frame_size_ = glm::vec2(frame_size.x / (float)img->get_width(), frame_size.y / (float)img->get_height());
-	for (uint32_t y = 0; y < img->get_height() / frame_size.y; ++y) {
-		for (uint32_t x = 0; x < img->get_width() / frame_size.x; ++x) {
-			ret->min_uvs_.push_back(glm::vec2(x * frame_size.x / (float)img->get_width(), y * frame_size.y / (float)img->get_height()));
+	ret->frame_size_ = glm::vec2(frame_size.x / (float)img->GetWidth(), frame_size.y / (float)img->GetHeight());
+	for (uint32_t y = 0; y < img->GetHeight() / frame_size.y; ++y) {
+		for (uint32_t x = 0; x < img->GetWidth() / frame_size.x; ++x) {
+			ret->min_uvs_.push_back(glm::vec2(x * frame_size.x / (float)img->GetWidth(), y * frame_size.y / (float)img->GetHeight()));
 		}
 	}
 	if (j.find("frame_times_") != j.end()) {
@@ -71,7 +71,7 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 			};
 
 			ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor img_descriptor = {
-				img->get_image_handle()
+				img->GetImageHandle()
 			};
 
 			ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
@@ -113,11 +113,11 @@ glm::vec2 SpritesheetComponent::get_frame_size() const
 void SpritesheetComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "BeginPlay") {
-		sprite_.min_uv_ = min_uvs_[current_index_];
-		sprite_.size_uv_ = frame_size_;
+		sprite_.minUv = min_uvs_[current_index_];
+		sprite_.sizeUv = frame_size_;
 	}
 	if (name == "Tick") {
-		time_since_update_ += args["deltaTime"].as_float_;
+		time_since_update_ += args["deltaTime"].asFloat;
 		if (time_since_update_ >= frame_times_[current_index_ % frame_times_.size()]) {
 			current_named_anim_index_++;
 			if (current_named_anim_index_ == animations_[current_named_anim_].size()) {
@@ -126,12 +126,12 @@ void SpritesheetComponent::OnEvent(std::string name, EventArgs args)
 			current_index_ = animations_[current_named_anim_][current_named_anim_index_];
 			time_since_update_ = 0.f;
 			if (is_flipped_) {
-				sprite_.size_uv_.x = -frame_size_.x;
-				sprite_.min_uv_ = min_uvs_[current_index_];
-				sprite_.min_uv_.x += frame_size_.x;
+				sprite_.sizeUv.x = -frame_size_.x;
+				sprite_.minUv = min_uvs_[current_index_];
+				sprite_.minUv.x += frame_size_.x;
 			} else {
-				sprite_.size_uv_ = frame_size_;
-				sprite_.min_uv_ = min_uvs_[current_index_];
+				sprite_.sizeUv = frame_size_;
+				sprite_.minUv = min_uvs_[current_index_];
 			}
 		}
 	}

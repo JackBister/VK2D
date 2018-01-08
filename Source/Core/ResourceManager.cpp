@@ -2,7 +2,7 @@
 
 #include "Core/Rendering/Renderer.h"
 
-ResourceManager::ResourceManager(Renderer * renderer,/* Queue<RenderCommand>::Writer&& writer, */Allocator & a) : /*bufferPool(this, 4096 * 1024),*/ allocator(a), renderer(renderer)//, renderQueue(std::move(writer))
+ResourceManager::ResourceManager(Renderer * renderer, Allocator & a) : allocator(a), renderer(renderer)
 {
 }
 
@@ -10,10 +10,3 @@ void ResourceManager::CreateResources(std::function<void(ResourceCreationContext
 {
 	renderer->CreateResources(fun);
 }
-
-/*
-void ResourceManager::PushRenderCommand(RenderCommand&& c)
-{
-	renderQueue.Push(std::move(c));
-}
-*/

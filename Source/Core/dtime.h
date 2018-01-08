@@ -6,13 +6,13 @@ class Time
 {
 public:
 	void Frame();
-	float get_delta_time();
-	std::chrono::high_resolution_clock::time_point get_last_time();
+	float GetDeltaTime();
+	std::chrono::high_resolution_clock::time_point GetLastTime();
 	void Start(float timeScale = 1.f);
 
-	float time_scale_;
+	float timeScale;
 private:
-	float delta_time_;
-	std::chrono::high_resolution_clock::time_point last_time_;
-	std::chrono::high_resolution_clock::time_point start_time_;
+	float deltaTime;
+	std::chrono::high_resolution_clock::time_point lastTime;
+	std::chrono::high_resolution_clock::time_point startTime;
 };

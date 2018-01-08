@@ -26,11 +26,9 @@ public:
 	void setWorldTransform(const btTransform&) override;
 
 private:
-	PROPERTY(LuaRead)
-	bool is_kinematic_ = false;
-	PROPERTY(LuaRead)
-	float mass_;
-	std::unique_ptr<btRigidBody> rigidbody_;
-	std::unique_ptr<btCollisionShape> shape_;
-	BroadphaseNativeTypes shape_type_;
+	bool isKinematic = false;
+	float mass;
+	std::unique_ptr<btRigidBody> rigidBody;
+	std::unique_ptr<btCollisionShape> shape;
+	BroadphaseNativeTypes shapeType;
 };

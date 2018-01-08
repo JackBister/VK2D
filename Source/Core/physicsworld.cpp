@@ -10,9 +10,9 @@
 
 DESERIALIZABLE_IMPL(PhysicsWorld)
 
-void TickCallback(btDynamicsWorld * world, btScalar timestep)
+void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 {
-	auto& collisionsLastFrame = static_cast<PhysicsWorld *>(world->getWorldUserInfo())->collisions_last_frame_;
+	auto& collisionsLastFrame = static_cast<PhysicsWorld *>(world->getWorldUserInfo())->collisionsLastFrame;
 	std::unordered_map<Entity *, std::unordered_map<Entity *, CollisionInfo>> collisionsThisFrame;
 	int numManifolds = world->getDispatcher()->getNumManifolds();
 	for (int i = 0; i < numManifolds; ++i) {
@@ -45,34 +45,34 @@ void TickCallback(btDynamicsWorld * world, btScalar timestep)
 
 		auto compA = static_cast<PhysicsComponent *>(obA->getUserPointer());
 		auto compB = static_cast<PhysicsComponent *>(obB->getUserPointer());
-		auto entA = compA->entity_;
-		auto entB = compB->entity_;
+		auto entA = compA->entity;
+		auto entB = compB->entity;
 
 		{
-			collisionsThisFrame[entA][entB].other_ = entB;
+			collisionsThisFrame[entA][entB].other = entB;
 			//Only change collisionStart if it's true, so it can't flip back from false
-			if (collisionsThisFrame[entA][entB].collision_start_) {
-				collisionsThisFrame[entA][entB].collision_start_ = collisionStart;
+			if (collisionsThisFrame[entA][entB].collisionStart) {
+				collisionsThisFrame[entA][entB].collisionStart = collisionStart;
 			}
-			auto& aNorms = collisionsThisFrame[entA][entB].normals_;
+			auto& aNorms = collisionsThisFrame[entA][entB].normals;
 			aNorms.insert(aNorms.end(), normalsA.begin(), normalsA.end());
-			auto& aPoints = collisionsThisFrame[entA][entB].points_;
+			auto& aPoints = collisionsThisFrame[entA][entB].points;
 			aPoints.insert(aPoints.end(), pointsA.begin(), pointsA.end());
 		}
 		{
-			collisionsThisFrame[entB][entA].other_ = entA;
-			if (collisionsThisFrame[entB][entA].collision_start_) {
-				collisionsThisFrame[entB][entA].collision_start_ = collisionStart;
+			collisionsThisFrame[entB][entA].other = entA;
+			if (collisionsThisFrame[entB][entA].collisionStart) {
+				collisionsThisFrame[entB][entA].collisionStart = collisionStart;
 			}
-			auto& bNorms = collisionsThisFrame[entB][entA].normals_;
+			auto& bNorms = collisionsThisFrame[entB][entA].normals;
 			bNorms.insert(bNorms.end(), normalsB.begin(), normalsB.end());
-			auto& bPoints = collisionsThisFrame[entB][entA].points_;
+			auto& bPoints = collisionsThisFrame[entB][entA].points;
 			bPoints.insert(bPoints.end(), pointsB.begin(), pointsB.end());
 		}
 	}
 	for (auto& collisions : collisionsThisFrame) {
 		for (auto& collisionInfo : collisions.second) {
-			if (collisionInfo.second.collision_start_ && collisionsLastFrame[collisions.first].find(collisionInfo.first) == collisionsLastFrame[collisions.first].end()) {
+			if (collisionInfo.second.collisionStart && collisionsLastFrame[collisions.first].find(collisionInfo.first) == collisionsLastFrame[collisions.first].end()) {
 				collisions.first->FireEvent("OnCollisionStart", { { "info", &collisionInfo.second } });
 			} else {
 				collisionsLastFrame[collisions.first].erase(collisionsLastFrame[collisions.first].find(collisionInfo.first));
@@ -94,16 +94,16 @@ Deserializable * PhysicsWorld::Deserialize(ResourceManager * resourceManager, st
 	void * mem = alloc.Allocate(sizeof(PhysicsWorld));
 	PhysicsWorld * ret = new (mem) PhysicsWorld();
 	auto const j = nlohmann::json::parse(str);
-	ret->collision_config_ = std::make_unique<btDefaultCollisionConfiguration>();
+	ret->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
 
-	ret->dispatcher_ = std::make_unique<btCollisionDispatcher>(ret->collision_config_.get());
+	ret->dispatcher = std::make_unique<btCollisionDispatcher>(ret->collisionConfig.get());
 
-	ret->broadphase_ = std::make_unique<btDbvtBroadphase>();
-	ret->constraint_solver_ = std::make_unique<btSequentialImpulseConstraintSolver>();
-	ret->world_ = std::make_unique<btDiscreteDynamicsWorld>(ret->dispatcher_.get(), ret->broadphase_.get(), ret->constraint_solver_.get(), ret->collision_config_.get());
+	ret->broadphase = std::make_unique<btDbvtBroadphase>();
+	ret->constraintSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
+	ret->world = std::make_unique<btDiscreteDynamicsWorld>(ret->dispatcher.get(), ret->broadphase.get(), ret->constraintSolver.get(), ret->collisionConfig.get());
 
-	ret->world_->setGravity(btVector3(j["gravity"]["x"], j["gravity"]["y"], j["gravity"]["z"]));
-	ret->world_->setInternalTickCallback(TickCallback);
-	ret->world_->setWorldUserInfo(ret);
+	ret->world->setGravity(btVector3(j["gravity"]["x"], j["gravity"]["y"], j["gravity"]["z"]));
+	ret->world->setInternalTickCallback(s_TickCallback);
+	ret->world->setWorldUserInfo(ret);
 	return ret;
 }

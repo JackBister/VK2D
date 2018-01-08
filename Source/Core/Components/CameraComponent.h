@@ -15,24 +15,20 @@ public:
 
 	void OnEvent(std::string name, EventArgs args = {}) override;
 
-	glm::mat4 const& projection();
-	glm::mat4 const& view();
+	glm::mat4 const& GetProjection();
+	glm::mat4 const& GetView();
 
-	PROPERTY(LuaRead)
-	float aspect();
-	PROPERTY(LuaRead)
-	void set_aspect(float);
+	float GetAspect();
+	void SetAspect(float);
 
-	PROPERTY(LuaRead)
-	float view_size();
-	PROPERTY(LuaRead)
-	void set_view_size(float);
+	float GetViewSize();
+	void SetViewSize(float);
 
 private:
-	float aspect_;
-	bool is_projection_dirty_ = true;
-	bool is_view_dirty_ = true;
-	glm::mat4 projection_;
-	glm::mat4 view_;
-	float view_size_;
+	float aspect;
+	bool isProjectionDirty = true;
+	bool isViewDirty = true;
+	glm::mat4 projection;
+	glm::mat4 view;
+	float viewSize;
 };

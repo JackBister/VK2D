@@ -1,14 +1,10 @@
 #pragma once
-#include <cstddef>
 #include <memory>
 
 #include <glm/glm.hpp>
 
 #include "Core/Lua/luaserializable.h"
 #include "Core/Rendering/Image.h"
-#include "Core/transform.h"
-
-#include "Tools/HeaderGenerator/headergenerator.h"
 
 class Sprite : public LuaSerializable
 {
@@ -18,12 +14,11 @@ public:
 	Sprite(std::shared_ptr<Image>);
 
 	//The bottom left UV coordinate of what we want to render
-	glm::vec2 min_uv_ = glm::vec2(0.f, 0.f);
+	glm::vec2 minUv = glm::vec2(0.f, 0.f);
 	//The size of the subimage in UV coordinates
-	glm::vec2 size_uv_ = glm::vec2(1.f, 1.f);
+	glm::vec2 sizeUv = glm::vec2(1.f, 1.f);
 	//Whether this sprite should be rendered or not
-	PROPERTY(LuaReadWrite)
-	bool is_visible_;
+	bool isVisible;
 
-	std::shared_ptr<Image> image_;
+	std::shared_ptr<Image> image;
 };

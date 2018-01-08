@@ -23,48 +23,35 @@ class Entity;
 class PhysicsWorld;
 class ResourceManager;
 
-PROPERTY(LuaIndex, LuaNewIndex)
 class Scene : public LuaSerializable, public Resource
 {
 	RTTR_ENABLE(LuaSerializable)
 public:
-
-	Scene(std::string const&, ResourceManager *, Queue<SDL_Event>::Reader&&/*, Queue<RenderCommand>::Writer&&*/, std::string const&, Renderer * renderer) noexcept;
-
-	void EndFrame() noexcept;
+	Scene(std::string const&, ResourceManager *, Queue<SDL_Event>::Reader&&, std::string const&, Renderer * renderer) noexcept;
 
 	void BeginSecondaryCommandContext(RenderCommandContext *);
 	void CreateResources(std::function<void(ResourceCreationContext&)> fun);
 	std::vector<RenderCommandContext *> CreateSecondaryCommandContexts();
 	size_t GetSwapCount();
 	size_t GetCurrFrame();
-	//void PushRenderCommand(RenderCommand&&) noexcept;
 	void SubmitCamera(CameraComponent *) noexcept;
 	void SubmitCommandBuffer(RenderCommandContext *);
 	void Tick() noexcept;
 
 	/*
-		Returns the entity with the given name, or nullptr if an entity with that name does not exist.
-	*/
-	PROPERTY(LuaRead)
-	Entity * GetEntityByName(std::string);
-	//Entity * GetEntityByName(char const *);
-	static int GetEntityByName_Lua(lua_State *);
-
-	/*
 		Sends an event to all entities.
 	*/
-	PROPERTY(LuaRead)
 	void BroadcastEvent(std::string ename, EventArgs eas = {});
-	static int BroadcastEvent_Lua(lua_State *);
 
-	ResourceManager * resource_manager_;
-	PROPERTY(LuaRead)
-	Input input_;
-	PhysicsWorld * physics_world_;
-	Time time_;
-	std::vector<Entity *> entities_;
+	/*
+		Returns the entity with the given name, or nullptr if an entity with that name does not exist.
+	*/
+	Entity * GetEntityByName(std::string);
 
+
+	Input input;
+	PhysicsWorld * physicsWorld;
+	Time time;
 private:
 	enum class FrameStage
 	{
@@ -100,24 +87,12 @@ private:
 
 	void CreatePrimitives();
 
-	//Queue<RenderCommand>::Writer render_queue_;
-
-	/*
-	Queue<RenderCommandContext *> free_command_buffers_;
-	Queue<RenderCommandContext *>::Reader get_free_command_buffers_;
-	Queue<RenderCommandContext *>::Writer put_free_command_buffers_;
-	std::vector<RenderCommandContext *> command_buffers_;
-	*/
-	//uint32_t current_subpass_;
-	//RenderCommandContext * main_command_context_;
-	//RenderPassHandle * main_renderpass_;
-	//SemaphoreHandle * main_renderpass_finished_;
-	//RenderCommandContext * pre_renderpass_context_;
-	//SemaphoreHandle * pre_renderpass_finished_;
 	Renderer * renderer;
-	//SemaphoreHandle * swap_finished_;
 
-	size_t currFrameInfo = 0;
+	uint32_t currFrameInfoIdx = 0;
 	std::vector<FrameInfo> frameInfo;
 	FrameStage currFrameStage;
+	ResourceManager * resourceManager;
+
+	std::vector<Entity *> entities;
 };

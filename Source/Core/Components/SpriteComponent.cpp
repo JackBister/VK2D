@@ -12,12 +12,12 @@
 
 COMPONENT_IMPL(SpriteComponent)
 
-bool SpriteComponent::has_created_resources_ = false;
-SpriteComponent::SpriteResources SpriteComponent::resources_;
+bool SpriteComponent::s_hasCreatedResources = false;
+SpriteComponent::SpriteResources SpriteComponent::s_resources;
 
 SpriteComponent::SpriteComponent() noexcept
 {
-	receive_ticks_ = false;
+	receiveTicks = false;
 }
 
 Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc) const
@@ -27,31 +27,29 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 	auto j = nlohmann::json::parse(str);
 	auto img = resourceManager->LoadResource<Image>(j["file"]);
 	auto layout = resourceManager->GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/passthrough-transform.layout");
-	ret->sprite_ = Sprite(img);
+	ret->sprite = Sprite(img);
 	
 	{
-		//resourceManager->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([ret, img, layout](ResourceCreationContext& ctx) {
 		resourceManager->CreateResources([ret, img, layout](ResourceCreationContext& ctx) {
 			std::vector<float> full_uv{
 				0.f, 0.f,
 				1.f, 1.f
 			};
-			ret->uvs_ = ctx.CreateBuffer({
+			ret->uvs = ctx.CreateBuffer({
 				sizeof(glm::mat4) + full_uv.size() * sizeof(float),
 				BufferUsageFlags::UNIFORM_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
 				DEVICE_LOCAL_BIT
 			});
-
-			ctx.BufferSubData(ret->uvs_, (uint8_t *)&full_uv[0], sizeof(glm::mat4), full_uv.size() * sizeof(float));
+			ctx.BufferSubData(ret->uvs, (uint8_t *)&full_uv[0], sizeof(glm::mat4), full_uv.size() * sizeof(float));
 
 			ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uv_descriptor = {
-				ret->uvs_,
+				ret->uvs,
 				0,
 				sizeof(glm::mat4) + full_uv.size() * sizeof(float)
 			};
 
 			ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor img_descriptor = {
-				img->get_image_handle()
+				img->GetImageHandle()
 			};
 
 			ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
@@ -67,21 +65,20 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 				}
 			};
 
-			ret->descriptor_set_ = ctx.CreateDescriptorSet({
+			ret->descriptorSet = ctx.CreateDescriptorSet({
 				2,
 				descriptors,
 				layout
 			});
 
-			ret->has_created_local_resources_ = true;
-			//})));
+			ret->hasCreatedLocalResources = true;
 		});
 	}
-	if (!has_created_resources_) {
-		resources_.vbo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
-		resources_.ebo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadEBO.buffer");
+	if (!s_hasCreatedResources) {
+		s_resources.vbo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
+		s_resources.ebo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadEBO.buffer");
 
-		resources_.pipeline = resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/passthrough-transform.pipe");
+		s_resources.pipeline = resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/passthrough-transform.pipe");
 	}
 	return ret;
 }
@@ -89,29 +86,29 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 void SpriteComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "BeginPlay") {
-		frameInfo = std::vector<FrameInfo>(entity_->scene_->GetSwapCount());
-		auto mainCommands = entity_->scene_->CreateSecondaryCommandContexts();
-		auto preRenderCommands = entity_->scene_->CreateSecondaryCommandContexts();
+		frameInfo = std::vector<FrameInfo>(entity->scene->GetSwapCount());
+		auto mainCommands = entity->scene->CreateSecondaryCommandContexts();
+		auto preRenderCommands = entity->scene->CreateSecondaryCommandContexts();
 		for (size_t i = 0; i < frameInfo.size(); ++i) {
 			frameInfo[i].mainCommandContext = std::move(mainCommands[i]);
 			frameInfo[i].preRenderCommandContext = std::move(preRenderCommands[i]);
 		}
 	} else if (name == "PreRenderPass") {
-		if (has_created_local_resources_ && sprite_.image_->get_image_handle()) {
-			auto camera = (SubmittedCamera *)args["camera"].as_LuaSerializable_;
-			frameInfo[entity_->scene_->GetCurrFrame()].pvm = camera->projection * camera->view * entity_->transform_.local_to_world();
-			auto ctx = frameInfo[entity_->scene_->GetCurrFrame()].preRenderCommandContext;
-			entity_->scene_->BeginSecondaryCommandContext(ctx);
-			ctx->CmdUpdateBuffer(uvs_, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(frameInfo[entity_->scene_->GetCurrFrame()].pvm));
+		if (hasCreatedLocalResources && sprite.image->GetImageHandle()) {
+			auto camera = (SubmittedCamera *)args["camera"].asLuaSerializable;
+			frameInfo[entity->scene->GetCurrFrame()].pvm = camera->projection * camera->view * entity->transform.GetLocalToWorld();
+			auto ctx = frameInfo[entity->scene->GetCurrFrame()].preRenderCommandContext;
+			entity->scene->BeginSecondaryCommandContext(ctx);
+			ctx->CmdUpdateBuffer(uvs, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(frameInfo[entity->scene->GetCurrFrame()].pvm));
 			ctx->EndRecording();
-			entity_->scene_->SubmitCommandBuffer(ctx);
+			entity->scene->SubmitCommandBuffer(ctx);
 		}
 	} else if (name == "MainRenderPass") {
-		if (has_created_local_resources_ && sprite_.image_->get_image_handle()) {
-			auto img = sprite_.image_->get_image_handle();
-			auto camera = (SubmittedCamera *)args["camera"].as_LuaSerializable_;
-			auto ctx = frameInfo[entity_->scene_->GetCurrFrame()].mainCommandContext;
-			entity_->scene_->BeginSecondaryCommandContext(ctx);
+		if (hasCreatedLocalResources && sprite.image->GetImageHandle()) {
+			auto img = sprite.image->GetImageHandle();
+			auto camera = (SubmittedCamera *)args["camera"].asLuaSerializable;
+			auto ctx = frameInfo[entity->scene->GetCurrFrame()].mainCommandContext;
+			entity->scene->BeginSecondaryCommandContext(ctx);
 			RenderCommandContext::Viewport viewport = {
 				0.f,
 				0.f,
@@ -134,16 +131,16 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 			};
 			ctx->CmdSetScissor(0, 1, &scissor);
 
-			ctx->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS, resources_.pipeline);
+			ctx->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS, s_resources.pipeline);
 
-			ctx->CmdBindIndexBuffer(resources_.ebo, 0, RenderCommandContext::IndexType::UINT32);
-			ctx->CmdBindVertexBuffer(resources_.vbo, 0, 0, 8 * sizeof(float));
+			ctx->CmdBindIndexBuffer(s_resources.ebo, 0, RenderCommandContext::IndexType::UINT32);
+			ctx->CmdBindVertexBuffer(s_resources.vbo, 0, 0, 8 * sizeof(float));
 
-			ctx->CmdBindDescriptorSet(descriptor_set_);
+			ctx->CmdBindDescriptorSet(descriptorSet);
 			ctx->CmdDrawIndexed(6, 1, 0, 0);
 
 			ctx->EndRecording();
-			entity_->scene_->SubmitCommandBuffer(ctx);
+			entity->scene->SubmitCommandBuffer(ctx);
 		}
 	}
 }

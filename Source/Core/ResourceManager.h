@@ -1,11 +1,10 @@
 #pragma once
 #include <cstdio>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
-
-#include <boost/filesystem.hpp>
 
 #include "Core/Allocator.h"
 #include "Core/Queue.h"
@@ -15,7 +14,7 @@
 class ResourceManager
 {
 public:
-	ResourceManager(Renderer * renderer, /*Queue<RenderCommand>::Writer&&,*/ Allocator& a = Allocator::default_allocator);
+	ResourceManager(Renderer * renderer, Allocator& a = Allocator::default_allocator);
 
 	template <typename T>
 	void AddResource(std::string const& name, T * res);
@@ -33,13 +32,11 @@ public:
 	std::shared_ptr<T> LoadResourceOrConstruct(std::string const& fileName, ArgTypes&& ... args);
 
 	void CreateResources(std::function<void(ResourceCreationContext&)> fun);
-	//void PushRenderCommand(RenderCommand&&);
 
 private:
 	std::unordered_map<std::string, void *> nonRCCache;
 	std::unordered_map<std::string, std::weak_ptr<void>> rcCache;
 	Allocator& allocator;
-	//Queue<RenderCommand>::Writer renderQueue;
 	Renderer * renderer;
 };
 
@@ -74,17 +71,17 @@ std::shared_ptr<T> ResourceManager::LoadResource(std::string const& fileName)
 			return ret;
 		}
 	}
-	boost::filesystem::path filePath(fileName);
-	auto status = boost::filesystem::status(filePath);
+	std::experimental::filesystem::path filePath(fileName);
+	auto status = std::experimental::filesystem::status(filePath);
 	Resource * mem = (Resource *)allocator.Allocate(sizeof(T));
-	if (status.type() != boost::filesystem::regular_file) {
+	if (status.type() != std::experimental::filesystem::file_type::regular) {
 		auto ret = std::shared_ptr<T>(new (mem) T(this, fileName));
 		rcCache[fileName] = std::weak_ptr<void>(ret);
 		return ret;
 	} else {
 		//For some awful reason this wont work for binary files like PNG. Otherwise I think it's a prettier solution.
 #if 0
-		boost::filesystem::ifstream is(fileName, std::ios::in | std::ios::binary);
+		std::experimental::filesystem::ifstream is(fileName, std::ios::in | std::ios::binary);
 		auto ret = std::shared_ptr<T>(new (mem) T(fileName, is));
 #endif
 		FILE * f = fopen(fileName.c_str(), "rb");

@@ -66,14 +66,14 @@ public:
 	Type type;
 	union
 	{
-		std::string * as_string_;
-		int as_int_;
-		float as_float_;
-		double as_double_;
-		LuaSerializable * as_LuaSerializable_;
-		lua_CFunction as_lua_cfunction_;
-		EventArgs * as_EventArgs_;
-		std::vector<EventArg> * as_vector_;
+		std::string * asString;
+		int asInt;
+		float asFloat;
+		double asDouble;
+		LuaSerializable * asLuaSerializable;
+		lua_CFunction asLuaCFunction;
+		EventArgs * asEventArgs;
+		std::vector<EventArg> * asVector;
 	};
 private:
 	void Delete();

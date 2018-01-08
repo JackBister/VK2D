@@ -20,34 +20,26 @@ class Renderer : IRenderer
 	friend class VulkanRenderCommandContext;
 	friend class VulkanResourceContext;
 public:
-	Renderer(/*ResourceManager *, Queue<RenderCommand>::Reader&&,*/ char const * title, int winX, int winY, int w, int h, uint32_t flags);
+	Renderer(char const * title, int winX, int winY, int w, int h, uint32_t flags);
 	~Renderer() noexcept;
 
 	uint32_t AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandle * signalFence) final override;
 	std::vector<FramebufferHandle *> CreateBackbuffers(RenderPassHandle * renderPass) final override;
 	Format GetBackbufferFormat() final override;
-	//FramebufferHandle * GetBackbuffer() final override;
 	uint32_t GetSwapCount() final override;
 
 	void CreateResources(std::function<void(ResourceCreationContext&)> fun) final override;
 	void ExecuteCommandContext(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence = nullptr) final override;
 	void SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem) final override;
 
-	//void Swap(uint32_t imageIndex, SemaphoreHandle * waitSem);
-
-	//void DrainQueue() noexcept;
-
-	bool isAborting = false;
 	int abortCode = 0;
-
-	SDL_Window * window;
 
 private:
 	struct VulkanBasics
 	{
-		VkDevice vk_device_;
-		VkInstance vk_instance_;
-		VkPhysicalDevice vk_physical_device_;
+		VkDevice device;
+		VkInstance instance;
+		VkPhysicalDevice physicalDevice;
 	};
 	struct VulkanSwapchain
 	{
@@ -67,23 +59,24 @@ private:
 	VkCommandBuffer CreateCommandBuffer(VkCommandBufferLevel level);
 	void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
-	//Picture related variables
 	float aspectRatio;
 	glm::ivec2 dimensions;
 
 	VulkanBasics basics;
 
-	VkDescriptorPool vk_descriptor_pool_;
+	VkDescriptorPool descriptorPool;
 
-	VkSurfaceKHR vk_surface_;
-	VulkanSwapchain vk_swapchain_;
+	VkSurfaceKHR surface;
+	VulkanSwapchain swapchain;
 
-	uint32_t vk_queue_graphics_idx_;
-	VkQueue vk_queue_graphics_;
-	uint32_t vk_queue_present_idx_;
-	VkQueue vk_queue_present_;
+	uint32_t graphicsQueueIdx;
+	VkQueue graphicsQueue;
+	uint32_t presentQueueIdx;
+	VkQueue presentQueue;
 	
-	VkCommandPool vk_pool_graphics_;
-	VkCommandPool vk_pool_present_;
+	VkCommandPool graphicsPool;
+	VkCommandPool presentPool;
+
+	SDL_Window * window;
 };
 #endif

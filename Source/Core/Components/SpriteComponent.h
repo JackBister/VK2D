@@ -12,7 +12,7 @@ public:
 
 	void OnEvent(std::string name, EventArgs args) override;
 
-	Sprite sprite_;
+	Sprite sprite;
 
 private:
 	struct FrameInfo
@@ -30,15 +30,12 @@ private:
 		PipelineHandle * pipeline;
 	};
 
-	static bool has_created_resources_;
-	static SpriteResources resources_;
+	static bool s_hasCreatedResources;
+	static SpriteResources s_resources;
 
-	//glm::mat4 cached_MVP_;
-	DescriptorSet * descriptor_set_;
-	std::atomic<bool> has_created_local_resources_{ false };
-	//TODO: FrameInfo?
-	BufferHandle * uvs_;
-	//RenderCommandContext * command_context_;
+	DescriptorSet * descriptorSet;
+	std::atomic<bool> hasCreatedLocalResources{ false };
+	BufferHandle * uvs;
 	
 	std::vector<FrameInfo> frameInfo;
 };

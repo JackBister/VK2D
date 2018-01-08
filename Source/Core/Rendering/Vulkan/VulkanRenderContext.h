@@ -61,13 +61,14 @@ private:
 
 struct VulkanBufferHandle : BufferHandle
 {
-	//TODO: Both necessary? Maybe memory_ needs its own super-type?
-	VkBuffer buffer_;
-	VkDeviceMemory memory_;
+	//TODO: Both necessary? Maybe memory needs its own super-type?
+	VkBuffer buffer;
+	VkDeviceMemory memory;
 };
 
-struct VulkanCommandContextAllocator : CommandContextAllocator
+class VulkanCommandContextAllocator : CommandContextAllocator
 {
+public:
 	friend class VulkanResourceContext;
 	RenderCommandContext * CreateContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
 	void DestroyContext(RenderCommandContext *) final override;
@@ -81,14 +82,14 @@ private:
 
 struct VulkanDescriptorSet : DescriptorSet
 {
-	VkDescriptorSetLayout layout_;
-	VkPipelineLayout pipeline_layout_;
-	VkDescriptorSet set_;
+	VkDescriptorSetLayout layout;
+	VkPipelineLayout pipelineLayout;
+	VkDescriptorSet set;
 };
 
 struct VulkanDescriptorSetLayoutHandle : DescriptorSetLayoutHandle
 {
-	VkDescriptorSetLayout layout_;
+	VkDescriptorSetLayout layout;
 };
 
 struct VulkanFenceHandle : FenceHandle
@@ -101,48 +102,48 @@ struct VulkanFenceHandle : FenceHandle
 
 struct VulkanFramebufferHandle : FramebufferHandle
 {
-	VkFramebuffer framebuffer_;
+	VkFramebuffer framebuffer;
 };
 
 struct VulkanImageHandle : ImageHandle
 {
-	VkImage image_;
+	VkImage image;
 };
 
 struct VulkanImageViewHandle : ImageViewHandle
 {
-	VkImageView image_view_;
+	VkImageView imageView;
 };
 
 struct VulkanRenderPassHandle : RenderPassHandle
 {
-	VkRenderPass render_pass;
+	VkRenderPass renderPass;
 };
 
 struct VulkanPipelineHandle : PipelineHandle
 {
-	VkPipeline pipeline_;
+	VkPipeline pipeline;
 };
 
 struct VulkanSamplerHandle : SamplerHandle
 {
-	VkSampler sampler_;
+	VkSampler sampler;
 };
 
 struct VulkanShaderModuleHandle : ShaderModuleHandle
 {
-	VkShaderModule shader_;
+	VkShaderModule shader;
 };
 
 struct VulkanSemaphoreHandle : SemaphoreHandle
 {
-	VkSemaphore semaphore_;
+	VkSemaphore semaphore;
 };
 
 struct VulkanVertexInputStateHandle : VertexInputStateHandle
 {
 	//Saved until the handle is used in the create pipeline call - bad?
 	//Should probably be moved into the pipelinecreateinfo as intended, and the OGL renderer will have to adapt instead.
-	ResourceCreationContext::VertexInputStateCreateInfo create_info_;
+	ResourceCreationContext::VertexInputStateCreateInfo createInfo;
 };
 #endif

@@ -28,8 +28,8 @@ public:
 
 private:
 	PROPERTY(LuaRead)
-	std::string file_;
-	lua_State * state_;
+	std::string file;
+	lua_State * state;
 
 	//The args passed for the current OnEvent call.
 	//When an event call is received, the args are saved here so that the lua script can use getter functions to retreive them

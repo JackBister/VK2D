@@ -1,14 +1,8 @@
 #pragma once
 #include <cstddef>
 #include <string>
-#include <vector>
-
-#if _MSC_VER && !__INTEL_COMPILER
 #include <variant>
-#else
-#include <experimental/variant.hpp>
-using std::variant = std::experimental::variant;
-#endif
+#include <vector>
 
 #include "Core/Rendering/Context/RenderContext.h"
 #include "Core/Resource.h"
@@ -26,16 +20,16 @@ public:
 	Image(ImageCreateInfo const&) noexcept;
 	Image(ResourceManager *, std::string const&, std::vector<uint8_t> const&) noexcept;
 
-	std::vector<uint8_t> const& get_data() const noexcept;
-	uint32_t get_height() const noexcept;
-	ImageHandle * get_image_handle();
-	uint32_t get_width() const noexcept;
+	std::vector<uint8_t> const& GetData() const noexcept;
+	uint32_t GetHeight() const noexcept;
+	ImageHandle * GetImageHandle();
+	uint32_t GetWidth() const noexcept;
 
 private:
-	std::vector<uint8_t> data_;
+	std::vector<uint8_t> data;
 
-	uint32_t width_, height_;
-	ImageHandle * img_;
+	uint32_t width, height;
+	ImageHandle * img;
 };
 
 struct ImageCreateInfo

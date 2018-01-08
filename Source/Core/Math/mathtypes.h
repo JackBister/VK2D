@@ -13,27 +13,27 @@ public:
 	using glm::vec3::tvec3;
 
 	//TODO: Neccessary for now because rttr can't figure out the raw properties without explicitly upcasting
-	inline float get_x() const {
+	inline float GetX() const {
 		return x;
 	}
 
-	inline void set_x(float x) {
+	inline void SetX(float x) {
 		this->x = x;
 	}
 
-	inline float get_y() const {
+	inline float GetY() const {
 		return y;
 	}
 
-	inline void set_y(float y) {
+	inline void SetY(float y) {
 		this->y = y;
 	}
 
-	inline float get_z() const {
+	inline float GetZ() const {
 		return z;
 	}
 
-	inline void set_z(float z) {
+	inline void SetZ(float z) {
 		this->z = z;
 	}
 };
@@ -44,35 +44,35 @@ struct Quat : glm::quat, LuaSerializable
 public:
 	using glm::quat::tquat;
 
-	inline float get_x() const {
+	inline float GetX() const {
 		return x;
 	}
 
-	inline void set_x(float x) {
+	inline void SetX(float x) {
 		this->x = x;
 	}
 
-	inline float get_y() const {
+	inline float GetY() const {
 		return y;
 	}
 
-	inline void set_y(float y) {
+	inline void SetY(float y) {
 		this->y = y;
 	}
 
-	inline float get_z() const {
+	inline float GetZ() const {
 		return z;
 	}
 
-	inline void set_z(float z) {
+	inline void SetZ(float z) {
 		this->z = z;
 	}
 
-	inline float get_w() const {
+	inline float GetW() const {
 		return w;
 	}
 
-	inline void set_w(float w) {
+	inline void SetW(float w) {
 		this->w = w;
 	}
 };

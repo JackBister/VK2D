@@ -1,15 +1,9 @@
 #pragma once
 
 #include <concurrentqueue.h>
-#if _MSC_VER && !__INTEL_COMPILER
 #include <optional>
 #include <variant>
-#else
-#include <experimental/variant.hpp>
-using std::variant = std::experimental::variant;
-#endif
 
-#include "Core/Maybe.h"
 #include "Core/Semaphore.h"
 
 /*

@@ -161,28 +161,28 @@ Renderer::~Renderer()
 uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalReady, FenceHandle * signalFence)
 {
 	uint32_t imageIndex;
-	auto res = vkAcquireNextImageKHR(basics.vk_device_, vk_swapchain_.swapchain, std::numeric_limits<uint64_t>::max(), signalReady != nullptr ? ((VulkanSemaphoreHandle *)signalReady)->semaphore_ : VK_NULL_HANDLE, signalFence != nullptr ? ((VulkanFenceHandle *)signalFence)->fence : VK_NULL_HANDLE, &imageIndex);
+	auto res = vkAcquireNextImageKHR(basics.device, swapchain.swapchain, std::numeric_limits<uint64_t>::max(), signalReady != nullptr ? ((VulkanSemaphoreHandle *)signalReady)->semaphore : VK_NULL_HANDLE, signalFence != nullptr ? ((VulkanFenceHandle *)signalFence)->fence : VK_NULL_HANDLE, &imageIndex);
 	assert(res == VK_SUCCESS);
 	return imageIndex;
 }
 
 std::vector<FramebufferHandle *> Renderer::CreateBackbuffers(RenderPassHandle * renderPass)
 {
-	vk_swapchain_.backbuffers.resize(vk_swapchain_.images.size());
-	std::vector<FramebufferHandle *> ret(vk_swapchain_.backbuffers.size());
-	for (size_t i = 0; i < vk_swapchain_.images.size(); ++i) {
+	swapchain.backbuffers.resize(swapchain.images.size());
+	std::vector<FramebufferHandle *> ret(swapchain.backbuffers.size());
+	for (size_t i = 0; i < swapchain.images.size(); ++i) {
 		VkFramebufferCreateInfo framebufferInfo{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
 			nullptr,
 			0,
-			((VulkanRenderPassHandle *)renderPass)->render_pass,
+			((VulkanRenderPassHandle *)renderPass)->renderPass,
 			1,
-			&vk_swapchain_.imageViews[i],
-			vk_swapchain_.extent.width,
-			vk_swapchain_.extent.height,
+			&swapchain.imageViews[i],
+			swapchain.extent.width,
+			swapchain.extent.height,
 			1
 		};
-		auto res = vkCreateFramebuffer(basics.vk_device_, &framebufferInfo, nullptr, &vk_swapchain_.framebuffers[i]);
+		auto res = vkCreateFramebuffer(basics.device, &framebufferInfo, nullptr, &swapchain.framebuffers[i]);
 		if (res != VK_SUCCESS) {
 			throw std::exception("Couldn't create swap chain framebuffers.");
 		}
@@ -190,21 +190,21 @@ std::vector<FramebufferHandle *> Renderer::CreateBackbuffers(RenderPassHandle * 
 		VulkanFramebufferHandle handle = {};
 		//TODO:
 		handle.attachmentCount = 0;
-		handle.format = ToAbstractFormat(vk_swapchain_.format);
-		handle.framebuffer_ = vk_swapchain_.framebuffers[i];
-		handle.height = vk_swapchain_.extent.height;
-		handle.width = vk_swapchain_.extent.width;
+		handle.format = ToAbstractFormat(swapchain.format);
+		handle.framebuffer = swapchain.framebuffers[i];
+		handle.height = swapchain.extent.height;
+		handle.width = swapchain.extent.width;
 		handle.layers = 1;
 		handle.pAttachments = nullptr;
-		vk_swapchain_.backbuffers[i] = handle;
-		ret[i] = &vk_swapchain_.backbuffers[i];
+		swapchain.backbuffers[i] = handle;
+		ret[i] = &swapchain.backbuffers[i];
 	}
 	return ret;
 }
 
 Format Renderer::GetBackbufferFormat()
 {
-	return ToAbstractFormat(vk_swapchain_.format);
+	return ToAbstractFormat(swapchain.format);
 }
 
 void Renderer::CreateResources(std::function<void(ResourceCreationContext&)> fun)
@@ -224,18 +224,18 @@ void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	if (waitSem != nullptr) {
 		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &((VulkanSemaphoreHandle *)waitSem)->semaphore_;
+		presentInfo.pWaitSemaphores = &((VulkanSemaphoreHandle *)waitSem)->semaphore;
 	}
 	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &vk_swapchain_.swapchain;
+	presentInfo.pSwapchains = &swapchain.swapchain;
 	presentInfo.pImageIndices = &imageIndex;
 
-	auto res = vkQueuePresentKHR(vk_queue_present_, &presentInfo);
+	auto res = vkQueuePresentKHR(presentQueue, &presentInfo);
 }
 
 uint32_t Renderer::GetSwapCount()
 {
-	return (uint32_t)vk_swapchain_.images.size();
+	return (uint32_t)swapchain.images.size();
 }
 
 Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_t flags)
@@ -280,20 +280,20 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 		instanceExtensions.size() > 0 ? &instanceExtensions[0] : nullptr,
 	};
 
-	auto res = vkCreateInstance(&vulkanInfo, nullptr, &basics.vk_instance_);
+	auto res = vkCreateInstance(&vulkanInfo, nullptr, &basics.instance);
 	if (res != VK_SUCCESS) {
 		throw std::exception("vkCreateInstance failed.");
 	}
 
 #if defined(_DEBUG)
 	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT =
-		(PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(basics.vk_instance_, "vkCreateDebugReportCallbackEXT");
+		(PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(basics.instance, "vkCreateDebugReportCallbackEXT");
 	PFN_vkDebugReportMessageEXT vkDebugReportMessageEXT =
 		reinterpret_cast<PFN_vkDebugReportMessageEXT>
-		(vkGetInstanceProcAddr(basics.vk_instance_, "vkDebugReportMessageEXT"));
+		(vkGetInstanceProcAddr(basics.instance, "vkDebugReportMessageEXT"));
 	PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT =
 		reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>
-		(vkGetInstanceProcAddr(basics.vk_instance_, "vkDestroyDebugReportCallbackEXT"));
+		(vkGetInstanceProcAddr(basics.instance, "vkDestroyDebugReportCallbackEXT"));
 
 	VkDebugReportCallbackCreateInfoEXT dbgInfo = {
 		VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -304,34 +304,34 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 	};
 
 	VkDebugReportCallbackEXT test;
-	res = vkCreateDebugReportCallbackEXT(basics.vk_instance_, &dbgInfo, nullptr, &test);
+	res = vkCreateDebugReportCallbackEXT(basics.instance, &dbgInfo, nullptr, &test);
 	if (res != VK_SUCCESS) {
 		printf("[ERROR] Vulkan: Failed to create debug report callback.\n");
 		throw std::exception("vkCreateDebugReportCallbackEXT failed.");
 	}
 #endif
 
-	if (!SDL_Vulkan_CreateSurface(window, basics.vk_instance_, &vk_surface_)) {
+	if (!SDL_Vulkan_CreateSurface(window, basics.instance, &surface)) {
 		throw std::exception("Unable to create Vulkan surface.");
 	}
 
-	auto physDeviceOptional = ChoosePhysicalDevice(basics.vk_instance_);
+	auto physDeviceOptional = ChoosePhysicalDevice(basics.instance);
 	if (!physDeviceOptional.has_value()) {
 		throw std::exception("ChoosePhysicalDevice failed.");
 	}
-	basics.vk_physical_device_ = physDeviceOptional.value();
+	basics.physicalDevice = physDeviceOptional.value();
 
 	std::vector<const char*> const deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
-	if (!CheckVkDeviceExtensions(basics.vk_physical_device_, deviceExtensions)) {
+	if (!CheckVkDeviceExtensions(basics.physicalDevice, deviceExtensions)) {
 		throw std::exception("CheckVkDeviceExtensions failed.");
 	}
 
 	//Create device and queues
 	uint32_t queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(basics.vk_physical_device_, &queueFamilyCount, nullptr);
+	vkGetPhysicalDeviceQueueFamilyProperties(basics.physicalDevice, &queueFamilyCount, nullptr);
 	if (queueFamilyCount == 0) {
 		throw std::exception("No queue families found.\n");
 	}
@@ -339,13 +339,10 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 	std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
 	std::vector<VkBool32> queuePresentSupport(queueFamilyCount);
 
-	vkGetPhysicalDeviceQueueFamilyProperties(basics.vk_physical_device_, &queueFamilyCount, &queueFamilyProperties[0]);
-
-	uint32_t graphicsQueueIdx = UINT32_MAX;
-	uint32_t presentQueueIdx = UINT32_MAX;
+	vkGetPhysicalDeviceQueueFamilyProperties(basics.physicalDevice, &queueFamilyCount, &queueFamilyProperties[0]);
 
 	for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-		if (vkGetPhysicalDeviceSurfaceSupportKHR(basics.vk_physical_device_, i, vk_surface_, &queuePresentSupport[i]) != VK_SUCCESS) {
+		if (vkGetPhysicalDeviceSurfaceSupportKHR(basics.physicalDevice, i, surface, &queuePresentSupport[i]) != VK_SUCCESS) {
 			throw std::exception("Couldn't get physical device surface support.\n");
 		}
 
@@ -420,47 +417,47 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 		nullptr
 	};
 
-	if (vkCreateDevice(basics.vk_physical_device_, &deviceCreateInfo, nullptr, &basics.vk_device_) != VK_SUCCESS) {
+	if (vkCreateDevice(basics.physicalDevice, &deviceCreateInfo, nullptr, &basics.device) != VK_SUCCESS) {
 		throw std::exception("Couldn't create device.\n");
 	}
 
-	vk_queue_graphics_idx_ = graphicsQueueIdx;
-	vkGetDeviceQueue(basics.vk_device_, graphicsQueueIdx, 0, &vk_queue_graphics_);
-	vk_queue_present_idx_ = presentQueueIdx;
-	vkGetDeviceQueue(basics.vk_device_, presentQueueIdx, 0, &vk_queue_present_);
+	graphicsQueueIdx = graphicsQueueIdx;
+	vkGetDeviceQueue(basics.device, graphicsQueueIdx, 0, &graphicsQueue);
+	presentQueueIdx = presentQueueIdx;
+	vkGetDeviceQueue(basics.device, presentQueueIdx, 0, &presentQueue);
 
 	//Create command pools
-	if (!CreateVkCommandPool(basics.vk_device_, graphicsQueueIdx, &vk_pool_graphics_)) {
+	if (!CreateVkCommandPool(basics.device, graphicsQueueIdx, &graphicsPool)) {
 		throw std::exception("Unable to create graphics pool.");
 	}
 
-	if (!CreateVkCommandPool(basics.vk_device_, presentQueueIdx, &vk_pool_present_)) {
+	if (!CreateVkCommandPool(basics.device, presentQueueIdx, &presentPool)) {
 		throw std::exception("Unable to create present pool.");
 	}
 
 	//Get required info and create swap chain
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
-	if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(basics.vk_physical_device_, vk_surface_, &surfaceCapabilities) != VK_SUCCESS) {
+	if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(basics.physicalDevice, surface, &surfaceCapabilities) != VK_SUCCESS) {
 		throw std::exception("[ERROR] Vulkan: Unable to get device surface capabilities.\n");
 	}
 
 	uint32_t formatsCount;
-	if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.vk_physical_device_, vk_surface_, &formatsCount, nullptr) != VK_SUCCESS || formatsCount == 0) {
+	if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.physicalDevice, surface, &formatsCount, nullptr) != VK_SUCCESS || formatsCount == 0) {
 		throw std::exception("[ERROR] Vulkan: Unable to get device surface formats.\n");
 	}
 
 	auto surfaceFormats = std::vector<VkSurfaceFormatKHR>(formatsCount);
-	if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.vk_physical_device_, vk_surface_, &formatsCount, &surfaceFormats[0]) != VK_SUCCESS || formatsCount == 0) {
+	if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.physicalDevice, surface, &formatsCount, &surfaceFormats[0]) != VK_SUCCESS || formatsCount == 0) {
 		throw std::exception("[ERROR] Vulkan: Unable to get device surface formats.\n");
 	}
 
 	uint32_t presentModesCount;
-	if (vkGetPhysicalDeviceSurfacePresentModesKHR(basics.vk_physical_device_, vk_surface_, &presentModesCount, nullptr) != VK_SUCCESS || presentModesCount == 0) {
+	if (vkGetPhysicalDeviceSurfacePresentModesKHR(basics.physicalDevice, surface, &presentModesCount, nullptr) != VK_SUCCESS || presentModesCount == 0) {
 		throw std::exception("[ERROR] Vulkan: Unable to get device present modes.\n");
 	}
 
 	auto presentModes = std::vector<VkPresentModeKHR>(presentModesCount);
-	if (vkGetPhysicalDeviceSurfacePresentModesKHR(basics.vk_physical_device_, vk_surface_, &presentModesCount, &presentModes[0]) != VK_SUCCESS || presentModesCount == 0) {
+	if (vkGetPhysicalDeviceSurfacePresentModesKHR(basics.physicalDevice, surface, &presentModesCount, &presentModes[0]) != VK_SUCCESS || presentModesCount == 0) {
 		throw std::exception("[ERROR] Vulkan: Unable to get device present modes.\n");
 	}
 
@@ -535,7 +532,7 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 		VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		nullptr,
 		0,
-		vk_surface_,
+		surface,
 		desiredNumberOfImages,
 		desiredFormat.format,
 		desiredFormat.colorSpace,
@@ -552,32 +549,32 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 		VK_NULL_HANDLE
 	};
 
-	if (vkCreateSwapchainKHR(basics.vk_device_, &swapchainCreateInfo, nullptr, &vk_swapchain_.swapchain) != VK_SUCCESS) {
+	if (vkCreateSwapchainKHR(basics.device, &swapchainCreateInfo, nullptr, &swapchain.swapchain) != VK_SUCCESS) {
 		throw std::exception("[ERROR] Vulkan: Can't create swap chain.\n");
 	}
-	vk_swapchain_.extent = desiredExtent;
-	vk_swapchain_.format = desiredFormat.format;
+	swapchain.extent = desiredExtent;
+	swapchain.format = desiredFormat.format;
 
 	uint32_t swapchainImageCount = 0;
-	res = vkGetSwapchainImagesKHR(basics.vk_device_, vk_swapchain_.swapchain, &swapchainImageCount, nullptr);
+	res = vkGetSwapchainImagesKHR(basics.device, swapchain.swapchain, &swapchainImageCount, nullptr);
 	if (res != VK_SUCCESS || swapchainImageCount == 0) {
 		throw std::exception("[ERROR] Vulkan: Couldn't get swap chain image count.");
 	}
 
-	vk_swapchain_.images.resize(swapchainImageCount);
-	res = vkGetSwapchainImagesKHR(basics.vk_device_, vk_swapchain_.swapchain, &swapchainImageCount, &vk_swapchain_.images[0]);
+	swapchain.images.resize(swapchainImageCount);
+	res = vkGetSwapchainImagesKHR(basics.device, swapchain.swapchain, &swapchainImageCount, &swapchain.images[0]);
 	if (res != VK_SUCCESS || swapchainImageCount == 0) {
 		throw std::exception("[ERROR] Vulkan: Couldn't get swap chain images");
 	}
 
-	vk_swapchain_.imageViews.resize(vk_swapchain_.images.size());
-	vk_swapchain_.framebuffers.resize(vk_swapchain_.images.size());
-	for (uint32_t i = 0; i < vk_swapchain_.images.size(); ++i) {
+	swapchain.imageViews.resize(swapchain.images.size());
+	swapchain.framebuffers.resize(swapchain.images.size());
+	for (uint32_t i = 0; i < swapchain.images.size(); ++i) {
 		VkImageViewCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		createInfo.image = vk_swapchain_.images[i];
+		createInfo.image = swapchain.images[i];
 		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		createInfo.format = vk_swapchain_.format;
+		createInfo.format = swapchain.format;
 		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -587,7 +584,7 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 		createInfo.subresourceRange.levelCount = 1;
 		createInfo.subresourceRange.baseArrayLayer = 0;
 		createInfo.subresourceRange.layerCount = 1;
-		res = vkCreateImageView(basics.vk_device_, &createInfo, nullptr, &vk_swapchain_.imageViews[i]);
+		res = vkCreateImageView(basics.device, &createInfo, nullptr, &swapchain.imageViews[i]);
 		if (res != VK_SUCCESS) {
 			throw std::exception("Couldn't create swap chain image views.");
 		}
@@ -604,7 +601,7 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 		ci.pPoolSizes = &poolSizes[0];
 		ci.maxSets = 100;
 
-		auto res = vkCreateDescriptorPool(basics.vk_device_, &ci, nullptr, &vk_descriptor_pool_);
+		auto res = vkCreateDescriptorPool(basics.device, &ci, nullptr, &descriptorPool);
 		if (res != VK_SUCCESS) {
 			throw std::exception("Vulkan: Couldn't create descriptor pool.");
 		}
@@ -614,7 +611,7 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 uint32_t Renderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(this->basics.vk_physical_device_, &memProperties);
+	vkGetPhysicalDeviceMemoryProperties(this->basics.physicalDevice, &memProperties);
 	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
 		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
 			return i;
@@ -659,11 +656,11 @@ VkCommandBuffer Renderer::CreateCommandBuffer(VkCommandBufferLevel level)
 	VkCommandBufferAllocateInfo allocateInfo{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 		nullptr,
-		vk_pool_graphics_,
+		graphicsPool,
 		level,
 		1
 };
-	vkAllocateCommandBuffers(basics.vk_device_, &allocateInfo, &ret);
+	vkAllocateCommandBuffers(basics.device, &allocateInfo, &ret);
 	return ret;
 }
 

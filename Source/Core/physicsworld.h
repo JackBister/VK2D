@@ -16,11 +16,13 @@ class PhysicsWorld : public Deserializable
 public:
 	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
 
-	std::unique_ptr<btDiscreteDynamicsWorld> world_;
-	std::unique_ptr<btCollisionConfiguration> collision_config_;
-	std::unique_ptr<btCollisionDispatcher> dispatcher_;
-	std::unique_ptr<btBroadphaseInterface> broadphase_;
-	std::unique_ptr<btConstraintSolver> constraint_solver_;
+	std::unique_ptr<btBroadphaseInterface> broadphase;
+	std::unique_ptr<btCollisionConfiguration> collisionConfig;
+	std::unique_ptr<btConstraintSolver> constraintSolver;
+	std::unique_ptr<btCollisionDispatcher> dispatcher;
+	std::unique_ptr<btDiscreteDynamicsWorld> world;
+private:
+	static void s_TickCallback(btDynamicsWorld * world, btScalar timestep);
 
-	std::unordered_map<Entity *, std::unordered_map<Entity *, CollisionInfo>> collisions_last_frame_;
+	std::unordered_map<Entity *, std::unordered_map<Entity *, CollisionInfo>> collisionsLastFrame;
 };
