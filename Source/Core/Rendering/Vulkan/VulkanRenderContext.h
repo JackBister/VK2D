@@ -2,7 +2,6 @@
 #ifdef USE_VULKAN_RENDERER
 #include "Core/Rendering/Context/RenderContext.h"
 
-#include <atomic>
 #include <vulkan/vulkan.h>
 
 class VulkanResourceContext : public ResourceCreationContext
@@ -11,9 +10,6 @@ class VulkanResourceContext : public ResourceCreationContext
 public:
 	CommandContextAllocator * CreateCommandContextAllocator() final override;
 	void DestroyCommandContextAllocator(CommandContextAllocator *) final override;
-
-	RenderCommandContext * CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
-	void DestroyCommandContext(RenderCommandContext *) final override;
 
 	void BufferSubData(BufferHandle *, uint8_t *, size_t offset, size_t size) final override;
 	BufferHandle * CreateBuffer(BufferCreateInfo) final override;
@@ -101,21 +97,6 @@ struct VulkanFenceHandle : FenceHandle
 
 	VkDevice device;
 	VkFence fence;
-
-	/*
-		TODO:
-		Vulkan-specific and hopefully temporary:
-		vkSubmitQueue and vkWaitForFence being called on separate threads simultaneously violates the spec for various reasons.
-		This means that they must be externally synchronized.
-		Unfortunately a mutex doesn't work because it needs to be locked before it even goes to the render queue.
-		Instead, the current semantic is: "vkWaitForFences is called, a call to Wait(1) will result in busy waiting until Signal(1) has been called",
-		with the idea being that only the VulkanRenderer will downcast FenceHandle to VulkanFenceHandle and gain access to Signal.
-		This means that the timeOut parameter to Wait is a little broken, since the extra lock will wait infinitely.
-		This should be fixed in the future by removing the RenderQueue concept from the abstract renderer, since Vulkan generally does not seem to need it.
-	*/
-	void Signal();
-private:
-	std::atomic_bool locked = false;
 };
 
 struct VulkanFramebufferHandle : FramebufferHandle

@@ -29,15 +29,16 @@ class Scene : public LuaSerializable, public Resource
 	RTTR_ENABLE(LuaSerializable)
 public:
 
-	Scene(std::string const&, ResourceManager *, Queue<SDL_Event>::Reader&&, Queue<RenderCommand>::Writer&&, std::string const&, Renderer * renderer) noexcept;
+	Scene(std::string const&, ResourceManager *, Queue<SDL_Event>::Reader&&/*, Queue<RenderCommand>::Writer&&*/, std::string const&, Renderer * renderer) noexcept;
 
 	void EndFrame() noexcept;
 
 	void BeginSecondaryCommandContext(RenderCommandContext *);
+	void CreateResources(std::function<void(ResourceCreationContext&)> fun);
 	std::vector<RenderCommandContext *> CreateSecondaryCommandContexts();
 	size_t GetSwapCount();
 	size_t GetCurrFrame();
-	void PushRenderCommand(RenderCommand&&) noexcept;
+	//void PushRenderCommand(RenderCommand&&) noexcept;
 	void SubmitCamera(CameraComponent *) noexcept;
 	void SubmitCommandBuffer(RenderCommandContext *);
 	void Tick() noexcept;
@@ -99,7 +100,7 @@ private:
 
 	void CreatePrimitives();
 
-	Queue<RenderCommand>::Writer render_queue_;
+	//Queue<RenderCommand>::Writer render_queue_;
 
 	/*
 	Queue<RenderCommandContext *> free_command_buffers_;

@@ -168,6 +168,8 @@ uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalReady, FenceHan
 
 std::vector<FramebufferHandle *> Renderer::CreateBackbuffers(RenderPassHandle * renderPass)
 {
+	vk_swapchain_.backbuffers.resize(vk_swapchain_.images.size());
+	std::vector<FramebufferHandle *> ret(vk_swapchain_.backbuffers.size());
 	for (size_t i = 0; i < vk_swapchain_.images.size(); ++i) {
 		VkFramebufferCreateInfo framebufferInfo{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -194,10 +196,7 @@ std::vector<FramebufferHandle *> Renderer::CreateBackbuffers(RenderPassHandle * 
 		handle.width = vk_swapchain_.extent.width;
 		handle.layers = 1;
 		handle.pAttachments = nullptr;
-		vk_swapchain_.backbuffers.push_back(handle);
-	}
-	std::vector<FramebufferHandle *> ret(vk_swapchain_.backbuffers.size());
-	for (size_t i = 0; i < vk_swapchain_.backbuffers.size(); ++i) {
+		vk_swapchain_.backbuffers[i] = handle;
 		ret[i] = &vk_swapchain_.backbuffers[i];
 	}
 	return ret;
@@ -214,18 +213,13 @@ void Renderer::CreateResources(std::function<void(ResourceCreationContext&)> fun
 	fun(ctx);
 }
 
-void Renderer::ExecuteCommandContext(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem)
+void Renderer::ExecuteCommandContext(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
 {
-	ctx->Execute(this, waitSem, signalSem);
+	ctx->Execute(this, waitSem, signalSem, signalFence);
 }
 
 void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
 {
-	//auto res = vkAcquireNextImageKHR(basics.vk_device_, vk_swapchain_.swapchain, std::numeric_limits<uint64_t>::max(), swap_img_available_, VK_NULL_HANDLE, &imageIndex);
-	//TODO: check res
-
-	//auto cb = vk_swapchain_.presentBuffers[imageIndex];
-
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	if (waitSem != nullptr) {
@@ -238,39 +232,15 @@ void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
 
 	auto res = vkQueuePresentKHR(vk_queue_present_, &presentInfo);
 }
-
-void Renderer::Swap(uint32_t imageIndex, SemaphoreHandle * waitSem)
-{
-	VkPresentInfoKHR presentInfo = {};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	if (waitSem != nullptr) {
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &((VulkanSemaphoreHandle *)waitSem)->semaphore_;
-	}
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &vk_swapchain_.swapchain;
-	presentInfo.pImageIndices = &imageIndex;
-
-	auto res = vkQueuePresentKHR(vk_queue_present_, &presentInfo);
-}
-
-/*
-FramebufferHandle * Renderer::GetBackbuffer()
-{
-	return &backbuffer;
-}
-*/
 
 uint32_t Renderer::GetSwapCount()
 {
 	return (uint32_t)vk_swapchain_.images.size();
 }
 
-Renderer::Renderer(ResourceManager * resMan/*, Queue<RenderCommand>::Reader&& reader*/, char const * title, int winX, int winY, int w, int h, uint32_t flags)
+Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_t flags)
 	: aspectRatio(static_cast<float>(w) / static_cast<float>(h)),
 	dimensions(w, h),
-	/*render_queue_(std::move(reader)),*/
-	resource_manager_(resMan),
 	window(SDL_CreateWindow(title, winX, winY, w, h, flags | SDL_WINDOW_VULKAN))
 {
 	stbi_set_flip_vertically_on_load(true);
@@ -288,12 +258,6 @@ Renderer::Renderer(ResourceManager * resMan/*, Queue<RenderCommand>::Reader&& re
 #if defined(_DEBUG)
 	instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 #endif
-	instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-	//TODO: Other WMs
-#if defined(USE_PLATFORM_WIN32_KHR)
-	instanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#endif
-
 	std::vector<const char *> const instanceLayers = {
 #if defined(_DEBUG)
 		"VK_LAYER_LUNARG_standard_validation"
@@ -357,7 +321,6 @@ Renderer::Renderer(ResourceManager * resMan/*, Queue<RenderCommand>::Reader&& re
 	}
 	basics.vk_physical_device_ = physDeviceOptional.value();
 
-
 	std::vector<const char*> const deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
@@ -366,9 +329,7 @@ Renderer::Renderer(ResourceManager * resMan/*, Queue<RenderCommand>::Reader&& re
 		throw std::exception("CheckVkDeviceExtensions failed.");
 	}
 
-	/*
-	Create device and queues
-	*/
+	//Create device and queues
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(basics.vk_physical_device_, &queueFamilyCount, nullptr);
 	if (queueFamilyCount == 0) {
@@ -413,7 +374,7 @@ Renderer::Renderer(ResourceManager * resMan/*, Queue<RenderCommand>::Reader&& re
 
 	//Either no graphics queue exists or no present queue exists. We can't work with this.
 	if (graphicsQueueIdx == UINT32_MAX || presentQueueIdx == UINT32_MAX) {
-		printf("[ERROR] Vulkan: No queues with graphics or present support found.\n");
+		throw std::exception("Vulkan: No queues with graphics or present support found.\n");
 	}
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -468,31 +429,16 @@ Renderer::Renderer(ResourceManager * resMan/*, Queue<RenderCommand>::Reader&& re
 	vk_queue_present_idx_ = presentQueueIdx;
 	vkGetDeviceQueue(basics.vk_device_, presentQueueIdx, 0, &vk_queue_present_);
 
-	/*
-	Create command pools
-	*/
+	//Create command pools
 	if (!CreateVkCommandPool(basics.vk_device_, graphicsQueueIdx, &vk_pool_graphics_)) {
 		throw std::exception("Unable to create graphics pool.");
 	}
-	vk_graphics_pools_[std::this_thread::get_id()] = vk_pool_graphics_;
 
 	if (!CreateVkCommandPool(basics.vk_device_, presentQueueIdx, &vk_pool_present_)) {
 		throw std::exception("Unable to create present pool.");
 	}
 
-	if (!CreateVkSemaphore(basics.vk_device_, &swap_img_available_)) {
-		throw std::exception("Couldn't create swap_img_available_ semaphore.\n");
-	}
-
-#if 0
-	if (!CreateVkSemaphore(basics.vk_device_, &ready_for_present_)) {
-		throw std::exception("Couldn't create ready_for_present_ semaphore.\n");
-	}
-#endif
-
-	/*
-	Get required info and create swap chain
-	*/
+	//Get required info and create swap chain
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(basics.vk_physical_device_, vk_surface_, &surfaceCapabilities) != VK_SUCCESS) {
 		throw std::exception("[ERROR] Vulkan: Unable to get device surface capabilities.\n");
@@ -617,59 +563,6 @@ Renderer::Renderer(ResourceManager * resMan/*, Queue<RenderCommand>::Reader&& re
 	if (res != VK_SUCCESS || swapchainImageCount == 0) {
 		throw std::exception("[ERROR] Vulkan: Couldn't get swap chain image count.");
 	}
-#if 0
-	VkAttachmentDescription attachmentDescriptions[] = {
-		{
-			0,
-			vk_swapchain_.format,
-			VK_SAMPLE_COUNT_1_BIT,
-			VK_ATTACHMENT_LOAD_OP_CLEAR,
-			VK_ATTACHMENT_STORE_OP_STORE,
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-		}
-	};
-
-	VkAttachmentReference colorAttachmentReferences[] = {
-		{
-			0,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		}
-	};
-
-	VkSubpassDescription subpassDescriptions[] = {
-		{
-			0,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			0,
-			nullptr,
-			1,
-			colorAttachmentReferences,
-			nullptr,
-			nullptr,
-			0,
-			nullptr
-		}
-	};
-
-	VkRenderPassCreateInfo renderpassCreateInfo = {
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		nullptr,
-		0,
-		1,
-		attachmentDescriptions,
-		1,
-		subpassDescriptions,
-		0,
-		nullptr
-	};
-	res = vkCreateRenderPass(basics.vk_device_, &renderpassCreateInfo, nullptr, &vk_render_pass_);
-	if (res != VK_SUCCESS) {
-		throw std::exception("[ERROR] Vulkan: Couldn't create render pass.");
-	}
-#endif
 
 	vk_swapchain_.images.resize(swapchainImageCount);
 	res = vkGetSwapchainImagesKHR(basics.vk_device_, vk_swapchain_.swapchain, &swapchainImageCount, &vk_swapchain_.images[0]);
@@ -677,116 +570,8 @@ Renderer::Renderer(ResourceManager * resMan/*, Queue<RenderCommand>::Reader&& re
 		throw std::exception("[ERROR] Vulkan: Couldn't get swap chain images");
 	}
 
-#if 0
-	{
-		VkImageCreateInfo abstractBackbufferInfo = {};
-		abstractBackbufferInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		abstractBackbufferInfo.imageType = VK_IMAGE_TYPE_2D;
-		abstractBackbufferInfo.format = desiredFormat.format;
-		abstractBackbufferInfo.extent = {desiredExtent.width, desiredExtent.height, 1};
-		abstractBackbufferInfo.mipLevels = 1;
-		abstractBackbufferInfo.arrayLayers = 1;
-		abstractBackbufferInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		abstractBackbufferInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		abstractBackbufferInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		abstractBackbufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VkImage abstractBackbuffer;
-		res = vkCreateImage(basics.vk_device_, &abstractBackbufferInfo, nullptr, &abstractBackbuffer);
-		if (res != VK_SUCCESS) {
-			throw std::exception("[ERROR] Vulkan: Couldn't get swap chain images");
-		}
-
-		VkMemoryRequirements const memoryRequirements = [this](VkImage img) {
-			VkMemoryRequirements ret{0};
-			vkGetImageMemoryRequirements(basics.vk_device_, img, &ret);
-			return ret;
-		}(abstractBackbuffer);
-
-		VkPhysicalDeviceMemoryProperties memoryProperties;
-		vkGetPhysicalDeviceMemoryProperties(basics.vk_physical_device_, &memoryProperties);
-
-		auto memoryIndex = this->FindMemoryType(memoryRequirements.memoryTypeBits, 0);
-
-		VkMemoryAllocateInfo const info{
-			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-			nullptr,
-			memoryRequirements.size,
-			memoryIndex
-		};
-
-		VkDeviceMemory const memory = [this](VkMemoryAllocateInfo const& info) {
-			VkDeviceMemory ret{0};
-			auto const res = vkAllocateMemory(basics.vk_device_, &info, nullptr, &ret);
-			assert(res == VK_SUCCESS);
-			return ret;
-		}(info);
-
-		res = vkBindImageMemory(basics.vk_device_, abstractBackbuffer, memory, 0);
-
-		VkBufferCreateInfo stagingInfo = {};
-		stagingInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		stagingInfo.size = memoryRequirements.size;
-		stagingInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		stagingInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		VkBuffer stagingBuffer;
-		auto res = vkCreateBuffer(basics.vk_device_, &stagingInfo, nullptr, &stagingBuffer);
-		assert(res == VK_SUCCESS);
-
-		VkMemoryRequirements stagingRequirements = {};
-		vkGetBufferMemoryRequirements(basics.vk_device_, stagingBuffer, &stagingRequirements);
-
-		VkMemoryAllocateInfo stagingAllocateInfo{};
-		stagingAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		stagingAllocateInfo.allocationSize = stagingRequirements.size;
-		stagingAllocateInfo.memoryTypeIndex = FindMemoryType(stagingRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		VkDeviceMemory stagingMemory;
-		res = vkAllocateMemory(basics.vk_device_, &stagingAllocateInfo, nullptr, &stagingMemory);
-		assert(res == VK_SUCCESS);
-
-		vkBindBufferMemory(basics.vk_device_, stagingBuffer, stagingMemory, 0);
-
-		uint8_t * const mappedMemory = [this](VkDeviceMemory const& memory, size_t size) {
-			uint8_t * ret = nullptr;
-			auto const res = vkMapMemory(basics.vk_device_, memory, 0, size, 0, (void **)&ret);
-			assert(res == VK_SUCCESS);
-			return ret;
-		}(stagingMemory, stagingRequirements.size);
-
-		for (size_t i = 0; i < memoryRequirements.size; ++i) {
-			mappedMemory[i] = 0;
-		}
-
-		vkUnmapMemory(basics.vk_device_, stagingMemory);
-
-		auto cb = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		VkCommandBufferBeginInfo beginInfo = {};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		vkBeginCommandBuffer(cb, &beginInfo);
-		TransitionImageLayout(cb, abstractBackbuffer, desiredFormat.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		CopyBufferToImage(cb, stagingBuffer, abstractBackbuffer, desiredExtent.width, desiredExtent.height);
-		vkEndCommandBuffer(cb);
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &cb;
-		vkQueueSubmit(vk_queue_graphics_, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(vk_queue_graphics_);
-
-		vkFreeCommandBuffers(basics.vk_device_, vk_pool_graphics_, 1, &cb);
-		vkDestroyBuffer(basics.vk_device_, stagingBuffer, nullptr);
-		vkFreeMemory(basics.vk_device_, stagingMemory, nullptr);
-
-		vk_swapchain_.images.push_back(abstractBackbuffer);
-	}
-
-	vk_backbuffer_image_ = vk_swapchain_.images[vk_swapchain_.images.size() - 1];
-#endif
-
 	vk_swapchain_.imageViews.resize(vk_swapchain_.images.size());
 	vk_swapchain_.framebuffers.resize(vk_swapchain_.images.size());
-	//vk_swapchain_.presentBuffers.resize(vk_swapchain_.images.size());
 	for (uint32_t i = 0; i < vk_swapchain_.images.size(); ++i) {
 		VkImageViewCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -805,106 +590,8 @@ Renderer::Renderer(ResourceManager * resMan/*, Queue<RenderCommand>::Reader&& re
 		res = vkCreateImageView(basics.vk_device_, &createInfo, nullptr, &vk_swapchain_.imageViews[i]);
 		if (res != VK_SUCCESS) {
 			throw std::exception("Couldn't create swap chain image views.");
-		}	
-
-#if 0
-		if (i != vk_swapchain_.images.size()) {
-			auto cb = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-			VkCommandBufferBeginInfo beginInfo = {};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			vkBeginCommandBuffer(cb, &beginInfo);
-			{
-				VkImageMemoryBarrier barrier = {};
-				barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-				barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-				barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barrier.image = vk_swapchain_.images[i];
-				barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				barrier.subresourceRange.baseMipLevel = 0;
-				barrier.subresourceRange.levelCount = 1;
-				barrier.subresourceRange.baseArrayLayer = 0;
-				barrier.subresourceRange.layerCount = 1;
-
-				VkPipelineStageFlags sourceStage;
-				VkPipelineStageFlags destinationStage;
-
-				barrier.srcAccessMask = 0;
-				barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-				sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-				destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-
-				vkCmdPipelineBarrier(
-					cb,
-					sourceStage, destinationStage,
-					0,
-					0, nullptr,
-					0, nullptr,
-					1, &barrier
-				);
-			}
-			{
-				VkImageCopy imgCopy = {};
-				imgCopy.dstOffset = {0, 0, 0};
-				imgCopy.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				imgCopy.dstSubresource.baseArrayLayer = 0;
-				imgCopy.dstSubresource.layerCount = 1;
-				imgCopy.dstSubresource.mipLevel = 0;
-				imgCopy.extent = {vk_swapchain_.extent.width, vk_swapchain_.extent.height, 1};
-				imgCopy.srcOffset = {0, 0, 0};
-				imgCopy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				imgCopy.srcSubresource.baseArrayLayer = 0;
-				imgCopy.srcSubresource.layerCount = 1;
-				imgCopy.srcSubresource.mipLevel = 0;
-				vkCmdCopyImage(cb, vk_backbuffer_image_, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vk_swapchain_.images[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imgCopy);
-			}
-			{
-				VkImageMemoryBarrier barrier = {};
-				barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-				barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-				barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-				barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				barrier.image = vk_swapchain_.images[i];
-				barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				barrier.subresourceRange.baseMipLevel = 0;
-				barrier.subresourceRange.levelCount = 1;
-				barrier.subresourceRange.baseArrayLayer = 0;
-				barrier.subresourceRange.layerCount = 1;
-
-				VkPipelineStageFlags sourceStage;
-				VkPipelineStageFlags destinationStage;
-
-				barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-				barrier.dstAccessMask = 0;
-
-				sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-				destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-
-				vkCmdPipelineBarrier(
-					cb,
-					sourceStage, destinationStage,
-					0,
-					0, nullptr,
-					0, nullptr,
-					1, &barrier
-				);
-			}
-			vkEndCommandBuffer(cb);
-			vk_swapchain_.presentBuffers[i] = cb;
 		}
-#endif
 	}
-	//backbuffer.framebuffer_ = vk_swapchain_.framebuffers[vk_swapchain_.framebuffers.size() - 1];
-	//backbuffer.format = ToAbstractFormat(vk_swapchain_.format);
-#if 0
-	vk_swapchain_.images.pop_back();
-	vk_swapchain_.imageViews.pop_back();
-	vk_swapchain_.framebuffers.pop_back();
-	vk_swapchain_.presentBuffers.pop_back();
-#endif
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes({
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 50},
@@ -922,161 +609,7 @@ Renderer::Renderer(ResourceManager * resMan/*, Queue<RenderCommand>::Reader&& re
 			throw std::exception("Vulkan: Couldn't create descriptor pool.");
 		}
 	}
-
-	{
-#if 0
-		uint32_t imageIndex;
-		auto res = vkAcquireNextImageKHR(basics.vk_device_, vk_swapchain_.swapchain, std::numeric_limits<uint64_t>::max(), swap_img_available_, VK_NULL_HANDLE, &imageIndex);
-		//TODO: check res
-
-		auto cb = CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		VkCommandBufferBeginInfo beginInfo = {};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		{
-			VkMemoryRequirements reqs;
-			vkGetImageMemoryRequirements(basics.vk_device_, vk_swapchain_.images[imageIndex], &reqs);
-			VkBufferCreateInfo stagingInfo = {};
-			stagingInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			stagingInfo.size = reqs.size;
-			stagingInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-			stagingInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			VkBuffer stagingBuffer;
-			auto res = vkCreateBuffer(basics.vk_device_, &stagingInfo, nullptr, &stagingBuffer);
-			assert(res == VK_SUCCESS);
-
-			VkMemoryRequirements stagingRequirements = {};
-			vkGetBufferMemoryRequirements(basics.vk_device_, stagingBuffer, &stagingRequirements);
-
-			VkMemoryAllocateInfo stagingAllocateInfo{};
-			stagingAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			stagingAllocateInfo.allocationSize = stagingRequirements.size;
-			stagingAllocateInfo.memoryTypeIndex = FindMemoryType(stagingRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-			VkDeviceMemory stagingMemory;
-			res = vkAllocateMemory(basics.vk_device_, &stagingAllocateInfo, nullptr, &stagingMemory);
-			assert(res == VK_SUCCESS);
-		}
-		vkBeginCommandBuffer(cb, &beginInfo);
-		
-		//TODO: !!!
-		vkEndCommandBuffer(cb);
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &cb;
-		submitInfo.waitSemaphoreCount = 1;
-		VkSemaphore waitSems[] = {swap_img_available_};
-		submitInfo.pWaitSemaphores = waitSems;
-		VkPipelineStageFlags stageMasks[] = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
-		submitInfo.pWaitDstStageMask = stageMasks;
-		//TODO: !!!
-		submitInfo.signalSemaphoreCount = 1;
-		VkSemaphore signalSems[] = {ready_for_present_};
-		submitInfo.pSignalSemaphores = signalSems;
-		vkQueueSubmit(vk_queue_graphics_, 1, &submitInfo, VK_NULL_HANDLE);
-
-
-		VkPresentInfoKHR presentInfo = {};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		//presentInfo.waitSemaphoreCount = 1;
-		//presentInfo.pWaitSemaphores = &ready_for_present_;
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = &vk_swapchain_.swapchain;
-		presentInfo.pImageIndices = &imageIndex;
-
-		res = vkQueuePresentKHR(vk_queue_present_, &presentInfo);
-#endif
-	}
 }
-
-
-#if 0
-void Renderer::DrainQueue() noexcept
-{
-	using namespace std::literals::chrono_literals;
-	RenderCommand command = render_queue_.Wait();
-	switch (command.params.index()) {
-	case RenderCommand::Type::NOP:
-		printf("[WARNING] NOP render command.\n");
-		break;
-	case RenderCommand::Type::ABORT:
-		isAborting = true;
-		abortCode = std::get<RenderCommand::AbortParams>(command.params).errorCode;
-		break;
-	case RenderCommand::Type::CREATE_RESOURCE:
-	{
-		auto fun = std::get<RenderCommand::CreateResourceParams>(command.params).fun;
-		VulkanResourceContext ctx(this);
-		fun(ctx);
-		break;
-	}
-	case RenderCommand::Type::EXECUTE_COMMAND_CONTEXT:
-	{
-		auto params = std::get<RenderCommand::ExecuteCommandContextParams>(command.params);
-		params.ctx->Execute(this, params.waitSem, params.signalSem);
-		break;
-	}
-	case RenderCommand::Type::SWAP_WINDOW:
-	{
-		auto params = std::get<RenderCommand::SwapWindowParams>(command.params);
-		uint32_t imageIndex = params.imageIndex;
-		//auto res = vkAcquireNextImageKHR(basics.vk_device_, vk_swapchain_.swapchain, std::numeric_limits<uint64_t>::max(), swap_img_available_, VK_NULL_HANDLE, &imageIndex);
-		//TODO: check res
-
-		//auto cb = vk_swapchain_.presentBuffers[imageIndex];
-
-#if 0 
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &cb;
-		submitInfo.waitSemaphoreCount = 2;
-		VkSemaphore waitSems[] = {swap_img_available_, ((VulkanSemaphoreHandle *)params.waitSem)->semaphore_};
-		submitInfo.pWaitSemaphores = waitSems;
-		VkPipelineStageFlags stageMasks[] = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
-		submitInfo.pWaitDstStageMask = stageMasks;
-		//TODO: !!!
-		submitInfo.signalSemaphoreCount = 1;
-		VkSemaphore signalSems[] = {ready_for_present_};
-		submitInfo.pSignalSemaphores = signalSems;
-		if (params.signalFence != nullptr) {
-			auto nativeHandle = (VulkanFenceHandle *)params.signalFence;
-			vkQueueSubmit(vk_queue_graphics_, 1, &submitInfo, nativeHandle->fence);
-			nativeHandle->Signal();
-		} else {
-			vkQueueSubmit(vk_queue_graphics_, 1, &submitInfo, VK_NULL_HANDLE);
-		}
-#endif
-		VkPresentInfoKHR presentInfo = {};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		if (params.waitSem != nullptr) {
-			presentInfo.waitSemaphoreCount = 1;
-			presentInfo.pWaitSemaphores = &((VulkanSemaphoreHandle *)params.waitSem)->semaphore_;
-		}
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = &vk_swapchain_.swapchain;
-		presentInfo.pImageIndices = &imageIndex;
-
-		auto res = vkQueuePresentKHR(vk_queue_present_, &presentInfo);
-
-		//TODO:
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		if (params.signalFence != nullptr) {
-			auto nativeHandle = (VulkanFenceHandle *)params.signalFence;
-			vkQueueSubmit(vk_queue_graphics_, 1, &submitInfo, nativeHandle->fence);
-			nativeHandle->Signal();
-		} else {
-			vkQueueSubmit(vk_queue_graphics_, 1, &submitInfo, VK_NULL_HANDLE);
-		}
-
-		break;
-	}
-	default:
-		printf("[WARNING] Unimplemented render command: %zu\n", command.params.index());
-	}
-}
-#endif
 
 uint32_t Renderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
@@ -1122,20 +655,14 @@ void Renderer::CopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer buffer,
 
 VkCommandBuffer Renderer::CreateCommandBuffer(VkCommandBufferLevel level)
 {
-	auto threadIdx = std::this_thread::get_id();
-	if (vk_graphics_pools_.find(threadIdx) == vk_graphics_pools_.end()) {
-		VkCommandPool newPool;
-		assert(CreateVkCommandPool(basics.vk_device_, vk_queue_graphics_idx_, &newPool));
-		vk_graphics_pools_[threadIdx] = newPool;
-	}
 	VkCommandBuffer ret;
 	VkCommandBufferAllocateInfo allocateInfo{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 		nullptr,
-		vk_graphics_pools_[threadIdx],
+		vk_pool_graphics_,
 		level,
 		1
-	};
+};
 	vkAllocateCommandBuffers(basics.vk_device_, &allocateInfo, &ret);
 	return ret;
 }

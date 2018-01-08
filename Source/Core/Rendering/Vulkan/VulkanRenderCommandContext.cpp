@@ -10,7 +10,7 @@ static constexpr VkRect2D ToVulkanRect2D(RenderCommandContext::Rect2D const& rec
 	};
 }
 
-void VulkanRenderCommandContext::Execute(Renderer * renderer, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem)
+void VulkanRenderCommandContext::Execute(Renderer * renderer, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
 {
 	std::vector<VkSemaphore> vulkanWaitSems(waitSem.size());
 	std::transform(waitSem.begin(), waitSem.end(), vulkanWaitSems.begin(), [](SemaphoreHandle * sem) { return ((VulkanSemaphoreHandle *)sem)->semaphore_; });
@@ -19,14 +19,14 @@ void VulkanRenderCommandContext::Execute(Renderer * renderer, std::vector<Semaph
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &this->buffer_;
+	submitInfo.pCommandBuffers = &this->buffer;
 	std::vector<VkPipelineStageFlags> flags(vulkanWaitSems.size(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 	submitInfo.pWaitDstStageMask = vulkanWaitSems.size() > 0 ?  &flags[0] : nullptr;
 	submitInfo.waitSemaphoreCount = vulkanWaitSems.size();
 	submitInfo.pWaitSemaphores = vulkanWaitSems.size() > 0 ? &vulkanWaitSems[0] : nullptr;
 	submitInfo.signalSemaphoreCount = vulkanSignalSems.size();
 	submitInfo.pSignalSemaphores = vulkanSignalSems.size() > 0 ? &vulkanSignalSems[0] : nullptr;
-	auto res = vkQueueSubmit(renderer->vk_queue_graphics_, 1, &submitInfo, VK_NULL_HANDLE);
+	auto res = vkQueueSubmit(renderer->vk_queue_graphics_, 1, &submitInfo, signalFence != nullptr ? ((VulkanFenceHandle *)signalFence)->fence : VK_NULL_HANDLE);
 	assert(res == VK_SUCCESS);
 }
 
@@ -50,17 +50,17 @@ void VulkanRenderCommandContext::BeginRecording(RenderCommandContext::Inheritanc
 		beginInfo.pInheritanceInfo = &vkInheritanceInfo;
 	}
 
-	vkBeginCommandBuffer(buffer_, &beginInfo);
+	vkBeginCommandBuffer(buffer, &beginInfo);
 }
 
 void VulkanRenderCommandContext::EndRecording()
 {
-	vkEndCommandBuffer(buffer_);
+	vkEndCommandBuffer(buffer);
 }
 
 void VulkanRenderCommandContext::Reset()
 {
-	vkResetCommandBuffer(buffer_, 0);
+	vkResetCommandBuffer(buffer, 0);
 }
 
 void VulkanRenderCommandContext::CmdBeginRenderPass(RenderCommandContext::RenderPassBeginInfo * pRenderPassBegin, RenderCommandContext::SubpassContents contents)
@@ -93,23 +93,7 @@ void VulkanRenderCommandContext::CmdBeginRenderPass(RenderCommandContext::Render
 		break;
 	}
 
-	vkCmdBeginRenderPass(this->buffer_, &beginInfo, subpassContents);
-
-	//TODO: I use this for debuggability in RenderDoc. RenderDoc assumes you will actually swap something before it will show you texture states and such.
-	//This allows me to view the state at the beginning of the first frame 
-#if 0
-	uint32_t imageIndex;
-	auto res = vkAcquireNextImageKHR(this->renderer_->basics.vk_device_, renderer_->vk_swapchain_.swapchain, std::numeric_limits<uint64_t>::max(), renderer_->swap_img_available_, VK_NULL_HANDLE, &imageIndex);
-	VkPresentInfoKHR presentInfo = {};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &renderer_->swap_img_available_;
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &renderer_->vk_swapchain_.swapchain;
-	presentInfo.pImageIndices = &imageIndex;
-	res = vkQueuePresentKHR(renderer_->vk_queue_present_, &presentInfo);
-	vkQueueWaitIdle(renderer_->vk_queue_present_);
-#endif
+	vkCmdBeginRenderPass(this->buffer, &beginInfo, subpassContents);
 }
 
 void VulkanRenderCommandContext::CmdBindDescriptorSet(DescriptorSet * set)
@@ -118,7 +102,7 @@ void VulkanRenderCommandContext::CmdBindDescriptorSet(DescriptorSet * set)
 	auto nativeSet = (VulkanDescriptorSet *)set;
 
 	//TODO: compute
-	vkCmdBindDescriptorSets(buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, nativeSet->pipeline_layout_, 0, 1, &nativeSet->set_, 0, nullptr);
+	vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, nativeSet->pipeline_layout_, 0, 1, &nativeSet->set_, 0, nullptr);
 }
 
 void VulkanRenderCommandContext::CmdBindIndexBuffer(BufferHandle * buffer, size_t offset, RenderCommandContext::IndexType indexType)
@@ -133,7 +117,7 @@ void VulkanRenderCommandContext::CmdBindIndexBuffer(BufferHandle * buffer, size_
 		break;
 	}
 
-	vkCmdBindIndexBuffer(this->buffer_, ((VulkanBufferHandle *)buffer)->buffer_, offset, vkIndexType);
+	vkCmdBindIndexBuffer(this->buffer, ((VulkanBufferHandle *)buffer)->buffer_, offset, vkIndexType);
 }
 
 void VulkanRenderCommandContext::CmdBindPipeline(RenderPassHandle::PipelineBindPoint bindPoint, PipelineHandle * pipeline)
@@ -147,42 +131,42 @@ void VulkanRenderCommandContext::CmdBindPipeline(RenderPassHandle::PipelineBindP
 		vkBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		break;
 	}
-	vkCmdBindPipeline(this->buffer_, vkBindPoint, ((VulkanPipelineHandle *)pipeline)->pipeline_);
+	vkCmdBindPipeline(this->buffer, vkBindPoint, ((VulkanPipelineHandle *)pipeline)->pipeline_);
 }
 
 void VulkanRenderCommandContext::CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride)
 {
-	vkCmdBindVertexBuffers(this->buffer_, binding, 1, &((VulkanBufferHandle *)buffer)->buffer_, &offset);
+	vkCmdBindVertexBuffers(this->buffer, binding, 1, &((VulkanBufferHandle *)buffer)->buffer_, &offset);
 }
 
 void VulkanRenderCommandContext::CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset)
 {
-	vkCmdDrawIndexed(this->buffer_, indexCount, instanceCount, firstIndex, vertexOffset, 0);
+	vkCmdDrawIndexed(this->buffer, indexCount, instanceCount, firstIndex, vertexOffset, 0);
 }
 
 void VulkanRenderCommandContext::CmdEndRenderPass()
 {
-	vkCmdEndRenderPass(this->buffer_);
+	vkCmdEndRenderPass(this->buffer);
 }
 
 void VulkanRenderCommandContext::CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers)
 {
 	std::vector<VkCommandBuffer> commandBuffers(commandBufferCount);
 	std::transform(pCommandBuffers, &pCommandBuffers[commandBufferCount], commandBuffers.begin(), [](RenderCommandContext * ctx) {
-		return ((VulkanRenderCommandContext *)ctx)->buffer_;
+		return ((VulkanRenderCommandContext *)ctx)->buffer;
 	});
 
-	vkCmdExecuteCommands(this->buffer_, commandBuffers.size(), &commandBuffers[0]);
+	vkCmdExecuteCommands(this->buffer, commandBuffers.size(), &commandBuffers[0]);
 }
 
 void VulkanRenderCommandContext::CmdExecuteCommands(std::vector<RenderCommandContext *>&& commandBuffers)
 {
 	std::vector<VkCommandBuffer> nativeCommandBuffers(commandBuffers.size());
 	std::transform(commandBuffers.begin(), commandBuffers.end(), nativeCommandBuffers.begin(), [](RenderCommandContext * ctx) {
-		return ((VulkanRenderCommandContext *)ctx)->buffer_;
+		return ((VulkanRenderCommandContext *)ctx)->buffer;
 	});
 
-	vkCmdExecuteCommands(this->buffer_, nativeCommandBuffers.size(), &nativeCommandBuffers[0]);
+	vkCmdExecuteCommands(this->buffer, nativeCommandBuffers.size(), &nativeCommandBuffers[0]);
 }
 
 void VulkanRenderCommandContext::CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, RenderCommandContext::Rect2D const * pScissors)
@@ -190,7 +174,7 @@ void VulkanRenderCommandContext::CmdSetScissor(uint32_t firstScissor, uint32_t s
 	std::vector<VkRect2D> vkScissors(scissorCount);
 	std::transform(pScissors, &pScissors[scissorCount], vkScissors.begin(), ToVulkanRect2D);
 
-	vkCmdSetScissor(this->buffer_, firstScissor, scissorCount, &vkScissors[0]);
+	vkCmdSetScissor(this->buffer, firstScissor, scissorCount, &vkScissors[0]);
 }
 
 void VulkanRenderCommandContext::CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, RenderCommandContext::Viewport const * pViewports)
@@ -207,12 +191,12 @@ void VulkanRenderCommandContext::CmdSetViewport(uint32_t firstViewport, uint32_t
 		};
 	});
 
-	vkCmdSetViewport(this->buffer_, firstViewport, viewportCount, &vkViewports[0]);
+	vkCmdSetViewport(this->buffer, firstViewport, viewportCount, &vkViewports[0]);
 }
 
 void VulkanRenderCommandContext::CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData)
 {
-	vkCmdUpdateBuffer(this->buffer_, ((VulkanBufferHandle *)buffer)->buffer_, offset, size, pData);
+	vkCmdUpdateBuffer(this->buffer, ((VulkanBufferHandle *)buffer)->buffer_, offset, size, pData);
 }
 
 #endif

@@ -15,7 +15,7 @@
 class ResourceManager
 {
 public:
-	ResourceManager(Queue<RenderCommand>::Writer&&, Allocator& a = Allocator::default_allocator);
+	ResourceManager(Renderer * renderer, /*Queue<RenderCommand>::Writer&&,*/ Allocator& a = Allocator::default_allocator);
 
 	template <typename T>
 	void AddResource(std::string const& name, T * res);
@@ -32,13 +32,15 @@ public:
 	template<typename T, typename ... ArgTypes>
 	std::shared_ptr<T> LoadResourceOrConstruct(std::string const& fileName, ArgTypes&& ... args);
 
-	void PushRenderCommand(RenderCommand&&);
+	void CreateResources(std::function<void(ResourceCreationContext&)> fun);
+	//void PushRenderCommand(RenderCommand&&);
 
 private:
 	std::unordered_map<std::string, void *> nonRCCache;
 	std::unordered_map<std::string, std::weak_ptr<void>> rcCache;
 	Allocator& allocator;
-	Queue<RenderCommand>::Writer renderQueue;
+	//Queue<RenderCommand>::Writer renderQueue;
+	Renderer * renderer;
 };
 
 template <typename T>

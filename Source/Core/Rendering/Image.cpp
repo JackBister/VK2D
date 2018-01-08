@@ -10,7 +10,8 @@ Image::Image(ResourceManager * resMan, std::string const& name) noexcept
 	this->name = name;
 	this->data_ = std::vector<uint8_t>(128 * 128 * 4, 0xFF);
 
-	resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
+	//resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
+	resMan->CreateResources([this](ResourceCreationContext& ctx) {
 		ResourceCreationContext::ImageCreateInfo ic = {
 			Format::RGBA8,
 			ImageHandle::Type::TYPE_2D,
@@ -23,7 +24,8 @@ Image::Image(ResourceManager * resMan, std::string const& name) noexcept
 		ctx.ImageData(tmp, this->data_);
 		this->img_ = tmp;
 		printf("post createimage\n");
-	})));
+		//})));
+	});
 }
 
 Image::Image(ImageCreateInfo const& info) noexcept
@@ -33,7 +35,8 @@ Image::Image(ImageCreateInfo const& info) noexcept
 	this->height_ = info.height;
 	if (info.data.index() == 0) {
 		this->data_ = std::get<std::vector<uint8_t>>(info.data);
-		info.resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
+		info.resMan->CreateResources([this](ResourceCreationContext& ctx) {
+			//info.resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
 			ResourceCreationContext::ImageCreateInfo ic = {
 				Format::RGBA8,
 				ImageHandle::Type::TYPE_2D,
@@ -46,7 +49,8 @@ Image::Image(ImageCreateInfo const& info) noexcept
 			ctx.ImageData(tmp, this->data_);
 			this->img_ = tmp;
 			printf("post createimage\n");
-		})));
+			//})));
+		});
 	} else {
 		this->img_ = std::get<ImageHandle *>(info.data);
 	}
@@ -96,7 +100,8 @@ Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint
 		}
 	}
 	//TODO:
-	resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
+	resMan->CreateResources([this](ResourceCreationContext& ctx) {
+		//resMan->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([this](ResourceCreationContext& ctx) {
 		ResourceCreationContext::ImageCreateInfo ic = {
 			Format::RGBA8,
 			ImageHandle::Type::TYPE_2D,
@@ -109,7 +114,8 @@ Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint
 		ctx.ImageData(tmp, this->data_);
 		this->img_ = tmp;
 		printf("post createimage\n");
-	})));
+		//})));
+	});
 }
 
 std::vector<uint8_t> const& Image::get_data() const noexcept

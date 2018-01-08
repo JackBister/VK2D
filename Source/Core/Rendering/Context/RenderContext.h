@@ -477,7 +477,7 @@ public:
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) = 0;
 
 protected:
-	virtual void Execute(Renderer *, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem) = 0;
+	virtual void Execute(Renderer *, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence) = 0;
 
 	//TODO: Stack allocator for throwaway arrays
 	std::allocator<uint8_t> * allocator;
@@ -488,13 +488,6 @@ class ResourceCreationContext
 public:
 	virtual CommandContextAllocator * CreateCommandContextAllocator() = 0;
 	virtual void DestroyCommandContextAllocator(CommandContextAllocator *) = 0;
-
-	struct RenderCommandContextCreateInfo
-	{
-		RenderCommandContextLevel level;
-	};
-	virtual RenderCommandContext * CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) = 0;
-	virtual void DestroyCommandContext(RenderCommandContext *) = 0;
 
 	virtual void BufferSubData(BufferHandle *, uint8_t *, size_t offset, size_t size) = 0;
 	/*

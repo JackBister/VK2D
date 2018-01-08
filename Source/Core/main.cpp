@@ -67,11 +67,12 @@ void MainThread(ResourceManager * resMan, Queue<SDL_Event>::Reader&& inputQueue,
 		fread(&buf[0], 1, length, f);
 		serializedScene = std::string(buf.begin(), buf.end());
 	} else {
-		renderQueue.Push(RenderCommand(RenderCommand::AbortParams(1)));
+		//renderQueue.Push(RenderCommand(RenderCommand::AbortParams(1)));
+		exit(1);
 		return;
 	}
 
-	Scene scene(sceneFileName, resMan, std::move(inputQueue), std::move(renderQueue), serializedScene, renderer);
+	Scene scene(sceneFileName, resMan, std::move(inputQueue)/*, std::move(renderQueue)*/, serializedScene, renderer);
 
 	scene.time_.Start();
 	scene.BroadcastEvent("BeginPlay");
@@ -94,16 +95,16 @@ int main(int argc, char *argv[])
 	Queue<SDL_Event> inputQueue;
 	//Sends commands from main thread -> GPU thread
 	Queue<RenderCommand> renderQueue;
-	ResourceManager resMan(renderQueue.GetWriter());
 	SDL_Init(SDL_INIT_EVERYTHING);
-	Renderer renderer(&resMan, /* renderQueue.GetReader(),*/ "SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
+	Renderer renderer(/*&resMan,  renderQueue.GetReader(),*/ "SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
+	ResourceManager resMan(&renderer);
 	auto mainThread = std::thread(MainThread, &resMan, inputQueue.GetReader(), renderQueue.GetWriter(), sceneFileName, &renderer);
 	auto inputWriter = inputQueue.GetWriter();
 
 	SetThreadName(std::this_thread::get_id(), "Rendering Thread");
 	SetThreadName(mainThread.get_id(), "Main Thread");
 	
-	while (!renderer.isAborting) {
+	while (true) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
 			inputWriter.Push(std::move(e));
@@ -112,7 +113,6 @@ int main(int argc, char *argv[])
 		if (*sdlErr != '\0') {
 			printf("%s\n", sdlErr);
 		}
-		renderer.DrainQueue();
 	}
 	mainThread.join();
 	SDL_Quit();

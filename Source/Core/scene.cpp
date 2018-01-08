@@ -260,8 +260,8 @@ void Scene::CreatePrimitives()
 }
 
 Scene::Scene(std::string const& name, ResourceManager * resMan, Queue<SDL_Event>::Reader&& inputQueue,
-			 Queue<RenderCommand>::Writer&& writer, std::string const& serializedScene, Renderer * renderer) noexcept
-	: resource_manager_(resMan), input_(std::move(inputQueue)), render_queue_(std::move(writer)), renderer(renderer)
+			 /*Queue<RenderCommand>::Writer&& writer,*/ std::string const& serializedScene, Renderer * renderer) noexcept
+	: resource_manager_(resMan), input_(std::move(inputQueue)),/* render_queue_(std::move(writer)),*/ renderer(renderer)
 	//,get_free_command_buffers_(free_command_buffers_.GetReader()), put_free_command_buffers_(free_command_buffers_.GetWriter())
 {
 	this->name = name;
@@ -307,6 +307,11 @@ void Scene::BeginSecondaryCommandContext(RenderCommandContext * ctx)
 	ctx->BeginRecording(&inheritanceInfo);
 }
 
+void Scene::CreateResources(std::function<void(ResourceCreationContext&)> fun)
+{
+	renderer->CreateResources(fun);
+}
+
 std::vector<RenderCommandContext *> Scene::CreateSecondaryCommandContexts()
 {
 	CommandContextAllocator::RenderCommandContextCreateInfo ci {};
@@ -350,10 +355,12 @@ RenderCommandContext * Scene::GetSecondaryCommandContext(bool inMainRenderPass)
 }
 #endif
 
+#if 0
 void Scene::PushRenderCommand(RenderCommand&& rc) noexcept
 {
 	render_queue_.Push(std::move(rc));
 }
+#endif
 
 void Scene::SubmitCamera(CameraComponent * cam) noexcept
 {
@@ -376,8 +383,10 @@ void Scene::Tick() noexcept
 	currFrameStage = FrameStage::FENCE_WAIT;
 	//frameInfo[(currFrameInfo + 1) % frameInfo.size()].can_start_frame_->Wait(std::numeric_limits<uint64_t>::max());
 	//frameInfo[currFrameInfo].can_start_frame_->Wait(std::numeric_limits<uint64_t>::max());
+	//frameInfo[currFrameInfo].can_start_frame_->Wait(std::numeric_limits<uint64_t>::max());
+	auto prevFrameInfo = currFrameInfo;
+	currFrameInfo = renderer->AcquireNextFrameIndex(frameInfo[prevFrameInfo].framebufferReady, nullptr);
 	frameInfo[currFrameInfo].can_start_frame_->Wait(std::numeric_limits<uint64_t>::max());
-	currFrameInfo = renderer->AcquireNextFrameIndex(frameInfo[currFrameInfo].framebufferReady, nullptr);
 	frameInfo[currFrameInfo].commandContextAllocator->Reset();
 
 	frameInfo[currFrameInfo].cameras_to_submit_.clear();
@@ -461,8 +470,9 @@ void Scene::Tick() noexcept
 	frameInfo[currFrameInfo].main_command_context_->EndRecording();
 
 	renderer->ExecuteCommandContext(frameInfo[currFrameInfo].main_command_context_,
-	{frameInfo[currFrameInfo].framebufferReady, frameInfo[currFrameInfo].pre_renderpass_finished_},
-	{frameInfo[currFrameInfo].main_renderpass_finished_});
+	{frameInfo[prevFrameInfo].framebufferReady, frameInfo[currFrameInfo].pre_renderpass_finished_},
+	{frameInfo[currFrameInfo].main_renderpass_finished_},
+	frameInfo[currFrameInfo].can_start_frame_);
 
 #if 0
 	render_queue_.Push(RenderCommand(RenderCommand::ExecuteCommandContextParams(
@@ -472,10 +482,10 @@ void Scene::Tick() noexcept
 #endif
 	//TODO:
 	//render_queue_.Push(RenderCommand(RenderCommand::SwapWindowParams(currFrameInfo, frameInfo[currFrameInfo].main_renderpass_finished_, frameInfo[currFrameInfo].can_start_frame_)));
-	renderer->Swap(currFrameInfo, frameInfo[currFrameInfo].main_renderpass_finished_);
+	renderer->SwapWindow(currFrameInfo, frameInfo[currFrameInfo].main_renderpass_finished_);
 
 
-	currFrameInfo = (currFrameInfo + 1) % frameInfo.size();
+	//currFrameInfo = (currFrameInfo + 1) % frameInfo.size();
 }
 
 Entity * Scene::GetEntityByName(std::string name)

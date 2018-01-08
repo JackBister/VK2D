@@ -50,8 +50,9 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 	ret->is_flipped_ = false;
 
 	{
-		resourceManager->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([ret, img](ResourceCreationContext& ctx) {
-			std::vector<float> full_uv {
+		//resourceManager->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([ret, img](ResourceCreationContext& ctx) {
+		resourceManager->CreateResources([ret, img](ResourceCreationContext& ctx) {
+			std::vector<float> full_uv{
 				0.f, 0.f,
 				1.f, 1.f
 			};
@@ -92,7 +93,8 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 			});
 
 			ret->has_created_local_resources_ = true;
-		})));
+			//})));
+		});
 	}
 	if (!has_created_resources_) {
 		resources_.vbo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");

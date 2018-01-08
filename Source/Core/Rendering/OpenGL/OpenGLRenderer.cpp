@@ -1,38 +1,28 @@
 #ifndef USE_VULKAN_RENDERER
 #include "Core/Rendering/OpenGL/OpenGLRenderer.h"
 
-#include <glm/gtc/type_ptr.hpp>
 #include <SDL/SDL.h>
 #include <SDL/SDL_opengl.h>
-#include <SDL/SDL_syswm.h>
 #include <stb_image.h>
 
-#include "Core/Components/CameraComponent.h"
-#include "Core/Rendering/Image.h"
 #include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
-#include "Core/ResourceManager.h"
-#include "Core/Semaphore.h"
-#include "Core/Sprite.h"
-#include "..\Vulkan\VulkanRenderer.h"
 
 Renderer::~Renderer() noexcept
 {
 	SDL_DestroyWindow(window);
 }
 
-Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& reader,
-				   char const * title, int const winX, int const winY, int const w, int const h, uint32_t const flags) noexcept
-	: render_queue_(std::move(reader))
+Renderer::Renderer(char const * title, int const winX, int const winY, int const w, int const h, uint32_t const flags) noexcept
+	: rendQueueRead(renderQueue.GetReader()), renderQueueWrite(renderQueue.GetWriter())
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-	resource_manager_ = resMan;
-	aspect_ratio_ = static_cast<float>(w) / static_cast<float>(h);
-	dimensions_ = glm::ivec2(w, h);
+	aspectRatio = static_cast<float>(w) / static_cast<float>(h);
+	dimensions = glm::ivec2(w, h);
 	window = SDL_CreateWindow(title, winX, winY, w, h, flags | SDL_WINDOW_OPENGL);
-	SDL_GL_CreateContext(window);
+	auto ctx = SDL_GL_CreateContext(window);
 	SDL_GL_SetSwapInterval(1);
 
 	glewExperimental = GL_TRUE;
@@ -44,33 +34,28 @@ Renderer::Renderer(ResourceManager * resMan, Queue<RenderCommand>::Reader&& read
 
 	stbi_set_flip_vertically_on_load(true);
 
-	glGenQueries(1, &timeQuery);
-
-	glGenTextures(1, &backbufferImage.nativeHandle);
-	glBindTexture(GL_TEXTURE_2D, backbufferImage.nativeHandle);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	//TODO: depth and stencil buffers as images
-	ImageCreateInfo backBufferTexCreateInfo = {
-		"__Scratch/Backbuffer.tex",
-		h, w,
-		resMan,
-		&backbufferImage
-	};
-
-	backBufferImage = std::make_shared<Image>(backBufferTexCreateInfo);
-
-	resMan->AddResourceRefCounted<Image>("__Scratch/Backbuffer.tex", backBufferImage);
-
 	glReadBuffer(GL_BACK);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	lastTime = std::chrono::high_resolution_clock::now();
+	SDL_GL_MakeCurrent(window, nullptr);
+	renderThread = std::thread(&Renderer::RenderThread, this, ctx);
+}
+
+void Renderer::CreateResources(std::function<void(ResourceCreationContext&)> fun)
+{
+	renderQueueWrite.Push(RenderCommand(RenderCommand::CreateResourceParams(fun)));
+}
+
+void Renderer::ExecuteCommandContext(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
+{
+	renderQueueWrite.Push(RenderCommand(RenderCommand::ExecuteCommandContextParams(ctx, waitSem, signalSem, signalFence)));
+}
+
+void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
+{
+	renderQueueWrite.Push(RenderCommand(RenderCommand::SwapWindowParams(imageIndex, waitSem)));
 }
 
 uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandle * signalFence) 
@@ -93,7 +78,6 @@ std::vector<FramebufferHandle *> Renderer::CreateBackbuffers(RenderPassHandle * 
 
 Format Renderer::GetBackbufferFormat() 
 {
-	//TODO
 	return Format::RGBA8;
 }
 
@@ -102,17 +86,18 @@ uint32_t Renderer::GetSwapCount()
 	return 1;
 }
 
-uint64_t Renderer::GetFrameTime() noexcept
+void Renderer::RenderThread(SDL_GLContext ctx)
 {
-	uint64_t ret = 0;
-	glGetQueryObjectui64v(timeQuery, GL_QUERY_RESULT, &ret);
-	return ret;
+	SDL_GL_MakeCurrent(window, ctx);
+	while (!isAborting) {
+		DrainQueue();
+	}
 }
 
 void Renderer::DrainQueue() noexcept
 {
 	using namespace std::literals::chrono_literals;
-	RenderCommand command = render_queue_.Wait();
+	RenderCommand command = rendQueueRead.Wait();
 	switch (command.params.index()) {
 	case RenderCommand::Type::NOP:
 		printf("[WARNING] NOP render command.\n");
@@ -131,14 +116,13 @@ void Renderer::DrainQueue() noexcept
 	case RenderCommand::Type::EXECUTE_COMMAND_CONTEXT:
 	{
 		auto params = std::get<RenderCommand::ExecuteCommandContextParams>(command.params);
-		params.ctx->Execute(this, params.waitSem, params.signalSem);
+		params.ctx->Execute(this, params.waitSem, params.signalSem, params.signalFence);
 		break;
 	}
 	case RenderCommand::Type::SWAP_WINDOW:
 	{
 		auto params = std::get<RenderCommand::SwapWindowParams>(command.params);
 		auto nativeWait = (OpenGLSemaphoreHandle *)params.waitSem;
-		auto nativeSignal = (OpenGLFenceHandle *)params.signalFence;
 		auto preSwap = std::chrono::high_resolution_clock::now();
 		auto res = preSwap - lastTime;
 		auto avgSwapTime = totalSwapTime / frameCount;
@@ -158,10 +142,6 @@ void Renderer::DrainQueue() noexcept
 		auto postSwap = std::chrono::high_resolution_clock::now();
 		frameTime = static_cast<float>((postSwap - lastTime).count());
 		lastTime = postSwap;
-
-		if (nativeSignal != nullptr) {
-			nativeSignal->sem.Signal();
-		}
 
 		frameCount++;
 		totalSwapTime += std::chrono::duration_cast<std::chrono::milliseconds>(postSwap - preSwap);

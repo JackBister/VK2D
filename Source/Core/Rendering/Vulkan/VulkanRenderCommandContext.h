@@ -6,9 +6,10 @@
 class VulkanRenderCommandContext : public RenderCommandContext
 {
 	friend class Renderer;
+	friend class VulkanCommandContextAllocator;
 public:
 
-	VulkanRenderCommandContext(VkCommandBuffer buffer, std::allocator<uint8_t> * allocator) : RenderCommandContext(allocator), buffer_(buffer) {}
+	VulkanRenderCommandContext(VkCommandBuffer buffer, std::allocator<uint8_t> * allocator) : RenderCommandContext(allocator), buffer(buffer) {}
 
 	virtual ~VulkanRenderCommandContext() { delete allocator; }
 
@@ -28,14 +29,10 @@ public:
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, RenderCommandContext::Rect2D const * pScissors) override;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, RenderCommandContext::Viewport const * pViewports) override;
 	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) override;
-
-	//TODO: Probably not necessary in final code
-	RenderCommandContextLevel level_;
-	Renderer * renderer_;
-
-	VkCommandBuffer buffer_;
 protected:
-	void Execute(Renderer *, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem) override;
+	void Execute(Renderer *, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence) override;
+
+	VkCommandBuffer buffer;
 };
 
 #endif

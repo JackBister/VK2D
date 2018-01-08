@@ -47,17 +47,17 @@ struct RenderCommand
 	{
 		std::vector<SemaphoreHandle *> waitSem;
 		std::vector<SemaphoreHandle *> signalSem;
+		FenceHandle * signalFence;
 		RenderCommandContext * ctx;
-		ExecuteCommandContextParams(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem)
-			: ctx(ctx), waitSem(waitSem), signalSem(signalSem) {}
+		ExecuteCommandContextParams(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
+			: ctx(ctx), waitSem(waitSem), signalSem(signalSem), signalFence(signalFence) {}
 	};
 
 	struct SwapWindowParams
 	{
 		SemaphoreHandle * waitSem;
-		FenceHandle * signalFence;
 		uint32_t imageIndex;
-		SwapWindowParams(uint32_t imageIndex, SemaphoreHandle * waitSem, FenceHandle * signalFence) : waitSem(waitSem), signalFence(signalFence), imageIndex(imageIndex) {
+		SwapWindowParams(uint32_t imageIndex, SemaphoreHandle * waitSem) : waitSem(waitSem), imageIndex(imageIndex) {
 		}
 	};
 

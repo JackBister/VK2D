@@ -189,20 +189,6 @@ void VulkanResourceContext::DestroyCommandContextAllocator(CommandContextAllocat
 	vkDestroyCommandPool(renderer->basics.vk_device_, nativeHandle->commandPool, nullptr);
 }
 
-RenderCommandContext * VulkanResourceContext::CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo)
-{
-	auto ret = renderer->CreateCommandBuffer(pCreateInfo->level == RenderCommandContextLevel::PRIMARY ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-	auto retx = new VulkanRenderCommandContext(ret, new std::allocator<uint8_t>());;
-	retx->level_ = pCreateInfo->level;
-	retx->renderer_ = renderer;
-	return retx;
-}
-
-void VulkanResourceContext::DestroyCommandContext(RenderCommandContext * ctx)
-{
-	//TODO
-}
-
 void VulkanResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data, size_t offset, size_t size)
 {
 	auto const nativeHandle = (VulkanBufferHandle *)buffer;
@@ -663,7 +649,6 @@ PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationC
 	specializationInfo.pData = &specializationData[0];
 
 	std::vector<VkPipelineShaderStageCreateInfo> stages(ci.stageCount);
-	//TODO: !!!! SPECIALIZATION !!!!
 	
 	std::transform(ci.pStages, &ci.pStages[ci.stageCount], stages.begin(), [&](ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineShaderStageCreateInfo stageInfo) {
 		auto nativeShader = (VulkanShaderModuleHandle *)stageInfo.module;
@@ -929,9 +914,7 @@ DescriptorSetLayoutHandle * VulkanResourceContext::CreateDescriptorSetLayout(Des
 			info.pBinding[i].binding,
 			ToVulkanDescriptorType(info.pBinding[i].descriptorType),
 			1,
-			//TODO:?
 			info.pBinding[i].stageFlags,
-			//VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 			nullptr
 		});
 	}
@@ -979,9 +962,7 @@ void VulkanResourceContext::DestroyFence(FenceHandle * fence)
 VertexInputStateHandle * VulkanResourceContext::CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo info)
 {
 	auto ret = (VulkanVertexInputStateHandle *)allocator.allocate(sizeof(VulkanVertexInputStateHandle));
-
 	ret->create_info_ = info;
-
 	return ret;
 }
 
@@ -1133,8 +1114,6 @@ RenderCommandContext * VulkanCommandContextAllocator::CreateContext(RenderComman
 	VkCommandBuffer ret;
 	vkAllocateCommandBuffers(device, &allocateInfo, &ret);
 	auto retx = new VulkanRenderCommandContext(ret, new std::allocator<uint8_t>());
-	retx->level_ = pCreateInfo->level;
-	retx->renderer_ = renderer;
 	return retx;
 }
 
@@ -1142,7 +1121,7 @@ void VulkanCommandContextAllocator::DestroyContext(RenderCommandContext * ctx)
 {
 	assert(ctx != nullptr);
 	auto nativeHandle = (VulkanRenderCommandContext *)ctx;
-	vkFreeCommandBuffers(device, commandPool, 1, &nativeHandle->buffer_);
+	vkFreeCommandBuffers(device, commandPool, 1, &nativeHandle->buffer);
 }
 
 void VulkanCommandContextAllocator::Reset()
@@ -1152,16 +1131,9 @@ void VulkanCommandContextAllocator::Reset()
 
 bool VulkanFenceHandle::Wait(uint64_t timeOut)
 {
-	while (locked);
-	locked = true;
 	auto res = vkWaitForFences(device, 1, &fence, VK_TRUE, timeOut);
 	vkResetFences(device, 1, &fence);
 	return res != VK_TIMEOUT;
-}
-
-void VulkanFenceHandle::Signal()
-{
-	locked = false;
 }
 
 #endif

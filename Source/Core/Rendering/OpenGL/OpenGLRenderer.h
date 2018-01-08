@@ -13,89 +13,46 @@
 #include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
 #include "Core/Rendering/RenderCommand.h"
 
-class CameraComponent;
-class Framebuffer;
-class Image;
-class Program;
-class ResourceManager;
-struct SDL_Window;
-class Semaphore;
-class Shader;
-class Sprite;
-
 class Renderer : public IRenderer
 {
 public:
-	Renderer(ResourceManager *, Queue<RenderCommand>::Reader&&, char const * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
+	Renderer(/*ResourceManager *, Queue<RenderCommand>::Reader&&,*/ char const * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
 	~Renderer() noexcept;
-
-	uint64_t GetFrameTime() noexcept;
 	
 	uint32_t AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandle * signalFence) final override;
 	std::vector<FramebufferHandle *> CreateBackbuffers(RenderPassHandle * renderPass) final override;
 	Format GetBackbufferFormat() final override;
 	uint32_t GetSwapCount() final override;
 
-	//void AddBuffer(RenderCommand::AddBufferParams) noexcept;
-	//void DeleteBuffer(BufferRendererData *) noexcept;
+	void CreateResources(std::function<void(ResourceCreationContext&)> fun) final override;
+	void ExecuteCommandContext(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence = nullptr) final override;
+	void SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem) final override;
 
-	/*
-	void AddFramebuffer(Framebuffer * const) noexcept;
-	void DeleteFramebuffer(Framebuffer * const) noexcept;
-
-	void AddProgram(Program * const) noexcept;
-	void DeleteProgram(Program * const) noexcept;
-
-	void AddShader(Shader * const) noexcept;
-	void DeleteShader(Shader * const) noexcept;
-	*/
-
-	void DrainQueue() noexcept;
-
-	bool isAborting = false;
 	int abortCode = 0;
 
-	//The window
-	SDL_Window * window;
+private:
+	void DrainQueue() noexcept;
+	void RenderThread(SDL_GLContext ctx);
 
-	//Total time between swapbuffers
+	bool isAborting = false;
+	uint32_t frameCount = 1;
 	float frameTime;
 	std::chrono::high_resolution_clock::time_point lastTime;
-	//Time spent on GPU in a frame
-	GLuint timeQuery;
+	std::thread renderThread;
 
-	bool swap;
+	Queue<RenderCommand> renderQueue;
+	Queue<RenderCommand>::Reader rendQueueRead;
+	Queue<RenderCommand>::Writer renderQueueWrite;
 
-private:
-	ResourceManager * resource_manager_;
-
-	Queue<RenderCommand>::Reader render_queue_;
-
-	//The aspect ratio of the viewport
-	//TODO: Should this be attached to the camera?
-	float aspect_ratio_;
+	//The aspect ratio of the window
+	float aspectRatio;
 	//The dimensions of the screen, in pixels
-	glm::ivec2 dimensions_;
+	glm::ivec2 dimensions;
 
-	std::shared_ptr<Image> backBufferImage;
-	std::shared_ptr<Framebuffer> backbufferRenderTarget;
-
-	std::shared_ptr<Shader> ptvShader;
-	std::shared_ptr<Shader> pfShader;
-
-	//TODO:
-	std::shared_ptr<Program> ptProgram;
-	GLuint ptVAO;
-
-	OpenGLImageHandle backbufferImage;
-	OpenGLShaderModuleHandle ptVertexModule;
-	OpenGLShaderModuleHandle ptFragmentModule;
-
-	Semaphore * swap_sem_;
-
-	uint32_t frameCount = 1;
 	std::chrono::milliseconds totalSwapTime = std::chrono::milliseconds(0);
 
 	OpenGLFramebufferHandle backbuffer;
+
+	SDL_Window * window;
 };
 #endif

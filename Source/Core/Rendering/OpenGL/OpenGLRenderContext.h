@@ -2,14 +2,9 @@
 #ifndef USE_VULKAN_RENDERER
 #include "Core/Rendering/Context/RenderContext.h"
 
+#include <variant>
 #include <vector>
 
-#if _MSC_VER && !__INTEL_COMPILER
-#include <variant>
-#else
-#include <experimental/variant.hpp>
-using std::variant = std::experimental::variant;
-#endif
 #include <gl/glew.h>
 #include <SDL/SDL.h>
 
@@ -20,8 +15,7 @@ class OpenGLRenderCommandContext : public RenderCommandContext
 	friend class Renderer;
 public:
 
-	OpenGLRenderCommandContext() : RenderCommandContext(new std::allocator<uint8_t>) {}
-	OpenGLRenderCommandContext(std::allocator<uint8_t> * allocator) : RenderCommandContext(allocator) {}
+	OpenGLRenderCommandContext(std::allocator<uint8_t> * allocator = new std::allocator<uint8_t>) : RenderCommandContext(allocator) {}
 
 	~OpenGLRenderCommandContext() final override
 	{
@@ -45,7 +39,7 @@ public:
 	 void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) final override;
 
 protected:
-	void Execute(Renderer *, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem) override;
+	void Execute(Renderer *, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence) override;
 private:
 	enum RenderCommandType
 	{
@@ -60,7 +54,6 @@ private:
 		EXECUTE_COMMANDS_VECTOR,
 		SET_SCISSOR,
 		SET_VIEWPORT,
-		SWAP_WINDOW,
 		UPDATE_BUFFER
 	};
 	/*
@@ -139,9 +132,6 @@ private:
 		GLsizei count;
 		GLfloat const * v;
 	};
-	struct SwapWindowArgs
-	{
-	};
 	struct UpdateBufferArgs
 	{
 		GLuint buffer;
@@ -151,7 +141,7 @@ private:
 	};
 	using RenderCommand = std::variant<BeginRenderPassArgs, BindDescriptorSetArgs, BindIndexBufferArgs, BindPipelineArgs,
 									   BindVertexBufferArgs, DrawIndexedArgs, EndRenderPassArgs, ExecuteCommandsArgs,
-									   ExecuteCommandsVectorArgs, SetScissorArgs, SetViewportArgs, SwapWindowArgs, UpdateBufferArgs>;
+									   ExecuteCommandsVectorArgs, SetScissorArgs, SetViewportArgs, UpdateBufferArgs>;
 
 	/*
 		The list of commands to execute
@@ -164,16 +154,12 @@ private:
 	size_t indexBufferOffset;
 	GLenum indexBufferType;
 
-	// Inherited via RenderCommandContext
 	virtual void Reset();
 };
 
 class OpenGLResourceContext : public ResourceCreationContext
 {
 public:
-	virtual RenderCommandContext * CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
-	virtual void DestroyCommandContext(RenderCommandContext *) final override;
-
 	void BufferSubData(BufferHandle *, uint8_t *, size_t, size_t) final override;
 	BufferHandle * CreateBuffer(BufferCreateInfo) final override;
 	void DestroyBuffer(BufferHandle *) final override;
@@ -183,29 +169,23 @@ public:
 	void DestroyImage(ImageHandle *) final override;
 	void ImageData(ImageHandle *, std::vector<uint8_t> const&) final override;
 
-	// Inherited via ResourceCreationContext
 	virtual RenderPassHandle * CreateRenderPass(ResourceCreationContext::RenderPassCreateInfo);
 	virtual void DestroyRenderPass(RenderPassHandle *);
 
-	// Inherited via ResourceCreationContext
 	virtual ImageViewHandle * CreateImageView(ResourceCreationContext::ImageViewCreateInfo);
 	virtual void DestroyImageView(ImageViewHandle *);
 
-	// Inherited via ResourceCreationContext
 	virtual FramebufferHandle * CreateFramebuffer(ResourceCreationContext::FramebufferCreateInfo);
 	virtual void DestroyFramebuffer(FramebufferHandle *);
 
-	// Inherited via ResourceCreationContext
 	virtual PipelineHandle * CreateGraphicsPipeline(ResourceCreationContext::GraphicsPipelineCreateInfo);
 	virtual void DestroyPipeline(PipelineHandle *);
 	virtual ShaderModuleHandle * CreateShaderModule(ResourceCreationContext::ShaderModuleCreateInfo);
 	virtual void DestroyShaderModule(ShaderModuleHandle *);
 
-	// Inherited via ResourceCreationContext
 	virtual SamplerHandle * CreateSampler(ResourceCreationContext::SamplerCreateInfo);
 	virtual void DestroySampler(SamplerHandle *);
 
-	// Inherited via ResourceCreationContext
 	virtual DescriptorSetLayoutHandle * CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo) override;
 	virtual void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle *);
 	virtual VertexInputStateHandle * CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo);
@@ -214,11 +194,9 @@ public:
 	virtual DescriptorSet * CreateDescriptorSet(DescriptorSetCreateInfo) override;
 	virtual void DestroyDescriptorSet(DescriptorSet *) override;
 
-	// Inherited via ResourceCreationContext
 	virtual SemaphoreHandle * CreateSemaphore();
 	virtual void DestroySemaphore(SemaphoreHandle *);
 
-	// Inherited via ResourceCreationContext
 	virtual CommandContextAllocator * CreateCommandContextAllocator();
 	virtual void DestroyCommandContextAllocator(CommandContextAllocator *);
 	virtual FenceHandle * CreateFence(bool startSignaled);
@@ -239,7 +217,6 @@ struct OpenGLCommandContextAllocator : CommandContextAllocator
 	void DestroyContext(RenderCommandContext *) final override;
 
 	void Reset() final override;
-
 };
 
 struct OpenGLDescriptorSet : DescriptorSet

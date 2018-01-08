@@ -79,17 +79,6 @@ static GLint InternalFormatGL(Format format)
 	}
 }
 
-RenderCommandContext * OpenGLResourceContext::CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo)
-{
-	return new OpenGLRenderCommandContext(new std::allocator<uint8_t>());
-}
-
-void OpenGLResourceContext::DestroyCommandContext(RenderCommandContext * ctx)
-{
-	assert(ctx != nullptr);
-	delete ctx;
-}
-
 void OpenGLResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data, size_t offset, size_t size)
 {
 	auto nativeHandle = (OpenGLBufferHandle *)buffer;
@@ -288,12 +277,13 @@ ShaderModuleHandle * OpenGLResourceContext::CreateShaderModule(ResourceCreationC
 	default:
 		printf("[ERROR] Unknown shader module type %d.\n", ToUnderlyingType(ci.type));
 	}
+	printf("pre createshader err %d\n", glGetError());
 	ret->nativeHandle = glCreateShader(type);
 	GLchar const * src = (GLchar *)ci.pCode;
 	//glShaderSource(ret->nativeHandle, 1, &src, nullptr);
-	printf("post shadersource err %d\n", glGetError());
 	//glCompileShader(ret->nativeHandle);
 	glShaderBinary(1, &ret->nativeHandle, GL_SHADER_BINARY_FORMAT_SPIR_V, src, ci.codeSize);
+	printf("post shaderbinary err %d\n", glGetError());
 
 	uint32_t specializationConstantIndexes[] = {0};
 	uint32_t specializationConstantValues[] = {1};
@@ -591,7 +581,7 @@ void OpenGLRenderCommandContext::CmdUpdateBuffer(BufferHandle * buffer, size_t o
 	});
 }
 
-void OpenGLRenderCommandContext::Execute(Renderer * renderer, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem)
+void OpenGLRenderCommandContext::Execute(Renderer * renderer, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
 {
 	for (auto s : waitSem) {
 		auto nativeWait = (OpenGLSemaphoreHandle *)s;
@@ -685,7 +675,7 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer, std::vector<Semaph
 			auto args = std::get<ExecuteCommandsArgs>(rc);
 			assert(args.pCommandBuffers != nullptr);
 			for (uint32_t i = 0; i < args.commandBufferCount; ++i) {
-				args.pCommandBuffers[i]->Execute(renderer, {}, {});
+				args.pCommandBuffers[i]->Execute(renderer, {}, {}, nullptr);
 			}
 			break;
 		}
@@ -694,7 +684,7 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer, std::vector<Semaph
 			auto args = std::move(std::get<ExecuteCommandsVectorArgs>(rc));
 
 			for (auto& ctx : args.commandBuffers) {
-				((OpenGLRenderCommandContext *)ctx)->Execute(renderer, {}, {});
+				((OpenGLRenderCommandContext *)ctx)->Execute(renderer, {}, {}, nullptr);
 			}
 			break;
 		}
@@ -714,17 +704,6 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer, std::vector<Semaph
 			allocator->deallocate((uint8_t *)args.v, args.count * 6 * sizeof(GLfloat));
 			break;
 		}
-		case RenderCommandType::SWAP_WINDOW:
-		{
-			auto currTime = std::chrono::high_resolution_clock::now();
-			/*
-			renderer->frameTime = std::chrono::duration<float>(currTime - renderer->lastTime).count();
-			renderer->lastTime = currTime;
-			*/
-			//SDL_GL_SwapWindow(renderer->window);
-			renderer->swap = true;
-			break;
-		}
 		case RenderCommandType::UPDATE_BUFFER:
 		{
 			auto args = std::get<UpdateBufferArgs>(rc);
@@ -742,6 +721,9 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer, std::vector<Semaph
 		if (nativeSignal != nullptr) {
 			nativeSignal->sem.Signal();
 		}
+	}
+	if (signalFence != nullptr) {
+		((OpenGLFenceHandle *)signalFence)->sem.Signal();
 	}
 }
 
