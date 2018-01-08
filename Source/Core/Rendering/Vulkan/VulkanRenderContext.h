@@ -12,8 +12,8 @@ public:
 	CommandContextAllocator * CreateCommandContextAllocator() final override;
 	void DestroyCommandContextAllocator(CommandContextAllocator *) final override;
 
-	std::unique_ptr<RenderCommandContext> CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
-	void DestroyCommandContext(std::unique_ptr<RenderCommandContext>) final override;
+	RenderCommandContext * CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
+	void DestroyCommandContext(RenderCommandContext *) final override;
 
 	void BufferSubData(BufferHandle *, uint8_t *, size_t offset, size_t size) final override;
 	BufferHandle * CreateBuffer(BufferCreateInfo) final override;
@@ -24,43 +24,37 @@ public:
 	void DestroyImage(ImageHandle *) final override;
 	void ImageData(ImageHandle *, std::vector<uint8_t> const&) final override;
 
-	// Inherited via ResourceCreationContext
-	virtual RenderPassHandle * CreateRenderPass(ResourceCreationContext::RenderPassCreateInfo);
-	virtual void DestroyRenderPass(RenderPassHandle *);
+	 RenderPassHandle * CreateRenderPass(ResourceCreationContext::RenderPassCreateInfo) final override;
+	 void DestroyRenderPass(RenderPassHandle *) final override;
 
-	// Inherited via ResourceCreationContext
-	virtual ImageViewHandle * CreateImageView(ResourceCreationContext::ImageViewCreateInfo);
-	virtual void DestroyImageView(ImageViewHandle *);
+	 ImageViewHandle * CreateImageView(ResourceCreationContext::ImageViewCreateInfo) final override;
+	 void DestroyImageView(ImageViewHandle *) final override;
 
-	// Inherited via ResourceCreationContext
-	virtual FramebufferHandle * CreateFramebuffer(ResourceCreationContext::FramebufferCreateInfo);
-	virtual void DestroyFramebuffer(FramebufferHandle *);
+	 FramebufferHandle * CreateFramebuffer(ResourceCreationContext::FramebufferCreateInfo) final override;
+	 void DestroyFramebuffer(FramebufferHandle *) final override;
 
-	// Inherited via ResourceCreationContext
-	virtual PipelineHandle * CreateGraphicsPipeline(ResourceCreationContext::GraphicsPipelineCreateInfo);
-	virtual void DestroyPipeline(PipelineHandle *);
-	virtual ShaderModuleHandle * CreateShaderModule(ResourceCreationContext::ShaderModuleCreateInfo);
-	virtual void DestroyShaderModule(ShaderModuleHandle *);
+	 PipelineHandle * CreateGraphicsPipeline(ResourceCreationContext::GraphicsPipelineCreateInfo) final override;
+	 void DestroyPipeline(PipelineHandle *) final override;
+	 ShaderModuleHandle * CreateShaderModule(ResourceCreationContext::ShaderModuleCreateInfo) final override;
+	 void DestroyShaderModule(ShaderModuleHandle *) final override;
 
-	// Inherited via ResourceCreationContext
-	virtual SamplerHandle * CreateSampler(ResourceCreationContext::SamplerCreateInfo);
-	virtual void DestroySampler(SamplerHandle *);
+	 SamplerHandle * CreateSampler(ResourceCreationContext::SamplerCreateInfo) final override;
+	 void DestroySampler(SamplerHandle *) final override;
 
-	virtual SemaphoreHandle * CreateSemaphore() override;
-	virtual void DestroySemaphore(SemaphoreHandle *) override;
+	 SemaphoreHandle * CreateSemaphore() final override;
+	 void DestroySemaphore(SemaphoreHandle *) final override;
 
-	// Inherited via ResourceCreationContext
-	virtual DescriptorSetLayoutHandle * CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo) override;
-	virtual void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle *);
+	 DescriptorSetLayoutHandle * CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo) final override;
+	 void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle *);
 
-	virtual FenceHandle * CreateFence(bool startSignaled) override;
-	virtual void DestroyFence(FenceHandle *) override;
+	 FenceHandle * CreateFence(bool startSignaled) final override;
+	 void DestroyFence(FenceHandle *) final override;
 
-	virtual VertexInputStateHandle * CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo);
-	virtual void DestroyVertexInputState(VertexInputStateHandle *);
+	 VertexInputStateHandle * CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo) final override;
+	 void DestroyVertexInputState(VertexInputStateHandle *) final override;
 
-	virtual DescriptorSet * CreateDescriptorSet(DescriptorSetCreateInfo) override;
-	virtual void DestroyDescriptorSet(DescriptorSet *) override;
+	 DescriptorSet * CreateDescriptorSet(DescriptorSetCreateInfo) final override;
+	 void DestroyDescriptorSet(DescriptorSet *) final override;
 
 private:
 	VulkanResourceContext(Renderer * renderer) : renderer(renderer) {}
@@ -79,8 +73,8 @@ struct VulkanBufferHandle : BufferHandle
 struct VulkanCommandContextAllocator : CommandContextAllocator
 {
 	friend class VulkanResourceContext;
-	std::unique_ptr<RenderCommandContext> CreateContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
-	void DestroyContext(std::unique_ptr<RenderCommandContext>) final override;
+	RenderCommandContext * CreateContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
+	void DestroyContext(RenderCommandContext *) final override;
 	void Reset() final override;
 
 private:
@@ -167,6 +161,7 @@ struct VulkanSemaphoreHandle : SemaphoreHandle
 struct VulkanVertexInputStateHandle : VertexInputStateHandle
 {
 	//Saved until the handle is used in the create pipeline call - bad?
+	//Should probably be moved into the pipelinecreateinfo as intended, and the OGL renderer will have to adapt instead.
 	ResourceCreationContext::VertexInputStateCreateInfo create_info_;
 };
 #endif

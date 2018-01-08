@@ -172,13 +172,13 @@ CommandContextAllocator * VulkanResourceContext::CreateCommandContextAllocator()
 {
 	auto mem = allocator.allocate(sizeof(VulkanCommandContextAllocator));
 	auto ret = new (mem) VulkanCommandContextAllocator();
-	ret->device = renderer->vk_device_;
+	ret->device = renderer->basics.vk_device_;
 	ret->renderer = renderer;
 	VkCommandPoolCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	createInfo.queueFamilyIndex = renderer->vk_queue_graphics_idx_;
 	createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	vkCreateCommandPool(renderer->vk_device_, &createInfo, nullptr, &ret->commandPool);
+	vkCreateCommandPool(renderer->basics.vk_device_, &createInfo, nullptr, &ret->commandPool);
 	return ret;
 }
 
@@ -186,19 +186,19 @@ void VulkanResourceContext::DestroyCommandContextAllocator(CommandContextAllocat
 {
 	assert(pool != nullptr);
 	auto nativeHandle = (VulkanCommandContextAllocator *)pool;
-	vkDestroyCommandPool(renderer->vk_device_, nativeHandle->commandPool, nullptr);
+	vkDestroyCommandPool(renderer->basics.vk_device_, nativeHandle->commandPool, nullptr);
 }
 
-std::unique_ptr<RenderCommandContext> VulkanResourceContext::CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo)
+RenderCommandContext * VulkanResourceContext::CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo)
 {
 	auto ret = renderer->CreateCommandBuffer(pCreateInfo->level == RenderCommandContextLevel::PRIMARY ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-	auto retx = std::make_unique<VulkanRenderCommandContext>(ret, new std::allocator<uint8_t>());;
+	auto retx = new VulkanRenderCommandContext(ret, new std::allocator<uint8_t>());;
 	retx->level_ = pCreateInfo->level;
 	retx->renderer_ = renderer;
 	return retx;
 }
 
-void VulkanResourceContext::DestroyCommandContext(std::unique_ptr<RenderCommandContext> ctx)
+void VulkanResourceContext::DestroyCommandContext(RenderCommandContext * ctx)
 {
 	//TODO
 }
@@ -213,25 +213,25 @@ void VulkanResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data,
 	stagingInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	stagingInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	VkBuffer stagingBuffer;
-	auto res = vkCreateBuffer(renderer->vk_device_, &stagingInfo, nullptr, &stagingBuffer);
+	auto res = vkCreateBuffer(renderer->basics.vk_device_, &stagingInfo, nullptr, &stagingBuffer);
 	assert(res == VK_SUCCESS);
 
 	VkMemoryRequirements stagingRequirements = {};
-	vkGetBufferMemoryRequirements(renderer->vk_device_, stagingBuffer, &stagingRequirements);
+	vkGetBufferMemoryRequirements(renderer->basics.vk_device_, stagingBuffer, &stagingRequirements);
 
 	VkMemoryAllocateInfo stagingAllocateInfo{};
 	stagingAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	stagingAllocateInfo.allocationSize = stagingRequirements.size;
 	stagingAllocateInfo.memoryTypeIndex = renderer->FindMemoryType(stagingRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	VkDeviceMemory stagingMemory;
-	res = vkAllocateMemory(renderer->vk_device_, &stagingAllocateInfo, nullptr, &stagingMemory);
+	res = vkAllocateMemory(renderer->basics.vk_device_, &stagingAllocateInfo, nullptr, &stagingMemory);
 	assert(res == VK_SUCCESS);
 
-	vkBindBufferMemory(renderer->vk_device_, stagingBuffer, stagingMemory, 0);
+	vkBindBufferMemory(renderer->basics.vk_device_, stagingBuffer, stagingMemory, 0);
 
 	uint8_t * const mappedMemory = [this](VkDeviceMemory const& memory, size_t size) {
 		uint8_t * ret = nullptr;
-		auto const res = vkMapMemory(renderer->vk_device_, memory, 0, size, 0, (void **)&ret);
+		auto const res = vkMapMemory(renderer->basics.vk_device_, memory, 0, size, 0, (void **)&ret);
 		assert(res == VK_SUCCESS);
 		return ret;
 	}(stagingMemory, stagingRequirements.size);
@@ -240,12 +240,26 @@ void VulkanResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data,
 		mappedMemory[i] = data[i];
 	}
 
-	vkUnmapMemory(renderer->vk_device_, stagingMemory);
+	vkUnmapMemory(renderer->basics.vk_device_, stagingMemory);
 
-	renderer->CopyBufferToBuffer(stagingBuffer, nativeHandle->buffer_, offset, size);
+	auto cb = renderer->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	vkBeginCommandBuffer(cb, &beginInfo);
+	renderer->CopyBufferToBuffer(cb, stagingBuffer, nativeHandle->buffer_, offset, size);
+	vkEndCommandBuffer(cb);
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cb;
+	//TODO: Could submit and return a fence here that the user can use to know that their data has uploaded instead of using vkQueueWaitIdle
+	vkQueueSubmit(renderer->vk_queue_graphics_, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(renderer->vk_queue_graphics_);
 
-	vkDestroyBuffer(renderer->vk_device_, stagingBuffer, nullptr);
-	vkFreeMemory(renderer->vk_device_, stagingMemory, nullptr);
+	vkFreeCommandBuffers(renderer->basics.vk_device_, renderer->vk_pool_graphics_, 1, &cb);
+	vkDestroyBuffer(renderer->basics.vk_device_, stagingBuffer, nullptr);
+	vkFreeMemory(renderer->basics.vk_device_, stagingMemory, nullptr);
 }
 
 BufferHandle * VulkanResourceContext::CreateBuffer(BufferCreateInfo ci)
@@ -257,21 +271,21 @@ BufferHandle * VulkanResourceContext::CreateBuffer(BufferCreateInfo ci)
 	bufferInfo.usage = ci.usage;
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	auto res = vkCreateBuffer(renderer->vk_device_, &bufferInfo, nullptr, &ret->buffer_);
+	auto res = vkCreateBuffer(renderer->basics.vk_device_, &bufferInfo, nullptr, &ret->buffer_);
 	assert(res == VK_SUCCESS);
 
 	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(renderer->vk_device_, ret->buffer_, &memRequirements);
+	vkGetBufferMemoryRequirements(renderer->basics.vk_device_, ret->buffer_, &memRequirements);
 
 	VkMemoryAllocateInfo memInfo = {};
 	memInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memInfo.allocationSize = memRequirements.size;
 	memInfo.memoryTypeIndex = renderer->FindMemoryType(memRequirements.memoryTypeBits, ci.memoryProperties);
 
-	res = vkAllocateMemory(renderer->vk_device_, &memInfo, nullptr, &ret->memory_);
+	res = vkAllocateMemory(renderer->basics.vk_device_, &memInfo, nullptr, &ret->memory_);
 	assert(res == VK_SUCCESS);
 
-	vkBindBufferMemory(renderer->vk_device_, ret->buffer_, ret->memory_, 0);
+	vkBindBufferMemory(renderer->basics.vk_device_, ret->buffer_, ret->memory_, 0);
 	return ret;
 }
 
@@ -279,7 +293,7 @@ void VulkanResourceContext::DestroyBuffer(BufferHandle * buffer)
 {
 	assert(buffer != nullptr);
 
-	vkFreeMemory(renderer->vk_device_, ((VulkanBufferHandle *)buffer)->memory_, nullptr);
+	vkFreeMemory(renderer->basics.vk_device_, ((VulkanBufferHandle *)buffer)->memory_, nullptr);
 	allocator.destroy(buffer);
 }
 
@@ -288,7 +302,7 @@ uint8_t * VulkanResourceContext::MapBuffer(BufferHandle * buffer, size_t offset,
 	assert(buffer != nullptr);
 
 	uint8_t * ret;
-	auto const res = vkMapMemory(renderer->vk_device_, ((VulkanBufferHandle *)buffer)->memory_, offset, size, 0, (void **)&ret);
+	auto const res = vkMapMemory(renderer->basics.vk_device_, ((VulkanBufferHandle *)buffer)->memory_, offset, size, 0, (void **)&ret);
 	assert(res == VK_SUCCESS);
 	return ret;
 }
@@ -297,7 +311,7 @@ void VulkanResourceContext::UnmapBuffer(BufferHandle * buffer)
 {
 	assert(buffer != nullptr);
 
-	vkUnmapMemory(renderer->vk_device_, ((VulkanBufferHandle *)buffer)->memory_);
+	vkUnmapMemory(renderer->basics.vk_device_, ((VulkanBufferHandle *)buffer)->memory_);
 }
 
 ImageHandle * VulkanResourceContext::CreateImage(ImageCreateInfo ci)
@@ -345,7 +359,7 @@ ImageHandle * VulkanResourceContext::CreateImage(ImageCreateInfo ci)
 	ret->height = extent.height;
 	ret->type = ci.type;
 	ret->width = extent.width;
-	auto const res = vkCreateImage(renderer->vk_device_, &info, nullptr, &ret->image_);
+	auto const res = vkCreateImage(renderer->basics.vk_device_, &info, nullptr, &ret->image_);
 	assert(res == VK_SUCCESS);
 	return ret;
 }
@@ -354,7 +368,7 @@ void VulkanResourceContext::DestroyImage(ImageHandle * img)
 {
 	assert(img != nullptr);
 
-	vkDestroyImage(renderer->vk_device_, ((VulkanImageHandle *)img)->image_, nullptr);
+	vkDestroyImage(renderer->basics.vk_device_, ((VulkanImageHandle *)img)->image_, nullptr);
 	allocator.destroy(img);
 }
 
@@ -366,14 +380,14 @@ void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> co
 
 	VkMemoryRequirements const memoryRequirements = [this](VkImage img) {
 		VkMemoryRequirements ret{0};
-		vkGetImageMemoryRequirements(renderer->vk_device_, img, &ret);
+		vkGetImageMemoryRequirements(renderer->basics.vk_device_, img, &ret);
 		return ret;
 	}(nativeImg->image_);
 
 	assert(data.size() <= memoryRequirements.size);
 
 	VkPhysicalDeviceMemoryProperties memoryProperties;
-	vkGetPhysicalDeviceMemoryProperties(renderer->vk_physical_device_, &memoryProperties);
+	vkGetPhysicalDeviceMemoryProperties(renderer->basics.vk_physical_device_, &memoryProperties);
 
 	auto memoryIndex = renderer->FindMemoryType(memoryRequirements.memoryTypeBits, 0);
 
@@ -386,7 +400,7 @@ void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> co
 
 	VkDeviceMemory const memory = [this](VkMemoryAllocateInfo const& info) {
 		VkDeviceMemory ret{0};
-		auto const res = vkAllocateMemory(renderer->vk_device_, &info, nullptr, &ret);
+		auto const res = vkAllocateMemory(renderer->basics.vk_device_, &info, nullptr, &ret);
 		assert(res == VK_SUCCESS);
 		return ret;
 	}(info);
@@ -397,25 +411,25 @@ void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> co
 	stagingInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	stagingInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	VkBuffer stagingBuffer;
-	auto res = vkCreateBuffer(renderer->vk_device_, &stagingInfo, nullptr, &stagingBuffer);
+	auto res = vkCreateBuffer(renderer->basics.vk_device_, &stagingInfo, nullptr, &stagingBuffer);
 	assert(res == VK_SUCCESS);
 
 	VkMemoryRequirements stagingRequirements = {};
-	vkGetBufferMemoryRequirements(renderer->vk_device_, stagingBuffer, &stagingRequirements);
+	vkGetBufferMemoryRequirements(renderer->basics.vk_device_, stagingBuffer, &stagingRequirements);
 
 	VkMemoryAllocateInfo stagingAllocateInfo{};
 	stagingAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	stagingAllocateInfo.allocationSize = stagingRequirements.size;
 	stagingAllocateInfo.memoryTypeIndex = renderer->FindMemoryType(stagingRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	VkDeviceMemory stagingMemory;
-	res = vkAllocateMemory(renderer->vk_device_, &stagingAllocateInfo, nullptr, &stagingMemory);
+	res = vkAllocateMemory(renderer->basics.vk_device_, &stagingAllocateInfo, nullptr, &stagingMemory);
 	assert(res == VK_SUCCESS);
 
-	vkBindBufferMemory(renderer->vk_device_, stagingBuffer, stagingMemory, 0);
+	vkBindBufferMemory(renderer->basics.vk_device_, stagingBuffer, stagingMemory, 0);
 
 	uint8_t * const mappedMemory = [this](VkDeviceMemory const& memory, size_t size) {
 		uint8_t * ret = nullptr;
-		auto const res = vkMapMemory(renderer->vk_device_, memory, 0, size, 0, (void **)&ret);
+		auto const res = vkMapMemory(renderer->basics.vk_device_, memory, 0, size, 0, (void **)&ret);
 		assert(res == VK_SUCCESS);
 		return ret;
 	}(stagingMemory, stagingRequirements.size);
@@ -424,16 +438,29 @@ void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> co
 		mappedMemory[i] = data[i];
 	}
 
-	vkUnmapMemory(renderer->vk_device_, stagingMemory);
+	vkUnmapMemory(renderer->basics.vk_device_, stagingMemory);
 
-	res = vkBindImageMemory(renderer->vk_device_, nativeImg->image_, memory, 0);
+	res = vkBindImageMemory(renderer->basics.vk_device_, nativeImg->image_, memory, 0);
+	
+	auto cb = renderer->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	vkBeginCommandBuffer(cb, &beginInfo);
+	renderer->TransitionImageLayout(cb, nativeImg->image_, ToVulkanFormat(nativeImg->format), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	renderer->CopyBufferToImage(cb, stagingBuffer, nativeImg->image_, nativeImg->width, nativeImg->height);
+	renderer->TransitionImageLayout(cb, nativeImg->image_, ToVulkanFormat(nativeImg->format), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	vkEndCommandBuffer(cb);
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cb;
+	vkQueueSubmit(renderer->vk_queue_graphics_, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(renderer->vk_queue_graphics_);
 
-	renderer->TransitionImageLayout(nativeImg->image_, ToVulkanFormat(nativeImg->format), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	renderer->CopyBufferToImage(stagingBuffer, nativeImg->image_, nativeImg->width, nativeImg->height);
-	renderer->TransitionImageLayout(nativeImg->image_, ToVulkanFormat(nativeImg->format), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-	vkDestroyBuffer(renderer->vk_device_, stagingBuffer, nullptr);
-	vkFreeMemory(renderer->vk_device_, stagingMemory, nullptr);
+	vkFreeCommandBuffers(renderer->basics.vk_device_, renderer->vk_pool_graphics_, 1, &cb);
+	vkDestroyBuffer(renderer->basics.vk_device_, stagingBuffer, nullptr);
+	vkFreeMemory(renderer->basics.vk_device_, stagingMemory, nullptr);
 
 	assert(res == VK_SUCCESS);
 }
@@ -523,7 +550,7 @@ RenderPassHandle * VulkanResourceContext::CreateRenderPass(ResourceCreationConte
 	};
 
 	auto const ret = (VulkanRenderPassHandle *)allocator.allocate(sizeof(VulkanRenderPassHandle));
-	auto const res = vkCreateRenderPass(renderer->vk_device_, &info, nullptr, &ret->render_pass);
+	auto const res = vkCreateRenderPass(renderer->basics.vk_device_, &info, nullptr, &ret->render_pass);
 	assert(res == VK_SUCCESS);
 	return ret;
 }
@@ -532,7 +559,7 @@ void VulkanResourceContext::DestroyRenderPass(RenderPassHandle * pass)
 {
 	assert(pass != nullptr);
 
-	vkDestroyRenderPass(renderer->vk_device_, ((VulkanRenderPassHandle *)pass)->render_pass, nullptr);
+	vkDestroyRenderPass(renderer->basics.vk_device_, ((VulkanRenderPassHandle *)pass)->render_pass, nullptr);
 	allocator.destroy(pass);
 }
 
@@ -574,7 +601,7 @@ ImageViewHandle * VulkanResourceContext::CreateImageView(ResourceCreationContext
 	};
 
 	auto ret = (VulkanImageViewHandle *)allocator.allocate(sizeof(VulkanImageViewHandle));
-	auto const res = vkCreateImageView(renderer->vk_device_, &info, nullptr, &ret->image_view_);
+	auto const res = vkCreateImageView(renderer->basics.vk_device_, &info, nullptr, &ret->image_view_);
 	assert(res == VK_SUCCESS);
 	ret->image = ci.image;
 
@@ -585,7 +612,7 @@ void VulkanResourceContext::DestroyImageView(ImageViewHandle * view)
 {
 	assert(view != nullptr);
 
-	vkDestroyImageView(renderer->vk_device_, ((VulkanImageViewHandle *)view)->image_view_, nullptr);
+	vkDestroyImageView(renderer->basics.vk_device_, ((VulkanImageViewHandle *)view)->image_view_, nullptr);
 	allocator.destroy(view);
 }
 
@@ -608,7 +635,7 @@ FramebufferHandle * VulkanResourceContext::CreateFramebuffer(ResourceCreationCon
 	};
 
 	auto ret = (VulkanFramebufferHandle *)allocator.allocate(sizeof(VulkanFramebufferHandle));
-	auto const res = vkCreateFramebuffer(renderer->vk_device_, &info, nullptr, &ret->framebuffer_);
+	auto const res = vkCreateFramebuffer(renderer->basics.vk_device_, &info, nullptr, &ret->framebuffer_);
 	assert(res == VK_SUCCESS);
 	return ret;
 }
@@ -617,7 +644,7 @@ void VulkanResourceContext::DestroyFramebuffer(FramebufferHandle * fb)
 {
 	assert(fb != nullptr);
 
-	vkDestroyFramebuffer(renderer->vk_device_, ((VulkanFramebufferHandle *)fb)->framebuffer_, nullptr);
+	vkDestroyFramebuffer(renderer->basics.vk_device_, ((VulkanFramebufferHandle *)fb)->framebuffer_, nullptr);
 	allocator.destroy(fb);
 }
 
@@ -785,7 +812,7 @@ PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationC
 
 	VkPipelineLayout layout;
 	{
-		auto res = vkCreatePipelineLayout(renderer->vk_device_, &layoutCreateInfo, nullptr, &layout);
+		auto res = vkCreatePipelineLayout(renderer->basics.vk_device_, &layoutCreateInfo, nullptr, &layout);
 		assert(res == VK_SUCCESS);
 	}
 
@@ -805,7 +832,7 @@ PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationC
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 	auto ret = (VulkanPipelineHandle *)allocator.allocate(sizeof(VulkanPipelineHandle));
-	auto res = vkCreateGraphicsPipelines(renderer->vk_device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &ret->pipeline_);
+	auto res = vkCreateGraphicsPipelines(renderer->basics.vk_device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &ret->pipeline_);
 	assert(res == VK_SUCCESS);
 	ret->descriptorSetLayout = ci.descriptorSetLayout;
 	ret->vertexInputState = ci.vertexInputState;
@@ -817,7 +844,7 @@ void VulkanResourceContext::DestroyPipeline(PipelineHandle * pipeline)
 {
 	assert(pipeline != nullptr);
 
-	vkDestroyPipeline(renderer->vk_device_, ((VulkanPipelineHandle *)pipeline)->pipeline_, nullptr);
+	vkDestroyPipeline(renderer->basics.vk_device_, ((VulkanPipelineHandle *)pipeline)->pipeline_, nullptr);
 	allocator.destroy(pipeline);
 }
 
@@ -832,7 +859,7 @@ ShaderModuleHandle * VulkanResourceContext::CreateShaderModule(ResourceCreationC
 	};
 
 	auto ret = (VulkanShaderModuleHandle *)allocator.allocate(sizeof(ShaderModuleHandle *));
-	auto const res = vkCreateShaderModule(renderer->vk_device_, &info, nullptr, &ret->shader_);
+	auto const res = vkCreateShaderModule(renderer->basics.vk_device_, &info, nullptr, &ret->shader_);
 	assert(res == VK_SUCCESS);
 	return ret;
 }
@@ -841,7 +868,7 @@ void VulkanResourceContext::DestroyShaderModule(ShaderModuleHandle * shader)
 {
 	assert(shader != nullptr);
 
-	vkDestroyShaderModule(renderer->vk_device_, ((VulkanShaderModuleHandle *)shader)->shader_, nullptr);
+	vkDestroyShaderModule(renderer->basics.vk_device_, ((VulkanShaderModuleHandle *)shader)->shader_, nullptr);
 	allocator.destroy(shader);
 }
 
@@ -863,7 +890,7 @@ SamplerHandle * VulkanResourceContext::CreateSampler(ResourceCreationContext::Sa
 	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
 	auto ret = (VulkanSamplerHandle *)allocator.allocate(sizeof(VulkanSamplerHandle));
-	auto res = vkCreateSampler(renderer->vk_device_, &samplerInfo, nullptr, &ret->sampler_);
+	auto res = vkCreateSampler(renderer->basics.vk_device_, &samplerInfo, nullptr, &ret->sampler_);
 	assert(res == VK_SUCCESS);
 
 	return ret;
@@ -872,7 +899,7 @@ SamplerHandle * VulkanResourceContext::CreateSampler(ResourceCreationContext::Sa
 void VulkanResourceContext::DestroySampler(SamplerHandle * sampler)
 {
 	assert(sampler != nullptr);
-	vkDestroySampler(renderer->vk_device_, ((VulkanSamplerHandle *)sampler)->sampler_, nullptr);
+	vkDestroySampler(renderer->basics.vk_device_, ((VulkanSamplerHandle *)sampler)->sampler_, nullptr);
 	allocator.destroy(sampler);
 }
 
@@ -882,7 +909,7 @@ SemaphoreHandle * VulkanResourceContext::CreateSemaphore()
 	createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 	auto ret = (VulkanSemaphoreHandle *)allocator.allocate(sizeof(VulkanSemaphoreHandle));
-	auto res = vkCreateSemaphore(renderer->vk_device_, &createInfo, nullptr, &ret->semaphore_);
+	auto res = vkCreateSemaphore(renderer->basics.vk_device_, &createInfo, nullptr, &ret->semaphore_);
 	assert(res == VK_SUCCESS);
 	return ret;
 }
@@ -890,7 +917,7 @@ SemaphoreHandle * VulkanResourceContext::CreateSemaphore()
 void VulkanResourceContext::DestroySemaphore(SemaphoreHandle * sem)
 {
 	assert(sem != nullptr);
-	vkDestroySemaphore(renderer->vk_device_, ((VulkanSemaphoreHandle *)sem)->semaphore_, nullptr);
+	vkDestroySemaphore(renderer->basics.vk_device_, ((VulkanSemaphoreHandle *)sem)->semaphore_, nullptr);
 }
 
 DescriptorSetLayoutHandle * VulkanResourceContext::CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo info)
@@ -916,7 +943,7 @@ DescriptorSetLayoutHandle * VulkanResourceContext::CreateDescriptorSetLayout(Des
 		&bindings[0]
 	};
 	auto ret = (VulkanDescriptorSetLayoutHandle *)allocator.allocate(sizeof(VulkanDescriptorSetLayoutHandle));
-	auto res = vkCreateDescriptorSetLayout(renderer->vk_device_, &ci, nullptr, &(ret->layout_));
+	auto res = vkCreateDescriptorSetLayout(renderer->basics.vk_device_, &ci, nullptr, &(ret->layout_));
 	assert(res == VK_SUCCESS);
 	return ret;
 }
@@ -924,7 +951,7 @@ DescriptorSetLayoutHandle * VulkanResourceContext::CreateDescriptorSetLayout(Des
 void VulkanResourceContext::DestroyDescriptorSetLayout(DescriptorSetLayoutHandle * layout)
 {
 	assert(layout != nullptr);
-	vkDestroyDescriptorSetLayout(renderer->vk_device_, ((VulkanDescriptorSetLayoutHandle *)layout)->layout_, nullptr);
+	vkDestroyDescriptorSetLayout(renderer->basics.vk_device_, ((VulkanDescriptorSetLayoutHandle *)layout)->layout_, nullptr);
 	allocator.destroy(layout);
 }
 
@@ -936,8 +963,8 @@ FenceHandle * VulkanResourceContext::CreateFence(bool startSignaled)
 	
 	auto mem = allocator.allocate(sizeof(VulkanFenceHandle));
 	auto ret = new (mem) VulkanFenceHandle();
-	ret->device = renderer->vk_device_;
-	auto res = vkCreateFence(renderer->vk_device_, &ci, nullptr, &ret->fence);
+	ret->device = renderer->basics.vk_device_;
+	auto res = vkCreateFence(renderer->basics.vk_device_, &ci, nullptr, &ret->fence);
 	assert(res == VK_SUCCESS);
 	return ret;
 }
@@ -946,7 +973,7 @@ void VulkanResourceContext::DestroyFence(FenceHandle * fence)
 {
 	assert(fence != nullptr);
 	auto nativeHandle = (VulkanFenceHandle *)fence;
-	vkDestroyFence(renderer->vk_device_, nativeHandle->fence, nullptr);
+	vkDestroyFence(renderer->basics.vk_device_, nativeHandle->fence, nullptr);
 }
 
 VertexInputStateHandle * VulkanResourceContext::CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo info)
@@ -967,34 +994,7 @@ void VulkanResourceContext::DestroyVertexInputState(VertexInputStateHandle * sta
 DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateInfo info)
 {
 	assert(info.layout != nullptr);
-	VkDescriptorSetLayout layout;
-#if 0
-	if (info.layout == nullptr) {
-		std::vector<VkDescriptorSetLayoutBinding> bindings(info.descriptorCount);
-		std::transform(info.descriptors, &info.descriptors[info.descriptorCount], bindings.begin(), [](DescriptorSetCreateInfo::Descriptor descriptor) {
-			return VkDescriptorSetLayoutBinding{
-				descriptor.binding,
-				ToVulkanDescriptorType(descriptor.type),
-				1,
-				VK_SHADER_STAGE_ALL,
-				nullptr
-			};
-		});
-
-		VkDescriptorSetLayoutCreateInfo ci{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-			nullptr,
-			0,
-			info.descriptorCount,
-			&bindings[0]
-		};
-
-		auto res = vkCreateDescriptorSetLayout(renderer->vk_device_, &ci, nullptr, &layout);
-		assert(res == VK_SUCCESS);
-	} else {
-#endif
-		layout = ((VulkanDescriptorSetLayoutHandle *)info.layout)->layout_;
-	//}
+	VkDescriptorSetLayout layout = ((VulkanDescriptorSetLayoutHandle *)info.layout)->layout_;
 
 	VkDescriptorSetAllocateInfo ai{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -1005,7 +1005,7 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
 	};
 
 	VkDescriptorSet set;
-	auto res = vkAllocateDescriptorSets(renderer->vk_device_, &ai, &set);
+	auto res = vkAllocateDescriptorSets(renderer->basics.vk_device_, &ai, &set);
 	assert(res == VK_SUCCESS);
 
 	std::vector<VkDescriptorBufferInfo> bufferInfos;
@@ -1042,7 +1042,7 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
 			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 			samplerInfo.unnormalizedCoordinates = VK_FALSE;
 			VkSampler sampler;
-			auto res = vkCreateSampler(renderer->vk_device_, &samplerInfo, nullptr, &sampler);
+			auto res = vkCreateSampler(renderer->basics.vk_device_, &samplerInfo, nullptr, &sampler);
 			assert(res == VK_SUCCESS);
 
 			VkImageViewCreateInfo imageViewInfo = {};
@@ -1060,7 +1060,7 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
 			imageViewInfo.subresourceRange.levelCount = 1;
 			imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 			VkImageView imageView;
-			res = vkCreateImageView(renderer->vk_device_, &imageViewInfo, nullptr, &imageView);
+			res = vkCreateImageView(renderer->basics.vk_device_, &imageViewInfo, nullptr, &imageView);
 			assert(res == VK_SUCCESS);
 
 			imageInfos.push_back({
@@ -1084,7 +1084,7 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
 		};
 	});
 
-	vkUpdateDescriptorSets(renderer->vk_device_, writes.size(), &writes[0], 0, nullptr);
+	vkUpdateDescriptorSets(renderer->basics.vk_device_, writes.size(), &writes[0], 0, nullptr);
 
 	VkPipelineLayoutCreateInfo layoutCreateInfo{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -1098,7 +1098,7 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
 
 	VkPipelineLayout pipeline_layout;
 	{
-		auto res = vkCreatePipelineLayout(renderer->vk_device_, &layoutCreateInfo, nullptr, &pipeline_layout);
+		auto res = vkCreatePipelineLayout(renderer->basics.vk_device_, &layoutCreateInfo, nullptr, &pipeline_layout);
 		assert(res == VK_SUCCESS);
 	}
 
@@ -1116,13 +1116,13 @@ void VulkanResourceContext::DestroyDescriptorSet(DescriptorSet * set)
 
 	auto nativeDescriptorSet = (VulkanDescriptorSet *)set;
 
-	auto res = vkFreeDescriptorSets(renderer->vk_device_, renderer->vk_descriptor_pool_, 1, &(nativeDescriptorSet->set_));
+	auto res = vkFreeDescriptorSets(renderer->basics.vk_device_, renderer->vk_descriptor_pool_, 1, &(nativeDescriptorSet->set_));
 	assert(res == VK_SUCCESS);
-	vkDestroyDescriptorSetLayout(renderer->vk_device_, nativeDescriptorSet->layout_, nullptr);
+	vkDestroyDescriptorSetLayout(renderer->basics.vk_device_, nativeDescriptorSet->layout_, nullptr);
 	allocator.destroy(set);
 }
 
-std::unique_ptr<RenderCommandContext> VulkanCommandContextAllocator::CreateContext(RenderCommandContextCreateInfo * pCreateInfo)
+RenderCommandContext * VulkanCommandContextAllocator::CreateContext(RenderCommandContextCreateInfo * pCreateInfo)
 {
 	VkCommandBufferAllocateInfo allocateInfo = {};
 	allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1132,16 +1132,16 @@ std::unique_ptr<RenderCommandContext> VulkanCommandContextAllocator::CreateConte
 
 	VkCommandBuffer ret;
 	vkAllocateCommandBuffers(device, &allocateInfo, &ret);
-	auto retx = std::make_unique<VulkanRenderCommandContext>(ret, new std::allocator<uint8_t>());
+	auto retx = new VulkanRenderCommandContext(ret, new std::allocator<uint8_t>());
 	retx->level_ = pCreateInfo->level;
 	retx->renderer_ = renderer;
 	return retx;
 }
 
-void VulkanCommandContextAllocator::DestroyContext(std::unique_ptr<RenderCommandContext> ctx)
+void VulkanCommandContextAllocator::DestroyContext(RenderCommandContext * ctx)
 {
 	assert(ctx != nullptr);
-	auto nativeHandle = (VulkanRenderCommandContext *)ctx.get();
+	auto nativeHandle = (VulkanRenderCommandContext *)ctx;
 	vkFreeCommandBuffers(device, commandPool, 1, &nativeHandle->buffer_);
 }
 

@@ -34,12 +34,12 @@ public:
 	void EndFrame() noexcept;
 
 	void BeginSecondaryCommandContext(RenderCommandContext *);
-	std::vector<std::unique_ptr<RenderCommandContext>> CreateSecondaryCommandContexts();
+	std::vector<RenderCommandContext *> CreateSecondaryCommandContexts();
 	size_t GetSwapCount();
 	size_t GetCurrFrame();
 	void PushRenderCommand(RenderCommand&&) noexcept;
 	void SubmitCamera(CameraComponent *) noexcept;
-	void SubmitCommandBuffer(std::unique_ptr<RenderCommandContext>&&);
+	void SubmitCommandBuffer(RenderCommandContext *);
 	void Tick() noexcept;
 
 	/*
@@ -65,18 +65,32 @@ public:
 	std::vector<Entity *> entities_;
 
 private:
+	enum class FrameStage
+	{
+		INPUT,
+		TIME,
+		FENCE_WAIT,
+		PHYSICS,
+		TICK,
+		PRE_RENDERPASS,
+		MAIN_RENDERPASS,
+	};
+
 	struct FrameInfo
 	{
 		std::vector<SubmittedCamera> cameras_to_submit_;
-		std::vector<std::unique_ptr<RenderCommandContext>> command_buffers_;
+		std::vector<RenderCommandContext *> command_buffers_;
+
+		FramebufferHandle * framebuffer;
 
 		RenderPassHandle * main_renderpass_;
 		uint32_t current_subpass_;
 
-		std::unique_ptr<RenderCommandContext> main_command_context_;
-		std::unique_ptr<RenderCommandContext> pre_renderpass_context_;
+		RenderCommandContext * main_command_context_;
+		RenderCommandContext * pre_renderpass_context_;
 
 		FenceHandle * can_start_frame_;
+		SemaphoreHandle * framebufferReady;
 		SemaphoreHandle * pre_renderpass_finished_;
 		SemaphoreHandle * main_renderpass_finished_;
 
@@ -88,20 +102,21 @@ private:
 	Queue<RenderCommand>::Writer render_queue_;
 
 	/*
-	Queue<std::unique_ptr<RenderCommandContext>> free_command_buffers_;
-	Queue<std::unique_ptr<RenderCommandContext>>::Reader get_free_command_buffers_;
-	Queue<std::unique_ptr<RenderCommandContext>>::Writer put_free_command_buffers_;
-	std::vector<std::unique_ptr<RenderCommandContext>> command_buffers_;
+	Queue<RenderCommandContext *> free_command_buffers_;
+	Queue<RenderCommandContext *>::Reader get_free_command_buffers_;
+	Queue<RenderCommandContext *>::Writer put_free_command_buffers_;
+	std::vector<RenderCommandContext *> command_buffers_;
 	*/
 	//uint32_t current_subpass_;
-	//std::unique_ptr<RenderCommandContext> main_command_context_;
+	//RenderCommandContext * main_command_context_;
 	//RenderPassHandle * main_renderpass_;
 	//SemaphoreHandle * main_renderpass_finished_;
-	//std::unique_ptr<RenderCommandContext> pre_renderpass_context_;
+	//RenderCommandContext * pre_renderpass_context_;
 	//SemaphoreHandle * pre_renderpass_finished_;
-	Renderer * renderer_;
+	Renderer * renderer;
 	//SemaphoreHandle * swap_finished_;
 
 	size_t currFrameInfo = 0;
 	std::vector<FrameInfo> frameInfo;
+	FrameStage currFrameStage;
 };

@@ -17,8 +17,8 @@ public:
 private:
 	struct FrameInfo
 	{
-		std::unique_ptr<RenderCommandContext> preRenderCommandContext;
-		std::unique_ptr<RenderCommandContext> mainCommandContext;
+		RenderCommandContext * preRenderCommandContext;
+		RenderCommandContext * mainCommandContext;
 		glm::mat4 pvm;
 	};
 
@@ -38,7 +38,7 @@ private:
 	std::atomic<bool> has_created_local_resources_{ false };
 	//TODO: FrameInfo?
 	BufferHandle * uvs_;
-	//std::unique_ptr<RenderCommandContext> command_context_;
+	//RenderCommandContext * command_context_;
 	
 	std::vector<FrameInfo> frameInfo;
 };

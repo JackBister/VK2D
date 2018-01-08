@@ -23,13 +23,17 @@ class Semaphore;
 class Shader;
 class Sprite;
 
-class Renderer : IRenderer
+class Renderer : public IRenderer
 {
 public:
 	Renderer(ResourceManager *, Queue<RenderCommand>::Reader&&, char const * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
 	~Renderer() noexcept;
 
 	uint64_t GetFrameTime() noexcept;
+	
+	uint32_t AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandle * signalFence) final override;
+	std::vector<FramebufferHandle *> CreateBackbuffers(RenderPassHandle * renderPass) final override;
+	Format GetBackbufferFormat() final override;
 	uint32_t GetSwapCount() final override;
 
 	//void AddBuffer(RenderCommand::AddBufferParams) noexcept;
@@ -50,8 +54,6 @@ public:
 
 	bool isAborting = false;
 	int abortCode = 0;
-
-	static OpenGLFramebufferHandle Backbuffer;
 
 	//The window
 	SDL_Window * window;
@@ -85,7 +87,7 @@ private:
 	std::shared_ptr<Program> ptProgram;
 	GLuint ptVAO;
 
-	OpenGLImageHandle backbuffer;
+	OpenGLImageHandle backbufferImage;
 	OpenGLShaderModuleHandle ptVertexModule;
 	OpenGLShaderModuleHandle ptFragmentModule;
 
@@ -93,5 +95,7 @@ private:
 
 	uint32_t frameCount = 1;
 	std::chrono::milliseconds totalSwapTime = std::chrono::milliseconds(0);
+
+	OpenGLFramebufferHandle backbuffer;
 };
 #endif

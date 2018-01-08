@@ -52,6 +52,12 @@ enum BufferUsageFlags
 	INDIRECT_BUFFER_BIT = 0x00000100,
 };
 
+enum CommandContextUsageFlagBits {
+	ONE_TIME_SUBMIT_BIT = 0x00000001,
+	RENDER_PASS_CONTINUE_BIT = 0x00000002,
+	SIMULTANEOUS_USE_BIT = 0x00000004,
+};
+
 enum class ComponentSwizzle
 {
 	IDENTITY,
@@ -202,8 +208,8 @@ struct CommandContextAllocator
 	{
 		RenderCommandContextLevel level;
 	};
-	virtual std::unique_ptr<RenderCommandContext> CreateContext(RenderCommandContextCreateInfo * pCreateInfo) = 0;
-	virtual void DestroyContext(std::unique_ptr<RenderCommandContext>) = 0;
+	virtual RenderCommandContext * CreateContext(RenderCommandContextCreateInfo * pCreateInfo) = 0;
+	virtual void DestroyContext(RenderCommandContext *) = 0;
 	virtual void Reset() = 0;
 };
 
@@ -445,6 +451,7 @@ public:
 		RenderPassHandle * renderPass;
 		uint32_t subpass;
 		FramebufferHandle * framebuffer;
+		uint32_t commandContextUsageFlags;
 	};
 	virtual void BeginRecording(InheritanceInfo *) = 0;
 	virtual void EndRecording() = 0;
@@ -463,7 +470,7 @@ public:
 	virtual void CmdEndRenderPass() = 0;
 	virtual void CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers) = 0;
 	//TODO:
-	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) = 0;
+	virtual void CmdExecuteCommands(std::vector<RenderCommandContext *>&& commandBuffers) = 0;
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, Rect2D const * pScissors) = 0;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, Viewport const * pViewports) = 0;
 
@@ -471,22 +478,6 @@ public:
 
 protected:
 	virtual void Execute(Renderer *, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem) = 0;
-	enum RenderCommandType
-	{
-		BEGIN_RENDERPASS,
-		BIND_DESCRIPTOR_SET,
-		BIND_INDEX_BUFFER,
-		BIND_PIPELINE,
-		BIND_VERTEX_BUFFER,
-		DRAW_INDEXED,
-		END_RENDERPASS,
-		EXECUTE_COMMANDS,
-		EXECUTE_COMMANDS_VECTOR,
-		SET_SCISSOR,
-		SET_VIEWPORT,
-		SWAP_WINDOW,
-		UPDATE_BUFFER
-	};
 
 	//TODO: Stack allocator for throwaway arrays
 	std::allocator<uint8_t> * allocator;
@@ -502,8 +493,8 @@ public:
 	{
 		RenderCommandContextLevel level;
 	};
-	virtual std::unique_ptr<RenderCommandContext> CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) = 0;
-	virtual void DestroyCommandContext(std::unique_ptr<RenderCommandContext>) = 0;
+	virtual RenderCommandContext * CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) = 0;
+	virtual void DestroyCommandContext(RenderCommandContext *) = 0;
 
 	virtual void BufferSubData(BufferHandle *, uint8_t *, size_t offset, size_t size) = 0;
 	/*

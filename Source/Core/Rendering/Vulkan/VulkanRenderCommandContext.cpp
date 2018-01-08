@@ -20,8 +20,8 @@ void VulkanRenderCommandContext::Execute(Renderer * renderer, std::vector<Semaph
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &this->buffer_;
-	VkPipelineStageFlags flag = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-	submitInfo.pWaitDstStageMask = &flag;
+	std::vector<VkPipelineStageFlags> flags(vulkanWaitSems.size(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+	submitInfo.pWaitDstStageMask = vulkanWaitSems.size() > 0 ?  &flags[0] : nullptr;
 	submitInfo.waitSemaphoreCount = vulkanWaitSems.size();
 	submitInfo.pWaitSemaphores = vulkanWaitSems.size() > 0 ? &vulkanWaitSems[0] : nullptr;
 	submitInfo.signalSemaphoreCount = vulkanSignalSems.size();
@@ -46,10 +46,8 @@ void VulkanRenderCommandContext::BeginRecording(RenderCommandContext::Inheritanc
 		if (inheritanceInfo->renderPass != nullptr) {
 			vkInheritanceInfo.renderPass = ((VulkanRenderPassHandle *)inheritanceInfo->renderPass)->render_pass;
 		}
+		beginInfo.flags = inheritanceInfo->commandContextUsageFlags;
 		beginInfo.pInheritanceInfo = &vkInheritanceInfo;
-	}
-	if (level_ == RenderCommandContextLevel::SECONDARY && inheritanceInfo->renderPass != nullptr) {
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 	}
 
 	vkBeginCommandBuffer(buffer_, &beginInfo);
@@ -101,7 +99,7 @@ void VulkanRenderCommandContext::CmdBeginRenderPass(RenderCommandContext::Render
 	//This allows me to view the state at the beginning of the first frame 
 #if 0
 	uint32_t imageIndex;
-	auto res = vkAcquireNextImageKHR(this->renderer_->vk_device_, renderer_->vk_swapchain_.swapchain, std::numeric_limits<uint64_t>::max(), renderer_->swap_img_available_, VK_NULL_HANDLE, &imageIndex);
+	auto res = vkAcquireNextImageKHR(this->renderer_->basics.vk_device_, renderer_->vk_swapchain_.swapchain, std::numeric_limits<uint64_t>::max(), renderer_->swap_img_available_, VK_NULL_HANDLE, &imageIndex);
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
@@ -177,11 +175,11 @@ void VulkanRenderCommandContext::CmdExecuteCommands(uint32_t commandBufferCount,
 	vkCmdExecuteCommands(this->buffer_, commandBuffers.size(), &commandBuffers[0]);
 }
 
-void VulkanRenderCommandContext::CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers)
+void VulkanRenderCommandContext::CmdExecuteCommands(std::vector<RenderCommandContext *>&& commandBuffers)
 {
 	std::vector<VkCommandBuffer> nativeCommandBuffers(commandBuffers.size());
-	std::transform(commandBuffers.begin(), commandBuffers.end(), nativeCommandBuffers.begin(), [](std::unique_ptr<RenderCommandContext>& ctx) {
-		return ((VulkanRenderCommandContext *)ctx.get())->buffer_;
+	std::transform(commandBuffers.begin(), commandBuffers.end(), nativeCommandBuffers.begin(), [](RenderCommandContext * ctx) {
+		return ((VulkanRenderCommandContext *)ctx)->buffer_;
 	});
 
 	vkCmdExecuteCommands(this->buffer_, nativeCommandBuffers.size(), &nativeCommandBuffers[0]);

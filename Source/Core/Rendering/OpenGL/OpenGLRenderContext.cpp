@@ -79,13 +79,15 @@ static GLint InternalFormatGL(Format format)
 	}
 }
 
-std::unique_ptr<RenderCommandContext> OpenGLResourceContext::CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo)
+RenderCommandContext * OpenGLResourceContext::CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo)
 {
-	return std::make_unique<OpenGLRenderCommandContext>(new std::allocator<uint8_t>());
+	return new OpenGLRenderCommandContext(new std::allocator<uint8_t>());
 }
 
-void OpenGLResourceContext::DestroyCommandContext(std::unique_ptr<RenderCommandContext>)
+void OpenGLResourceContext::DestroyCommandContext(RenderCommandContext * ctx)
 {
+	assert(ctx != nullptr);
+	delete ctx;
 }
 
 void OpenGLResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data, size_t offset, size_t size)
@@ -558,7 +560,7 @@ void OpenGLRenderCommandContext::CmdExecuteCommands(uint32_t commandBufferCount,
 	commandList.push_back(ExecuteCommandsArgs{ commandBufferCount, (OpenGLRenderCommandContext **)pCommandBuffers });
 }
 
-void OpenGLRenderCommandContext::CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers)
+void OpenGLRenderCommandContext::CmdExecuteCommands(std::vector<RenderCommandContext *>&& commandBuffers)
 {
 	commandList.push_back(ExecuteCommandsVectorArgs{ std::move(commandBuffers) });
 }
@@ -692,7 +694,7 @@ void OpenGLRenderCommandContext::Execute(Renderer * renderer, std::vector<Semaph
 			auto args = std::move(std::get<ExecuteCommandsVectorArgs>(rc));
 
 			for (auto& ctx : args.commandBuffers) {
-				((OpenGLRenderCommandContext *)ctx.get())->Execute(renderer, {}, {});
+				((OpenGLRenderCommandContext *)ctx)->Execute(renderer, {}, {});
 			}
 			break;
 		}
@@ -762,14 +764,15 @@ bool OpenGLFenceHandle::Wait(uint64_t timeOut)
 	return true;
 }
 
-std::unique_ptr<RenderCommandContext> OpenGLCommandContextAllocator::CreateContext(RenderCommandContextCreateInfo * pCreateInfo)
+RenderCommandContext * OpenGLCommandContextAllocator::CreateContext(RenderCommandContextCreateInfo * pCreateInfo)
 {
-	return std::make_unique<OpenGLRenderCommandContext>(new std::allocator<uint8_t>());
+	return new OpenGLRenderCommandContext(new std::allocator<uint8_t>());
 }
 
-void OpenGLCommandContextAllocator::DestroyContext(std::unique_ptr<RenderCommandContext> ctx)
+void OpenGLCommandContextAllocator::DestroyContext(RenderCommandContext * ctx)
 {
 	assert(ctx != nullptr);
+	delete ctx;
 }
 
 void OpenGLCommandContextAllocator::Reset()

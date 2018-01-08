@@ -23,27 +23,46 @@ public:
 	OpenGLRenderCommandContext() : RenderCommandContext(new std::allocator<uint8_t>) {}
 	OpenGLRenderCommandContext(std::allocator<uint8_t> * allocator) : RenderCommandContext(allocator) {}
 
-	virtual ~OpenGLRenderCommandContext() { delete allocator; }
+	~OpenGLRenderCommandContext() final override
+	{
+		delete allocator;
+	}
 
-	virtual void BeginRecording(InheritanceInfo *) override;
-	virtual void EndRecording() override;
+	 void BeginRecording(InheritanceInfo *) final override;
+	 void EndRecording() final override;
 
-	virtual void CmdBeginRenderPass(RenderCommandContext::RenderPassBeginInfo *pRenderPassBegin, RenderCommandContext::SubpassContents contents) override;
-	virtual void CmdBindDescriptorSet(DescriptorSet *) override;
-	virtual void CmdBindIndexBuffer(BufferHandle *buffer, size_t offset, RenderCommandContext::IndexType indexType) override;
-	virtual void CmdBindPipeline(RenderPassHandle::PipelineBindPoint, PipelineHandle *) override;
-	virtual void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) override;
-	virtual void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset) override;
-	virtual void CmdEndRenderPass() override;
-	virtual void CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers) override;
-	virtual void CmdExecuteCommands(std::vector<std::unique_ptr<RenderCommandContext>>&& commandBuffers) override;
-	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, RenderCommandContext::Rect2D const * pScissors) override;
-	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, RenderCommandContext::Viewport const * pViewports) override;
-	virtual void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) override;
+	 void CmdBeginRenderPass(RenderCommandContext::RenderPassBeginInfo * pRenderPassBegin, RenderCommandContext::SubpassContents contents) final override;
+	 void CmdBindDescriptorSet(DescriptorSet *) final override;
+	 void CmdBindIndexBuffer(BufferHandle * buffer, size_t offset, RenderCommandContext::IndexType indexType) final override;
+	 void CmdBindPipeline(RenderPassHandle::PipelineBindPoint, PipelineHandle *) final override;
+	 void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) final override;
+	 void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset) final override;
+	 void CmdEndRenderPass() final override;
+	 void CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers) final override;
+	 void CmdExecuteCommands(std::vector<RenderCommandContext *>&& commandBuffers) final override;
+	 void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, RenderCommandContext::Rect2D const * pScissors) final override;
+	 void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, RenderCommandContext::Viewport const * pViewports) final override;
+	 void CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData) final override;
 
 protected:
 	void Execute(Renderer *, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem) override;
 private:
+	enum RenderCommandType
+	{
+		BEGIN_RENDERPASS,
+		BIND_DESCRIPTOR_SET,
+		BIND_INDEX_BUFFER,
+		BIND_PIPELINE,
+		BIND_VERTEX_BUFFER,
+		DRAW_INDEXED,
+		END_RENDERPASS,
+		EXECUTE_COMMANDS,
+		EXECUTE_COMMANDS_VECTOR,
+		SET_SCISSOR,
+		SET_VIEWPORT,
+		SWAP_WINDOW,
+		UPDATE_BUFFER
+	};
 	/*
 		Render command types and args:
 	*/
@@ -106,7 +125,7 @@ private:
 	};
 	struct ExecuteCommandsVectorArgs
 	{
-		std::vector<std::unique_ptr<RenderCommandContext>> commandBuffers;
+		std::vector<RenderCommandContext *> commandBuffers;
 	};
 	struct SetScissorArgs
 	{
@@ -152,8 +171,8 @@ private:
 class OpenGLResourceContext : public ResourceCreationContext
 {
 public:
-	virtual std::unique_ptr<RenderCommandContext> CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
-	virtual void DestroyCommandContext(std::unique_ptr<RenderCommandContext>) final override;
+	virtual RenderCommandContext * CreateCommandContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
+	virtual void DestroyCommandContext(RenderCommandContext *) final override;
 
 	void BufferSubData(BufferHandle *, uint8_t *, size_t, size_t) final override;
 	BufferHandle * CreateBuffer(BufferCreateInfo) final override;
@@ -215,9 +234,9 @@ struct OpenGLBufferHandle : BufferHandle
 
 struct OpenGLCommandContextAllocator : CommandContextAllocator
 {
-	std::unique_ptr<RenderCommandContext> CreateContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
+	RenderCommandContext * CreateContext(RenderCommandContextCreateInfo * pCreateInfo) final override;
 
-	void DestroyContext(std::unique_ptr<RenderCommandContext>) final override;
+	void DestroyContext(RenderCommandContext *) final override;
 
 	void Reset() final override;
 

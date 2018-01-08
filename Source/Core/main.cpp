@@ -96,20 +96,13 @@ int main(int argc, char *argv[])
 	Queue<RenderCommand> renderQueue;
 	ResourceManager resMan(renderQueue.GetWriter());
 	SDL_Init(SDL_INIT_EVERYTHING);
-	Renderer renderer(&resMan, renderQueue.GetReader(), "SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
+	Renderer renderer(&resMan, /* renderQueue.GetReader(),*/ "SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
 	auto mainThread = std::thread(MainThread, &resMan, inputQueue.GetReader(), renderQueue.GetWriter(), sceneFileName, &renderer);
 	auto inputWriter = inputQueue.GetWriter();
 
 	SetThreadName(std::this_thread::get_id(), "Rendering Thread");
 	SetThreadName(mainThread.get_id(), "Main Thread");
 	
-
-	/*
-	for (int i = 0; i < 2; ++i) {
-		renderingFinishedSem.Signal();
-	}
-	*/
-
 	while (!renderer.isAborting) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {

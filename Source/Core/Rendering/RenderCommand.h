@@ -56,7 +56,8 @@ struct RenderCommand
 	{
 		SemaphoreHandle * waitSem;
 		FenceHandle * signalFence;
-		SwapWindowParams(SemaphoreHandle * waitSem, FenceHandle * signalFence) : waitSem(waitSem), signalFence(signalFence) {
+		uint32_t imageIndex;
+		SwapWindowParams(uint32_t imageIndex, SemaphoreHandle * waitSem, FenceHandle * signalFence) : waitSem(waitSem), signalFence(signalFence), imageIndex(imageIndex) {
 		}
 	};
 

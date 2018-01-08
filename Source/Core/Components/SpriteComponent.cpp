@@ -98,16 +98,18 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 		if (has_created_local_resources_ && sprite_.image_->get_image_handle()) {
 			auto camera = (SubmittedCamera *)args["camera"].as_LuaSerializable_;
 			frameInfo[entity_->scene_->GetCurrFrame()].pvm = camera->projection * camera->view * entity_->transform_.local_to_world();
-			frameInfo[entity_->scene_->GetCurrFrame()].preRenderCommandContext->BeginRecording(nullptr);
-			frameInfo[entity_->scene_->GetCurrFrame()].preRenderCommandContext->CmdUpdateBuffer(uvs_, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(frameInfo[entity_->scene_->GetCurrFrame()].pvm));
-			frameInfo[entity_->scene_->GetCurrFrame()].preRenderCommandContext->EndRecording();
-			entity_->scene_->SubmitCommandBuffer(std::move(frameInfo[entity_->scene_->GetCurrFrame()].preRenderCommandContext));
+			auto ctx = frameInfo[entity_->scene_->GetCurrFrame()].preRenderCommandContext;
+			entity_->scene_->BeginSecondaryCommandContext(ctx);
+			ctx->CmdUpdateBuffer(uvs_, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(frameInfo[entity_->scene_->GetCurrFrame()].pvm));
+			ctx->EndRecording();
+			entity_->scene_->SubmitCommandBuffer(ctx);
 		}
 	} else if (name == "MainRenderPass") {
 		if (has_created_local_resources_ && sprite_.image_->get_image_handle()) {
 			auto img = sprite_.image_->get_image_handle();
 			auto camera = (SubmittedCamera *)args["camera"].as_LuaSerializable_;
-			auto& ctx = frameInfo[entity_->scene_->GetCurrFrame()].mainCommandContext;
+			auto ctx = frameInfo[entity_->scene_->GetCurrFrame()].mainCommandContext;
+			entity_->scene_->BeginSecondaryCommandContext(ctx);
 			RenderCommandContext::Viewport viewport = {
 				0.f,
 				0.f,
@@ -139,7 +141,7 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 			ctx->CmdDrawIndexed(6, 1, 0, 0);
 
 			ctx->EndRecording();
-			entity_->scene_->SubmitCommandBuffer(std::move(ctx));
+			entity_->scene_->SubmitCommandBuffer(ctx);
 		}
 	}
 }
