@@ -1,4 +1,4 @@
-#ifdef USE_VULKAN_RENDERER
+#ifndef USE_OGL_RENDERER
 #include <chrono>
 #include <cstdint>
 #include <memory>

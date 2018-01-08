@@ -1,4 +1,4 @@
-#ifdef USE_VULKAN_RENDERER
+#ifndef USE_OGL_RENDERER
 #include "Core/Rendering/Vulkan/VulkanRenderContext.h"
 
 #include "Core/Rendering/Vulkan/VulkanRenderer.h"

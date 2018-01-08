@@ -1,5 +1,5 @@
 #pragma once
-#ifdef USE_VULKAN_RENDERER
+#ifndef USE_OGL_RENDERER
 #include "Core/Rendering/Context/RenderContext.h"
 #include <vulkan/vulkan.h>
 

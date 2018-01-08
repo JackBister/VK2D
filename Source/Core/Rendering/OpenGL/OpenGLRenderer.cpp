@@ -1,4 +1,4 @@
-#ifndef USE_VULKAN_RENDERER
+#ifdef USE_OGL_RENDERER
 #include "Core/Rendering/OpenGL/OpenGLRenderer.h"
 
 #include <SDL/SDL.h>

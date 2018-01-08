@@ -1,4 +1,4 @@
-#ifndef USE_VULKAN_RENDERER
+#ifdef USE_OGL_RENDERER
 #include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
 
 #include <assert.h>
@@ -277,13 +277,11 @@ ShaderModuleHandle * OpenGLResourceContext::CreateShaderModule(ResourceCreationC
 	default:
 		printf("[ERROR] Unknown shader module type %d.\n", ToUnderlyingType(ci.type));
 	}
-	printf("pre createshader err %d\n", glGetError());
 	ret->nativeHandle = glCreateShader(type);
 	GLchar const * src = (GLchar *)ci.pCode;
 	//glShaderSource(ret->nativeHandle, 1, &src, nullptr);
 	//glCompileShader(ret->nativeHandle);
 	glShaderBinary(1, &ret->nativeHandle, GL_SHADER_BINARY_FORMAT_SPIR_V, src, ci.codeSize);
-	printf("post shaderbinary err %d\n", glGetError());
 
 	uint32_t specializationConstantIndexes[] = {0};
 	uint32_t specializationConstantValues[] = {1};

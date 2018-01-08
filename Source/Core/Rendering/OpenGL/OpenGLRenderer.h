@@ -1,5 +1,5 @@
 #pragma once
-#ifndef USE_VULKAN_RENDERER
+#ifdef USE_OGL_RENDERER
 #include <chrono>
 #include <cstdint>
 #include <memory>
