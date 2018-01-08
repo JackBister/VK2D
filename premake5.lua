@@ -1,16 +1,26 @@
 #!lua
 
+function os.winSdkVersion()
+    local reg_arch = iif( os.is64bit(), "\\Wow6432Node\\", "\\" )
+    local sdk_version = os.getWindowsRegistry( "HKLM:SOFTWARE" .. reg_arch .."Microsoft\\Microsoft SDKs\\Windows\\v10.0\\ProductVersion" )
+    if sdk_version ~= nil then return sdk_version end
+end
+
 solution "Vulkan2D"
 	configurations { "Debug", "Release" }
 	
 	platforms { "x86", "x86_64" }
 
+    filter {"system:windows", "action:vs*"}
+        systemversion(os.winSdkVersion() .. ".0")
+
+--[[
 	project "HeaderGenerator"
 		kind "ConsoleApp"
 		language "C++"
 		defines { "BYTE_ORDER=1", "LLVM_ON_WIN32=1" }
 		files { "Source/Tools/HeaderGenerator/**.h", "Source/Tools/HeaderGenerator/**.cpp"}
-		flags { "C++14" }		
+		cppdialect "C++17"
 		includedirs { "include" }
 		objdir "build"
 		targetdir "build"
@@ -30,7 +40,7 @@ solution "Vulkan2D"
 			"libs/VS/Release/libboost_system-vc140-mt-1_61.lib",
 			"libs/VS/Release/libboost_system.lib",
 			"libs/VS/libclang.lib" }
-	
+]]
 	project "Engine"
 		kind "ConsoleApp"
 		language "C++"
