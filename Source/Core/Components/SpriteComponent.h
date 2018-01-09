@@ -17,8 +17,8 @@ public:
 private:
 	struct FrameInfo
 	{
-		RenderCommandContext * preRenderCommandContext;
-		RenderCommandContext * mainCommandContext;
+		CommandBuffer * preRenderCommandContext;
+		CommandBuffer * mainCommandContext;
 		glm::mat4 pvm;
 	};
 

@@ -10,7 +10,8 @@
 
 #include "Core/Queue.h"
 #include "Core/Rendering/AbstractRenderer.h"
-#include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
+#include "Core/Rendering/OpenGL/OpenGLContextStructs.h"
+#include "Core/Rendering/OpenGL/OpenGLResourceContext.h"
 #include "Core/Rendering/RenderCommand.h"
 
 class Renderer : public IRenderer
@@ -25,7 +26,7 @@ public:
 	uint32_t GetSwapCount() final override;
 
 	void CreateResources(std::function<void(ResourceCreationContext&)> fun) final override;
-	void ExecuteCommandContext(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence = nullptr) final override;
+	void ExecuteCommandBuffer(CommandBuffer * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence = nullptr) final override;
 	void SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem) final override;
 
 	int abortCode = 0;
@@ -41,7 +42,7 @@ private:
 	std::thread renderThread;
 
 	Queue<RenderCommand> renderQueue;
-	Queue<RenderCommand>::Reader rendQueueRead;
+	Queue<RenderCommand>::Reader renderQueueRead;
 	Queue<RenderCommand>::Writer renderQueueWrite;
 
 	//The aspect ratio of the window

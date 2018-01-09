@@ -230,12 +230,12 @@ void Scene::CreatePrimitives()
 	}
 
 	auto framebuffers = renderer->CreateBackbuffers(frameInfo[0].main_renderpass_);
-	CommandContextAllocator::RenderCommandContextCreateInfo ctxCreateInfo = {};
+	CommandContextAllocator::CommandBufferCreateInfo ctxCreateInfo = {};
 	ctxCreateInfo.level = RenderCommandContextLevel::PRIMARY;
 	for (size_t i = 0; i < frameInfo.size(); ++i) {
 		frameInfo[i].framebuffer = framebuffers[i];
-		frameInfo[i].main_command_context_ = frameInfo[i].commandContextAllocator->CreateContext(&ctxCreateInfo);
-		frameInfo[i].pre_renderpass_context_ = frameInfo[i].commandContextAllocator->CreateContext(&ctxCreateInfo);
+		frameInfo[i].main_command_context_ = frameInfo[i].commandContextAllocator->CreateContext(ctxCreateInfo);
+		frameInfo[i].pre_renderpass_context_ = frameInfo[i].commandContextAllocator->CreateContext(ctxCreateInfo);
 	}
 
 	resourceManager->AddResource("_Primitives/Buffers/QuadVBO.buffer", quadVerts);
@@ -270,9 +270,9 @@ Scene::Scene(std::string const& name, ResourceManager * resMan, Queue<SDL_Event>
 	}
 }
 
-void Scene::BeginSecondaryCommandContext(RenderCommandContext * ctx)
+void Scene::BeginSecondaryCommandContext(CommandBuffer * ctx)
 {
-	RenderCommandContext::InheritanceInfo inheritanceInfo = {};
+	CommandBuffer::InheritanceInfo inheritanceInfo = {};
 	switch (currFrameStage) {
 	case FrameStage::PRE_RENDERPASS: {
 		inheritanceInfo.renderPass = nullptr;
@@ -297,13 +297,13 @@ void Scene::CreateResources(std::function<void(ResourceCreationContext&)> fun)
 	renderer->CreateResources(fun);
 }
 
-std::vector<RenderCommandContext *> Scene::CreateSecondaryCommandContexts()
+std::vector<CommandBuffer *> Scene::CreateSecondaryCommandContexts()
 {
-	CommandContextAllocator::RenderCommandContextCreateInfo ci {};
+	CommandContextAllocator::CommandBufferCreateInfo ci {};
 	ci.level = RenderCommandContextLevel::SECONDARY;
-	std::vector<RenderCommandContext *> ret;
+	std::vector<CommandBuffer *> ret;
 	for (size_t i = 0; i < frameInfo.size(); ++i) {
-		ret.push_back(frameInfo[i].commandContextAllocator->CreateContext(&ci));
+		ret.push_back(frameInfo[i].commandContextAllocator->CreateContext(ci));
 	}
 	return ret;
 }
@@ -323,7 +323,7 @@ void Scene::SubmitCamera(CameraComponent * cam) noexcept
 	frameInfo[currFrameInfoIdx].cameras_to_submit_.emplace_back(cam->GetView(), cam->GetProjection());
 }
 
-void Scene::SubmitCommandBuffer(RenderCommandContext * ctx)
+void Scene::SubmitCommandBuffer(CommandBuffer * ctx)
 {
 	frameInfo[currFrameInfoIdx].command_buffers_.push_back(ctx);
 }
@@ -363,24 +363,24 @@ void Scene::Tick() noexcept
 	//TODO: Assumes single thread
 	if (currFrame.command_buffers_.size() > 0) {
 		currFrame.pre_renderpass_context_->CmdExecuteCommands(std::move(currFrame.command_buffers_));
-		currFrame.command_buffers_ = std::vector<RenderCommandContext *>();
+		currFrame.command_buffers_ = std::vector<CommandBuffer *>();
 	}
 
 	currFrame.pre_renderpass_context_->EndRecording();
 
-	renderer->ExecuteCommandContext(currFrame.pre_renderpass_context_,
+	renderer->ExecuteCommandBuffer(currFrame.pre_renderpass_context_,
 		std::vector<SemaphoreHandle *>(),
 		{currFrame.pre_renderpass_finished_});
 
-	RenderCommandContext::ClearValue clearValues[] = {
+	CommandBuffer::ClearValue clearValues[] = {
 		{
-			RenderCommandContext::ClearValue::Type::COLOR,
+			CommandBuffer::ClearValue::Type::COLOR,
 			{
 				0.f, 0.f, 1.f, 1.f
 			}
 		}
 	};
-	RenderCommandContext::RenderPassBeginInfo beginInfo = {
+	CommandBuffer::RenderPassBeginInfo beginInfo = {
 		currFrame.main_renderpass_,
 		currFrame.framebuffer,
 		{
@@ -399,7 +399,7 @@ void Scene::Tick() noexcept
 	};
 	currFrame.main_command_context_->BeginRecording(nullptr);
 	currFrameStage = FrameStage::MAIN_RENDERPASS;
-	currFrame.main_command_context_->CmdBeginRenderPass(&beginInfo, RenderCommandContext::SubpassContents::SECONDARY_COMMAND_BUFFERS);
+	currFrame.main_command_context_->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::SECONDARY_COMMAND_BUFFERS);
 	currFrame.current_subpass_ = 0;
 	for (auto& cc : currFrame.cameras_to_submit_) {
 		BroadcastEvent("MainRenderPass", { { "camera", &cc } });
@@ -408,13 +408,13 @@ void Scene::Tick() noexcept
 	//TODO: Assumes single thread
 	if (currFrame.command_buffers_.size() > 0) {
 		currFrame.main_command_context_->CmdExecuteCommands(std::move(currFrame.command_buffers_));
-		currFrame.command_buffers_ = std::vector<RenderCommandContext *>();
+		currFrame.command_buffers_ = std::vector<CommandBuffer *>();
 	}
 
 	currFrame.main_command_context_->CmdEndRenderPass();
 	currFrame.main_command_context_->EndRecording();
 
-	renderer->ExecuteCommandContext(currFrame.main_command_context_,
+	renderer->ExecuteCommandBuffer(currFrame.main_command_context_,
 	{frameInfo[prevFrameInfo].framebufferReady, currFrame.pre_renderpass_finished_},
 	{currFrame.main_renderpass_finished_},
 	currFrame.can_start_frame_);

@@ -5,6 +5,8 @@
 #include <stb_image.h>
 #include <vulkan/vulkan.h>
 
+#include "Core/Rendering/Vulkan/VulkanResourceContext.h"
+
 static Format ToAbstractFormat(VkFormat format) {
 	switch (format) {
 	case VK_FORMAT_B8G8R8A8_UNORM:
@@ -213,7 +215,7 @@ void Renderer::CreateResources(std::function<void(ResourceCreationContext&)> fun
 	fun(ctx);
 }
 
-void Renderer::ExecuteCommandContext(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
+void Renderer::ExecuteCommandBuffer(CommandBuffer * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
 {
 	ctx->Execute(this, waitSem, signalSem, signalFence);
 }

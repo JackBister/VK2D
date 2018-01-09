@@ -34,8 +34,8 @@ struct RenderCommand
 		std::vector<SemaphoreHandle *> waitSem;
 		std::vector<SemaphoreHandle *> signalSem;
 		FenceHandle * signalFence;
-		RenderCommandContext * ctx;
-		ExecuteCommandContextParams(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
+		CommandBuffer * ctx;
+		ExecuteCommandContextParams(CommandBuffer * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
 			: ctx(ctx), waitSem(waitSem), signalSem(signalSem), signalFence(signalFence) {}
 	};
 

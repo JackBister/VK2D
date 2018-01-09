@@ -29,13 +29,13 @@ class Scene : public LuaSerializable, public Resource
 public:
 	Scene(std::string const&, ResourceManager *, Queue<SDL_Event>::Reader&&, std::string const&, Renderer * renderer) noexcept;
 
-	void BeginSecondaryCommandContext(RenderCommandContext *);
+	void BeginSecondaryCommandContext(CommandBuffer *);
 	void CreateResources(std::function<void(ResourceCreationContext&)> fun);
-	std::vector<RenderCommandContext *> CreateSecondaryCommandContexts();
+	std::vector<CommandBuffer *> CreateSecondaryCommandContexts();
 	size_t GetSwapCount();
 	size_t GetCurrFrame();
 	void SubmitCamera(CameraComponent *) noexcept;
-	void SubmitCommandBuffer(RenderCommandContext *);
+	void SubmitCommandBuffer(CommandBuffer *);
 	void Tick() noexcept;
 
 	/*
@@ -67,15 +67,15 @@ private:
 	struct FrameInfo
 	{
 		std::vector<SubmittedCamera> cameras_to_submit_;
-		std::vector<RenderCommandContext *> command_buffers_;
+		std::vector<CommandBuffer *> command_buffers_;
 
 		FramebufferHandle * framebuffer;
 
 		RenderPassHandle * main_renderpass_;
 		uint32_t current_subpass_;
 
-		RenderCommandContext * main_command_context_;
-		RenderCommandContext * pre_renderpass_context_;
+		CommandBuffer * main_command_context_;
+		CommandBuffer * pre_renderpass_context_;
 
 		FenceHandle * can_start_frame_;
 		SemaphoreHandle * framebufferReady;

@@ -6,7 +6,7 @@
 #include <vector>
 
 struct ImageViewHandle;
-class RenderCommandContext;
+class CommandBuffer;
 struct VertexInputStateHandle;
 
 enum class AccessFlagBits
@@ -204,12 +204,12 @@ struct BufferHandle
 
 struct CommandContextAllocator
 {
-	struct RenderCommandContextCreateInfo
+	struct CommandBufferCreateInfo
 	{
 		RenderCommandContextLevel level;
 	};
-	virtual RenderCommandContext * CreateContext(RenderCommandContextCreateInfo * pCreateInfo) = 0;
-	virtual void DestroyContext(RenderCommandContext *) = 0;
+	virtual CommandBuffer * CreateContext(CommandBufferCreateInfo const& pCreateInfo) = 0;
+	virtual void DestroyContext(CommandBuffer *) = 0;
 	virtual void Reset() = 0;
 };
 
@@ -374,7 +374,7 @@ struct VertexInputStateHandle
 {
 };
 
-class RenderCommandContext
+class CommandBuffer
 {
 	friend class Renderer;
 public:
@@ -443,8 +443,8 @@ public:
 		float maxDepth;
 	};
 
-	RenderCommandContext(std::allocator<uint8_t> * allocator) : allocator(allocator) {}
-	virtual ~RenderCommandContext() {}
+	CommandBuffer(std::allocator<uint8_t> * allocator) : allocator(allocator) {}
+	virtual ~CommandBuffer() {}
 
 	struct InheritanceInfo
 	{
@@ -468,9 +468,9 @@ public:
 	virtual void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) = 0;
 	virtual void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset) = 0;
 	virtual void CmdEndRenderPass() = 0;
-	virtual void CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers) = 0;
+	virtual void CmdExecuteCommands(uint32_t commandBufferCount, CommandBuffer ** pCommandBuffers) = 0;
 	//TODO:
-	virtual void CmdExecuteCommands(std::vector<RenderCommandContext *>&& commandBuffers) = 0;
+	virtual void CmdExecuteCommands(std::vector<CommandBuffer *>&& commandBuffers) = 0;
 	virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, Rect2D const * pScissors) = 0;
 	virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, Viewport const * pViewports) = 0;
 
@@ -502,7 +502,7 @@ public:
 		uint32_t usage;
 		MemoryPropertyFlagBits memoryProperties;
 	};
-	virtual BufferHandle * CreateBuffer(BufferCreateInfo) = 0;
+	virtual BufferHandle * CreateBuffer(BufferCreateInfo const&) = 0;
 	virtual void DestroyBuffer(BufferHandle *) = 0;
 	/*
 		OpenGL: glMapBuffer
@@ -539,7 +539,7 @@ public:
 		//TODO: optional
 		DescriptorSetLayoutHandle * layout;
 	};
-	virtual DescriptorSet * CreateDescriptorSet(DescriptorSetCreateInfo) = 0;
+	virtual DescriptorSet * CreateDescriptorSet(DescriptorSetCreateInfo const&) = 0;
 	virtual void DestroyDescriptorSet(DescriptorSet *) = 0;
 
 	/*
@@ -556,7 +556,7 @@ public:
 		uint32_t bindingCount;
 		Binding const * pBinding;
 	};
-	virtual DescriptorSetLayoutHandle * CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo) = 0;
+	virtual DescriptorSetLayoutHandle * CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo const&) = 0;
 	virtual void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle *) = 0;	
 
 	virtual FenceHandle * CreateFence(bool startSignaled) = 0;
@@ -569,7 +569,7 @@ public:
 		ImageViewHandle const ** pAttachments;
 		uint32_t width, height, layers;
 	};
-	virtual FramebufferHandle * CreateFramebuffer(FramebufferCreateInfo) = 0;
+	virtual FramebufferHandle * CreateFramebuffer(FramebufferCreateInfo const&) = 0;
 	virtual void DestroyFramebuffer(FramebufferHandle *) = 0;
 	/*
 		OpenGL: glGenTextures + glTexStorage
@@ -583,7 +583,7 @@ public:
 		uint32_t mipLevels;
 		uint32_t usage;
 	};
-	virtual ImageHandle * CreateImage(ImageCreateInfo) = 0;
+	virtual ImageHandle * CreateImage(ImageCreateInfo const&) = 0;
 	virtual void DestroyImage(ImageHandle *) = 0;
 	/*
 		OpenGL: glTexSubImage
@@ -599,7 +599,7 @@ public:
 		ImageViewHandle::ComponentMapping components;
 		ImageViewHandle::ImageSubresourceRange subresourceRange;
 	};
-	virtual ImageViewHandle * CreateImageView(ImageViewCreateInfo) = 0;
+	virtual ImageViewHandle * CreateImageView(ImageViewCreateInfo const&) = 0;
 	virtual void DestroyImageView(ImageViewHandle *) = 0;
 
 	struct GraphicsPipelineCreateInfo
@@ -617,7 +617,7 @@ public:
 		RenderPassHandle * renderPass;
 		uint32_t subpass;
 	};
-	virtual PipelineHandle * CreateGraphicsPipeline(GraphicsPipelineCreateInfo) = 0;
+	virtual PipelineHandle * CreateGraphicsPipeline(GraphicsPipelineCreateInfo const&) = 0;
 	virtual void DestroyPipeline(PipelineHandle *) = 0;
 
 	struct RenderPassCreateInfo
@@ -629,7 +629,7 @@ public:
 		uint32_t dependencyCount;
 		RenderPassHandle::SubpassDependency const * pDependencies;
 	};
-	virtual RenderPassHandle * CreateRenderPass(RenderPassCreateInfo) = 0;
+	virtual RenderPassHandle * CreateRenderPass(RenderPassCreateInfo const&) = 0;
 	virtual void DestroyRenderPass(RenderPassHandle *) = 0;
 
 	struct SamplerCreateInfo
@@ -638,7 +638,7 @@ public:
 		Filter minFilter;
 		AddressMode addressModeU, addressModeV;
 	};
-	virtual SamplerHandle * CreateSampler(SamplerCreateInfo) = 0;
+	virtual SamplerHandle * CreateSampler(SamplerCreateInfo const&) = 0;
 	virtual void DestroySampler(SamplerHandle *) = 0;
 
 	virtual SemaphoreHandle * CreateSemaphore() = 0;
@@ -655,7 +655,7 @@ public:
 		size_t codeSize;
 		uint8_t const * pCode;
 	};
-	virtual ShaderModuleHandle * CreateShaderModule(ShaderModuleCreateInfo) = 0;
+	virtual ShaderModuleHandle * CreateShaderModule(ShaderModuleCreateInfo const&) = 0;
 	virtual void DestroyShaderModule(ShaderModuleHandle *) = 0;
 
 	struct VertexInputStateCreateInfo
@@ -681,7 +681,7 @@ public:
 		uint32_t vertexAttributeDescriptionCount;
 		VertexAttributeDescription const * pVertexAttributeDescriptions;
 	};
-	virtual VertexInputStateHandle * CreateVertexInputState(VertexInputStateCreateInfo) = 0;
+	virtual VertexInputStateHandle * CreateVertexInputState(VertexInputStateCreateInfo const&) = 0;
 	virtual void DestroyVertexInputState(VertexInputStateHandle *) = 0;
 
 protected:

@@ -1,16 +1,12 @@
 #ifndef USE_OGL_RENDERER
-#include "Core/Rendering/Vulkan/VulkanRenderCommandContext.h"
+#include "Core/Rendering/Vulkan/VulkanCommandBuffer.h"
 
+#include "Core/Rendering/Vulkan/VulkanContextStructs.h"
+#include "Core/Rendering/Vulkan/VulkanConverterFuncs.h"
+#include "Core/Rendering/Vulkan/VulkanCommandBufferAllocator.h"
 #include "Core/Rendering/Vulkan/VulkanRenderer.h"
 
-static constexpr VkRect2D ToVulkanRect2D(RenderCommandContext::Rect2D const& rect) {
-	return VkRect2D{
-		{ rect.offset.x, rect.offset.y },
-		{ rect.extent.width, rect.extent.height }
-	};
-}
-
-void VulkanRenderCommandContext::Execute(Renderer * renderer, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
+void VulkanCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
 {
 	std::vector<VkSemaphore> vulkanWaitSems(waitSem.size());
 	std::transform(waitSem.begin(), waitSem.end(), vulkanWaitSems.begin(), [](SemaphoreHandle * sem) { return ((VulkanSemaphoreHandle *)sem)->semaphore; });
@@ -30,7 +26,7 @@ void VulkanRenderCommandContext::Execute(Renderer * renderer, std::vector<Semaph
 	assert(res == VK_SUCCESS);
 }
 
-void VulkanRenderCommandContext::BeginRecording(RenderCommandContext::InheritanceInfo * inheritanceInfo)
+void VulkanCommandBuffer::BeginRecording(CommandBuffer::InheritanceInfo * inheritanceInfo)
 {
 	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -53,17 +49,17 @@ void VulkanRenderCommandContext::BeginRecording(RenderCommandContext::Inheritanc
 	vkBeginCommandBuffer(buffer, &beginInfo);
 }
 
-void VulkanRenderCommandContext::EndRecording()
+void VulkanCommandBuffer::EndRecording()
 {
 	vkEndCommandBuffer(buffer);
 }
 
-void VulkanRenderCommandContext::Reset()
+void VulkanCommandBuffer::Reset()
 {
 	vkResetCommandBuffer(buffer, 0);
 }
 
-void VulkanRenderCommandContext::CmdBeginRenderPass(RenderCommandContext::RenderPassBeginInfo * pRenderPassBegin, RenderCommandContext::SubpassContents contents)
+void VulkanCommandBuffer::CmdBeginRenderPass(CommandBuffer::RenderPassBeginInfo * pRenderPassBegin, CommandBuffer::SubpassContents contents)
 {
 	std::vector<VkClearValue> clearValues(pRenderPassBegin->clearValueCount);
 	std::transform(pRenderPassBegin->pClearValues, &pRenderPassBegin->pClearValues[pRenderPassBegin->clearValueCount], clearValues.begin(), [](ClearValue clearValue) {
@@ -85,10 +81,10 @@ void VulkanRenderCommandContext::CmdBeginRenderPass(RenderCommandContext::Render
 
 	VkSubpassContents subpassContents;
 	switch (contents) {
-	case RenderCommandContext::SubpassContents::INLINE:
+	case CommandBuffer::SubpassContents::INLINE:
 		subpassContents = VK_SUBPASS_CONTENTS_INLINE;
 		break;
-	case RenderCommandContext::SubpassContents::SECONDARY_COMMAND_BUFFERS:
+	case CommandBuffer::SubpassContents::SECONDARY_COMMAND_BUFFERS:
 		subpassContents = VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
 		break;
 	}
@@ -96,7 +92,7 @@ void VulkanRenderCommandContext::CmdBeginRenderPass(RenderCommandContext::Render
 	vkCmdBeginRenderPass(this->buffer, &beginInfo, subpassContents);
 }
 
-void VulkanRenderCommandContext::CmdBindDescriptorSet(DescriptorSet * set)
+void VulkanCommandBuffer::CmdBindDescriptorSet(DescriptorSet * set)
 {
 	assert(set != nullptr);
 	auto nativeSet = (VulkanDescriptorSet *)set;
@@ -105,14 +101,14 @@ void VulkanRenderCommandContext::CmdBindDescriptorSet(DescriptorSet * set)
 	vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, nativeSet->pipelineLayout, 0, 1, &nativeSet->set, 0, nullptr);
 }
 
-void VulkanRenderCommandContext::CmdBindIndexBuffer(BufferHandle * buffer, size_t offset, RenderCommandContext::IndexType indexType)
+void VulkanCommandBuffer::CmdBindIndexBuffer(BufferHandle * buffer, size_t offset, CommandBuffer::IndexType indexType)
 {
 	VkIndexType vkIndexType;
 	switch (indexType) {
-	case RenderCommandContext::IndexType::UINT16:
+	case CommandBuffer::IndexType::UINT16:
 		vkIndexType = VK_INDEX_TYPE_UINT16;
 		break;
-	case RenderCommandContext::IndexType::UINT32:
+	case CommandBuffer::IndexType::UINT32:
 		vkIndexType = VK_INDEX_TYPE_UINT32;
 		break;
 	}
@@ -120,7 +116,7 @@ void VulkanRenderCommandContext::CmdBindIndexBuffer(BufferHandle * buffer, size_
 	vkCmdBindIndexBuffer(this->buffer, ((VulkanBufferHandle *)buffer)->buffer, offset, vkIndexType);
 }
 
-void VulkanRenderCommandContext::CmdBindPipeline(RenderPassHandle::PipelineBindPoint bindPoint, PipelineHandle * pipeline)
+void VulkanCommandBuffer::CmdBindPipeline(RenderPassHandle::PipelineBindPoint bindPoint, PipelineHandle * pipeline)
 {
 	VkPipelineBindPoint vkBindPoint;
 	switch (bindPoint) {
@@ -134,42 +130,42 @@ void VulkanRenderCommandContext::CmdBindPipeline(RenderPassHandle::PipelineBindP
 	vkCmdBindPipeline(this->buffer, vkBindPoint, ((VulkanPipelineHandle *)pipeline)->pipeline);
 }
 
-void VulkanRenderCommandContext::CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride)
+void VulkanCommandBuffer::CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride)
 {
 	vkCmdBindVertexBuffers(this->buffer, binding, 1, &((VulkanBufferHandle *)buffer)->buffer, &offset);
 }
 
-void VulkanRenderCommandContext::CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset)
+void VulkanCommandBuffer::CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset)
 {
 	vkCmdDrawIndexed(this->buffer, indexCount, instanceCount, firstIndex, vertexOffset, 0);
 }
 
-void VulkanRenderCommandContext::CmdEndRenderPass()
+void VulkanCommandBuffer::CmdEndRenderPass()
 {
 	vkCmdEndRenderPass(this->buffer);
 }
 
-void VulkanRenderCommandContext::CmdExecuteCommands(uint32_t commandBufferCount, RenderCommandContext ** pCommandBuffers)
+void VulkanCommandBuffer::CmdExecuteCommands(uint32_t commandBufferCount, CommandBuffer ** pCommandBuffers)
 {
 	std::vector<VkCommandBuffer> commandBuffers(commandBufferCount);
-	std::transform(pCommandBuffers, &pCommandBuffers[commandBufferCount], commandBuffers.begin(), [](RenderCommandContext * ctx) {
-		return ((VulkanRenderCommandContext *)ctx)->buffer;
+	std::transform(pCommandBuffers, &pCommandBuffers[commandBufferCount], commandBuffers.begin(), [](CommandBuffer * ctx) {
+		return ((VulkanCommandBuffer *)ctx)->buffer;
 	});
 
 	vkCmdExecuteCommands(this->buffer, (uint32_t)commandBuffers.size(), &commandBuffers[0]);
 }
 
-void VulkanRenderCommandContext::CmdExecuteCommands(std::vector<RenderCommandContext *>&& commandBuffers)
+void VulkanCommandBuffer::CmdExecuteCommands(std::vector<CommandBuffer *>&& commandBuffers)
 {
 	std::vector<VkCommandBuffer> nativeCommandBuffers(commandBuffers.size());
-	std::transform(commandBuffers.begin(), commandBuffers.end(), nativeCommandBuffers.begin(), [](RenderCommandContext * ctx) {
-		return ((VulkanRenderCommandContext *)ctx)->buffer;
+	std::transform(commandBuffers.begin(), commandBuffers.end(), nativeCommandBuffers.begin(), [](CommandBuffer * ctx) {
+		return ((VulkanCommandBuffer *)ctx)->buffer;
 	});
 
 	vkCmdExecuteCommands(this->buffer, (uint32_t)nativeCommandBuffers.size(), &nativeCommandBuffers[0]);
 }
 
-void VulkanRenderCommandContext::CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, RenderCommandContext::Rect2D const * pScissors)
+void VulkanCommandBuffer::CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, CommandBuffer::Rect2D const * pScissors)
 {
 	std::vector<VkRect2D> vkScissors(scissorCount);
 	std::transform(pScissors, &pScissors[scissorCount], vkScissors.begin(), ToVulkanRect2D);
@@ -177,10 +173,10 @@ void VulkanRenderCommandContext::CmdSetScissor(uint32_t firstScissor, uint32_t s
 	vkCmdSetScissor(this->buffer, firstScissor, scissorCount, &vkScissors[0]);
 }
 
-void VulkanRenderCommandContext::CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, RenderCommandContext::Viewport const * pViewports)
+void VulkanCommandBuffer::CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, CommandBuffer::Viewport const * pViewports)
 {
 	std::vector<VkViewport> vkViewports(viewportCount);
-	std::transform(pViewports, &pViewports[viewportCount], vkViewports.begin(), [](RenderCommandContext::Viewport viewport) {
+	std::transform(pViewports, &pViewports[viewportCount], vkViewports.begin(), [](CommandBuffer::Viewport viewport) {
 		return VkViewport{
 			viewport.x,
 			viewport.y,
@@ -194,7 +190,7 @@ void VulkanRenderCommandContext::CmdSetViewport(uint32_t firstViewport, uint32_t
 	vkCmdSetViewport(this->buffer, firstViewport, viewportCount, &vkViewports[0]);
 }
 
-void VulkanRenderCommandContext::CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData)
+void VulkanCommandBuffer::CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData)
 {
 	vkCmdUpdateBuffer(this->buffer, ((VulkanBufferHandle *)buffer)->buffer, offset, size, pData);
 }

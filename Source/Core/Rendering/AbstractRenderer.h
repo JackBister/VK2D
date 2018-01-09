@@ -13,6 +13,6 @@ public:
 	virtual uint32_t GetSwapCount() = 0;
 
 	virtual void CreateResources(std::function<void(ResourceCreationContext&)> fun) = 0;
-	virtual void ExecuteCommandContext(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence = nullptr) = 0;
+	virtual void ExecuteCommandBuffer(CommandBuffer * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence = nullptr) = 0;
 	virtual void SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem) = 0;
 };

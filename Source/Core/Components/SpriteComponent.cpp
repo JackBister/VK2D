@@ -109,7 +109,7 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 			auto camera = (SubmittedCamera *)args["camera"].asLuaSerializable;
 			auto ctx = frameInfo[entity->scene->GetCurrFrame()].mainCommandContext;
 			entity->scene->BeginSecondaryCommandContext(ctx);
-			RenderCommandContext::Viewport viewport = {
+			CommandBuffer::Viewport viewport = {
 				0.f,
 				0.f,
 				800.f,
@@ -119,7 +119,7 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 			};
 			ctx->CmdSetViewport(0, 1, &viewport);
 
-			RenderCommandContext::Rect2D scissor = {
+			CommandBuffer::Rect2D scissor = {
 				{
 					0,
 					0
@@ -133,7 +133,7 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 
 			ctx->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS, s_resources.pipeline);
 
-			ctx->CmdBindIndexBuffer(s_resources.ebo, 0, RenderCommandContext::IndexType::UINT32);
+			ctx->CmdBindIndexBuffer(s_resources.ebo, 0, CommandBuffer::IndexType::UINT32);
 			ctx->CmdBindVertexBuffer(s_resources.vbo, 0, 0, 8 * sizeof(float));
 
 			ctx->CmdBindDescriptorSet(descriptorSet);

@@ -11,13 +11,12 @@
 #include "Core/Queue.h"
 #include "Core/Rendering/AbstractRenderer.h"
 #include "Core/Rendering/RenderCommand.h"
-#include "Core/Rendering/Vulkan/VulkanRenderCommandContext.h"
-#include "Core/Rendering/Vulkan/VulkanRenderContext.h"
+#include "Core/Rendering/Vulkan/VulkanContextStructs.h"
 
 class Renderer : IRenderer
 {
-	friend class VulkanRenderContext;
-	friend class VulkanRenderCommandContext;
+	friend class VulkanResourceContext;
+	friend class VulkanCommandBuffer;
 	friend class VulkanResourceContext;
 public:
 	Renderer(char const * title, int winX, int winY, int w, int h, uint32_t flags);
@@ -29,7 +28,7 @@ public:
 	uint32_t GetSwapCount() final override;
 
 	void CreateResources(std::function<void(ResourceCreationContext&)> fun) final override;
-	void ExecuteCommandContext(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence = nullptr) final override;
+	void ExecuteCommandBuffer(CommandBuffer * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence = nullptr) final override;
 	void SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem) final override;
 
 	int abortCode = 0;

@@ -5,7 +5,8 @@
 #include <SDL/SDL_opengl.h>
 #include <stb_image.h>
 
-#include "Core/Rendering/OpenGL/OpenGLRenderContext.h"
+#include "Core/Rendering/OpenGL/OpenGLCommandBuffer.h"
+#include "Core/Rendering/OpenGL/OpenGLResourceContext.h"
 
 Renderer::~Renderer() noexcept
 {
@@ -13,7 +14,7 @@ Renderer::~Renderer() noexcept
 }
 
 Renderer::Renderer(char const * title, int const winX, int const winY, int const w, int const h, uint32_t const flags) noexcept
-	: rendQueueRead(renderQueue.GetReader()), renderQueueWrite(renderQueue.GetWriter())
+	: renderQueueRead(renderQueue.GetReader()), renderQueueWrite(renderQueue.GetWriter())
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -48,7 +49,7 @@ void Renderer::CreateResources(std::function<void(ResourceCreationContext&)> fun
 	renderQueueWrite.Push(RenderCommand(RenderCommand::CreateResourceParams(fun)));
 }
 
-void Renderer::ExecuteCommandContext(RenderCommandContext * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
+void Renderer::ExecuteCommandBuffer(CommandBuffer * ctx, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
 {
 	renderQueueWrite.Push(RenderCommand(RenderCommand::ExecuteCommandContextParams(ctx, waitSem, signalSem, signalFence)));
 }
@@ -97,7 +98,7 @@ void Renderer::RenderThread(SDL_GLContext ctx)
 void Renderer::DrainQueue() noexcept
 {
 	using namespace std::literals::chrono_literals;
-	RenderCommand command = rendQueueRead.Wait();
+	RenderCommand command = renderQueueRead.Wait();
 	switch (command.params.index()) {
 	case RenderCommand::Type::ABORT:
 		isAborting = true;
