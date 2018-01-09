@@ -25,7 +25,6 @@ solution "Vulkan2D"
 				"Examples/**.h", "Examples/**.cpp" }
 		includedirs { "include", "build/include", "build/include/Source", "Source" }
 		objdir "build"
-		removefiles { "Source/Core/Rendering/render.cpp", "Source/Core/Rendering/render_opengl.cpp", "Source/Core/Rendering/render_vulkan.cpp" }
 		targetdir "build"
 		
 		--PLATFORM CONFIGURATION--
