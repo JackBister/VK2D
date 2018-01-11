@@ -137,7 +137,7 @@ private:
 		GLuint buffer;
 		GLintptr offset;
 		GLsizeiptr size;
-		void const * data;
+		void * data;
 	};
 	using RenderCommand = std::variant<BeginRenderPassArgs, BindDescriptorSetArgs, BindIndexBufferArgs, BindPipelineArgs,
 									   BindVertexBufferArgs, DrawIndexedArgs, EndRenderPassArgs, ExecuteCommandsArgs,

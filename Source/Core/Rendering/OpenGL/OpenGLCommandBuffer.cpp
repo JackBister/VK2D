@@ -122,12 +122,15 @@ void OpenGLCommandBuffer::CmdSetViewport(uint32_t firstViewport, uint32_t viewpo
 
 void OpenGLCommandBuffer::CmdUpdateBuffer(BufferHandle * buffer, size_t offset, size_t size, uint32_t const * pData)
 {
-	commandList.push_back(UpdateBufferArgs{
+	UpdateBufferArgs cmd{
 		((OpenGLBufferHandle *)buffer)->nativeHandle,
 		(GLintptr)offset,
 		(GLsizeiptr)size,
-		pData
-	});
+		nullptr
+	};
+	cmd.data = allocator->allocate(size);
+	memcpy(cmd.data, pData, size);
+	commandList.push_back(cmd);
 }
 
 void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHandle *> waitSem, std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
