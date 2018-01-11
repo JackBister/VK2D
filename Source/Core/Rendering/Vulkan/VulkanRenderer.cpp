@@ -246,7 +246,6 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 	window(SDL_CreateWindow(title, winX, winY, w, h, flags | SDL_WINDOW_VULKAN))
 {
 	stbi_set_flip_vertically_on_load(true);
-
 	std::vector<const char *> instanceExtensions;
 	{
 		unsigned int requiredInstanceExtensionsCount;

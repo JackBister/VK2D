@@ -9,7 +9,7 @@ end
 solution "Vulkan2D"
 	configurations { "Debug", "Release" }
 	
-	platforms { "x86", "x86_64" }
+	platforms { "x86", "x64" }
 
     filter {"system:windows", "action:vs*"}
 		systemversion(os.winSdkVersion() .. ".0")
@@ -17,44 +17,35 @@ solution "Vulkan2D"
 	project "Engine"
 		kind "ConsoleApp"
 		language "C++"
+		cppdialect "C++17"
+
 		defines { "GLEW_STATIC" }
-		dependson { "HeaderGenerator" }
 		files { "Source/Core/**.h", "Source/Core/**.cpp", "glew.c",
 				"shaders/*",
 				--Should be cleaned up in the future to be a separate project
 				"Examples/**.h", "Examples/**.cpp" }
-		includedirs { "include", "build/include", "build/include/Source", "Source" }
+		buildlog "build/build.log"
+		includedirs { "include", "Source" }
 		objdir "build"
 		targetdir "build"
-		
-		--PLATFORM CONFIGURATION--
-		configuration "windows"
-			links { "opengl32" }
-		
-		--BUILD SYSTEM CONFIGURATION--
-		configuration "gmake"
-			buildoptions { "-std=c++17" }
-			linkoptions { "libs/SDL2main.lib", "libs/SDL2.lib", "libs/liblua.lib", "libs/vulkan-1.lib", "libs/libBulletDynamics.a", "libs/libBulletCollision.a",
-						  "libs/libLinearMath.a"
-			}
-			
-		configuration { "vs*", "Debug" }
-			buildoptions { "/std:c++latest" }
-			links { "libs/VS/SDL2main.lib", "libs/VS/SDL2.lib", "libs/VS/liblua.lib", "libs/VS/vulkan-1.lib", "libs/VS/libBulletDynamics.lib", "libs/VS/libBulletCollision.lib",
-					"libs/VS/libLinearMath.lib", "libs/VS/librttr_core_s_d.lib"
-			}
-		
-		configuration { "vs*", "Release" }
-		
-		--TARGET CONFIGURATION--
-		configuration "Debug"
-			debugdir "."
+
+		local libdirectory = "installed/%{cfg.platform}-%{cfg.system}/"
+
+		links { "lua", "opengl32", "vulkan-1" }
+
+		filter "Debug"
+			libdirs { libdirectory .. "debug/lib" }
+			links { "SDL2d",  "BulletDynamics_Debug", "BulletCollision_Debug", "LinearMath_Debug", "rttr_core_d" }
 			symbols "On"
 
-		filter { 'files:**.vert', 'action:vs2017' }
+		filter "Release"
+			libdirs { libdirectory .. "lib" }
+			links { "SDL2", "BulletDynamics", "BulletCollision", "LinearMath", "rttr_core" }
+
+		--CUSTOM BUILD COMMANDS--
+		filter { 'files:**.vert' }
 			buildmessage 'Compiling %{file.relpath} to SPIR-V'
 			buildcommands {
-				'@echo on',
 				path.translate('glslc -o "%{file.relpath}.spv" "%{file.relpath}"'),
 				'xxd -i "%{file.relpath}.spv" > "Source/Core/Rendering/Shaders/%{file.name}.spv.h"'
 			}
@@ -63,10 +54,9 @@ solution "Vulkan2D"
 				'Source/Core/Rendering/Shaders/%{file.name}.spv.h'
 			}
 		
-		filter { 'files:**.frag', 'action:vs2017' }
+		filter { 'files:**.frag' }
 			buildmessage 'Compiling %{file.relpath} to SPIR-V'
 			buildcommands {
-				'@echo on',
 				path.translate('glslc -o "%{file.relpath}.spv" "%{file.relpath}"'),
 				'xxd -i "%{file.relpath}.spv" > "Source/Core/Rendering/Shaders/%{file.name}.spv.h"'
 			}
