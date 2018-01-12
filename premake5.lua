@@ -19,8 +19,7 @@ solution "Vulkan2D"
 		language "C++"
 		cppdialect "C++17"
 
-		--defines { "GLEW_STATIC" }
-		files { "Source/Core/**.h", "Source/Core/**.cpp",-- "glew.c",
+		files { "Source/Core/**.h", "Source/Core/**.cpp",
 				"shaders/*",
 				--Should be cleaned up in the future to be a separate project
 				"Examples/**.h", "Examples/**.cpp" }

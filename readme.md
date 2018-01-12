@@ -36,4 +36,4 @@ If you don't want to use vcpkg, it's still possible to build by copying the .lib
 A version of [Premake](https://github.com/premake/premake-core) newer than Premake5-alpha12 is required to build on Windows. On Linux/Mac, older versions may suffice.
 
 ### Windows
-Building is as simple as running `.\premake5.exe vs2017', opening the generated .sln file and pressing "Build Solution".
+Building is as simple as running `.\premake5.exe vs2017`, opening the generated .sln file and pressing "Build Solution".
