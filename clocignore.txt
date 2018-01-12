@@ -1,6 +1,7 @@
 build
 Debug
 include
+installed
 libs
 obj
 glew.c
