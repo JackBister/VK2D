@@ -2,7 +2,7 @@
 
 #include <assert.h>
 
-#include "lua/lua.hpp"
+#include "lua.hpp"
 #include "rttr/method.h"
 #include "rttr/property.h"
 #include "rttr/rttr_enable.h"

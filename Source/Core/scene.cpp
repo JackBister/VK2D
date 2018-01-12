@@ -5,7 +5,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 #include "rttr/registration.h"
 
 #include "Core/Components/CameraComponent.h"

@@ -30,21 +30,22 @@ solution "Vulkan2D"
 		debugdir "Examples/FlappyPong"
 		includedirs { "Source" }
 		objdir "build"
-		sysincludedirs { "include" }
 		targetdir "build"
 
-		local libdirectory = "installed/%{cfg.platform}-%{cfg.system}/"
-		local staticLibDirectory = "installed/%{cfg.platform}-%{cfg.system}-static/"
+		local platformdirectory = "installed/%{cfg.platform}-%{cfg.system}/"
+		local staticPlatformDirectory = "installed/%{cfg.platform}-%{cfg.system}-static/"
 
 		links { "lua", "opengl32", "vulkan-1" }
 
+		sysincludedirs { "include",  staticPlatformDirectory .. "include", platformdirectory .. "include" }
+
 		filter "Debug"
-			libdirs { staticLibDirectory .. "debug/lib", libdirectory .. "debug/lib" }
+			libdirs { staticPlatformDirectory .. "debug/lib", platformdirectory .. "debug/lib" }
 			links { "glew32d", "SDL2d",  "BulletDynamics_Debug", "BulletCollision_Debug", "LinearMath_Debug", "rttr_core_d" }
 			symbols "On"
 
 		filter "Release"
-			libdirs { staticLibDirectory .. "lib", libdirectory .. "lib" }
+			libdirs { staticPlatformDirectory .. "lib", platformdirectory .. "lib" }
 			links { "glew32", "SDL2", "BulletDynamics", "BulletCollision", "LinearMath", "rttr_core" }
 
 		--CUSTOM BUILD COMMANDS--

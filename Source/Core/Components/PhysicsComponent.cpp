@@ -1,7 +1,7 @@
 #include "Core/Components/physicscomponent.h"
 
 #include "BulletCollision/CollisionShapes/btBox2dShape.h"
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 #include "rttr/registration.h"
 
 #include "Core/entity.h"

@@ -1,7 +1,7 @@
 #define KEYCODE_IMPL
 #include "Core/input.h"
 
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 #include "rttr/registration.h"
 
 #include "Core/Lua/input_cfuncs.h"

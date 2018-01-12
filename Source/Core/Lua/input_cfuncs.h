@@ -1,5 +1,5 @@
 #pragma once
-#include "lua/lua.hpp"
+#include "lua.hpp"
 
 /*
 	This file should ONLY be included in input.cpp

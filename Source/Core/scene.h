@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "SDL/SDL.h"
+#include "SDL2/SDL.h"
 
 #include "Core/dtime.h"
 #include "Core/eventarg.h"

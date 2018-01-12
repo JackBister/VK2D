@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 
 #include "Core/entity.h"
 #include "Core/Components/physicscomponent.h"

@@ -2,7 +2,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "lua/lua.hpp"
+#include "lua.hpp"
 #include "rttr/rttr_enable.h"
 
 #include "Core/Components/component.h"

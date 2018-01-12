@@ -1,7 +1,7 @@
 #include "Core/Components/cameracomponent.h"
 
 #include "glm/gtc/matrix_transform.hpp"
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 #include "rttr/registration.h"
 
 #include "Core/entity.h"

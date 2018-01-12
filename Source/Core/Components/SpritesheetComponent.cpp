@@ -1,6 +1,6 @@
 #include "Core/Components/spritesheetcomponent.h"
 
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 #include "rttr/registration.h"
 
 #include "Core/entity.h"

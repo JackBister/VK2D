@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 #include "rttr/registration.h"
 
 #include "Core/Components/component.h"

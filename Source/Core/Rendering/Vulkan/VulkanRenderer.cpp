@@ -1,7 +1,7 @@
 #ifndef USE_OGL_RENDERER
 #include "Core/Rendering/Vulkan/VulkanRenderer.h"
 
-#include <SDL/SDL_vulkan.h>
+#include <SDL2/SDL_vulkan.h>
 #include <stb_image.h>
 #include <vulkan/vulkan.h>
 

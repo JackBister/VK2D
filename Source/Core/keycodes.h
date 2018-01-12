@@ -2,7 +2,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "SDL/SDL.h"
+#include "SDL2/SDL.h"
 
 #define MOUSE_MASK (1<<28)
 #define MOUSE_TO_KEYCODE(X) (X | MOUSE_MASK)

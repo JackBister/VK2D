@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "lua/lua.hpp"
+#include "lua.hpp"
 
 class EventArg;
 class LuaSerializable;

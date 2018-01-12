@@ -2,7 +2,7 @@
 #include <thread>
 
 #include "glm/glm.hpp"
-#include "SDL/SDL.h"
+#include "SDL2/SDL.h"
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/Components/component.h"

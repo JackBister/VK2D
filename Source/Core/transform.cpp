@@ -1,7 +1,7 @@
 #include "Core/transform.h"
 
-#include "json.hpp"
-#include "lua/lua.hpp"
+#include "nlohmann/json.hpp"
+#include "lua.hpp"
 
 #include "rttr/method.h"
 #include "rttr/property.h"

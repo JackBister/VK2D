@@ -1,7 +1,7 @@
 #include "Core/Components/component.h"
 
 #include "rttr/registration.h"
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 
 RTTR_REGISTRATION
 {
