@@ -14,8 +14,8 @@ function OnEvent(component, name, args)
 	end
 
 	if name == "Tick" then
-		local position = transform:get_position()
-		local scale = transform:get_scale()
+		local position = transform:GetPosition()
+		local scale = transform:GetScale()
 		if position.y <= -60.0 + scale.y and velocityY <= 0.0 then
 			return
 		end
@@ -27,7 +27,7 @@ function OnEvent(component, name, args)
 			
 			velocityY = velocityY - gravity * args.deltaTime
 		end
-		transform:set_position(position)
+		transform:SetPosition(position)
 	end
 
 	if name == "OnCollisionStart" then

@@ -50,7 +50,7 @@
 				},
 				{
 					"type": "LuaComponent",
-					"file": "Examples/FlappyPong/controller.lua"
+					"file": "controller.lua"
 				}
 			]
 		},
@@ -78,18 +78,18 @@
 			"components": [
 				{
 					"type": "SpriteComponent",
-					"file": "Examples/FlappyPong/white_pixel.png"
+					"file": "white_pixel.png"
 				},
 				{
 					"type": "LuaComponent",
-					"file": "Examples/FlappyPong/ball.lua"
+					"file": "ball.lua"
 				},
 				{
 					"type": "PhysicsComponent",
-					"is_kinematic_": true,
-					"mass_": 1.0,
-					"shape_type_": "BOX_2D_SHAPE_PROXYTYPE",
-					"shape_info_": {
+					"isKinematic": true,
+					"mass": 1.0,
+					"shapeType": "BOX_2D_SHAPE_PROXYTYPE",
+					"shapeInfo": {
 						"x": 4.0,
 						"y": 4.0
 					}
@@ -120,18 +120,18 @@
 			"components": [
 				{
 					"type": "SpriteComponent",
-					"file": "Examples/FlappyPong/white_pixel.png"
+					"file": "white_pixel.png"
 				},
 				{
 					"type": "LuaComponent",
-					"file": "Examples/FlappyPong/paddle.lua"
+					"file": "paddle.lua"
 				},
 				{
 					"type": "PhysicsComponent",
-					"is_kinematic_": true,
-					"mass_": 1.0,
-					"shape_type_": "BOX_2D_SHAPE_PROXYTYPE",
-					"shape_info_": {
+					"isKinematic": true,
+					"mass": 1.0,
+					"shapeType": "BOX_2D_SHAPE_PROXYTYPE",
+					"shapeInfo": {
 						"x": 2.0,
 						"y": 18.0
 					}
@@ -162,18 +162,18 @@
 			"components": [
 				{
 					"type": "SpriteComponent",
-					"file": "Examples/FlappyPong/white_pixel.png"
+					"file": "white_pixel.png"
 				},
 				{
 					"type": "LuaComponent",
-					"file": "Examples/FlappyPong/paddle.lua"
+					"file": "paddle.lua"
 				},
 				{
 					"type": "PhysicsComponent",
-					"is_kinematic_": true,
-					"mass_": 1.0,
-					"shape_type_": "BOX_2D_SHAPE_PROXYTYPE",
-					"shape_info_": {
+					"isKinematic": true,
+					"mass": 1.0,
+					"shapeType": "BOX_2D_SHAPE_PROXYTYPE",
+					"shapeInfo": {
 						"x": 2.0,
 						"y": 18.0
 					}
