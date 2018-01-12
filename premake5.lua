@@ -19,8 +19,8 @@ solution "Vulkan2D"
 		language "C++"
 		cppdialect "C++17"
 
-		defines { "GLEW_STATIC" }
-		files { "Source/Core/**.h", "Source/Core/**.cpp", "glew.c",
+		--defines { "GLEW_STATIC" }
+		files { "Source/Core/**.h", "Source/Core/**.cpp",-- "glew.c",
 				"shaders/*",
 				--Should be cleaned up in the future to be a separate project
 				"Examples/**.h", "Examples/**.cpp" }
@@ -30,17 +30,18 @@ solution "Vulkan2D"
 		targetdir "build"
 
 		local libdirectory = "installed/%{cfg.platform}-%{cfg.system}/"
+		local staticLibDirectory = "installed/%{cfg.platform}-%{cfg.system}-static/"
 
 		links { "lua", "opengl32", "vulkan-1" }
 
 		filter "Debug"
-			libdirs { libdirectory .. "debug/lib" }
-			links { "SDL2d",  "BulletDynamics_Debug", "BulletCollision_Debug", "LinearMath_Debug", "rttr_core_d" }
+			libdirs { libdirectory .. "debug/lib", staticLibDirectory .. "debug/lib" }
+			links { "glew32d", "SDL2d",  "BulletDynamics_Debug", "BulletCollision_Debug", "LinearMath_Debug", "rttr_core_d" }
 			symbols "On"
 
 		filter "Release"
-			libdirs { libdirectory .. "lib" }
-			links { "SDL2", "BulletDynamics", "BulletCollision", "LinearMath", "rttr_core" }
+			libdirs { libdirectory .. "lib", staticLibDirectory .. "lib" }
+			links { "glew32", "SDL2", "BulletDynamics", "BulletCollision", "LinearMath", "rttr_core" }
 
 		--CUSTOM BUILD COMMANDS--
 		filter { 'files:**.vert' }
