@@ -14,8 +14,6 @@
 #include "Core/Rendering/Context/RenderContext.h"
 #include "Core/Resource.h"
 
-#include "Tools/HeaderGenerator/headergenerator.h"
-
 //TODO: Allocate all entities/components from same block for cache
 
 class CameraComponent;

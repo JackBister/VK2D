@@ -8,7 +8,6 @@
 #include "Core/Deserializable.h"
 #include "Core/eventarg.h"
 #include "Core/Lua/luaserializable.h"
-#include "Tools/HeaderGenerator/headergenerator.h"
 
 class Entity;
 

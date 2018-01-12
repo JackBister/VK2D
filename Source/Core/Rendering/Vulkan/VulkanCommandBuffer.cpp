@@ -87,6 +87,9 @@ void VulkanCommandBuffer::CmdBeginRenderPass(CommandBuffer::RenderPassBeginInfo 
 	case CommandBuffer::SubpassContents::SECONDARY_COMMAND_BUFFERS:
 		subpassContents = VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
 		break;
+	default:
+		assert(false);
+		subpassContents = VK_SUBPASS_CONTENTS_INLINE;
 	}
 
 	vkCmdBeginRenderPass(this->buffer, &beginInfo, subpassContents);
@@ -111,6 +114,9 @@ void VulkanCommandBuffer::CmdBindIndexBuffer(BufferHandle * buffer, size_t offse
 	case CommandBuffer::IndexType::UINT32:
 		vkIndexType = VK_INDEX_TYPE_UINT32;
 		break;
+	default:
+		assert(false);
+		vkIndexType = VK_INDEX_TYPE_UINT32;
 	}
 
 	vkCmdBindIndexBuffer(this->buffer, ((VulkanBufferHandle *)buffer)->buffer, offset, vkIndexType);
@@ -126,6 +132,9 @@ void VulkanCommandBuffer::CmdBindPipeline(RenderPassHandle::PipelineBindPoint bi
 	case RenderPassHandle::PipelineBindPoint::GRAPHICS:
 		vkBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		break;
+	default:
+		assert(false);
+		vkBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	}
 	vkCmdBindPipeline(this->buffer, vkBindPoint, ((VulkanPipelineHandle *)pipeline)->pipeline);
 }

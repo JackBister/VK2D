@@ -7,8 +7,6 @@
 
 #include "Core/Components/component.h"
 
-#include "Tools/HeaderGenerator/headergenerator.h"
-
 class LuaComponent : public Component
 {
 	RTTR_ENABLE(Component)
@@ -27,7 +25,6 @@ public:
 	}
 
 private:
-	PROPERTY(LuaRead)
 	std::string file;
 	lua_State * state;
 

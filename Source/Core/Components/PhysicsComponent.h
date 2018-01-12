@@ -5,7 +5,6 @@
 #include "rttr/rttr_enable.h"
 
 #include "Core/Components/component.h"
-#include "Tools/HeaderGenerator/headergenerator.h"
 
 class PhysicsComponent : public Component, public btMotionState
 {

@@ -99,7 +99,7 @@ static std::optional<VkPhysicalDevice> ChoosePhysicalDevice(VkInstance instance)
 	}
 
 	VkPhysicalDevice chosenDevice = VK_NULL_HANDLE;
-	VkPhysicalDeviceType chosenType;
+	VkPhysicalDeviceType chosenType = VK_PHYSICAL_DEVICE_TYPE_BEGIN_RANGE;
 	for (auto const& pd : physicalDevices) {
 		VkPhysicalDeviceProperties props;
 		vkGetPhysicalDeviceProperties(pd, &props);

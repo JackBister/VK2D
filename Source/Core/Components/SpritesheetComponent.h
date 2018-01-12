@@ -17,11 +17,9 @@ public:
 	void OnEvent(std::string, EventArgs) override;
 	void PlayAnimationByName(std::string name);
 
-	PROPERTY(LuaRead)
-		Sprite sprite_;
+	Sprite sprite_;
 
-	PROPERTY(LuaReadWrite)
-		bool is_flipped_;
+	bool is_flipped_;
 
 	std::vector<float> frame_times_;
 private:

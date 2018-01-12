@@ -19,6 +19,8 @@ solution "Vulkan2D"
 		language "C++"
 		cppdialect "C++17"
 
+		defines { "GLEW_STATIC" }
+
 		files { "Source/Core/**.h", "Source/Core/**.cpp",
 				"shaders/*",
 				--Should be cleaned up in the future to be a separate project
@@ -26,8 +28,9 @@ solution "Vulkan2D"
 		buildlog "build/build.log"
 		debugargs { "main.scene" }
 		debugdir "Examples/FlappyPong"
-		includedirs { "include", "Source" }
+		includedirs { "Source" }
 		objdir "build"
+		sysincludedirs { "include" }
 		targetdir "build"
 
 		local libdirectory = "installed/%{cfg.platform}-%{cfg.system}/"
@@ -36,12 +39,12 @@ solution "Vulkan2D"
 		links { "lua", "opengl32", "vulkan-1" }
 
 		filter "Debug"
-			libdirs { libdirectory .. "debug/lib", staticLibDirectory .. "debug/lib" }
+			libdirs { staticLibDirectory .. "debug/lib", libdirectory .. "debug/lib" }
 			links { "glew32d", "SDL2d",  "BulletDynamics_Debug", "BulletCollision_Debug", "LinearMath_Debug", "rttr_core_d" }
 			symbols "On"
 
 		filter "Release"
-			libdirs { libdirectory .. "lib", staticLibDirectory .. "lib" }
+			libdirs { staticLibDirectory .. "lib", libdirectory .. "lib" }
 			links { "glew32", "SDL2", "BulletDynamics", "BulletCollision", "LinearMath", "rttr_core" }
 
 		--CUSTOM BUILD COMMANDS--
