@@ -21,10 +21,9 @@ LuaComponent::LuaComponent()
 	receiveTicks = true;
 }
 
-Deserializable * LuaComponent::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc) const
+Deserializable * LuaComponent::Deserialize(ResourceManager * resourceManager, std::string const& str) const
 {
-	void * mem = alloc.Allocate(sizeof(LuaComponent));
-	LuaComponent * ret = new (mem) LuaComponent();
+	LuaComponent * ret = new LuaComponent();
 	auto j = nlohmann::json::parse(str);
 	std::string infile = j["file"];
 	ret->file = infile;
@@ -69,7 +68,7 @@ void LuaComponent::OnEvent(std::string name, EventArgs eargs)
 	if (name == "BeginPlay") {
 		entity->PushToLua(state);
 		lua_setglobal(state, "entity_");
-		entity->scene->input.PushToLua(state);
+		GameModule::GetInput()->PushToLua(state);
 		lua_setglobal(state, "Input");
 		entity->scene->PushToLua(state);
 		lua_setglobal(state, "Scene");

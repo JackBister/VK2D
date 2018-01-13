@@ -117,7 +117,10 @@ void VulkanResourceContext::DestroyBuffer(BufferHandle * buffer)
 {
 	assert(buffer != nullptr);
 
-	vkFreeMemory(renderer->basics.device, ((VulkanBufferHandle *)buffer)->memory, nullptr);
+	auto nativeHandle = (VulkanBufferHandle *)buffer;
+
+	vkDestroyBuffer(renderer->basics.device, nativeHandle->buffer, nullptr);
+	vkFreeMemory(renderer->basics.device, nativeHandle->memory, nullptr);
 	allocator.destroy(buffer);
 }
 
@@ -192,7 +195,12 @@ void VulkanResourceContext::DestroyImage(ImageHandle * img)
 {
 	assert(img != nullptr);
 
-	vkDestroyImage(renderer->basics.device, ((VulkanImageHandle *)img)->image, nullptr);
+	auto nativeHandle = (VulkanImageHandle *)img;
+
+	vkDestroyImage(renderer->basics.device, nativeHandle->image, nullptr);
+	if (nativeHandle->memory != VK_NULL_HANDLE) {
+		vkFreeMemory(renderer->basics.device, nativeHandle->memory, nullptr);
+	}
 	allocator.destroy(img);
 }
 
@@ -264,7 +272,9 @@ void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> co
 
 	vkUnmapMemory(renderer->basics.device, stagingMemory);
 
+	nativeImg->memory = memory;
 	res = vkBindImageMemory(renderer->basics.device, nativeImg->image, memory, 0);
+	assert(res == VK_SUCCESS);
 	
 	auto cb = renderer->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	VkCommandBufferBeginInfo beginInfo = {};
@@ -937,7 +947,6 @@ void VulkanResourceContext::DestroyDescriptorSet(DescriptorSet * set)
 
 	auto res = vkFreeDescriptorSets(renderer->basics.device, renderer->descriptorPool, 1, &(nativeDescriptorSet->set));
 	assert(res == VK_SUCCESS);
-	vkDestroyDescriptorSetLayout(renderer->basics.device, nativeDescriptorSet->layout, nullptr);
 	allocator.destroy(set);
 }
 

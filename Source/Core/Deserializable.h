@@ -11,7 +11,7 @@ public:
 		When Deserialize is called, a new object must be allocated using the provided allocator and the information contained in str
 		must be deserialized into the new object. The new object is then returned.
 	*/
-	virtual Deserializable * Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc = Allocator::default_allocator) const = 0;
+	virtual Deserializable * Deserialize(ResourceManager * resourceManager, std::string const& str) const = 0;
 
 	/*
 		Serializes an object into a format suitable for storing in a scene file (currently JSON)
@@ -21,7 +21,7 @@ public:
 	/*
 		Deserializes a string of unknown type.
 	*/
-	static Deserializable * DeserializeString(ResourceManager * resourceManager, std::string const& str, Allocator& alloc = Allocator::default_allocator);
+	static Deserializable * DeserializeString(ResourceManager * resourceManager, std::string const& str);
 
 	static std::unordered_map<std::string, Deserializable const *>& Map();
 

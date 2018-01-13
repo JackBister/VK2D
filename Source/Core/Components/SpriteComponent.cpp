@@ -15,15 +15,33 @@ COMPONENT_IMPL(SpriteComponent)
 bool SpriteComponent::s_hasCreatedResources = false;
 SpriteComponent::SpriteResources SpriteComponent::s_resources;
 
+SpriteComponent::~SpriteComponent()
+{
+	auto capture = frameInfo;
+	
+	std::vector<CommandBuffer *> preRenderCommandBuffers;
+	std::vector<CommandBuffer *> mainCommandBuffers;
+	for (auto& fi : frameInfo) {
+		preRenderCommandBuffers.push_back(fi.preRenderCommandContext);
+		mainCommandBuffers.push_back(fi.mainCommandContext);
+	}
+	GameModule::DestroySecondaryCommandContexts(preRenderCommandBuffers);
+	GameModule::DestroySecondaryCommandContexts(mainCommandBuffers);
+
+	GameModule::CreateResources([this](ResourceCreationContext& ctx) {
+		ctx.DestroyBuffer(uvs);
+		ctx.DestroyDescriptorSet(descriptorSet);
+	});
+}
+
 SpriteComponent::SpriteComponent() noexcept
 {
 	receiveTicks = false;
 }
 
-Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc) const
+Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager, std::string const& str) const
 {
-	void * mem = alloc.Allocate(sizeof(SpriteComponent));
-	SpriteComponent * ret = new (mem) SpriteComponent();
+	SpriteComponent * ret = new SpriteComponent();
 	auto j = nlohmann::json::parse(str);
 	auto img = resourceManager->LoadResource<Image>(j["file"]);
 	auto layout = resourceManager->GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/passthrough-transform.layout");
@@ -95,9 +113,9 @@ std::string SpriteComponent::Serialize() const
 void SpriteComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "BeginPlay") {
-		frameInfo = std::vector<FrameInfo>(entity->scene->GetSwapCount());
-		auto mainCommands = entity->scene->CreateSecondaryCommandContexts();
-		auto preRenderCommands = entity->scene->CreateSecondaryCommandContexts();
+		frameInfo = std::vector<FrameInfo>(GameModule::GetSwapCount());
+		auto mainCommands = GameModule::CreateSecondaryCommandContexts();
+		auto preRenderCommands = GameModule::CreateSecondaryCommandContexts();
 		for (size_t i = 0; i < frameInfo.size(); ++i) {
 			frameInfo[i].mainCommandContext = std::move(mainCommands[i]);
 			frameInfo[i].preRenderCommandContext = std::move(preRenderCommands[i]);
@@ -105,19 +123,19 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 	} else if (name == "PreRenderPass") {
 		if (hasCreatedLocalResources && sprite.image->GetImageHandle()) {
 			auto camera = (SubmittedCamera *)args["camera"].asLuaSerializable;
-			frameInfo[entity->scene->GetCurrFrame()].pvm = camera->projection * camera->view * entity->transform.GetLocalToWorld();
-			auto ctx = frameInfo[entity->scene->GetCurrFrame()].preRenderCommandContext;
-			entity->scene->BeginSecondaryCommandContext(ctx);
-			ctx->CmdUpdateBuffer(uvs, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(frameInfo[entity->scene->GetCurrFrame()].pvm));
+			frameInfo[GameModule::GetCurrFrame()].pvm = camera->projection * camera->view * entity->transform.GetLocalToWorld();
+			auto ctx = frameInfo[GameModule::GetCurrFrame()].preRenderCommandContext;
+			GameModule::BeginSecondaryCommandContext(ctx);
+			ctx->CmdUpdateBuffer(uvs, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(frameInfo[GameModule::GetCurrFrame()].pvm));
 			ctx->EndRecording();
-			entity->scene->SubmitCommandBuffer(ctx);
+			GameModule::SubmitCommandBuffer(ctx);
 		}
 	} else if (name == "MainRenderPass") {
 		if (hasCreatedLocalResources && sprite.image->GetImageHandle()) {
 			auto img = sprite.image->GetImageHandle();
 			auto camera = (SubmittedCamera *)args["camera"].asLuaSerializable;
-			auto ctx = frameInfo[entity->scene->GetCurrFrame()].mainCommandContext;
-			entity->scene->BeginSecondaryCommandContext(ctx);
+			auto ctx = frameInfo[GameModule::GetCurrFrame()].mainCommandContext;
+			GameModule::BeginSecondaryCommandContext(ctx);
 			CommandBuffer::Viewport viewport = {
 				0.f,
 				0.f,
@@ -149,7 +167,7 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 			ctx->CmdDrawIndexed(6, 1, 0, 0);
 
 			ctx->EndRecording();
-			entity->scene->SubmitCommandBuffer(ctx);
+			GameModule::SubmitCommandBuffer(ctx);
 		}
 	}
 }

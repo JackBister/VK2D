@@ -2,12 +2,12 @@
 
 #include <nlohmann/json.hpp>
 
-Deserializable * Deserializable::DeserializeString(ResourceManager * resourceManager, std::string const& str, Allocator& alloc)
+Deserializable * Deserializable::DeserializeString(ResourceManager * resourceManager, std::string const& str)
 {
 	auto j = nlohmann::json::parse(str);
 	//If your JSON is incorrect you will crash here. You deserve it.
 	std::string type = j["type"];
- 	Deserializable * ret = Map()[type]->Deserialize(resourceManager, str, alloc);
+ 	Deserializable * ret = Map()[type]->Deserialize(resourceManager, str);
 	ret->type = type;
 	return ret;
 }

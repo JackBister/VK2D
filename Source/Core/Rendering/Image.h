@@ -15,10 +15,11 @@ class Image : public Resource
 public:
 	friend class Renderer;
 
+	~Image();
 	Image() = delete;
-	Image(ResourceManager *, std::string const&) noexcept;
-	Image(ImageCreateInfo const&) noexcept;
-	Image(ResourceManager *, std::string const&, std::vector<uint8_t> const&) noexcept;
+	Image(ResourceManager *, std::string const&);
+	Image(ImageCreateInfo const&);
+	Image(ResourceManager *, std::string const&, std::vector<uint8_t> const&);
 
 	std::vector<uint8_t> const& GetData() const noexcept;
 	uint32_t GetHeight() const noexcept;
@@ -30,6 +31,7 @@ private:
 
 	uint32_t width, height;
 	ImageHandle * img;
+	ResourceManager * resMan;
 };
 
 struct ImageCreateInfo

@@ -46,10 +46,14 @@ std::string SerializeShapeType(BroadphaseNativeTypes i)
 	}
 }
 
-Deserializable * PhysicsComponent::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc) const
+PhysicsComponent::~PhysicsComponent()
 {
-	void * mem = alloc.Allocate(sizeof(PhysicsComponent));
-	PhysicsComponent * ret = new (mem) PhysicsComponent();
+	GameModule::GetPhysicsWorld()->world->removeRigidBody(rigidBody.get());
+}
+
+Deserializable * PhysicsComponent::Deserialize(ResourceManager * resourceManager, std::string const& str) const
+{
+	PhysicsComponent * ret = new PhysicsComponent();
 	auto j = nlohmann::json::parse(str);
 	ret->mass = j["mass"];
 	ret->shapeType = DeserializeShapeType(j["shapeType"]);
@@ -131,7 +135,7 @@ void PhysicsComponent::OnEvent(std::string name, EventArgs args)
 		if (isKinematic) {
 			rigidBody->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
 		}
-		entity->scene->physicsWorld->world->addRigidBody(rigidBody.get());
+		GameModule::GetPhysicsWorld()->world->addRigidBody(rigidBody.get());
 		//Needed for kinematics to register collision events
 		btBroadphaseProxy *bproxy = rigidBody->getBroadphaseHandle();
 		if (bproxy) {
@@ -142,7 +146,7 @@ void PhysicsComponent::OnEvent(std::string name, EventArgs args)
 
 	if (name == "EndPlay") {
 		if (rigidBody != nullptr) {
-			entity->scene->physicsWorld->world->removeCollisionObject(rigidBody.get());
+			GameModule::GetPhysicsWorld()->world->removeCollisionObject(rigidBody.get());
 		}
 	}
 }

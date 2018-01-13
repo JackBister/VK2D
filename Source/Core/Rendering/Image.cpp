@@ -5,7 +5,14 @@
 
 #include "Core/ResourceManager.h"
 
-Image::Image(ResourceManager * resMan, std::string const& name) noexcept
+Image::~Image()
+{
+	resMan->CreateResources([this](ResourceCreationContext& ctx) {
+		ctx.DestroyImage(img);
+	});
+}
+
+Image::Image(ResourceManager * resMan, std::string const& name) : resMan(resMan)
 {
 	this->name = name;
 	this->data = std::vector<uint8_t>(128 * 128 * 4, 0xFF);
@@ -24,7 +31,7 @@ Image::Image(ResourceManager * resMan, std::string const& name) noexcept
 	});
 }
 
-Image::Image(ImageCreateInfo const& info) noexcept
+Image::Image(ImageCreateInfo const& info) : resMan(info.resMan)
 {
 	this->name = info.name;
 	this->width = info.width;
@@ -48,7 +55,7 @@ Image::Image(ImageCreateInfo const& info) noexcept
 	}
 }
 
-Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint8_t> const& input) noexcept
+Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint8_t> const& input) : resMan(resMan)
 {
 	this->name = name;
 	int n;

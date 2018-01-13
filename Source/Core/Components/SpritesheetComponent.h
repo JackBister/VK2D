@@ -12,7 +12,7 @@ class SpritesheetComponent : public Component
 {
 	RTTR_ENABLE(Component)
 public:
-	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
+	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;
 	glm::vec2 get_frame_size() const;
 	void OnEvent(std::string, EventArgs) override;

@@ -69,23 +69,11 @@ int main(int argc, char *argv[])
 
 	SetThreadName(std::this_thread::get_id(), "Main Thread");
 
-	FILE * f = fopen(sceneFileName.c_str(), "rb");
-	std::string serializedScene;
-	if (f) {
-		fseek(f, 0, SEEK_END);
-		size_t length = ftell(f);
-		fseek(f, 0, SEEK_SET);
-		std::vector<char> buf(length + 1);
-		fread(&buf[0], 1, length, f);
-		serializedScene = std::string(buf.begin(), buf.end());
-	} else {
-		return 1;
-	}
+	GameModule::Init(&resMan, inputQueue.GetReader(), &renderer);
 
-	Scene scene(sceneFileName, &resMan, inputQueue.GetReader(), serializedScene, &renderer);
+	GameModule::LoadScene(sceneFileName);
 
-	scene.time.Start();
-	scene.BroadcastEvent("BeginPlay");
+	GameModule::BeginPlay();
 	while (true) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
@@ -95,7 +83,7 @@ int main(int argc, char *argv[])
 		if (*sdlErr != '\0') {
 			printf("%s\n", sdlErr);
 		}
-		scene.Tick();
+		GameModule::Tick();
 	}
 	SDL_Quit();
 	return renderer.abortCode;

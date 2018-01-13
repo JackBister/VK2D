@@ -38,6 +38,7 @@ struct VulkanFramebufferHandle : FramebufferHandle
 struct VulkanImageHandle : ImageHandle
 {
 	VkImage image;
+	VkDeviceMemory memory = VK_NULL_HANDLE;
 };
 
 struct VulkanImageViewHandle : ImageViewHandle

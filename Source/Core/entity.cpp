@@ -24,7 +24,7 @@ DESERIALIZABLE_IMPL(Entity)
 
 void Entity::FireEvent(std::string ename, EventArgs args)
 {
-	for (auto const c : components) {
+	for (auto const& c : components) {
 		if (c->isActive) {
 			//Only send tick event if component::receiveTicks is true
 			if (ename != "Tick" || c->receiveTicks) {
@@ -39,26 +39,25 @@ void Entity::FireEvent(std::string ename, EventArgs args)
 
 Component * Entity::GetComponent(std::string type) const
 {
-	for (auto const c : components) {
+	for (auto const& c : components) {
 		if (c->type == type) {
-			return c;
+			return c.get();
 		}
 	}
 	return nullptr;
 }
 
-Deserializable * Entity::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc) const
+Deserializable * Entity::Deserialize(ResourceManager * resourceManager, std::string const& str) const
 {
-	void * const mem = alloc.Allocate(sizeof(Entity));
-	Entity * const ret = new (mem) Entity();
+	Entity * const ret = new Entity();
 	auto const j = nlohmann::json::parse(str);
 	ret->name = j["name"].get<std::string>();
 	ret->transform = Transform::Deserialize(j["transform"].dump());
 	auto const t = j["components"];
 	for (auto const& js : j["components"]) {
-		Component * const c = static_cast<Component *>(Deserializable::DeserializeString(resourceManager, js.dump(), alloc));
+		Component * const c = static_cast<Component *>(Deserializable::DeserializeString(resourceManager, js.dump()));
 		c->entity = ret;
-		ret->components.push_back(c);
+		ret->components.emplace_back(std::move(c));
 	}
 	return ret;
 }
@@ -71,7 +70,7 @@ std::string Entity::Serialize() const
 	j["transform"] = nlohmann::json::parse(transform.Serialize());
 
 	std::vector<nlohmann::json> serializedComponents;
-	for (auto const c : components) {
+	for (auto const& c : components) {
 		serializedComponents.push_back(nlohmann::json::parse(c->Serialize()));
 	}
 

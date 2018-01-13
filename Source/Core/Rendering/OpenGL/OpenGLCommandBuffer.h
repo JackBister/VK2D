@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <gl/glew.h>
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 #include "Core/Semaphore.h"
 

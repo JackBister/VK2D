@@ -1,8 +1,8 @@
 #ifdef USE_OGL_RENDERER
 #include "Core/Rendering/OpenGL/OpenGLRenderer.h"
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_opengl.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
 #include <stb_image.h>
 
 #include "Core/Rendering/OpenGL/OpenGLCommandBuffer.h"

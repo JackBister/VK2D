@@ -598,6 +598,7 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 
 		VkDescriptorPoolCreateInfo ci = {};
 		ci.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		ci.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 		ci.poolSizeCount = 2;
 		ci.pPoolSizes = &poolSizes[0];
 		ci.maxSets = 100;

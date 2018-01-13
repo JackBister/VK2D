@@ -89,10 +89,9 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 	collisionsLastFrame = collisionsThisFrame;
 }
 
-Deserializable * PhysicsWorld::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc) const
+Deserializable * PhysicsWorld::Deserialize(ResourceManager * resourceManager, std::string const& str) const
 {
-	void * mem = alloc.Allocate(sizeof(PhysicsWorld));
-	PhysicsWorld * ret = new (mem) PhysicsWorld();
+	PhysicsWorld * ret = new PhysicsWorld();
 	auto const j = nlohmann::json::parse(str);
 	ret->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
 
@@ -118,4 +117,9 @@ std::string PhysicsWorld::Serialize() const
 	j["gravity"]["z"] = grav.getZ();
 
 	return j.dump();
+}
+
+void PhysicsWorld::SetGravity(Vec3 const& grav)
+{
+	world->setGravity(btVector3(grav.x, grav.y, grav.z));
 }

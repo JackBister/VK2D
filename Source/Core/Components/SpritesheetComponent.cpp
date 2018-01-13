@@ -18,10 +18,9 @@ COMPONENT_IMPL(SpritesheetComponent)
 bool SpritesheetComponent::has_created_resources_ = false;
 SpritesheetComponent::SpriteResources SpritesheetComponent::resources_;
 
-Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator & alloc) const
+Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceManager, std::string const& str) const
 {
-	void * mem = alloc.Allocate(sizeof(SpritesheetComponent));
-	SpritesheetComponent * ret = new (mem) SpritesheetComponent();
+	SpritesheetComponent * ret = new SpritesheetComponent();
 	auto j = nlohmann::json::parse(str);
 	ret->receiveTicks = true;
 	auto img = resourceManager->LoadResource<Image>(j["file_"]);

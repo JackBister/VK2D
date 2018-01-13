@@ -68,10 +68,9 @@ glm::mat4 const& CameraComponent::GetView()
 	return view;
 }
 
-Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc) const
+Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager, std::string const& str) const
 {
-	void * mem = alloc.Allocate(sizeof(CameraComponent));
-	CameraComponent * ret = new (mem) CameraComponent();
+	CameraComponent * ret = new CameraComponent();
 	auto const j = nlohmann::json::parse(str);
 	ret->aspect = j["aspect"];
 	ret->viewSize = j["viewSize"];
@@ -92,6 +91,6 @@ std::string CameraComponent::Serialize() const
 void CameraComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "Tick") {
-		entity->scene->SubmitCamera(this);
+		GameModule::SubmitCamera(this);
 	}
 }
