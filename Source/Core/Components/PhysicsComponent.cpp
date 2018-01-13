@@ -81,6 +81,43 @@ Deserializable * PhysicsComponent::Deserialize(ResourceManager * resourceManager
 	return ret;
 }
 
+std::string PhysicsComponent::Serialize() const
+{
+	nlohmann::json j;
+	j["type"] = this->type;
+	j["mass"] = mass;
+	j["shapeType"] = SerializeShapeType(shapeType);
+
+	switch (shapeType) {
+	case BOX_2D_SHAPE_PROXYTYPE:
+	{
+		auto shapeInfo = ((btBox2dShape *)shape.get())->getHalfExtentsWithoutMargin();
+		j["shapeInfo"]["x"] = shapeInfo.getX();
+		j["shapeInfo"]["y"] = shapeInfo.getY();
+		j["shapeInfo"]["z"] = 1.f;
+		break;
+	}
+	case BOX_SHAPE_PROXYTYPE:
+	{
+		auto shapeInfo = ((btBoxShape *)shape.get())->getHalfExtentsWithoutMargin();
+		j["shapeInfo"]["x"] = shapeInfo.getX();
+		j["shapeInfo"]["y"] = shapeInfo.getY();
+		j["shapeInfo"]["z"] = shapeInfo.getZ();
+		break;
+	}
+	case INVALID_SHAPE_PROXYTYPE:
+		printf("[ERROR] PhysicsComponent: Invalid shapeType %s.", j["shapeType"].get<std::string>().c_str());
+		break;
+	default:
+		printf("[ERROR] PhysicsComponent: Unhandled shapeType %s.", j["shapeType"].get<std::string>().c_str());
+		break;
+	}
+
+	j["isKinematic"] = isKinematic;
+
+	return j.dump();
+}
+
 void PhysicsComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "BeginPlay") {

@@ -107,3 +107,15 @@ Deserializable * PhysicsWorld::Deserialize(ResourceManager * resourceManager, st
 	ret->world->setWorldUserInfo(ret);
 	return ret;
 }
+
+std::string PhysicsWorld::Serialize() const
+{
+	nlohmann::json j;
+	j["type"] = this->type;
+	auto grav = world->getGravity();
+	j["gravity"]["x"] = grav.getX();
+	j["gravity"]["y"] = grav.getY();
+	j["gravity"]["z"] = grav.getZ();
+
+	return j.dump();
+}

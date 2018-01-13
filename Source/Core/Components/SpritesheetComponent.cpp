@@ -105,6 +105,16 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 	return ret;
 }
 
+std::string SpritesheetComponent::Serialize() const
+{
+	nlohmann::json j;
+	j["type"] = this->type;
+
+	printf("[WARNING] STUB: SpritesheetComponent::Serialize()");
+
+	return j.dump();
+}
+
 glm::vec2 SpritesheetComponent::get_frame_size() const
 {
 	return frame_size_;

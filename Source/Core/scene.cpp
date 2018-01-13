@@ -318,6 +318,25 @@ size_t Scene::GetCurrFrame()
 	return currFrameInfoIdx;
 }
 
+void Scene::SerializeToFile(std::string const& filename)
+{
+	nlohmann::json j;
+	j["input"] = nlohmann::json::parse(input.Serialize());
+	j["physics"] = nlohmann::json::parse(physicsWorld->Serialize());
+	
+	std::vector<nlohmann::json> serializedEntities;
+	serializedEntities.reserve(entities.size());
+	for (auto const e : entities) {
+		serializedEntities.push_back(nlohmann::json::parse(e->Serialize()));
+	}
+
+	j["entities"] = serializedEntities;
+
+
+	std::ofstream out(filename);
+	out << j.dump();
+}
+
 void Scene::SubmitCamera(CameraComponent * cam) noexcept
 {
 	frameInfo[currFrameInfoIdx].cameras_to_submit_.emplace_back(cam->GetView(), cam->GetProjection());
@@ -334,6 +353,11 @@ void Scene::Tick() noexcept
 	input.Frame();
 	currFrameStage = FrameStage::TIME;
 	time.Frame();
+
+	//TODO: remove these (hardcoded serialize + dump keybinds)
+	if (input.GetKeyDown(KC_F8)) {
+		SerializeToFile("_dump.scene");
+	}
 
 	currFrameStage = FrameStage::FENCE_WAIT;
 	//We use the previous frame's framebufferReady semaphore because in theory we can't know what frame we end up on after calling AcquireNext

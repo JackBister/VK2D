@@ -55,6 +55,15 @@ Deserializable * LuaComponent::Deserialize(ResourceManager * resourceManager, st
 	return ret;
 }
 
+std::string LuaComponent::Serialize() const
+{
+	nlohmann::json j;
+	j["type"] = this->type;
+	j["file"] = file;
+
+	return j.dump();
+}
+
 void LuaComponent::OnEvent(std::string name, EventArgs eargs)
 {
 	if (name == "BeginPlay") {

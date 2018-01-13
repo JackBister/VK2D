@@ -17,6 +17,7 @@ class Entity final : public LuaSerializable, public Deserializable
 	RTTR_ENABLE(LuaSerializable)
 public:
 	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc) const override;
+	std::string Serialize() const override;
 	void FireEvent(std::string name, EventArgs args = {});
 	Component * GetComponent(std::string type) const;
 

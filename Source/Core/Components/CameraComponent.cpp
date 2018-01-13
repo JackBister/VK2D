@@ -79,6 +79,16 @@ Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager,
 	return ret;
 }
 
+std::string CameraComponent::Serialize() const
+{
+	nlohmann::json j;
+	j["type"] = this->type;
+	j["aspect"] = aspect;
+	j["viewSize"] = viewSize;
+
+	return j.dump();
+}
+
 void CameraComponent::OnEvent(std::string name, EventArgs args)
 {
 	if (name == "Tick") {

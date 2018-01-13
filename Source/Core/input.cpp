@@ -139,3 +139,22 @@ void Input::DeserializeInPlace(std::string const& serializedInput) noexcept
 		}
 	}
 }
+
+std::string Input::Serialize() const
+{
+	nlohmann::json j;
+	j["type"] = "Input";
+	std::vector<nlohmann::json> keybinds;
+	for (auto const kb : buttonMap) {
+		nlohmann::json serializedKeybind;
+		serializedKeybind["name"] = kb.first;
+		std::vector<std::string> serializedKeycodes;
+		for (auto const kc : kb.second) {
+			serializedKeycodes.push_back(keycodeToStr[kc]);
+		}
+		serializedKeybind["keys"] = serializedKeycodes;
+		keybinds.push_back(serializedKeybind);
+	}
+	j["keybinds"] = keybinds;
+	return j.dump();
+}

@@ -69,6 +69,26 @@ Vec3 const& Transform::GetScale() const
 	return scale;
 }
 
+std::string Transform::Serialize() const
+{
+	nlohmann::json j; 
+
+	j["position"]["x"] = position.x;
+	j["position"]["y"] = position.y;
+	j["position"]["z"] = position.z;
+
+	j["rotation"]["x"] = rotation.x;
+	j["rotation"]["y"] = rotation.y;
+	j["rotation"]["z"] = rotation.z;
+	j["rotation"]["w"] = rotation.w;
+
+	j["scale"]["x"] = scale.x;
+	j["scale"]["y"] = scale.y;
+	j["scale"]["z"] = scale.z;
+
+	return j.dump();
+}
+
 void Transform::SetParent(Transform * p)
 {
 	parent = p;

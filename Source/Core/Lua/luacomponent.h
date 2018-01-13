@@ -14,6 +14,7 @@ public:
 	LuaComponent();
 	
 	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
+	std::string Serialize() const override;
 	void OnEvent(std::string name, EventArgs args) override;
 
 	//This maps a lua_State to a LuaComponent. This is necessary to conform with the lua_CFunction prototype but still be able to access different parameters.

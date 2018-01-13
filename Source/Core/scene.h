@@ -32,6 +32,7 @@ public:
 	std::vector<CommandBuffer *> CreateSecondaryCommandContexts();
 	size_t GetSwapCount();
 	size_t GetCurrFrame();
+	void SerializeToFile(std::string const& filename);
 	void SubmitCamera(CameraComponent *) noexcept;
 	void SubmitCommandBuffer(CommandBuffer *);
 	void Tick() noexcept;

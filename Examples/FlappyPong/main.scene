@@ -45,8 +45,7 @@
 				{
 					"type": "CameraComponent",
 					"aspect": 0.75,
-					"viewSize": 60,
-					"renderTarget": "__Scratch/Backbuffer.rendertarget"
+					"viewSize": 60
 				},
 				{
 					"type": "LuaComponent",

@@ -23,6 +23,8 @@ public:
 	Quat const& GetRotation() const;
 	Vec3 const& GetScale() const;
 
+	std::string Serialize() const;
+
 	void SetParent(Transform *);
 	void SetPosition(Vec3 const&);
 	void SetPosition(Vec3 *);

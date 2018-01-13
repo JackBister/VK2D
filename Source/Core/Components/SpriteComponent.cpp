@@ -27,6 +27,7 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 	auto j = nlohmann::json::parse(str);
 	auto img = resourceManager->LoadResource<Image>(j["file"]);
 	auto layout = resourceManager->GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/passthrough-transform.layout");
+	ret->file = j["file"].get<std::string>();
 	ret->sprite = Sprite(img);
 	
 	{
@@ -81,6 +82,14 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 		s_resources.pipeline = resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/passthrough-transform.pipe");
 	}
 	return ret;
+}
+
+std::string SpriteComponent::Serialize() const
+{
+	nlohmann::json j;
+	j["type"] = this->type;
+	j["file"] = file;
+	return j.dump();
 }
 
 void SpriteComponent::OnEvent(std::string name, EventArgs args)

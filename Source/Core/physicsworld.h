@@ -15,6 +15,7 @@ class PhysicsWorld : public Deserializable
 {
 public:
 	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
+	std::string Serialize() const override;
 
 	std::unique_ptr<btBroadphaseInterface> broadphase;
 	std::unique_ptr<btCollisionConfiguration> collisionConfig;

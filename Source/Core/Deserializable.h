@@ -14,6 +14,11 @@ public:
 	virtual Deserializable * Deserialize(ResourceManager * resourceManager, std::string const& str, Allocator& alloc = Allocator::default_allocator) const = 0;
 
 	/*
+		Serializes an object into a format suitable for storing in a scene file (currently JSON)
+	*/
+	virtual std::string Serialize() const = 0;
+
+	/*
 		Deserializes a string of unknown type.
 	*/
 	static Deserializable * DeserializeString(ResourceManager * resourceManager, std::string const& str, Allocator& alloc = Allocator::default_allocator);

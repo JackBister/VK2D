@@ -12,6 +12,7 @@ public:
 	CameraComponent() noexcept;
 
 	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
+	std::string Serialize() const override;
 
 	void OnEvent(std::string name, EventArgs args = {}) override;
 

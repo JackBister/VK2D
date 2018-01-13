@@ -9,6 +9,7 @@ public:
 	SpriteComponent() noexcept;
 
 	Deserializable * Deserialize(ResourceManager *, std::string const& str, Allocator& alloc = Allocator::default_allocator) const override;
+	std::string Serialize() const override;
 
 	void OnEvent(std::string name, EventArgs args) override;
 
@@ -38,4 +39,5 @@ private:
 	BufferHandle * uvs;
 	
 	std::vector<FrameInfo> frameInfo;
+	std::string file;
 };

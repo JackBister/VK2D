@@ -62,3 +62,20 @@ Deserializable * Entity::Deserialize(ResourceManager * resourceManager, std::str
 	}
 	return ret;
 }
+
+std::string Entity::Serialize() const
+{
+	nlohmann::json j;
+	j["type"] = this->type;
+	j["name"] = name;
+	j["transform"] = nlohmann::json::parse(transform.Serialize());
+
+	std::vector<nlohmann::json> serializedComponents;
+	for (auto const c : components) {
+		serializedComponents.push_back(nlohmann::json::parse(c->Serialize()));
+	}
+
+	j["components"] = serializedComponents;
+
+	return j.dump();
+}

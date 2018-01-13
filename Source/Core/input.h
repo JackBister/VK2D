@@ -25,6 +25,7 @@ public:
 	void AddKeybind(std::string const&, Keycode);
 
 	void DeserializeInPlace(std::string const&) noexcept;
+	std::string Serialize() const;
 
 	//TODO: Make Keycode a class with implicit std::string constructor for ez Lua interaction
 	//TODO: Modifier keys?
