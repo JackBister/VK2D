@@ -524,7 +524,8 @@ public:
 
 		struct ImageDescriptor
 		{
-			ImageHandle * img;
+			SamplerHandle * sampler;
+			ImageViewHandle * imageView;
 		};
 
 		struct Descriptor

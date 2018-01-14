@@ -14,12 +14,12 @@ RTTR_REGISTRATION
 	.method("GetButtonUp", &Input::GetButtonUp);
 }
 
-Input::Input(Queue<SDL_Event>::Reader&& reader) noexcept
+Input::Input(Queue<SDL_Event>::Reader&& reader)
 	: inputQueue(std::move(reader))
 {
 }
 
-void Input::Frame() noexcept
+void Input::Frame()
 {
 	for (auto const& kbp : downKeys) {
 		//If key was down last frame, it's held this frame
@@ -129,7 +129,7 @@ void Input::RemoveKeybind(std::string const& s, Keycode kc)
 	}
 }
 
-void Input::DeserializeInPlace(std::string const& serializedInput) noexcept
+void Input::DeserializeInPlace(std::string const& serializedInput)
 {
 	auto j = nlohmann::json::parse(serializedInput);
 	for (auto const& js : j["keybinds"]) {

@@ -186,7 +186,9 @@ std::vector<FramebufferHandle *> Renderer::CreateBackbuffers(RenderPassHandle * 
 		};
 		auto res = vkCreateFramebuffer(basics.device, &framebufferInfo, nullptr, &swapchain.framebuffers[i]);
 		if (res != VK_SUCCESS) {
-			throw std::exception("Couldn't create swap chain framebuffers.");
+			printf("Couldn't create swap chain framebuffers.\n");
+			assert(false);
+			exit(1);
 		}
 
 		VulkanFramebufferHandle handle = {};
@@ -250,7 +252,9 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 	{
 		unsigned int requiredInstanceExtensionsCount;
 		if (!SDL_Vulkan_GetInstanceExtensions(window, &requiredInstanceExtensionsCount, nullptr)) {
-			throw std::exception("Unable to get required Vulkan instance extensions.");
+			printf("Unable to get required Vulkan instance extensions.\n");
+			assert(false);
+			exit(1);
 		}
 		instanceExtensions = std::vector<const char *>(requiredInstanceExtensionsCount);
 		SDL_Vulkan_GetInstanceExtensions(window, &requiredInstanceExtensionsCount, &instanceExtensions[0]);
@@ -283,7 +287,9 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 
 	auto res = vkCreateInstance(&vulkanInfo, nullptr, &basics.instance);
 	if (res != VK_SUCCESS) {
-		throw std::exception("vkCreateInstance failed.");
+		printf("vkCreateInstance failed.\n");
+		assert(false);
+		exit(1);
 	}
 
 #if defined(_DEBUG)
@@ -308,17 +314,22 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 	res = vkCreateDebugReportCallbackEXT(basics.instance, &dbgInfo, nullptr, &test);
 	if (res != VK_SUCCESS) {
 		printf("[ERROR] Vulkan: Failed to create debug report callback.\n");
-		throw std::exception("vkCreateDebugReportCallbackEXT failed.");
+		assert(false);
+		exit(1);
 	}
 #endif
 
 	if (!SDL_Vulkan_CreateSurface(window, basics.instance, &surface)) {
-		throw std::exception("Unable to create Vulkan surface.");
+		printf("Unable to create Vulkan surface.\n");
+		assert(false);
+		exit(1);
 	}
 
 	auto physDeviceOptional = ChoosePhysicalDevice(basics.instance);
 	if (!physDeviceOptional.has_value()) {
-		throw std::exception("ChoosePhysicalDevice failed.");
+		printf("ChoosePhysicalDevice failed.\n");
+		assert(false);
+		exit(1);
 	}
 	basics.physicalDevice = physDeviceOptional.value();
 
@@ -327,14 +338,18 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 	};
 
 	if (!CheckVkDeviceExtensions(basics.physicalDevice, deviceExtensions)) {
-		throw std::exception("CheckVkDeviceExtensions failed.");
+		printf("CheckVkDeviceExtensions failed.\n");
+		assert(false);
+		exit(1);
 	}
 
 	//Create device and queues
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(basics.physicalDevice, &queueFamilyCount, nullptr);
 	if (queueFamilyCount == 0) {
-		throw std::exception("No queue families found.\n");
+		printf("No queue families found.\n");
+		assert(false);
+		exit(1);
 	}
 
 	std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
@@ -344,7 +359,9 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 
 	for (uint32_t i = 0; i < queueFamilyCount; ++i) {
 		if (vkGetPhysicalDeviceSurfaceSupportKHR(basics.physicalDevice, i, surface, &queuePresentSupport[i]) != VK_SUCCESS) {
-			throw std::exception("Couldn't get physical device surface support.\n");
+			printf("Couldn't get physical device surface support.\n");
+			assert(false);
+			exit(1);
 		}
 
 		if ((queueFamilyProperties[i].queueCount > 0) && (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
@@ -372,7 +389,9 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 
 	//Either no graphics queue exists or no present queue exists. We can't work with this.
 	if (graphicsQueueIdx == UINT32_MAX || presentQueueIdx == UINT32_MAX) {
-		throw std::exception("Vulkan: No queues with graphics or present support found.\n");
+		printf("Vulkan: No queues with graphics or present support found.\n");
+		assert(false);
+		exit(1);
 	}
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -419,7 +438,9 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 	};
 
 	if (vkCreateDevice(basics.physicalDevice, &deviceCreateInfo, nullptr, &basics.device) != VK_SUCCESS) {
-		throw std::exception("Couldn't create device.\n");
+		printf("Couldn't create device.\n");
+		assert(false);
+		exit(1);
 	}
 
 	graphicsQueueIdx = graphicsQueueIdx;
@@ -429,37 +450,51 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 
 	//Create command pools
 	if (!CreateVkCommandPool(basics.device, graphicsQueueIdx, &graphicsPool)) {
-		throw std::exception("Unable to create graphics pool.");
+		printf("Unable to create graphics pool.\n");
+		assert(false);
+		exit(1);
 	}
 
 	if (!CreateVkCommandPool(basics.device, presentQueueIdx, &presentPool)) {
-		throw std::exception("Unable to create present pool.");
+		printf("Unable to create present pool.\n");
+		assert(false);
+		exit(1);
 	}
 
 	//Get required info and create swap chain
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(basics.physicalDevice, surface, &surfaceCapabilities) != VK_SUCCESS) {
-		throw std::exception("[ERROR] Vulkan: Unable to get device surface capabilities.\n");
+		printf("Unable to get device surface capabilities.\n");
+		assert(false);
+		exit(1);
 	}
 
 	uint32_t formatsCount;
 	if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.physicalDevice, surface, &formatsCount, nullptr) != VK_SUCCESS || formatsCount == 0) {
-		throw std::exception("[ERROR] Vulkan: Unable to get device surface formats.\n");
+		printf("Unable to get device surface formats.\n");
+		assert(false);
+		exit(1);
 	}
 
 	auto surfaceFormats = std::vector<VkSurfaceFormatKHR>(formatsCount);
 	if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.physicalDevice, surface, &formatsCount, &surfaceFormats[0]) != VK_SUCCESS || formatsCount == 0) {
-		throw std::exception("[ERROR] Vulkan: Unable to get device surface formats.\n");
+		printf("Unable to get device surface formats.\n");
+		assert(false);
+		exit(1);
 	}
 
 	uint32_t presentModesCount;
 	if (vkGetPhysicalDeviceSurfacePresentModesKHR(basics.physicalDevice, surface, &presentModesCount, nullptr) != VK_SUCCESS || presentModesCount == 0) {
-		throw std::exception("[ERROR] Vulkan: Unable to get device present modes.\n");
+		printf("Unable to get device present modes.\n");
+		assert(false);
+		exit(1);
 	}
 
 	auto presentModes = std::vector<VkPresentModeKHR>(presentModesCount);
 	if (vkGetPhysicalDeviceSurfacePresentModesKHR(basics.physicalDevice, surface, &presentModesCount, &presentModes[0]) != VK_SUCCESS || presentModesCount == 0) {
-		throw std::exception("[ERROR] Vulkan: Unable to get device present modes.\n");
+		printf("Unable to get device present modes.\n");
+		assert(false);
+		exit(1);
 	}
 
 	//Use one more image than minimum in the swap chain if possible
@@ -500,7 +535,9 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 
 	//TRANSFER_DST_BIT required for clearing op
 	if (!(surfaceCapabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
-		throw std::exception("[ERROR] Vulkan: VK_IMAGE_USAGE_TRANSFER_DST_BIT not supported by surface.\n");
+		printf("VK_IMAGE_USAGE_TRANSFER_DST_BIT not supported by surface.\n");
+		assert(false);
+		exit(1);
 	}
 	VkImageUsageFlags desiredUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
@@ -525,7 +562,9 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 	}
 
 	if (desiredPresentMode == VK_PRESENT_MODE_END_RANGE_KHR) {
-		throw std::exception("[ERROR] Vulkan: Required present modes not supported.\n");
+		printf("Required present modes not supported.\n");
+		assert(false);
+		exit(1);
 	}
 
 	//TODO: old swap chain
@@ -551,7 +590,9 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 	};
 
 	if (vkCreateSwapchainKHR(basics.device, &swapchainCreateInfo, nullptr, &swapchain.swapchain) != VK_SUCCESS) {
-		throw std::exception("[ERROR] Vulkan: Can't create swap chain.\n");
+		printf("Couldn't create swap chain.\n");
+		assert(false);
+		exit(1);
 	}
 	swapchain.extent = desiredExtent;
 	swapchain.format = desiredFormat.format;
@@ -559,13 +600,17 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 	uint32_t swapchainImageCount = 0;
 	res = vkGetSwapchainImagesKHR(basics.device, swapchain.swapchain, &swapchainImageCount, nullptr);
 	if (res != VK_SUCCESS || swapchainImageCount == 0) {
-		throw std::exception("[ERROR] Vulkan: Couldn't get swap chain image count.");
+		printf("Couldn't get swap chain image count.\n");
+		assert(false);
+		exit(1);
 	}
 
 	swapchain.images.resize(swapchainImageCount);
 	res = vkGetSwapchainImagesKHR(basics.device, swapchain.swapchain, &swapchainImageCount, &swapchain.images[0]);
 	if (res != VK_SUCCESS || swapchainImageCount == 0) {
-		throw std::exception("[ERROR] Vulkan: Couldn't get swap chain images");
+		printf("Couldn't get swap chain images.\n");
+		assert(false);
+		exit(1);
 	}
 
 	swapchain.imageViews.resize(swapchain.images.size());
@@ -587,7 +632,9 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 		createInfo.subresourceRange.layerCount = 1;
 		res = vkCreateImageView(basics.device, &createInfo, nullptr, &swapchain.imageViews[i]);
 		if (res != VK_SUCCESS) {
-			throw std::exception("Couldn't create swap chain image views.");
+			printf("Couldn't create swap chain image views.");
+			assert(false);
+			exit(1);
 		}
 	}
 	{
@@ -605,7 +652,9 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 
 		auto res = vkCreateDescriptorPool(basics.device, &ci, nullptr, &descriptorPool);
 		if (res != VK_SUCCESS) {
-			throw std::exception("Vulkan: Couldn't create descriptor pool.");
+			printf("Couldn't create descriptor pool.");
+			assert(false);
+			exit(1);
 		}
 	}
 }
@@ -620,7 +669,9 @@ uint32_t Renderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags pro
 		}
 	}
 
-	throw std::runtime_error("Failed to find suitable memory type.");
+	printf("Error: Couldn't find memory type: %ud %ud\n", typeFilter, properties);
+	assert(false);
+	return 0;
 }
 
 void Renderer::CopyBufferToBuffer(VkCommandBuffer commandBuffer, VkBuffer src, VkBuffer dst, size_t dstOffset, size_t size)
@@ -703,7 +754,9 @@ void Renderer::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage imag
 		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	} else {
-		throw std::invalid_argument("unsupported layout transition!");
+		printf("Error: Unknown image layout transition.\n");
+		assert(false);
+		return;
 	}
 
 	vkCmdPipelineBarrier(

@@ -20,6 +20,7 @@ solution "Vulkan2D"
 		cppdialect "C++17"
 
 		defines { "GLEW_STATIC" }
+		exceptionhandling "Off"
 
 		files { "Source/Core/**.h", "Source/Core/**.cpp",
 				"shaders/*",

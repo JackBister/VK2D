@@ -21,7 +21,7 @@ RTTR_REGISTRATION
 
 COMPONENT_IMPL(CameraComponent)
 
-CameraComponent::CameraComponent() noexcept
+CameraComponent::CameraComponent()
 {
 	receiveTicks = true;
 }

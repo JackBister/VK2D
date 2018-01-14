@@ -121,7 +121,7 @@ void VulkanResourceContext::DestroyBuffer(BufferHandle * buffer)
 
 	vkDestroyBuffer(renderer->basics.device, nativeHandle->buffer, nullptr);
 	vkFreeMemory(renderer->basics.device, nativeHandle->memory, nullptr);
-	allocator.destroy(buffer);
+	allocator.deallocate((uint8_t *)buffer, sizeof(VulkanBufferHandle));
 }
 
 uint8_t * VulkanResourceContext::MapBuffer(BufferHandle * buffer, size_t offset, size_t size)
@@ -201,7 +201,7 @@ void VulkanResourceContext::DestroyImage(ImageHandle * img)
 	if (nativeHandle->memory != VK_NULL_HANDLE) {
 		vkFreeMemory(renderer->basics.device, nativeHandle->memory, nullptr);
 	}
-	allocator.destroy(img);
+	allocator.deallocate((uint8_t *)nativeHandle, sizeof(VulkanImageHandle));
 }
 
 void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> const& data)
@@ -394,7 +394,7 @@ void VulkanResourceContext::DestroyRenderPass(RenderPassHandle * pass)
 	assert(pass != nullptr);
 
 	vkDestroyRenderPass(renderer->basics.device, ((VulkanRenderPassHandle *)pass)->renderPass, nullptr);
-	allocator.destroy(pass);
+	allocator.deallocate((uint8_t *)pass, sizeof(VulkanRenderPassHandle));
 }
 
 ImageViewHandle * VulkanResourceContext::CreateImageView(ResourceCreationContext::ImageViewCreateInfo const& ci)
@@ -447,7 +447,7 @@ void VulkanResourceContext::DestroyImageView(ImageViewHandle * view)
 	assert(view != nullptr);
 
 	vkDestroyImageView(renderer->basics.device, ((VulkanImageViewHandle *)view)->imageView, nullptr);
-	allocator.destroy(view);
+	allocator.deallocate((uint8_t *)view, sizeof(VulkanImageViewHandle));
 }
 
 FramebufferHandle * VulkanResourceContext::CreateFramebuffer(ResourceCreationContext::FramebufferCreateInfo const& ci)
@@ -479,7 +479,7 @@ void VulkanResourceContext::DestroyFramebuffer(FramebufferHandle * fb)
 	assert(fb != nullptr);
 
 	vkDestroyFramebuffer(renderer->basics.device, ((VulkanFramebufferHandle *)fb)->framebuffer, nullptr);
-	allocator.destroy(fb);
+	allocator.deallocate((uint8_t *)fb, sizeof(VulkanFramebufferHandle));
 }
 
 PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsPipelineCreateInfo const& ci)
@@ -678,7 +678,7 @@ void VulkanResourceContext::DestroyPipeline(PipelineHandle * pipeline)
 	assert(pipeline != nullptr);
 
 	vkDestroyPipeline(renderer->basics.device, ((VulkanPipelineHandle *)pipeline)->pipeline, nullptr);
-	allocator.destroy(pipeline);
+	allocator.deallocate((uint8_t *)pipeline, sizeof(VulkanPipelineHandle));
 }
 
 ShaderModuleHandle * VulkanResourceContext::CreateShaderModule(ResourceCreationContext::ShaderModuleCreateInfo const& ci)
@@ -702,7 +702,7 @@ void VulkanResourceContext::DestroyShaderModule(ShaderModuleHandle * shader)
 	assert(shader != nullptr);
 
 	vkDestroyShaderModule(renderer->basics.device, ((VulkanShaderModuleHandle *)shader)->shader, nullptr);
-	allocator.destroy(shader);
+	allocator.deallocate((uint8_t *)shader, sizeof(VulkanShaderModuleHandle));
 }
 
 SamplerHandle * VulkanResourceContext::CreateSampler(ResourceCreationContext::SamplerCreateInfo const& ci)
@@ -714,8 +714,8 @@ SamplerHandle * VulkanResourceContext::CreateSampler(ResourceCreationContext::Sa
 	samplerInfo.addressModeU = ToVulkanAddressMode(ci.addressModeU);
 	samplerInfo.addressModeV = ToVulkanAddressMode(ci.addressModeV);
 	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.anisotropyEnable = VK_TRUE;
-	samplerInfo.maxAnisotropy = 16;
+	samplerInfo.anisotropyEnable = VK_FALSE;
+	samplerInfo.maxAnisotropy = 1;
 	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
 	samplerInfo.compareEnable = VK_FALSE;
@@ -733,7 +733,7 @@ void VulkanResourceContext::DestroySampler(SamplerHandle * sampler)
 {
 	assert(sampler != nullptr);
 	vkDestroySampler(renderer->basics.device, ((VulkanSamplerHandle *)sampler)->sampler, nullptr);
-	allocator.destroy(sampler);
+	allocator.deallocate((uint8_t *)sampler, sizeof(VulkanSamplerHandle));
 }
 
 SemaphoreHandle * VulkanResourceContext::CreateSemaphore()
@@ -783,7 +783,7 @@ void VulkanResourceContext::DestroyDescriptorSetLayout(DescriptorSetLayoutHandle
 {
 	assert(layout != nullptr);
 	vkDestroyDescriptorSetLayout(renderer->basics.device, ((VulkanDescriptorSetLayoutHandle *)layout)->layout, nullptr);
-	allocator.destroy(layout);
+	allocator.deallocate((uint8_t *)layout, sizeof(VulkanDescriptorSetLayoutHandle));
 }
 
 FenceHandle * VulkanResourceContext::CreateFence(bool startSignaled)
@@ -817,7 +817,7 @@ VertexInputStateHandle * VulkanResourceContext::CreateVertexInputState(ResourceC
 void VulkanResourceContext::DestroyVertexInputState(VertexInputStateHandle * state)
 {
 	assert(state != nullptr);
-	allocator.destroy(state);
+	allocator.deallocate((uint8_t *)state, sizeof(VulkanVertexInputStateHandle));
 }
 
 DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateInfo const& info)
@@ -854,47 +854,9 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
 			});
 		} else if (descriptor.type == DescriptorType::COMBINED_IMAGE_SAMPLER) {
 			auto image = std::get<ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor>(descriptor.descriptor);
-			auto nativeImage = (VulkanImageHandle *)image.img;
-			//TODO
-			VkSamplerCreateInfo samplerInfo = {};
-			samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			samplerInfo.anisotropyEnable = VK_FALSE;
-			samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-			samplerInfo.compareEnable = VK_FALSE;
-			samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-			samplerInfo.magFilter = VK_FILTER_LINEAR;
-			samplerInfo.minFilter = VK_FILTER_LINEAR;
-			samplerInfo.maxAnisotropy = 1;
-			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-			samplerInfo.unnormalizedCoordinates = VK_FALSE;
-			VkSampler sampler;
-			auto res = vkCreateSampler(renderer->basics.device, &samplerInfo, nullptr, &sampler);
-			assert(res == VK_SUCCESS);
-
-			VkImageViewCreateInfo imageViewInfo = {};
-			imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			imageViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-			imageViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-			imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-			imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-			imageViewInfo.format = ToVulkanFormat(nativeImage->format);
-			imageViewInfo.image = nativeImage->image;
-			imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageViewInfo.subresourceRange.baseArrayLayer = 0;
-			imageViewInfo.subresourceRange.baseMipLevel = 0;
-			imageViewInfo.subresourceRange.layerCount = 1;
-			imageViewInfo.subresourceRange.levelCount = 1;
-			imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			VkImageView imageView;
-			res = vkCreateImageView(renderer->basics.device, &imageViewInfo, nullptr, &imageView);
-			assert(res == VK_SUCCESS);
-
 			imageInfos.push_back({
-				sampler,
-				imageView,
+				((VulkanSamplerHandle *)image.sampler)->sampler,
+				((VulkanImageViewHandle *)image.imageView)->imageView,
 				VK_IMAGE_LAYOUT_GENERAL
 			});
 		}
@@ -945,11 +907,11 @@ void VulkanResourceContext::DestroyDescriptorSet(DescriptorSet * set)
 
 	auto nativeDescriptorSet = (VulkanDescriptorSet *)set;
 
+	vkDestroyPipelineLayout(renderer->basics.device, nativeDescriptorSet->pipelineLayout, nullptr);
 	auto res = vkFreeDescriptorSets(renderer->basics.device, renderer->descriptorPool, 1, &(nativeDescriptorSet->set));
 	assert(res == VK_SUCCESS);
-	allocator.destroy(set);
+	allocator.deallocate((uint8_t *)nativeDescriptorSet, sizeof(VulkanDescriptorSet));
 }
-
 
 bool VulkanFenceHandle::Wait(uint64_t timeOut)
 {

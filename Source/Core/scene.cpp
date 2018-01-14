@@ -24,7 +24,7 @@ RTTR_REGISTRATION
 }
 
 
-Scene::Scene(std::string const& name, ResourceManager * resMan,	std::string const& fileName) noexcept
+Scene::Scene(std::string const& name, ResourceManager * resMan,	std::string const& fileName)
 	: resourceManager(resMan)
 {
 	this->name = name;

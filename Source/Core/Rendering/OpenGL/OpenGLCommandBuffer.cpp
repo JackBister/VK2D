@@ -34,12 +34,17 @@ void OpenGLCommandBuffer::CmdBindDescriptorSet(DescriptorSet * set)
 	BindDescriptorSetArgs args;
 	for (auto& d : nativeSet->descriptors) {
 		switch (d.type) {
-		case DescriptorType::COMBINED_IMAGE_SAMPLER:
+		case DescriptorType::COMBINED_IMAGE_SAMPLER: {
+			auto image = std::get<ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor>(d.descriptor);
+			auto nativeImageView = (OpenGLImageViewHandle *)image.imageView;
+			auto nativeSampler = (OpenGLSamplerHandle *)image.sampler;
 			args.images.push_back({
 				d.binding,
-				((OpenGLImageHandle *)std::get<1>(d.descriptor).img)->nativeHandle
+				((OpenGLImageHandle *)nativeImageView->image)->nativeHandle,
+				nativeSampler->nativeHandle
 			});
 			break;
+		}
 		case DescriptorType::UNIFORM_BUFFER:
 			auto buf = std::get<0>(d.descriptor);
 			args.buffers.push_back({
@@ -171,6 +176,7 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
 			for (auto i : args.images) {
 				glActiveTexture(GL_TEXTURE0 + i.binding);
 				glBindTexture(GL_TEXTURE_2D, i.image);
+				glBindSampler(i.binding, i.sampler);
 			}
 			break;
 		}

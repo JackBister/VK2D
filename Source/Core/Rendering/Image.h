@@ -21,16 +21,20 @@ public:
 	Image(ImageCreateInfo const&);
 	Image(ResourceManager *, std::string const&, std::vector<uint8_t> const&);
 
-	std::vector<uint8_t> const& GetData() const noexcept;
-	uint32_t GetHeight() const noexcept;
-	ImageHandle * GetImageHandle();
-	uint32_t GetWidth() const noexcept;
+	std::vector<uint8_t> const& GetData() const;
+	uint32_t GetHeight() const;
+	ImageHandle * GetImage();
+	ImageViewHandle * GetImageView();
+	SamplerHandle * GetSampler();
+	uint32_t GetWidth() const;
 
 private:
 	std::vector<uint8_t> data;
 
 	uint32_t width, height;
 	ImageHandle * img;
+	ImageViewHandle * view;
+	SamplerHandle * sampler;
 	ResourceManager * resMan;
 };
 

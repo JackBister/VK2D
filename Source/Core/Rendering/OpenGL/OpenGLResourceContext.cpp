@@ -64,7 +64,7 @@ ImageHandle * OpenGLResourceContext::CreateImage(ImageCreateInfo const& ic)
 void OpenGLResourceContext::DestroyImage(ImageHandle * handle)
 {
 	glDeleteTextures(1, &((OpenGLImageHandle *)handle)->nativeHandle);
-	allocator.destroy(handle);
+	allocator.deallocate((uint8_t *)handle, sizeof(OpenGLImageHandle));
 }
 
 void OpenGLResourceContext::ImageData(ImageHandle * handle, std::vector<uint8_t> const& data)
@@ -89,7 +89,7 @@ RenderPassHandle * OpenGLResourceContext::CreateRenderPass(ResourceCreationConte
 
 void OpenGLResourceContext::DestroyRenderPass(RenderPassHandle * handle)
 {
-	allocator.destroy(handle);
+	allocator.deallocate((uint8_t *)handle, sizeof(OpenGLRenderPassHandle));
 }
 
 ImageViewHandle * OpenGLResourceContext::CreateImageView(ResourceCreationContext::ImageViewCreateInfo const& ci)
@@ -102,7 +102,7 @@ ImageViewHandle * OpenGLResourceContext::CreateImageView(ResourceCreationContext
 
 void OpenGLResourceContext::DestroyImageView(ImageViewHandle * handle)
 {
-	allocator.destroy(handle);
+	allocator.deallocate((uint8_t *)handle, sizeof(OpenGLImageViewHandle));
 }
 
 FramebufferHandle * OpenGLResourceContext::CreateFramebuffer(ResourceCreationContext::FramebufferCreateInfo const& ci)
@@ -148,7 +148,7 @@ void OpenGLResourceContext::DestroyFramebuffer(FramebufferHandle * handle)
 	assert(handle != nullptr);
 	assert(((OpenGLFramebufferHandle *)handle)->nativeHandle != 0);
 	glDeleteFramebuffers(1, &((OpenGLFramebufferHandle *)handle)->nativeHandle);
-	allocator.destroy(handle);
+	allocator.deallocate((uint8_t *)handle, sizeof(OpenGLFramebufferHandle));
 }
 
 PipelineHandle * OpenGLResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsPipelineCreateInfo const& ci)
@@ -187,7 +187,7 @@ void OpenGLResourceContext::DestroyPipeline(PipelineHandle * handle)
 	assert(((OpenGLPipelineHandle *)handle)->nativeHandle != 0);
 
 	glDeleteProgram(((OpenGLPipelineHandle *)handle)->nativeHandle);
-	allocator.destroy(handle);
+	allocator.deallocate((uint8_t *)handle, sizeof(OpenGLPipelineHandle));
 }
 
 ShaderModuleHandle * OpenGLResourceContext::CreateShaderModule(ResourceCreationContext::ShaderModuleCreateInfo const& ci)
@@ -224,7 +224,7 @@ ShaderModuleHandle * OpenGLResourceContext::CreateShaderModule(ResourceCreationC
 		glGetShaderInfoLog(ret->nativeHandle, 1024, &log_length, message);
 		printf("Shader compile failed\n%s\n", message);
 		glDeleteShader(ret->nativeHandle);
-		allocator.destroy(ret);
+		allocator.deallocate((uint8_t *)ret, sizeof(OpenGLShaderModuleHandle));
 		return nullptr;
 	}
 	return ret;
@@ -234,7 +234,7 @@ void OpenGLResourceContext::DestroyShaderModule(ShaderModuleHandle * handle)
 {
 	auto nativeShader = (OpenGLShaderModuleHandle *)handle;
 	glDeleteShader(nativeShader->nativeHandle);
-	allocator.destroy(handle);
+	allocator.deallocate((uint8_t *)handle, sizeof(OpenGLShaderModuleHandle));
 }
 
 SamplerHandle * OpenGLResourceContext::CreateSampler(ResourceCreationContext::SamplerCreateInfo const& ci)
@@ -255,7 +255,7 @@ void OpenGLResourceContext::DestroySampler(SamplerHandle * handle)
 	auto handleGL = (OpenGLSamplerHandle *)handle;
 	assert(handleGL->nativeHandle != 0);
 	glDeleteSamplers(1, &handleGL->nativeHandle);
-	allocator.destroy(handleGL);
+	allocator.deallocate((uint8_t *)handle, sizeof(OpenGLSamplerHandle));
 }
 
 DescriptorSetLayoutHandle * OpenGLResourceContext::CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo const& ci)
@@ -270,7 +270,7 @@ DescriptorSetLayoutHandle * OpenGLResourceContext::CreateDescriptorSetLayout(Des
 void OpenGLResourceContext::DestroyDescriptorSetLayout(DescriptorSetLayoutHandle * handle)
 {
 	assert(handle != nullptr);
-	allocator.destroy(handle);
+	allocator.deallocate((uint8_t *)handle, sizeof(OpenGLDescriptorSetLayoutHandle));
 }
 
 VertexInputStateHandle * OpenGLResourceContext::CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo const& ci)
@@ -325,7 +325,7 @@ void OpenGLResourceContext::DestroyVertexInputState(VertexInputStateHandle * han
 	auto nativeHandle = (OpenGLVertexInputStateHandle *)handle;
 	assert(nativeHandle->nativeHandle != 0);
 	glDeleteVertexArrays(1, &nativeHandle->nativeHandle);
-	allocator.destroy(handle);
+	allocator.deallocate((uint8_t *)handle, sizeof(OpenGLVertexInputStateHandle));
 }
 
 DescriptorSet * OpenGLResourceContext::CreateDescriptorSet(DescriptorSetCreateInfo const& ci)
@@ -340,7 +340,7 @@ DescriptorSet * OpenGLResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
 void OpenGLResourceContext::DestroyDescriptorSet(DescriptorSet * set)
 {
 	assert(set != nullptr);
-	allocator.destroy(set);
+	allocator.deallocate((uint8_t *)set, sizeof(OpenGLDescriptorSet));
 }
 
 SemaphoreHandle * OpenGLResourceContext::CreateSemaphore()
@@ -386,7 +386,5 @@ void OpenGLResourceContext::DestroyFence(FenceHandle * fence)
 	//TODO: Probably unsafe since sem needs to be destroyed
 	allocator.deallocate((uint8_t *)fence, sizeof(OpenGLFenceHandle));
 }
-
-
 
 #endif

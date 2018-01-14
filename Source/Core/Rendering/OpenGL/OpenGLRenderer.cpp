@@ -8,12 +8,12 @@
 #include "Core/Rendering/OpenGL/OpenGLCommandBuffer.h"
 #include "Core/Rendering/OpenGL/OpenGLResourceContext.h"
 
-Renderer::~Renderer() noexcept
+Renderer::~Renderer()
 {
 	SDL_DestroyWindow(window);
 }
 
-Renderer::Renderer(char const * title, int const winX, int const winY, int const w, int const h, uint32_t const flags) noexcept
+Renderer::Renderer(char const * title, int const winX, int const winY, int const w, int const h, uint32_t const flags)
 	: renderQueueRead(renderQueue.GetReader()), renderQueueWrite(renderQueue.GetWriter())
 {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -95,7 +95,7 @@ void Renderer::RenderThread(SDL_GLContext ctx)
 	}
 }
 
-void Renderer::DrainQueue() noexcept
+void Renderer::DrainQueue()
 {
 	using namespace std::literals::chrono_literals;
 	RenderCommand command = renderQueueRead.Wait();

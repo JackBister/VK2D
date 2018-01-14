@@ -79,6 +79,7 @@ private:
 		{
 			GLuint binding;
 			GLuint image;
+			GLuint sampler;
 		};
 		std::vector<GLBufferDescriptor> buffers;
 		std::vector<GLImageDescriptor> images;

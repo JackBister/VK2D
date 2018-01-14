@@ -16,15 +16,15 @@ class Input : public LuaSerializable
 {
 	RTTR_ENABLE(LuaSerializable)
 public:
-	Input(Queue<SDL_Event>::Reader&&) noexcept;
+	Input(Queue<SDL_Event>::Reader&&);
 
 	//Call every frame
 	//TODO: This could/should be static and push events to all Input instances - question is if that's meaningful in any way.
-	void Frame() noexcept;
+	void Frame();
 
 	void AddKeybind(std::string const&, Keycode);
 
-	void DeserializeInPlace(std::string const&) noexcept;
+	void DeserializeInPlace(std::string const&);
 	std::string Serialize() const;
 
 	//TODO: Make Keycode a class with implicit std::string constructor for ez Lua interaction

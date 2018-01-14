@@ -26,7 +26,7 @@ class Scene : public LuaSerializable, public Resource
 {
 	RTTR_ENABLE(LuaSerializable)
 public:
-	Scene(std::string const&, ResourceManager *, std::string const&) noexcept;
+	Scene(std::string const&, ResourceManager *, std::string const&);
 
 	void LoadFile(std::string const&);
 	void SerializeToFile(std::string const& filename);

@@ -9,7 +9,7 @@ class CameraComponent : public Component
 {
 	RTTR_ENABLE(Component)
 public:
-	CameraComponent() noexcept;
+	CameraComponent();
 
 	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;

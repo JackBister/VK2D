@@ -9,6 +9,8 @@ Image::~Image()
 {
 	resMan->CreateResources([this](ResourceCreationContext& ctx) {
 		ctx.DestroyImage(img);
+		ctx.DestroyImageView(view);
+		ctx.DestroySampler(sampler);
 	});
 }
 
@@ -28,6 +30,28 @@ Image::Image(ResourceManager * resMan, std::string const& name) : resMan(resMan)
 		auto tmp = ctx.CreateImage(ic);
 		ctx.ImageData(tmp, this->data);
 		this->img = tmp;
+
+		ResourceCreationContext::ImageViewCreateInfo ivc = {};
+		ivc.components.r = ComponentSwizzle::R;
+		ivc.components.g = ComponentSwizzle::G;
+		ivc.components.b = ComponentSwizzle::B;
+		ivc.components.a = ComponentSwizzle::A;
+		ivc.format = Format::RGBA8;
+		ivc.image = this->img;
+		ivc.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+		ivc.subresourceRange.baseArrayLayer = 0;
+		ivc.subresourceRange.baseMipLevel = 0;
+		ivc.subresourceRange.layerCount = 1;
+		ivc.subresourceRange.levelCount = 1;
+		ivc.viewType = ImageViewHandle::Type::TYPE_2D;
+		this->view = ctx.CreateImageView(ivc);
+
+		ResourceCreationContext::SamplerCreateInfo sc = {};
+		sc.addressModeU = AddressMode::REPEAT;
+		sc.addressModeV = AddressMode::REPEAT;
+		sc.magFilter = Filter::LINEAR;
+		sc.magFilter = Filter::LINEAR;
+		this->sampler = ctx.CreateSampler(sc);
 	});
 }
 
@@ -49,6 +73,29 @@ Image::Image(ImageCreateInfo const& info) : resMan(info.resMan)
 			auto tmp = ctx.CreateImage(ic);
 			ctx.ImageData(tmp, this->data);
 			this->img = tmp;
+
+
+			ResourceCreationContext::ImageViewCreateInfo ivc = {};
+			ivc.components.r = ComponentSwizzle::R;
+			ivc.components.g = ComponentSwizzle::G;
+			ivc.components.b = ComponentSwizzle::B;
+			ivc.components.a = ComponentSwizzle::A;
+			ivc.format = Format::RGBA8;
+			ivc.image = this->img;
+			ivc.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+			ivc.subresourceRange.baseArrayLayer = 0;
+			ivc.subresourceRange.baseMipLevel = 0;
+			ivc.subresourceRange.layerCount = 1;
+			ivc.subresourceRange.levelCount = 1;
+			ivc.viewType = ImageViewHandle::Type::TYPE_2D;
+			this->view = ctx.CreateImageView(ivc);
+
+			ResourceCreationContext::SamplerCreateInfo sc = {};
+			sc.addressModeU = AddressMode::REPEAT;
+			sc.addressModeV = AddressMode::REPEAT;
+			sc.magFilter = Filter::LINEAR;
+			sc.magFilter = Filter::LINEAR;
+			this->sampler = ctx.CreateSampler(sc);
 		});
 	} else {
 		this->img = std::get<ImageHandle *>(info.data);
@@ -89,25 +136,57 @@ Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint
 		auto tmp = ctx.CreateImage(ic);
 		ctx.ImageData(tmp, this->data);
 		this->img = tmp;
+
+		ResourceCreationContext::ImageViewCreateInfo ivc = {};
+		ivc.components.r = ComponentSwizzle::R;
+		ivc.components.g = ComponentSwizzle::G;
+		ivc.components.b = ComponentSwizzle::B;
+		ivc.components.a = ComponentSwizzle::A;
+		ivc.format = Format::RGBA8;
+		ivc.image = this->img;
+		ivc.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+		ivc.subresourceRange.baseArrayLayer = 0;
+		ivc.subresourceRange.baseMipLevel = 0;
+		ivc.subresourceRange.layerCount = 1;
+		ivc.subresourceRange.levelCount = 1;
+		ivc.viewType = ImageViewHandle::Type::TYPE_2D;
+		this->view = ctx.CreateImageView(ivc);
+
+		ResourceCreationContext::SamplerCreateInfo sc = {};
+		sc.addressModeU = AddressMode::REPEAT;
+		sc.addressModeV = AddressMode::REPEAT;
+		sc.magFilter = Filter::LINEAR;
+		sc.magFilter = Filter::LINEAR;
+		this->sampler = ctx.CreateSampler(sc);
 	});
 }
 
-std::vector<uint8_t> const& Image::GetData() const noexcept
+std::vector<uint8_t> const& Image::GetData() const
 {
 	return data;
 }
 
-uint32_t Image::GetHeight() const noexcept
+uint32_t Image::GetHeight() const
 {
 	return height;
 }
 
-ImageHandle * Image::GetImageHandle()
+ImageHandle * Image::GetImage()
 {
 	return img;
 }
 
-uint32_t Image::GetWidth() const noexcept
+ImageViewHandle * Image::GetImageView()
+{
+	return view;
+}
+
+SamplerHandle * Image::GetSampler()
+{
+	return sampler;
+}
+
+uint32_t Image::GetWidth() const
 {
 	return width;
 }

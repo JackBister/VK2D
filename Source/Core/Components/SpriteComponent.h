@@ -7,7 +7,7 @@ class SpriteComponent final : public Component
 {
 public:
 	~SpriteComponent() override;
-	SpriteComponent() noexcept;
+	SpriteComponent();
 
 	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;

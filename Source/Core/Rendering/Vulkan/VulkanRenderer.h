@@ -20,7 +20,7 @@ class Renderer : IRenderer
 	friend class VulkanResourceContext;
 public:
 	Renderer(char const * title, int winX, int winY, int w, int h, uint32_t flags);
-	~Renderer() noexcept;
+	~Renderer();
 
 	uint32_t AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandle * signalFence) final override;
 	std::vector<FramebufferHandle *> CreateBackbuffers(RenderPassHandle * renderPass) final override;

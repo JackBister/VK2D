@@ -17,8 +17,8 @@
 class Renderer : public IRenderer
 {
 public:
-	Renderer(/*ResourceManager *, Queue<RenderCommand>::Reader&&,*/ char const * title, int winX, int winY, int w, int h, uint32_t flags) noexcept;
-	~Renderer() noexcept;
+	Renderer(/*ResourceManager *, Queue<RenderCommand>::Reader&&,*/ char const * title, int winX, int winY, int w, int h, uint32_t flags);
+	~Renderer();
 	
 	uint32_t AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandle * signalFence) final override;
 	std::vector<FramebufferHandle *> CreateBackbuffers(RenderPassHandle * renderPass) final override;
@@ -32,7 +32,7 @@ public:
 	int abortCode = 0;
 
 private:
-	void DrainQueue() noexcept;
+	void DrainQueue();
 	void RenderThread(SDL_GLContext ctx);
 
 	bool isAborting = false;

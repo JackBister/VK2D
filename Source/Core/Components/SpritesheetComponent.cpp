@@ -70,7 +70,8 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 			};
 
 			ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor img_descriptor = {
-				img->GetImageHandle()
+				img->GetSampler(),
+				img->GetImageView()
 			};
 
 			ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {

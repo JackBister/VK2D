@@ -34,7 +34,7 @@ SpriteComponent::~SpriteComponent()
 	});
 }
 
-SpriteComponent::SpriteComponent() noexcept
+SpriteComponent::SpriteComponent()
 {
 	receiveTicks = false;
 }
@@ -68,7 +68,8 @@ Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager,
 			};
 
 			ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor img_descriptor = {
-				img->GetImageHandle()
+				img->GetSampler(),
+				img->GetImageView()
 			};
 
 			ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
@@ -121,7 +122,7 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 			frameInfo[i].preRenderCommandContext = std::move(preRenderCommands[i]);
 		}
 	} else if (name == "PreRenderPass") {
-		if (hasCreatedLocalResources && sprite.image->GetImageHandle()) {
+		if (hasCreatedLocalResources && sprite.image->GetImage()) {
 			auto camera = (SubmittedCamera *)args["camera"].asLuaSerializable;
 			frameInfo[GameModule::GetCurrFrame()].pvm = camera->projection * camera->view * entity->transform.GetLocalToWorld();
 			auto ctx = frameInfo[GameModule::GetCurrFrame()].preRenderCommandContext;
@@ -131,8 +132,8 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 			GameModule::SubmitCommandBuffer(ctx);
 		}
 	} else if (name == "MainRenderPass") {
-		if (hasCreatedLocalResources && sprite.image->GetImageHandle()) {
-			auto img = sprite.image->GetImageHandle();
+		if (hasCreatedLocalResources && sprite.image->GetImage()) {
+			auto img = sprite.image->GetImage();
 			auto camera = (SubmittedCamera *)args["camera"].asLuaSerializable;
 			auto ctx = frameInfo[GameModule::GetCurrFrame()].mainCommandContext;
 			GameModule::BeginSecondaryCommandContext(ctx);

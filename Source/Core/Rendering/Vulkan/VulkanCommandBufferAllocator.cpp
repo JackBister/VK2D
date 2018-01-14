@@ -24,6 +24,7 @@ void VulkanCommandBufferAllocator::DestroyContext(CommandBuffer * ctx)
 	assert(ctx != nullptr);
 	auto nativeHandle = (VulkanCommandBuffer *)ctx;
 	vkFreeCommandBuffers(device, commandPool, 1, &nativeHandle->buffer);
+	delete nativeHandle;
 }
 
 void VulkanCommandBufferAllocator::Reset()
