@@ -50,7 +50,7 @@ solution "Vulkan2D"
 
 		filter "Release"
 			libdirs { staticPlatformDirectory .. "lib", platformdirectory .. "lib" }
-			links { "glew32", "SDL2", "BulletDynamics", "BulletCollision", "LinearMath", "rttr_core" }
+			links { "glew32", "SDL2", "BulletDynamics", "BulletCollision", "LinearMath" }
 
 		--CUSTOM BUILD COMMANDS--
 		filter { 'files:**.vert' }
