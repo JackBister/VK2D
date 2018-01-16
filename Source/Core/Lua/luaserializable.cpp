@@ -1,11 +1,13 @@
+#if 0
 #include "Core/Lua/luaserializable.h"
 
 #include <algorithm>
 
+/*
 #include "rttr/instance.h"
 #include "rttr/registration.h"
 #include "rttr/variant.h"
-
+*/
 #include "Core/eventarg.h"
 #include "Core/transform.h"
 
@@ -14,11 +16,13 @@ std::string rttrCharPtrToString(char const * v, bool& ok) {
 	return std::string(v);
 }
 
+/*
 RTTR_REGISTRATION
 {
 	rttr::registration::class_<LuaSerializable>("LuaSerializable");
 	rttr::type::register_converter_func(rttrCharPtrToString);
 }
+*/
 
 static int TypeError(lua_State * L) {
 	lua_pushstring(L, "Error while casting to lua value.\n");
@@ -26,6 +30,7 @@ static int TypeError(lua_State * L) {
 	return 1;
 }
 
+/*
 static rttr::variant VPullFromLua(lua_State * L) {
 	if (lua_isboolean(L, 3)) {
 		return lua_toboolean(L, 3);
@@ -184,7 +189,7 @@ struct LuaMethod {
 		return 1;
 	}
 };
-
+*/
 int LuaSerializable::LuaIndex(lua_State * L)
 {
 	const char * idx = lua_tostring(L, 2);
@@ -205,9 +210,9 @@ int LuaSerializable::LuaIndex(lua_State * L)
 			lua_pushnil(L);
 			return 1;
 		}
-		auto mem = lua_newuserdata(L, sizeof(LuaMethod));
-		auto luaMeth = new (mem) LuaMethod(meths);
-
+//		auto mem = lua_newuserdata(L, sizeof(LuaMethod));
+//		auto luaMeth = new (mem) LuaMethod(meths);
+/*
 		if (luaL_getmetatable(L, "__LuaMethodInvokeMT") == LUA_TNIL) {
 			lua_pop(L, 1);
 			luaL_newmetatable(L, "__LuaMethodInvokeMT");
@@ -215,7 +220,7 @@ int LuaSerializable::LuaIndex(lua_State * L)
 			lua_setfield(L, -2, "__call");
 		}
 		lua_setmetatable(L, -2);
-
+*/
 		return 1;
 	}
 
@@ -226,7 +231,8 @@ int LuaSerializable::LuaIndex(lua_State * L)
 		return 1;
 	}
 
-	return VPushToLua(L, val, prop.get_type());
+	return 0;
+	//return VPushToLua(L, val, prop.get_type());
 }
 
 int LuaSerializable::LuaNewIndex(lua_State * L)
@@ -244,7 +250,8 @@ int LuaSerializable::LuaNewIndex(lua_State * L)
 		lua_error(L);
 		return 0;
 	}
-
+	return 0;
+	/*
 	auto val = VPullFromLua(L);
 	if (!val.is_valid()) {
 		lua_pushstring(L, "__newindex: unable to pull value from Lua.");
@@ -263,6 +270,7 @@ int LuaSerializable::LuaNewIndex(lua_State * L)
 		lua_error(L);
 	}
 	return 0;
+	*/
 }
 
 void LuaSerializable::PushToLua(void * Lx)
@@ -426,4 +434,5 @@ int LuaSerializable<T>::StaticStackLuaNewIndex(lua_State * L)
 
 template<typename T>
 LuaSerializable<T>::~LuaSerializable() {}
+#endif
 #endif

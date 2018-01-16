@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/DllExport.h"
 #include "Core/Queue.h"
 
 class CameraComponent;
@@ -30,15 +31,17 @@ namespace GameModule {
 	void DeserializePhysics(std::string const&);
 	void DestroySecondaryCommandContexts(std::vector<CommandBuffer *>);
 	//TODO:
-	Input * GetInput();
+	EAPI Input * GetInput();
 	PhysicsWorld * GetPhysicsWorld();
 	size_t GetSwapCount();
 	size_t GetCurrFrame();
 	void Init(ResourceManager * resMan, Queue<SDL_Event>::Reader&& inputQueue, Renderer * renderer);
+	void LoadDLL(std::string const&);
 	void LoadScene(std::string const&);
 	std::string SerializeInput();
 	std::string SerializePhysics();
 	void SubmitCamera(CameraComponent *);
 	void SubmitCommandBuffer(CommandBuffer *);
 	void Tick();
+	void UnloadDLL(std::string const&);
 };

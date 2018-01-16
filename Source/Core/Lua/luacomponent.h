@@ -3,13 +3,13 @@
 #include <unordered_map>
 
 #include "lua.hpp"
-#include "rttr/rttr_enable.h"
+//#include "rttr/rttr_enable.h"
 
 #include "Core/Components/component.h"
 
 class LuaComponent : public Component
 {
-	RTTR_ENABLE(Component)
+//	RTTR_ENABLE(Component)
 public:
 	LuaComponent();
 	

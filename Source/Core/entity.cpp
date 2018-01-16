@@ -6,11 +6,12 @@
 #include <vector>
 
 #include "nlohmann/json.hpp"
-#include "rttr/registration.h"
+//#include "rttr/registration.h"
 
 #include "Core/Components/component.h"
 #include "Core/scene.h"
 
+/*
 RTTR_REGISTRATION
 {
 	rttr::registration::class_<Entity>("Entity")
@@ -19,6 +20,7 @@ RTTR_REGISTRATION
 	.property("name", &Entity::name)
 	.property("transform", &Entity::transform);
 }
+*/
 
 DESERIALIZABLE_IMPL(Entity)
 

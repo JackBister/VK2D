@@ -190,7 +190,7 @@ void EventArg::PushToLua(lua_State * L)
 		lua_pushnumber(L, asDouble);
 		break;
 	case Type::LUASERIALIZABLE:
-		asLuaSerializable->PushToLua(L);
+		//asLuaSerializable->PushToLua(L);
 		break;
 	case Type::LUA_CFUNCTION:
 		lua_pushcfunction(L, asLuaCFunction);

@@ -1,9 +1,10 @@
 #include "Core/Math/mathtypes.h"
 
-#include "rttr/registration.h"
+//#include "rttr/registration.h"
 
 #include <cstring>
 
+/*
 RTTR_REGISTRATION
 {
 	rttr::registration::class_<Vec3>("Vec3")
@@ -22,3 +23,4 @@ RTTR_REGISTRATION
 	.property("z", &Quat::GetZ, &Quat::SetZ)
 	.property("w", &Quat::GetW, &Quat::SetW);
 }
+*/

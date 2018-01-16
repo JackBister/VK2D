@@ -2,10 +2,11 @@
 #include "Core/input.h"
 
 #include "nlohmann/json.hpp"
-#include "rttr/registration.h"
+//#include "rttr/registration.h"
 
 #include "Core/Lua/input_cfuncs.h"
 
+/*
 RTTR_REGISTRATION
 {
 	rttr::registration::class_<Input>("Input")
@@ -13,6 +14,7 @@ RTTR_REGISTRATION
 	.method("GetButtonDown", &Input::GetButtonDown)
 	.method("GetButtonUp", &Input::GetButtonUp);
 }
+*/
 
 Input::Input(Queue<SDL_Event>::Reader&& reader)
 	: inputQueue(std::move(reader))

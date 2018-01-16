@@ -8,7 +8,7 @@
 
 class Sprite : public LuaSerializable
 {
-	RTTR_ENABLE(LuaSerializable)
+	//RTTR_ENABLE(LuaSerializable)
 public:
 	Sprite() = default;
 	Sprite(std::shared_ptr<Image>);

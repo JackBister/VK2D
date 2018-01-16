@@ -2,13 +2,14 @@
 
 #include "glm/glm.hpp"
 #include "glm/gtc/quaternion.hpp"
-#include "rttr/rttr_enable.h"
+//#include "rttr/rttr_enable.h"
 
+#include "Core/DllExport.h"
 #include "Core/Lua/luaserializable.h"
 
-struct Vec3 : glm::vec3, LuaSerializable
+struct EAPI Vec3 : glm::vec3, LuaSerializable
 {
-	RTTR_ENABLE(LuaSerializable)
+//	RTTR_ENABLE(LuaSerializable)
 public:
 	using glm::vec3::tvec3;
 
@@ -38,9 +39,9 @@ public:
 	}
 };
 
-struct Quat : glm::quat, LuaSerializable
+struct EAPI Quat : glm::quat, LuaSerializable
 {
-	RTTR_ENABLE(LuaSerializable)
+//	RTTR_ENABLE(LuaSerializable)
 public:
 	using glm::quat::tquat;
 

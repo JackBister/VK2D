@@ -24,7 +24,7 @@ class ResourceManager;
 
 class Scene : public LuaSerializable, public Resource
 {
-	RTTR_ENABLE(LuaSerializable)
+	//RTTR_ENABLE(LuaSerializable)
 public:
 	Scene(std::string const&, ResourceManager *, std::string const&);
 
@@ -46,5 +46,6 @@ private:
 	Renderer * renderer;
 	ResourceManager * resourceManager;
 
+	std::vector<std::string> dllFileNames;
 	std::vector<Entity *> entities;
 };

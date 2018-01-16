@@ -3,6 +3,7 @@
 #include "nlohmann/json.hpp"
 #include "lua.hpp"
 
+/*
 #include "rttr/method.h"
 #include "rttr/property.h"
 #include "rttr/registration.h"
@@ -24,6 +25,7 @@ RTTR_REGISTRATION
 	.method("SetRotation", &Transform::SetRotation)
 	.method("SetScale", &Transform::SetScale);
 }
+*/
 
 glm::mat4 const& Transform::GetLocalToParent()
 {

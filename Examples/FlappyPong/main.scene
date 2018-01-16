@@ -1,4 +1,7 @@
 {
+	"dlls": [
+		"build/FlappyPong.dll"
+	],
 	"input": {
 		"type": "Input",
 		"keybinds": [
@@ -46,10 +49,6 @@
 					"type": "CameraComponent",
 					"aspect": 0.75,
 					"viewSize": 60
-				},
-				{
-					"type": "LuaComponent",
-					"file": "controller.lua"
 				}
 			]
 		},
@@ -80,8 +79,8 @@
 					"file": "white_pixel.png"
 				},
 				{
-					"type": "LuaComponent",
-					"file": "ball.lua"
+					"type": "BallComponent",
+					"moveSpeed": 100.0
 				},
 				{
 					"type": "PhysicsComponent",
@@ -122,8 +121,9 @@
 					"file": "white_pixel.png"
 				},
 				{
-					"type": "LuaComponent",
-					"file": "paddle.lua"
+					"type": "PaddleComponent",
+					"flapSpeed": 60.0,
+					"gravity": 60.0
 				},
 				{
 					"type": "PhysicsComponent",
@@ -164,8 +164,9 @@
 					"file": "white_pixel.png"
 				},
 				{
-					"type": "LuaComponent",
-					"file": "paddle.lua"
+					"type": "PaddleComponent",
+					"flapSpeed": 60.0,
+					"gravity": 60.0
 				},
 				{
 					"type": "PhysicsComponent",

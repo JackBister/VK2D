@@ -2,17 +2,19 @@
 
 #include "nlohmann/json.hpp"
 #include "lua.hpp"
-#include "rttr/registration.h"
+//#include "rttr/registration.h"
 
 #include "Core/entity.h"
 #include "Core/input.h"
 #include "Core/scene.h"
 
+/*
 RTTR_REGISTRATION
 {
 	rttr::registration::class_<LuaComponent>("LuaComponent")
 	.constructor<>();
 }
+*/
 
 COMPONENT_IMPL(LuaComponent)
 
@@ -66,18 +68,18 @@ std::string LuaComponent::Serialize() const
 void LuaComponent::OnEvent(std::string name, EventArgs eargs)
 {
 	if (name == "BeginPlay") {
-		entity->PushToLua(state);
+//		entity->PushToLua(state);
 		lua_setglobal(state, "entity_");
-		GameModule::GetInput()->PushToLua(state);
+//		GameModule::GetInput()->PushToLua(state);
 		lua_setglobal(state, "Input");
-		entity->scene->PushToLua(state);
+//		entity->scene->PushToLua(state);
 		lua_setglobal(state, "Scene");
-		entity->transform.PushToLua(state);
+//		entity->transform.PushToLua(state);
 		lua_setglobal(state, "transform");
 	}
 	args = eargs;
 	lua_getglobal(state, "OnEvent");
-	PushToLua(state);
+//	PushToLua(state);
 	lua_pushstring(state, name.c_str());
 	//Push event args
 	lua_createtable(state, 0, static_cast<int>(eargs.size()));

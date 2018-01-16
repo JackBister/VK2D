@@ -336,7 +336,7 @@ namespace GameModule {
 		}
 	}
 
-	Input * GetInput()
+	EAPI Input * GetInput()
 	{
 		return input.get();
 	}

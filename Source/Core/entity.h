@@ -14,7 +14,7 @@ class Scene;
 
 class Entity final : public LuaSerializable, public Deserializable
 {
-	RTTR_ENABLE(LuaSerializable)
+	//RTTR_ENABLE(LuaSerializable)
 public:
 	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;

@@ -3,14 +3,14 @@
 #include <vector>
 
 #include "glm/glm.hpp"
-#include "rttr/rttr_enable.h"
+//#include "rttr/rttr_enable.h"
 
 #include "Core/Components/component.h"
 #include "Core/sprite.h"
 
 class SpritesheetComponent : public Component
 {
-	RTTR_ENABLE(Component)
+//	RTTR_ENABLE(Component)
 public:
 	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;

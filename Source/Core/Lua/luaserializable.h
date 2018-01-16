@@ -3,12 +3,16 @@
 #include <assert.h>
 
 #include "lua.hpp"
+
+#include "Core/DllExport.h"
+
+/*
 #include "rttr/method.h"
 #include "rttr/property.h"
 #include "rttr/rttr_enable.h"
 #include "rttr/type.h"
 #include "rttr/variant.h"
-
+*/
 /*
 	A LuaSerializable must do the following:
 	When PushToLua is called, the LuaSerializable will put a pointer to itself at the top of the lua stack, with a metatable that allows lua to
@@ -25,14 +29,16 @@
 	of returning it assign the value at -1 to it. This function should never return anything, wether the index exists or not.
 */
 
+/*/
 int TypeError(lua_State * L);
 
 int VPushToLua(lua_State * L, rttr::variant const& v);
-
-class LuaSerializable
+*/
+class EAPI LuaSerializable
 {
-	RTTR_ENABLE()
+//	RTTR_ENABLE()
 public:
+#if 0
 	virtual ~LuaSerializable() {}
 
 	int LuaIndex(lua_State * L);
@@ -50,4 +56,5 @@ public:
 	static int StaticStackLuaIndex(lua_State * L);
 
 	static int StaticStackLuaNewIndex(lua_State * L);
+#endif
 };

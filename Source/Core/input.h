@@ -6,15 +6,16 @@
 #include <SDL2/SDL.h>
 
 #include "Core/Deserializable.h"
+#include "Core/DllExport.h"
 #include "Core/keycodes.h"
 #include "Core/Lua/luaserializable.h"
 #include "Core/Queue.h"
 
 typedef std::unordered_map<Keycode, bool, std::hash<int>> Keymap;
 
-class Input : public LuaSerializable
+class EAPI Input : public LuaSerializable
 {
-	RTTR_ENABLE(LuaSerializable)
+	//RTTR_ENABLE(LuaSerializable)
 public:
 	Input(Queue<SDL_Event>::Reader&&);
 

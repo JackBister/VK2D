@@ -5,6 +5,8 @@
 
 #include "lua.hpp"
 
+#include "Core/DllExport.h"
+
 class EventArg;
 class LuaSerializable;
 
@@ -23,7 +25,7 @@ typedef class std::unordered_map<std::string, EventArg> EventArgs;
 	the expected type.
 */
 
-class EventArg
+class EAPI EventArg
 {
 public:
 	enum Type

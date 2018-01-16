@@ -6,7 +6,7 @@
 #include <sstream>
 
 #include "nlohmann/json.hpp"
-#include "rttr/registration.h"
+//#include "rttr/registration.h"
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/entity.h"
@@ -16,12 +16,14 @@
 #include "Core/sprite.h"
 #include "Core/transform.h"
 
+/*
 RTTR_REGISTRATION
 {
 	rttr::registration::class_<Scene>("Scene")
 	.method("GetEntityByName", static_cast<Entity*(Scene::*)(std::string)>(&Scene::GetEntityByName))
 	.method("BroadcastEvent", &Scene::BroadcastEvent);
 }
+*/
 
 
 Scene::Scene(std::string const& name, ResourceManager * resMan,	std::string const& fileName)
@@ -48,6 +50,13 @@ void Scene::LoadFile(std::string const& fileName)
 		return;
 	}
 	auto const j = nlohmann::json::parse(serializedScene);
+
+	if (j.find("dlls") != j.end()) {
+		for (auto fn : j["dlls"]) {
+			dllFileNames.push_back(fn);
+			GameModule::LoadDLL(fn);
+		}
+	}
 
 	if (j.find("input") != j.end()) {
 		GameModule::DeserializeInput(j["input"].dump());
@@ -88,6 +97,10 @@ void Scene::Unload()
 		delete e;
 	}
 	entities = std::vector<Entity *>();
+	for (auto const& fn : dllFileNames) {
+		GameModule::UnloadDLL(fn);
+	}
+	dllFileNames = std::vector<std::string>();
 }
 
 Entity * Scene::GetEntityByName(std::string name)

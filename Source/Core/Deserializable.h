@@ -2,9 +2,10 @@
 #include <unordered_map>
 
 #include "Core/Allocator.h"
+#include "Core/DllExport.h"
 #include "Core/ResourceManager.h"
 
-class Deserializable
+class EAPI Deserializable
 {
 public:
 	/*
@@ -28,9 +29,20 @@ public:
 	std::string type;
 };
 
+#ifdef VK2D_DLL
+#define DESERIALIZABLE_IMPL(str)
+#elif defined(VK2D_LIB)
+#define DESERIALIZABLE_IMPL(str) static str const * _##str##Instantiate() \
+							  { \
+									if(Deserializable::Map()[#str] != nullptr) return static_cast<str const *>(Deserializable::Map()[#str]); \
+									str const * ret = new str(); Deserializable::Map()[#str] = ret; return ret; \
+							  } \
+							  extern "C" Deserializable const * _##str##StaticInst = _##str##Instantiate(); 
+#else
 #define DESERIALIZABLE_IMPL(str) static str const * _##str##Instantiate() \
 							  { \
 									if(Deserializable::Map()[#str] != nullptr) return static_cast<str const *>(Deserializable::Map()[#str]); \
 									str const * ret = new str(); Deserializable::Map()[#str] = ret; return ret; \
 							  } \
 							  static Deserializable const * _##str##StaticInst = _##str##Instantiate();
+#endif

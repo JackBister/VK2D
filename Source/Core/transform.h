@@ -5,14 +5,15 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/quaternion.hpp"
-#include "rttr/rttr_enable.h"
+//#include "rttr/rttr_enable.h"
 
+#include "Core/DllExport.h"
 #include "Core/Math/mathtypes.h"
 #include "Core/Lua/luaserializable.h"
 
-class Transform final : public LuaSerializable
+class EAPI Transform final : public LuaSerializable
 {
-	RTTR_ENABLE(LuaSerializable)
+//RTTR_ENABLE(LuaSerializable)
 public:
 	static Transform Deserialize(std::string const&);
 

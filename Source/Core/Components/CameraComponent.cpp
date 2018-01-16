@@ -2,11 +2,12 @@
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "nlohmann/json.hpp"
-#include "rttr/registration.h"
+//#include "rttr/registration.h"
 
 #include "Core/entity.h"
 #include "Core/scene.h"
 
+/*
 RTTR_REGISTRATION
 {
 	rttr::registration::class_<CameraComponent>("CameraComponent")
@@ -18,7 +19,7 @@ RTTR_REGISTRATION
 	.method("view_size", &CameraComponent::GetViewSize)
 	.method("set_view_size", &CameraComponent::SetViewSize);
 }
-
+*/
 COMPONENT_IMPL(CameraComponent)
 
 CameraComponent::CameraComponent()

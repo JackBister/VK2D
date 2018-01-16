@@ -1,11 +1,11 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
 
-#include "rttr/rttr_enable.h"
+//#include "rttr/rttr_enable.h"
 
 #include "Core/Deserializable.h"
+#include "Core/DllExport.h"
 #include "Core/eventarg.h"
 #include "Core/Lua/luaserializable.h"
 
@@ -16,9 +16,9 @@ class Entity;
 */
 #define COMPONENT_IMPL(str) DESERIALIZABLE_IMPL(str)
 
-class Component : public LuaSerializable, public Deserializable
+class EAPI Component : public LuaSerializable, public Deserializable
 {
-	RTTR_ENABLE(LuaSerializable)
+	//RTTR_ENABLE(LuaSerializable)
 public:
 	virtual ~Component();
 

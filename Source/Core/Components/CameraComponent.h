@@ -1,13 +1,13 @@
 #pragma once
 
 #include "glm/glm.hpp"
-#include "rttr/rttr_enable.h"
+//#include "rttr/rttr_enable.h"
 
 #include "Core/Components/component.h"
 
 class CameraComponent : public Component
 {
-	RTTR_ENABLE(Component)
+//	RTTR_ENABLE(Component)
 public:
 	CameraComponent();
 
