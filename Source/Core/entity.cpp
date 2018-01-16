@@ -6,21 +6,9 @@
 #include <vector>
 
 #include "nlohmann/json.hpp"
-//#include "rttr/registration.h"
 
 #include "Core/Components/component.h"
 #include "Core/scene.h"
-
-/*
-RTTR_REGISTRATION
-{
-	rttr::registration::class_<Entity>("Entity")
-	.method("FireEvent", &Entity::FireEvent)
-	.method("GetComponent", &Entity::GetComponent)
-	.property("name", &Entity::name)
-	.property("transform", &Entity::transform);
-}
-*/
 
 DESERIALIZABLE_IMPL(Entity)
 

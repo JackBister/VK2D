@@ -5,15 +5,12 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/quaternion.hpp"
-//#include "rttr/rttr_enable.h"
 
 #include "Core/DllExport.h"
 #include "Core/Math/mathtypes.h"
-#include "Core/Lua/luaserializable.h"
 
-class EAPI Transform final : public LuaSerializable
+class EAPI Transform final
 {
-//RTTR_ENABLE(LuaSerializable)
 public:
 	static Transform Deserialize(std::string const&);
 
@@ -28,7 +25,6 @@ public:
 
 	void SetParent(Transform *);
 	void SetPosition(Vec3 const&);
-	void SetPosition(Vec3 *);
 	void SetRotation(Quat const&);
 	void SetScale(Vec3 const&);
 

@@ -53,7 +53,7 @@ void BallComponent::OnEvent(std::string name, EventArgs args)
 
 		entity->transform.SetPosition(position);
 	} else if (name == "OnCollisionStart") {
-		auto collisionInfo = (CollisionInfo *)args["info"].asLuaSerializable;
+		auto collisionInfo = (CollisionInfo *)args["info"].asPointer;
 		if (collisionInfo->normals.size() == 0) {
 			printf("[WARNING] OnCollisionStart with no normals.");
 			velocityDir.x = -velocityDir.x;

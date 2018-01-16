@@ -2,19 +2,6 @@
 #include "Core/input.h"
 
 #include "nlohmann/json.hpp"
-//#include "rttr/registration.h"
-
-#include "Core/Lua/input_cfuncs.h"
-
-/*
-RTTR_REGISTRATION
-{
-	rttr::registration::class_<Input>("Input")
-	.method("GetButton", &Input::GetButton)
-	.method("GetButtonDown", &Input::GetButtonDown)
-	.method("GetButtonUp", &Input::GetButtonUp);
-}
-*/
 
 Input::Input(Queue<SDL_Event>::Reader&& reader)
 	: inputQueue(std::move(reader))
@@ -25,6 +12,7 @@ void Input::Frame()
 {
 	for (auto const& kbp : downKeys) {
 		//If key was down last frame, it's held this frame
+		//TODO: Maybe there needs to be a delay of 1 or 2 frames (or at higher FPS people will always be holding)
 		if (kbp.second) {
 			heldKeys[kbp.first] = true;
 		}

@@ -2,78 +2,17 @@
 
 #include "glm/glm.hpp"
 #include "glm/gtc/quaternion.hpp"
-//#include "rttr/rttr_enable.h"
 
 #include "Core/DllExport.h"
-#include "Core/Lua/luaserializable.h"
 
-struct EAPI Vec3 : glm::vec3, LuaSerializable
+struct EAPI Vec3 : glm::vec3
 {
-//	RTTR_ENABLE(LuaSerializable)
 public:
 	using glm::vec3::tvec3;
-
-	//TODO: Neccessary for now because rttr can't figure out the raw properties without explicitly upcasting
-	inline float GetX() const {
-		return x;
-	}
-
-	inline void SetX(float x) {
-		this->x = x;
-	}
-
-	inline float GetY() const {
-		return y;
-	}
-
-	inline void SetY(float y) {
-		this->y = y;
-	}
-
-	inline float GetZ() const {
-		return z;
-	}
-
-	inline void SetZ(float z) {
-		this->z = z;
-	}
 };
 
-struct EAPI Quat : glm::quat, LuaSerializable
+struct EAPI Quat : glm::quat
 {
-//	RTTR_ENABLE(LuaSerializable)
 public:
 	using glm::quat::tquat;
-
-	inline float GetX() const {
-		return x;
-	}
-
-	inline void SetX(float x) {
-		this->x = x;
-	}
-
-	inline float GetY() const {
-		return y;
-	}
-
-	inline void SetY(float y) {
-		this->y = y;
-	}
-
-	inline float GetZ() const {
-		return z;
-	}
-
-	inline void SetZ(float z) {
-		this->z = z;
-	}
-
-	inline float GetW() const {
-		return w;
-	}
-
-	inline void SetW(float w) {
-		this->w = w;
-	}
 };

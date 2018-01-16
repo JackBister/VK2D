@@ -6,7 +6,6 @@
 #include <sstream>
 
 #include "nlohmann/json.hpp"
-//#include "rttr/registration.h"
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/entity.h"
@@ -15,16 +14,6 @@
 #include "Core/Rendering/Renderer.h"
 #include "Core/sprite.h"
 #include "Core/transform.h"
-
-/*
-RTTR_REGISTRATION
-{
-	rttr::registration::class_<Scene>("Scene")
-	.method("GetEntityByName", static_cast<Entity*(Scene::*)(std::string)>(&Scene::GetEntityByName))
-	.method("BroadcastEvent", &Scene::BroadcastEvent);
-}
-*/
-
 
 Scene::Scene(std::string const& name, ResourceManager * resMan,	std::string const& fileName)
 	: resourceManager(resMan)

@@ -123,7 +123,7 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 		}
 	} else if (name == "PreRenderPass") {
 		if (hasCreatedLocalResources && sprite.image->GetImage()) {
-			auto camera = (SubmittedCamera *)args["camera"].asLuaSerializable;
+			auto camera = (SubmittedCamera *)args["camera"].asPointer;
 			frameInfo[GameModule::GetCurrFrame()].pvm = camera->projection * camera->view * entity->transform.GetLocalToWorld();
 			auto ctx = frameInfo[GameModule::GetCurrFrame()].preRenderCommandContext;
 			GameModule::BeginSecondaryCommandContext(ctx);
@@ -134,7 +134,7 @@ void SpriteComponent::OnEvent(std::string name, EventArgs args)
 	} else if (name == "MainRenderPass") {
 		if (hasCreatedLocalResources && sprite.image->GetImage()) {
 			auto img = sprite.image->GetImage();
-			auto camera = (SubmittedCamera *)args["camera"].asLuaSerializable;
+			auto camera = (SubmittedCamera *)args["camera"].asPointer;
 			auto ctx = frameInfo[GameModule::GetCurrFrame()].mainCommandContext;
 			GameModule::BeginSecondaryCommandContext(ctx);
 			CommandBuffer::Viewport viewport = {

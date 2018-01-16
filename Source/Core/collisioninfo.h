@@ -2,10 +2,9 @@
 #include <vector>
 
 #include "Core/entity.h"
-#include "Core/Lua/luaserializable.h"
 #include "Core/Math/mathtypes.h"
 
-class CollisionInfo : public LuaSerializable
+class CollisionInfo
 {
 public:
 	Entity * other;

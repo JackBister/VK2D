@@ -39,13 +39,13 @@ solution "Vulkan2D"
 		objdir "build"
 		targetdir "build"
 
-		links { "lua", "opengl32", "vulkan-1" }
+		links { "opengl32", "vulkan-1" }
 
 		sysincludedirs { "include",  staticPlatformDirectory .. "include", platformdirectory .. "include" }
 
 		filter "Debug"
 			libdirs { staticPlatformDirectory .. "debug/lib", platformdirectory .. "debug/lib" }
-			links { "glew32d", "SDL2d",  "BulletDynamics_Debug", "BulletCollision_Debug", "LinearMath_Debug", "rttr_core_d" }
+			links { "glew32d", "SDL2d",  "BulletDynamics_Debug", "BulletCollision_Debug", "LinearMath_Debug" }
 			symbols "On"
 
 		filter "Release"

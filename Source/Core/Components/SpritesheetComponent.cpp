@@ -1,19 +1,10 @@
 #include "Core/Components/spritesheetcomponent.h"
 
 #include "nlohmann/json.hpp"
-//#include "rttr/registration.h"
 
 #include "Core/entity.h"
 #include "Core/scene.h"
 #include "Core/sprite.h"
-
-/*
-RTTR_REGISTRATION
-{
-	rttr::registration::class_<SpritesheetComponent>("SpritesheetComponent")
-	.property("is_flipped_", &SpritesheetComponent::is_flipped_);
-}
-*/
 
 COMPONENT_IMPL(SpritesheetComponent)
 

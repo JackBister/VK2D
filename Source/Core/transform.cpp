@@ -1,31 +1,6 @@
 #include "Core/transform.h"
 
 #include "nlohmann/json.hpp"
-#include "lua.hpp"
-
-/*
-#include "rttr/method.h"
-#include "rttr/property.h"
-#include "rttr/registration.h"
-#include "rttr/variant.h"
-
-RTTR_REGISTRATION
-{
-	rttr::registration::class_<Transform>("Transform")
-	.constructor<>()
-	.method("GetLocalToParent", &Transform::GetLocalToParent)
-	.method("GetLocalToWorld", &Transform::GetLocalToWorld)
-	.method("GetParent", &Transform::GetParent)
-	.method("GetPosition", &Transform::GetPosition)
-	.method("GetRotation", &Transform::GetRotation)
-	.method("GetScale", &Transform::GetScale)
-	.method("SetParent", &Transform::SetParent)
-	.method("SetPosition", static_cast<void(Transform::*)(Vec3 const&)>(&Transform::SetPosition))
-	.method("SetPosition", static_cast<void(Transform::*)(Vec3 *)>(&Transform::SetPosition))
-	.method("SetRotation", &Transform::SetRotation)
-	.method("SetScale", &Transform::SetScale);
-}
-*/
 
 glm::mat4 const& Transform::GetLocalToParent()
 {
@@ -101,12 +76,6 @@ void Transform::SetParent(Transform * p)
 void Transform::SetPosition(Vec3 const& p)
 {
 	position = p;
-	isParentDirty = true;
-	isWorldDirty = true;
-}
-
-void Transform::SetPosition(Vec3 * p) {
-	position = *p;
 	isParentDirty = true;
 	isWorldDirty = true;
 }

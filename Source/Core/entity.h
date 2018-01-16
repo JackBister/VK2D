@@ -6,15 +6,13 @@
 
 #include "Core/Deserializable.h"
 #include "Core/eventarg.h"
-#include "Core/Lua/luaserializable.h"
 #include "Core/transform.h"
 
 class Component;
 class Scene;
 
-class Entity final : public LuaSerializable, public Deserializable
+class Entity final : public Deserializable
 {
-	//RTTR_ENABLE(LuaSerializable)
 public:
 	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;

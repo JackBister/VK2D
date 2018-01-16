@@ -9,7 +9,6 @@
 #include "Core/eventarg.h"
 #include "Core/GameModule.h"
 #include "Core/input.h"
-#include "Core/Lua/luaserializable.h"
 #include "Core/Queue.h"
 #include "Core/Rendering/RenderCommand.h"
 #include "Core/Rendering/Context/RenderContext.h"
@@ -22,9 +21,8 @@ class Entity;
 class PhysicsWorld;
 class ResourceManager;
 
-class Scene : public LuaSerializable, public Resource
+class Scene : public Resource
 {
-	//RTTR_ENABLE(LuaSerializable)
 public:
 	Scene(std::string const&, ResourceManager *, std::string const&);
 

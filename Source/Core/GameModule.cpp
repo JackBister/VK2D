@@ -385,7 +385,7 @@ namespace GameModule {
 
 	void SubmitCamera(CameraComponent * cam)
 	{
-		frameInfo[currFrameInfoIdx].cameras_to_submit_.emplace_back(cam->GetView(), cam->GetProjection());
+		frameInfo[currFrameInfoIdx].cameras_to_submit_.push_back({cam->GetView(), cam->GetProjection()});
 	}
 
 	void SubmitCommandBuffer(CommandBuffer * ctx)

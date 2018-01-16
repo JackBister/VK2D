@@ -9,11 +9,9 @@ The following libraries are currently used by the engine:
 * [Bullet3 2.87](https://github.com/bulletphysics/bullet3)
 * [GLEW 2.1.0](http://glew.sourceforge.net/)
 * [GLM](https://github.com/g-truc/glm)
-* [Lua 5.3](https://www.lua.org/)
 * [moodycamel::ConcurrentQueue](https://github.com/cameron314/concurrentqueue)
 * [nlohmann::json](https://github.com/nlohmann/json)
 * [SDL 2.0.7](https://www.libsdl.org/index.php)
-* [rttr 0.9.5](https://github.com/rttrorg/rttr)
 
 During a pre-build step, GLSL shaders are compiled to SPIR-V and transformed into headers included directly by the engine. For this compilation step, the following are used:
 

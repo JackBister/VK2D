@@ -2,13 +2,11 @@
 #include <vector>
 
 #include "btBulletDynamicsCommon.h"
-//#include "rttr/rttr_enable.h"
 
 #include "Core/Components/component.h"
 
 class PhysicsComponent : public Component, public btMotionState
 {
-//	RTTR_ENABLE(Component)
 public:
 	~PhysicsComponent() override;
 

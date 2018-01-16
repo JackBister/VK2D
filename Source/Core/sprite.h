@@ -3,12 +3,10 @@
 
 #include <glm/glm.hpp>
 
-#include "Core/Lua/luaserializable.h"
 #include "Core/Rendering/Image.h"
 
-class Sprite : public LuaSerializable
+class Sprite
 {
-	//RTTR_ENABLE(LuaSerializable)
 public:
 	Sprite() = default;
 	Sprite(std::shared_ptr<Image>);
