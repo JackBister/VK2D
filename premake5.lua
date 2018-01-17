@@ -46,11 +46,13 @@ solution "Vulkan2D"
 		filter "Debug"
 			libdirs { staticPlatformDirectory .. "debug/lib", platformdirectory .. "debug/lib" }
 			links { "glew32d", "SDL2d",  "BulletDynamics_Debug", "BulletCollision_Debug", "LinearMath_Debug" }
+			optimize "Off"
 			symbols "On"
 
 		filter "Release"
 			libdirs { staticPlatformDirectory .. "lib", platformdirectory .. "lib" }
 			links { "glew32", "SDL2", "BulletDynamics", "BulletCollision", "LinearMath" }
+			optimize "Full"
 
 		--CUSTOM BUILD COMMANDS--
 		filter { 'files:**.vert' }
