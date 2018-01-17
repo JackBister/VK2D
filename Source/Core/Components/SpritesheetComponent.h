@@ -10,10 +10,12 @@
 class SpritesheetComponent : public Component
 {
 public:
+	SpritesheetComponent() { receiveTicks = false; }
+
 	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;
 	glm::vec2 get_frame_size() const;
-	void OnEvent(std::string, EventArgs) override;
+	void OnEvent(HashedString, EventArgs) override;
 	void PlayAnimationByName(std::string name);
 
 	Sprite sprite_;

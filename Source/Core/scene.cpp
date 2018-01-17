@@ -102,7 +102,7 @@ Entity * Scene::GetEntityByName(std::string name)
 	return nullptr;
 }
 
-void Scene::BroadcastEvent(std::string ename, EventArgs eas)
+void Scene::BroadcastEvent(HashedString ename, EventArgs eas)
 {
 	for (auto& ep : entities) {
 		ep->FireEvent(ename, eas);

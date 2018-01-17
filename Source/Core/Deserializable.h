@@ -3,6 +3,7 @@
 
 #include "Core/Allocator.h"
 #include "Core/DllExport.h"
+#include "Core/HashedString.h"
 #include "Core/ResourceManager.h"
 
 class EAPI Deserializable

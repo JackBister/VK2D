@@ -4,11 +4,12 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Core/Components/Component.h"
 #include "Core/Deserializable.h"
 #include "Core/eventarg.h"
+#include "Core/HashedString.h"
 #include "Core/transform.h"
 
-class Component;
 class Scene;
 
 class Entity final : public Deserializable
@@ -16,7 +17,7 @@ class Entity final : public Deserializable
 public:
 	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;
-	void FireEvent(std::string name, EventArgs args = {});
+	void FireEvent(HashedString name, EventArgs args = {});
 	Component * GetComponent(std::string type) const;
 
 	std::string name;

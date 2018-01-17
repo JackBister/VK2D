@@ -7,12 +7,12 @@
 class CameraComponent : public Component
 {
 public:
-	CameraComponent();
+	CameraComponent() { receiveTicks = true; };
 
 	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;
 
-	void OnEvent(std::string name, EventArgs args = {}) override;
+	void OnEvent(HashedString name, EventArgs args = {}) override;
 
 	glm::mat4 const& GetProjection();
 	glm::mat4 const& GetView();

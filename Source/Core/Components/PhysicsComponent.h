@@ -8,12 +8,13 @@
 class PhysicsComponent : public Component, public btMotionState
 {
 public:
+	PhysicsComponent() { receiveTicks = false; }
 	~PhysicsComponent() override;
 
 	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;
 
-	void OnEvent(std::string name, EventArgs args = {}) override;
+	void OnEvent(HashedString name, EventArgs args = {}) override;
 
 	/*
 		Set the transform of the physics object in the "bullet world".

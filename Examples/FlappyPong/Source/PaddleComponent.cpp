@@ -8,11 +8,6 @@
 
 COMPONENT_IMPL(PaddleComponent)
 
-PaddleComponent::PaddleComponent()
-{
-	receiveTicks = true;
-}
-
 Deserializable * PaddleComponent::Deserialize(ResourceManager *, std::string const& str) const
 {
 	auto ret = new PaddleComponent();
@@ -37,7 +32,7 @@ std::string PaddleComponent::Serialize() const
 	return j.dump();
 }
 
-void PaddleComponent::OnEvent(std::string name, EventArgs args)
+void PaddleComponent::OnEvent(HashedString name, EventArgs args)
 {
 	if (name == "Tick") {
 		auto position = entity->transform.GetPosition();

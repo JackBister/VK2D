@@ -12,7 +12,7 @@
 
 DESERIALIZABLE_IMPL(Entity)
 
-void Entity::FireEvent(std::string ename, EventArgs args)
+void Entity::FireEvent(HashedString ename, EventArgs args)
 {
 	for (auto const& c : components) {
 		if (c->isActive) {

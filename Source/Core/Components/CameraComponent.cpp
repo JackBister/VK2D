@@ -8,11 +8,6 @@
 
 COMPONENT_IMPL(CameraComponent)
 
-CameraComponent::CameraComponent()
-{
-	receiveTicks = true;
-}
-
 float CameraComponent::GetAspect()
 {
 	return aspect;
@@ -75,7 +70,7 @@ std::string CameraComponent::Serialize() const
 	return j.dump();
 }
 
-void CameraComponent::OnEvent(std::string name, EventArgs args)
+void CameraComponent::OnEvent(HashedString name, EventArgs args)
 {
 	if (name == "Tick") {
 		GameModule::SubmitCamera(this);

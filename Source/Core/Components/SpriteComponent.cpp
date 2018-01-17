@@ -34,11 +34,6 @@ SpriteComponent::~SpriteComponent()
 	});
 }
 
-SpriteComponent::SpriteComponent()
-{
-	receiveTicks = false;
-}
-
 Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager, std::string const& str) const
 {
 	SpriteComponent * ret = new SpriteComponent();
@@ -111,7 +106,7 @@ std::string SpriteComponent::Serialize() const
 	return j.dump();
 }
 
-void SpriteComponent::OnEvent(std::string name, EventArgs args)
+void SpriteComponent::OnEvent(HashedString name, EventArgs args)
 {
 	if (name == "BeginPlay") {
 		frameInfo = std::vector<FrameInfo>(GameModule::GetSwapCount());

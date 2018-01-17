@@ -67,7 +67,9 @@ int main(int argc, char *argv[])
 	ResourceManager resMan(&renderer);
 	auto inputWriter = inputQueue.GetWriter();
 
+#ifdef _DEBUG
 	SetThreadName(std::this_thread::get_id(), "Main Thread");
+#endif
 
 	GameModule::Init(&resMan, inputQueue.GetReader(), &renderer);
 

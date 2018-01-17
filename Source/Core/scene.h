@@ -7,6 +7,7 @@
 
 #include "Core/dtime.h"
 #include "Core/eventarg.h"
+#include "Core/HashedString.h"
 #include "Core/GameModule.h"
 #include "Core/input.h"
 #include "Core/Queue.h"
@@ -33,7 +34,7 @@ public:
 	/*
 		Sends an event to all entities.
 	*/
-	void BroadcastEvent(std::string ename, EventArgs eas = {});
+	void BroadcastEvent(HashedString ename, EventArgs eas = {});
 
 	/*
 		Returns the entity with the given name, or nullptr if an entity with that name does not exist.

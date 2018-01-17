@@ -116,7 +116,7 @@ std::string PhysicsComponent::Serialize() const
 	return j.dump();
 }
 
-void PhysicsComponent::OnEvent(std::string name, EventArgs args)
+void PhysicsComponent::OnEvent(HashedString name, EventArgs args)
 {
 	if (name == "BeginPlay") {
 		btVector3 localInertia;

@@ -42,7 +42,6 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 	ret->is_flipped_ = false;
 
 	{
-		//resourceManager->PushRenderCommand(RenderCommand(RenderCommand::CreateResourceParams([ret, img](ResourceCreationContext& ctx) {
 		resourceManager->CreateResources([ret, img](ResourceCreationContext& ctx) {
 			std::vector<float> full_uv{
 				0.f, 0.f,
@@ -86,7 +85,6 @@ Deserializable * SpritesheetComponent::Deserialize(ResourceManager * resourceMan
 			});
 
 			ret->has_created_local_resources_ = true;
-			//})));
 		});
 	}
 	if (!has_created_resources_) {
@@ -113,7 +111,7 @@ glm::vec2 SpritesheetComponent::get_frame_size() const
 	return frame_size_;
 }
 
-void SpritesheetComponent::OnEvent(std::string name, EventArgs args)
+void SpritesheetComponent::OnEvent(HashedString name, EventArgs args)
 {
 	if (name == "BeginPlay") {
 		sprite_.minUv = min_uvs_[current_index_];

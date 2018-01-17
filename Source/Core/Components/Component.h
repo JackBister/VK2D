@@ -5,6 +5,7 @@
 #include "Core/Deserializable.h"
 #include "Core/DllExport.h"
 #include "Core/eventarg.h"
+#include "Core/HashedString.h"
 
 class Entity;
 
@@ -18,7 +19,7 @@ class EAPI Component : public Deserializable
 public:
 	virtual ~Component();
 
-	virtual void OnEvent(std::string name, EventArgs args = {}) = 0;
+	virtual void OnEvent(HashedString name, EventArgs args = {}) = 0;
 
 	Entity * entity;
 	bool isActive = true;

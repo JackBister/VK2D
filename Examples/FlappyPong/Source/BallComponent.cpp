@@ -8,11 +8,6 @@
 
 COMPONENT_IMPL(BallComponent)
 
-BallComponent::BallComponent()
-{
-	receiveTicks = true;
-}
-
 Deserializable * BallComponent::Deserialize(ResourceManager *, std::string const& str) const
 {
 	auto ret = new BallComponent();
@@ -32,7 +27,7 @@ std::string BallComponent::Serialize() const
 	return j.dump();
 }
 
-void BallComponent::OnEvent(std::string name, EventArgs args)
+void BallComponent::OnEvent(HashedString name, EventArgs args)
 {
 	if (name == "BeginPlay") {
 		velocityDir = glm::vec2((float)rand() / (float)RAND_MAX, (float)rand() / (float)RAND_MAX);
