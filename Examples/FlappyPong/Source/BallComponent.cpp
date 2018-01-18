@@ -6,9 +6,9 @@
 #include "Core/CollisionInfo.h"
 #include "Core/Entity.h"
 
-COMPONENT_IMPL(BallComponent)
+COMPONENT_IMPL(BallComponent, &BallComponent::s_Deserialize)
 
-Deserializable * BallComponent::Deserialize(ResourceManager *, std::string const& str) const
+Deserializable * BallComponent::s_Deserialize(ResourceManager *, std::string const& str)
 {
 	auto ret = new BallComponent();
 	auto j = nlohmann::json::parse(str);

@@ -10,9 +10,10 @@
 class SpritesheetComponent : public Component
 {
 public:
+	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+
 	SpritesheetComponent() { receiveTicks = false; }
 
-	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;
 	glm::vec2 get_frame_size() const;
 	void OnEvent(HashedString, EventArgs) override;

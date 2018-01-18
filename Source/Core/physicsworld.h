@@ -14,7 +14,8 @@ class Entity;
 class PhysicsWorld : public Deserializable
 {
 public:
-	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
+	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+
 	std::string Serialize() const override;
 	void SetGravity(Vec3 const&);
 

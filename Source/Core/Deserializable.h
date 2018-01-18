@@ -13,7 +13,7 @@ public:
 		When Deserialize is called, a new object must be allocated using the provided allocator and the information contained in str
 		must be deserialized into the new object. The new object is then returned.
 	*/
-	virtual Deserializable * Deserialize(ResourceManager * resourceManager, std::string const& str) const = 0;
+	//virtual Deserializable * Deserialize(ResourceManager * resourceManager, std::string const& str) const = 0;
 
 	/*
 		Serializes an object into a format suitable for storing in a scene file (currently JSON)
@@ -25,25 +25,25 @@ public:
 	*/
 	static Deserializable * DeserializeString(ResourceManager * resourceManager, std::string const& str);
 
-	static std::unordered_map<std::string, Deserializable const *>& Map();
+	static std::unordered_map <std::string, std::function<Deserializable *(ResourceManager *, std::string const&)>>& Map();
 
 	std::string type;
 };
 
 #ifdef VK2D_DLL
-#define DESERIALIZABLE_IMPL(str)
+#define DESERIALIZABLE_IMPL(str, fn)
 #elif defined(VK2D_LIB)
-#define DESERIALIZABLE_IMPL(str) static str const * _##str##Instantiate() \
+#define DESERIALIZABLE_IMPL(str, fn) static bool _##str##Instantiate() \
 							  { \
-									if(Deserializable::Map()[#str] != nullptr) return static_cast<str const *>(Deserializable::Map()[#str]); \
-									str const * ret = new str(); Deserializable::Map()[#str] = ret; return ret; \
+									Deserializable::Map()[#str] = fn; \
+									return true; \
 							  } \
-							  extern "C" Deserializable const * _##str##StaticInst = _##str##Instantiate(); 
+							  extern "C" bool _##str##StaticInst = _##str##Instantiate();
 #else
-#define DESERIALIZABLE_IMPL(str) static str const * _##str##Instantiate() \
+#define DESERIALIZABLE_IMPL(str, fn) static bool _##str##Instantiate() \
 							  { \
-									if(Deserializable::Map()[#str] != nullptr) return static_cast<str const *>(Deserializable::Map()[#str]); \
-									str const * ret = new str(); Deserializable::Map()[#str] = ret; return ret; \
+									Deserializable::Map()[#str] = fn; \
+									return true; \
 							  } \
-							  static Deserializable const * _##str##StaticInst = _##str##Instantiate();
+							  static bool _##str##StaticInst = _##str##Instantiate();
 #endif

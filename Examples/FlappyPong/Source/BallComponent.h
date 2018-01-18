@@ -4,9 +4,10 @@
 class BallComponent : public Component
 {
 public:
+	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+
 	BallComponent() { receiveTicks = true; };
 
-	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;
 
 	void OnEvent(HashedString name, EventArgs args = {}) override;

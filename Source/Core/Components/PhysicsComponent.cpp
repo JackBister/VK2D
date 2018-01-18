@@ -7,7 +7,7 @@
 #include "Core/physicsworld.h"
 #include "Core/scene.h"
 
-COMPONENT_IMPL(PhysicsComponent)
+COMPONENT_IMPL(PhysicsComponent, &PhysicsComponent::s_Deserialize)
 
 BroadphaseNativeTypes DeserializeShapeType(std::string s)
 {
@@ -45,7 +45,7 @@ PhysicsComponent::~PhysicsComponent()
 	GameModule::GetPhysicsWorld()->world->removeRigidBody(rigidBody.get());
 }
 
-Deserializable * PhysicsComponent::Deserialize(ResourceManager * resourceManager, std::string const& str) const
+Deserializable * PhysicsComponent::s_Deserialize(ResourceManager * resourceManager, std::string const& str)
 {
 	PhysicsComponent * ret = new PhysicsComponent();
 	auto j = nlohmann::json::parse(str);

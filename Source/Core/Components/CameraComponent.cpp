@@ -6,7 +6,7 @@
 #include "Core/entity.h"
 #include "Core/scene.h"
 
-COMPONENT_IMPL(CameraComponent)
+COMPONENT_IMPL(CameraComponent, CameraComponent::s_Deserialize)
 
 float CameraComponent::GetAspect()
 {
@@ -50,7 +50,7 @@ glm::mat4 const& CameraComponent::GetView()
 	return view;
 }
 
-Deserializable * CameraComponent::Deserialize(ResourceManager * resourceManager, std::string const& str) const
+Deserializable * CameraComponent::s_Deserialize(ResourceManager * resourceManager, std::string const& str)
 {
 	CameraComponent * ret = new CameraComponent();
 	auto const j = nlohmann::json::parse(str);

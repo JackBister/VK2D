@@ -8,10 +8,11 @@
 class PhysicsComponent : public Component, public btMotionState
 {
 public:
+	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+
 	PhysicsComponent() { receiveTicks = false; }
 	~PhysicsComponent() override;
 
-	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;
 
 	void OnEvent(HashedString name, EventArgs args = {}) override;

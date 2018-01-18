@@ -7,9 +7,10 @@
 class CameraComponent : public Component
 {
 public:
+	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+
 	CameraComponent() { receiveTicks = true; };
 
-	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;
 
 	void OnEvent(HashedString name, EventArgs args = {}) override;

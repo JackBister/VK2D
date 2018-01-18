@@ -15,7 +15,8 @@ class Scene;
 class Entity final : public Deserializable
 {
 public:
-	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
+	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+
 	std::string Serialize() const override;
 	void FireEvent(HashedString name, EventArgs args = {});
 	Component * GetComponent(std::string type) const;

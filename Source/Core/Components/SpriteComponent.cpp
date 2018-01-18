@@ -10,7 +10,7 @@
 #include "Core/scene.h"
 #include "Core/sprite.h"
 
-COMPONENT_IMPL(SpriteComponent)
+COMPONENT_IMPL(SpriteComponent, &SpriteComponent::s_Deserialize)
 
 bool SpriteComponent::s_hasCreatedResources = false;
 SpriteComponent::SpriteResources SpriteComponent::s_resources;
@@ -34,7 +34,7 @@ SpriteComponent::~SpriteComponent()
 	});
 }
 
-Deserializable * SpriteComponent::Deserialize(ResourceManager * resourceManager, std::string const& str) const
+Deserializable * SpriteComponent::s_Deserialize(ResourceManager * resourceManager, std::string const& str)
 {
 	SpriteComponent * ret = new SpriteComponent();
 	auto j = nlohmann::json::parse(str);

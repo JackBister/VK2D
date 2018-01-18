@@ -10,7 +10,7 @@
 #include "Core/Components/component.h"
 #include "Core/scene.h"
 
-DESERIALIZABLE_IMPL(Entity)
+DESERIALIZABLE_IMPL(Entity, &Entity::s_Deserialize)
 
 void Entity::FireEvent(HashedString ename, EventArgs args)
 {
@@ -37,7 +37,7 @@ Component * Entity::GetComponent(std::string type) const
 	return nullptr;
 }
 
-Deserializable * Entity::Deserialize(ResourceManager * resourceManager, std::string const& str) const
+Deserializable * Entity::s_Deserialize(ResourceManager * resourceManager, std::string const& str)
 {
 	Entity * const ret = new Entity();
 	auto const j = nlohmann::json::parse(str);

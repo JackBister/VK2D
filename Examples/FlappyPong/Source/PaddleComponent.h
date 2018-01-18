@@ -4,9 +4,10 @@
 class PaddleComponent : public Component
 {
 public:
+	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+
 	PaddleComponent() { receiveTicks = true; };
 
-	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;
 
 	void OnEvent(HashedString name, EventArgs args = {}) override;

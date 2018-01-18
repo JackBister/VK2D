@@ -12,7 +12,7 @@ class Entity;
 /*
 	This must be put in the .cpp file for the component.
 */
-#define COMPONENT_IMPL(str) DESERIALIZABLE_IMPL(str)
+#define COMPONENT_IMPL(str, fn) DESERIALIZABLE_IMPL(str, fn)
 
 class EAPI Component : public Deserializable
 {

@@ -6,9 +6,9 @@
 #include "Core/GameModule.h"
 #include "Core/Input.h"
 
-COMPONENT_IMPL(PaddleComponent)
+COMPONENT_IMPL(PaddleComponent, &PaddleComponent::s_Deserialize)
 
-Deserializable * PaddleComponent::Deserialize(ResourceManager *, std::string const& str) const
+Deserializable * PaddleComponent::s_Deserialize(ResourceManager *, std::string const& str)
 {
 	auto ret = new PaddleComponent();
 	auto j = nlohmann::json::parse(str);

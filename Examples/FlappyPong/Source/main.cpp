@@ -9,8 +9,8 @@ static PaddleComponent paddleComponent;
 
 extern "C" void __declspec(dllexport) LoadComponents()
 {
-	Deserializable::Map()["BallComponent"] = &ballComponent;
-	Deserializable::Map()["PaddleComponent"] = &paddleComponent;
+	Deserializable::Map()["BallComponent"] = &BallComponent::s_Deserialize;
+	Deserializable::Map()["PaddleComponent"] = &PaddleComponent::s_Deserialize;
 }
 
 extern "C" void __declspec(dllexport) UnloadComponents()

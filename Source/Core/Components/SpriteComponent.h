@@ -6,10 +6,11 @@
 class SpriteComponent final : public Component
 {
 public:
+	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+
 	SpriteComponent() { receiveTicks = false; }
 	~SpriteComponent() override;
 
-	Deserializable * Deserialize(ResourceManager *, std::string const& str) const override;
 	std::string Serialize() const override;
 
 	void OnEvent(HashedString name, EventArgs args) override;

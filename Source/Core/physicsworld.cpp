@@ -8,7 +8,7 @@
 #include "Core/entity.h"
 #include "Core/Components/physicscomponent.h"
 
-DESERIALIZABLE_IMPL(PhysicsWorld)
+DESERIALIZABLE_IMPL(PhysicsWorld, &PhysicsWorld::s_Deserialize)
 
 void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 {
@@ -89,7 +89,7 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 	collisionsLastFrame = collisionsThisFrame;
 }
 
-Deserializable * PhysicsWorld::Deserialize(ResourceManager * resourceManager, std::string const& str) const
+Deserializable * PhysicsWorld::s_Deserialize(ResourceManager * resourceManager, std::string const& str)
 {
 	PhysicsWorld * ret = new PhysicsWorld();
 	auto const j = nlohmann::json::parse(str);
