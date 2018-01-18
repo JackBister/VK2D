@@ -6,7 +6,7 @@ Deserializable * Deserializable::DeserializeString(ResourceManager * resourceMan
 {
 	auto j = nlohmann::json::parse(str);
 	//If your JSON is incorrect you will crash here. You deserve it.
-	auto type = j["type"];
+	std::string type = j["type"];
  	Deserializable * ret = Map()[type]->Deserialize(resourceManager, str);
 	ret->type = type;
 	return ret;
