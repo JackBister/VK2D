@@ -37,7 +37,7 @@ void PaddleComponent::OnEvent(HashedString name, EventArgs args)
 	if (name == "Tick") {
 		auto position = entity->transform.GetPosition();
 		auto scale = entity->transform.GetScale();
-		if (GameModule::GetInput()->GetButtonDown("Flap")) {
+		if (Input::GetButtonDown("Flap")) {
 			if (velocityY < 0.f) {
 				velocityY = 0.f;
 			}

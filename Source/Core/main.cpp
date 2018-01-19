@@ -7,7 +7,7 @@
 #include "Core/Components/CameraComponent.h"
 #include "Core/Components/component.h"
 #include "Core/entity.h"
-#include "Core/input.h"
+#include "Core/Input.h"
 #include "Core/physicsworld.h"
 #include "Core/Queue.h"
 #include "Core/Rendering/RenderCommand.h"
@@ -61,26 +61,20 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	std::string sceneFileName(argv[1]);
-	Queue<SDL_Event> inputQueue;
 	SDL_Init(SDL_INIT_EVERYTHING);
 	Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
 	ResourceManager resMan(&renderer);
-	auto inputWriter = inputQueue.GetWriter();
 
 #ifdef _DEBUG
 	SetThreadName(std::this_thread::get_id(), "Main Thread");
 #endif
 
-	GameModule::Init(&resMan, inputQueue.GetReader(), &renderer);
+	GameModule::Init(&resMan, &renderer);
 
 	GameModule::LoadScene(sceneFileName);
 
 	GameModule::BeginPlay();
 	while (true) {
-		SDL_Event e;
-		while (SDL_PollEvent(&e)) {
-			inputWriter.Push(std::move(e));
-		}
 		char const * sdlErr = SDL_GetError();
 		if (*sdlErr != '\0') {
 			printf("%s\n", sdlErr);

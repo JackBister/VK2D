@@ -9,7 +9,7 @@
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/entity.h"
-#include "Core/input.h"
+#include "Core/Input.h"
 #include "Core/physicsworld.h"
 #include "Core/Rendering/Renderer.h"
 #include "Core/sprite.h"
@@ -48,7 +48,14 @@ void Scene::LoadFile(std::string const& fileName)
 	}
 
 	if (j.find("input") != j.end()) {
-		GameModule::DeserializeInput(j["input"].dump());
+		auto input = j["input"];
+		if (input.find("keybinds") != input.end()) {
+			for (auto kb : input["keybinds"]) {
+				for (auto k : kb["keys"]) {
+					Input::AddKeybind(kb["name"].get<std::string>(), strToKeycode[k]);
+				}
+			}
+		}
 	}
 
 	if (j.find("physics") != j.end()) {
@@ -65,7 +72,6 @@ void Scene::LoadFile(std::string const& fileName)
 void Scene::SerializeToFile(std::string const& filename)
 {
 	nlohmann::json j;
-	j["input"] = nlohmann::json::parse(GameModule::SerializeInput());
 	j["physics"] = nlohmann::json::parse(GameModule::SerializePhysics());
 	
 	std::vector<nlohmann::json> serializedEntities;

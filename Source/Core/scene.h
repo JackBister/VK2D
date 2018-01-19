@@ -9,7 +9,7 @@
 #include "Core/eventarg.h"
 #include "Core/HashedString.h"
 #include "Core/GameModule.h"
-#include "Core/input.h"
+#include "Core/Input.h"
 #include "Core/Queue.h"
 #include "Core/Rendering/RenderCommand.h"
 #include "Core/Rendering/Context/RenderContext.h"

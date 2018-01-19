@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "Core/Components/CameraComponent.h"
-#include "Core/input.h"
+#include "Core/Input.h"
 #include "Core/physicsworld.h"
 #include "Core/Rendering/Renderer.h"
 #include "Core/Rendering/Shaders/passthrough.frag.spv.h"
@@ -37,7 +37,6 @@ namespace GameModule {
 	uint32_t currFrameInfoIdx = 0;
 	FrameStage currFrameStage;
 	std::vector<FrameInfo> frameInfo;
-	std::unique_ptr<Input> input;
 	PhysicsWorld * physicsWorld;
 	Renderer * renderer;
 	ResourceManager * resourceManager;
@@ -313,11 +312,6 @@ namespace GameModule {
 		return ret;
 	}
 
-	void DeserializeInput(std::string const& str)
-	{
-		input->DeserializeInPlace(str);
-	}
-
 	void DeserializePhysics(std::string const& str)
 	{
 		if (physicsWorld == nullptr) {
@@ -336,11 +330,6 @@ namespace GameModule {
 		}
 	}
 
-	EAPI Input * GetInput()
-	{
-		return input.get();
-	}
-
 	PhysicsWorld * GetPhysicsWorld()
 	{
 		return physicsWorld;
@@ -356,10 +345,9 @@ namespace GameModule {
 		return currFrameInfoIdx;
 	}
 
-	void Init(ResourceManager * resMan, Queue<SDL_Event>::Reader && inputQueue, Renderer * inRenderer)
+	void Init(ResourceManager * resMan, Renderer * inRenderer)
 	{
 		//TODO: This is dumb
-		input = std::make_unique<Input>(std::move(inputQueue));
 		resourceManager = resMan;
 		renderer = inRenderer;
 
@@ -371,11 +359,6 @@ namespace GameModule {
 	void LoadScene(std::string const& filename)
 	{
 		scenes.emplace_back(filename, resourceManager, filename);
-	}
-
-	std::string SerializeInput()
-	{
-		return input->Serialize();
 	}
 
 	std::string SerializePhysics()
@@ -396,20 +379,20 @@ namespace GameModule {
 	void Tick()
 	{
 		currFrameStage = FrameStage::INPUT;
-		input->Frame();
+		Input::Frame();
 		currFrameStage = FrameStage::TIME;
 		time.Frame();
 
 		//TODO: remove these (hardcoded serialize + dump keybinds)
 #ifdef _DEBUG
-		if (input->GetKeyDown(KC_F8)) {
+		if (Input::GetKeyDown(KC_F8)) {
 			scenes[0].SerializeToFile("_dump.scene");
 		}
-		if (input->GetKeyDown(KC_F9)) {
+		if (Input::GetKeyDown(KC_F9)) {
 			scenes[0].LoadFile("main.scene");
 			scenes[0].BroadcastEvent("BeginPlay");
 		}
-		if (input->GetKeyDown(KC_F10)) {
+		if (Input::GetKeyDown(KC_F10)) {
 			for (auto& fi : frameInfo) {
 				fi.can_start_frame_->Wait(std::numeric_limits<uint64_t>::max());
 				fi.pre_renderpass_context_->Reset();
