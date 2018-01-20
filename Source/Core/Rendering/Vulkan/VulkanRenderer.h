@@ -1,3 +1,4 @@
+#pragma once
 #ifndef USE_OGL_RENDERER
 #include <chrono>
 #include <cstdint>
