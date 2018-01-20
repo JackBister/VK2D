@@ -55,7 +55,7 @@ solution "Vulkan2D"
 			optimize "Full"
 
 		--CUSTOM BUILD COMMANDS--
-		filter { 'files:**.vert' }
+		filter { 'files:**.vert or **.frag' }
 			buildmessage 'Compiling %{file.relpath} to SPIR-V'
 			buildcommands {
 				path.translate('glslc -o "%{file.relpath}.spv" "%{file.relpath}"'),
@@ -65,18 +65,6 @@ solution "Vulkan2D"
 				'%{file.relpath}.spv',
 				'Source/Core/Rendering/Shaders/%{file.name}.spv.h'
 			}
-		
-		filter { 'files:**.frag' }
-			buildmessage 'Compiling %{file.relpath} to SPIR-V'
-			buildcommands {
-				path.translate('glslc -o "%{file.relpath}.spv" "%{file.relpath}"'),
-				'xxd -i "%{file.relpath}.spv" > "Source/Core/Rendering/Shaders/%{file.name}.spv.h"'
-			}
-			buildoutputs {
-				'%{file.relpath}.spv',
-				'Source/Core/Rendering/Shaders/%{file.name}.spv.h'
-			}
-
 
 	project "FlappyPong"
 		dependson "Engine"
