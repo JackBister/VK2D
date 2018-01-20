@@ -23,7 +23,7 @@ public:
 
 	bool is_flipped_;
 
-	std::vector<float> frame_times_;
+	std::vector<float> frameTimes;
 private:
 	struct SpriteResources
 	{
@@ -33,19 +33,19 @@ private:
 		PipelineHandle * pipeline;
 	};
 
-	static bool has_created_resources_;
-	static SpriteResources resources_;
+	static bool s_hasCreatedResources;
+	static SpriteResources s_resources;
 
-	glm::mat4 cached_MVP_;
-	DescriptorSet * descriptor_set_;
-	std::atomic<bool> has_created_local_resources_{ false };
-	BufferHandle * uvs_;
+	glm::mat4 cachedMvp;
+	DescriptorSet * descriptorSet;
+	std::atomic<bool> hasCreatedLocalResources{ false };
+	BufferHandle * uvs;
 
-	std::unordered_map<std::string, std::vector<size_t>> animations_;
-	size_t current_index_ = 0;
-	std::string current_named_anim_;
-	size_t current_named_anim_index_;
-	glm::vec2 frame_size_;
-	std::vector<glm::vec2> min_uvs_;
-	float time_since_update_ = 0.f;
+	std::unordered_map<std::string, std::vector<size_t>> animations;
+	size_t currentIndex = 0;
+	std::string currentNamedAnim;
+	size_t currentNamedAnimIndex;
+	glm::vec2 frameSize;
+	std::vector<glm::vec2> minUvs;
+	float timeSinceUpdate = 0.f;
 };

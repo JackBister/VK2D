@@ -6,7 +6,7 @@
 #include "Core/Rendering/Vulkan/VulkanCommandBufferAllocator.h"
 #include "Core/Rendering/Vulkan/VulkanRenderer.h"
 
-CommandContextAllocator * VulkanResourceContext::CreateCommandContextAllocator()
+CommandBufferAllocator * VulkanResourceContext::CreateCommandBufferAllocator()
 {
 	auto mem = allocator.allocate(sizeof(VulkanCommandBufferAllocator));
 	auto ret = new (mem) VulkanCommandBufferAllocator();
@@ -20,7 +20,7 @@ CommandContextAllocator * VulkanResourceContext::CreateCommandContextAllocator()
 	return ret;
 }
 
-void VulkanResourceContext::DestroyCommandContextAllocator(CommandContextAllocator * pool)
+void VulkanResourceContext::DestroyCommandBufferAllocator(CommandBufferAllocator * pool)
 {
 	assert(pool != nullptr);
 	auto nativeHandle = (VulkanCommandBufferAllocator *)pool;

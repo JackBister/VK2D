@@ -15,23 +15,23 @@
 namespace GameModule {
 	struct FrameInfo
 	{
-		std::vector<SubmittedCamera> cameras_to_submit_;
-		std::vector<CommandBuffer *> command_buffers_;
+		std::vector<SubmittedCamera> camerasToSubmit;
+		std::vector<CommandBuffer *> commandBuffers;
 
 		FramebufferHandle * framebuffer;
 
-		RenderPassHandle * main_renderpass_;
-		uint32_t current_subpass_;
+		RenderPassHandle * mainRenderPass;
+		uint32_t currentSubpass;
 
-		CommandBuffer * main_command_context_;
-		CommandBuffer * pre_renderpass_context_;
+		CommandBuffer * mainCommandBuffer;
+		CommandBuffer * preRenderPassCommandBuffer;
 
-		FenceHandle * can_start_frame_;
+		FenceHandle * canStartFrame;
 		SemaphoreHandle * framebufferReady;
-		SemaphoreHandle * pre_renderpass_finished_;
-		SemaphoreHandle * main_renderpass_finished_;
+		SemaphoreHandle * preRenderPassFinished;
+		SemaphoreHandle * mainRenderPassFinished;
 
-		CommandContextAllocator * commandContextAllocator;
+		CommandBufferAllocator * commandBufferAllocator;
 	};
 
 	uint32_t currFrameInfoIdx = 0;
@@ -58,14 +58,14 @@ namespace GameModule {
 			inheritanceInfo.renderPass = nullptr;
 			inheritanceInfo.subpass = 0;
 			inheritanceInfo.framebuffer = nullptr;
-			inheritanceInfo.commandContextUsageFlags = 0;
+			inheritanceInfo.commandBufferUsageFlags = 0;
 			break;
 		}
 		case GameModule::FrameStage::MAIN_RENDERPASS: {
-			inheritanceInfo.renderPass = frameInfo[currFrameInfoIdx].main_renderpass_;
-			inheritanceInfo.subpass = frameInfo[currFrameInfoIdx].current_subpass_;
+			inheritanceInfo.renderPass = frameInfo[currFrameInfoIdx].mainRenderPass;
+			inheritanceInfo.subpass = frameInfo[currFrameInfoIdx].currentSubpass;
 			inheritanceInfo.framebuffer = frameInfo[currFrameInfoIdx].framebuffer;
-			inheritanceInfo.commandContextUsageFlags = CommandContextUsageFlagBits::RENDER_PASS_CONTINUE_BIT;
+			inheritanceInfo.commandBufferUsageFlags = CommandBufferUsageFlagBits::RENDER_PASS_CONTINUE_BIT;
 			break;
 		}
 		}
@@ -183,12 +183,12 @@ namespace GameModule {
 
 			//Create FrameInfo
 			for (size_t i = 0; i < frameInfo.size(); ++i) {
-				frameInfo[i].main_renderpass_ = ctx.CreateRenderPass(passInfo);
-				frameInfo[i].commandContextAllocator = ctx.CreateCommandContextAllocator();
-				frameInfo[i].can_start_frame_ = ctx.CreateFence(true);
+				frameInfo[i].mainRenderPass = ctx.CreateRenderPass(passInfo);
+				frameInfo[i].commandBufferAllocator = ctx.CreateCommandBufferAllocator();
+				frameInfo[i].canStartFrame = ctx.CreateFence(true);
 				frameInfo[i].framebufferReady = ctx.CreateSemaphore();
-				frameInfo[i].pre_renderpass_finished_ = ctx.CreateSemaphore();
-				frameInfo[i].main_renderpass_finished_ = ctx.CreateSemaphore();
+				frameInfo[i].preRenderPassFinished = ctx.CreateSemaphore();
+				frameInfo[i].mainRenderPassFinished = ctx.CreateSemaphore();
 			}
 
 			/*
@@ -270,7 +270,7 @@ namespace GameModule {
 				stages,
 				ptInputState,
 				ptPipelineDescriptorSetLayout,
-				frameInfo[0].main_renderpass_,
+				frameInfo[0].mainRenderPass,
 				0
 				});
 
@@ -281,13 +281,13 @@ namespace GameModule {
 			std::this_thread::sleep_for(1ms);
 		}
 
-		auto framebuffers = renderer->CreateBackbuffers(frameInfo[0].main_renderpass_);
-		CommandContextAllocator::CommandBufferCreateInfo ctxCreateInfo = {};
-		ctxCreateInfo.level = RenderCommandContextLevel::PRIMARY;
+		auto framebuffers = renderer->CreateBackbuffers(frameInfo[0].mainRenderPass);
+		CommandBufferAllocator::CommandBufferCreateInfo ctxCreateInfo = {};
+		ctxCreateInfo.level = CommandBufferLevel::PRIMARY;
 		for (size_t i = 0; i < frameInfo.size(); ++i) {
 			frameInfo[i].framebuffer = framebuffers[i];
-			frameInfo[i].main_command_context_ = frameInfo[i].commandContextAllocator->CreateContext(ctxCreateInfo);
-			frameInfo[i].pre_renderpass_context_ = frameInfo[i].commandContextAllocator->CreateContext(ctxCreateInfo);
+			frameInfo[i].mainCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
+			frameInfo[i].preRenderPassCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
 		}
 
 		resourceManager->AddResource("_Primitives/Buffers/QuadVBO.buffer", quadVerts);
@@ -303,11 +303,11 @@ namespace GameModule {
 
 	std::vector<CommandBuffer *> CreateSecondaryCommandContexts()
 	{
-		CommandContextAllocator::CommandBufferCreateInfo ci{};
-		ci.level = RenderCommandContextLevel::SECONDARY;
+		CommandBufferAllocator::CommandBufferCreateInfo ci{};
+		ci.level = CommandBufferLevel::SECONDARY;
 		std::vector<CommandBuffer *> ret;
 		for (size_t i = 0; i < frameInfo.size(); ++i) {
-			ret.push_back(frameInfo[i].commandContextAllocator->CreateContext(ci));
+			ret.push_back(frameInfo[i].commandBufferAllocator->CreateBuffer(ci));
 		}
 		return ret;
 	}
@@ -326,7 +326,7 @@ namespace GameModule {
 	{
 		assert(cbs.size() == frameInfo.size());
 		for (size_t i = 0; i < frameInfo.size(); ++i) {
-			frameInfo[i].commandContextAllocator->DestroyContext(cbs[i]);
+			frameInfo[i].commandBufferAllocator->DestroyContext(cbs[i]);
 		}
 	}
 
@@ -368,12 +368,12 @@ namespace GameModule {
 
 	void SubmitCamera(CameraComponent * cam)
 	{
-		frameInfo[currFrameInfoIdx].cameras_to_submit_.push_back({cam->GetView(), cam->GetProjection()});
+		frameInfo[currFrameInfoIdx].camerasToSubmit.push_back({cam->GetView(), cam->GetProjection()});
 	}
 
 	void SubmitCommandBuffer(CommandBuffer * ctx)
 	{
-		frameInfo[currFrameInfoIdx].command_buffers_.push_back(ctx);
+		frameInfo[currFrameInfoIdx].commandBuffers.push_back(ctx);
 	}
 
 	void Tick()
@@ -394,11 +394,11 @@ namespace GameModule {
 		}
 		if (Input::GetKeyDown(KC_F10)) {
 			for (auto& fi : frameInfo) {
-				fi.can_start_frame_->Wait(std::numeric_limits<uint64_t>::max());
-				fi.pre_renderpass_context_->Reset();
-				fi.pre_renderpass_context_->BeginRecording(nullptr);
-				fi.pre_renderpass_context_->EndRecording();
-				renderer->ExecuteCommandBuffer(fi.pre_renderpass_context_, {}, {}, fi.can_start_frame_);
+				fi.canStartFrame->Wait(std::numeric_limits<uint64_t>::max());
+				fi.preRenderPassCommandBuffer->Reset();
+				fi.preRenderPassCommandBuffer->BeginRecording(nullptr);
+				fi.preRenderPassCommandBuffer->EndRecording();
+				renderer->ExecuteCommandBuffer(fi.preRenderPassCommandBuffer, {}, {}, fi.canStartFrame);
 			}
 			scenes[0].Unload();
 		}
@@ -409,11 +409,11 @@ namespace GameModule {
 		auto prevFrameInfo = currFrameInfoIdx;
 		currFrameInfoIdx = renderer->AcquireNextFrameIndex(frameInfo[prevFrameInfo].framebufferReady, nullptr);
 		auto& currFrame = frameInfo[currFrameInfoIdx];
-		currFrame.can_start_frame_->Wait(std::numeric_limits<uint64_t>::max());
-		currFrame.commandContextAllocator->Reset();
+		currFrame.canStartFrame->Wait(std::numeric_limits<uint64_t>::max());
+		currFrame.commandBufferAllocator->Reset();
 
-		currFrame.cameras_to_submit_.clear();
-		currFrame.command_buffers_.clear();
+		currFrame.camerasToSubmit.clear();
+		currFrame.commandBuffers.clear();
 
 		currFrameStage = FrameStage::PHYSICS;
 		//TODO: substeps
@@ -425,25 +425,25 @@ namespace GameModule {
 
 		currFrameStage = FrameStage::PRE_RENDERPASS;
 		for (auto& s : scenes) {
-			for (auto& cc : currFrame.cameras_to_submit_) {
+			for (auto& cc : currFrame.camerasToSubmit) {
 				s.BroadcastEvent("PreRenderPass", {{"camera", &cc}});
 			}
 		}
 
-		currFrame.pre_renderpass_context_->Reset();
-		currFrame.pre_renderpass_context_->BeginRecording(nullptr);
+		currFrame.preRenderPassCommandBuffer->Reset();
+		currFrame.preRenderPassCommandBuffer->BeginRecording(nullptr);
 
 		//TODO: Assumes single thread
-		if (currFrame.command_buffers_.size() > 0) {
-			currFrame.pre_renderpass_context_->CmdExecuteCommands(std::move(currFrame.command_buffers_));
-			currFrame.command_buffers_ = std::vector<CommandBuffer *>();
+		if (currFrame.commandBuffers.size() > 0) {
+			currFrame.preRenderPassCommandBuffer->CmdExecuteCommands(std::move(currFrame.commandBuffers));
+			currFrame.commandBuffers = std::vector<CommandBuffer *>();
 		}
 
-		currFrame.pre_renderpass_context_->EndRecording();
+		currFrame.preRenderPassCommandBuffer->EndRecording();
 
-		renderer->ExecuteCommandBuffer(currFrame.pre_renderpass_context_,
+		renderer->ExecuteCommandBuffer(currFrame.preRenderPassCommandBuffer,
 			std::vector<SemaphoreHandle *>(),
-			{currFrame.pre_renderpass_finished_});
+			{currFrame.preRenderPassFinished});
 
 		CommandBuffer::ClearValue clearValues[] = {
 			{
@@ -454,7 +454,7 @@ namespace GameModule {
 			}
 		};
 		CommandBuffer::RenderPassBeginInfo beginInfo = {
-			currFrame.main_renderpass_,
+			currFrame.mainRenderPass,
 			currFrame.framebuffer,
 		{
 			{
@@ -470,30 +470,30 @@ namespace GameModule {
 			1,
 			clearValues
 		};
-		currFrame.main_command_context_->BeginRecording(nullptr);
+		currFrame.mainCommandBuffer->BeginRecording(nullptr);
 		currFrameStage = FrameStage::MAIN_RENDERPASS;
-		currFrame.main_command_context_->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::SECONDARY_COMMAND_BUFFERS);
-		currFrame.current_subpass_ = 0;
+		currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::SECONDARY_COMMAND_BUFFERS);
+		currFrame.currentSubpass = 0;
 		for (auto& s : scenes) {
-			for (auto& cc : currFrame.cameras_to_submit_) {
+			for (auto& cc : currFrame.camerasToSubmit) {
 				s.BroadcastEvent("MainRenderPass", {{"camera", &cc}});
 			}
 		}
 
 		//TODO: Assumes single thread
-		if (currFrame.command_buffers_.size() > 0) {
-			currFrame.main_command_context_->CmdExecuteCommands(std::move(currFrame.command_buffers_));
-			currFrame.command_buffers_ = std::vector<CommandBuffer *>();
+		if (currFrame.commandBuffers.size() > 0) {
+			currFrame.mainCommandBuffer->CmdExecuteCommands(std::move(currFrame.commandBuffers));
+			currFrame.commandBuffers = std::vector<CommandBuffer *>();
 		}
 
-		currFrame.main_command_context_->CmdEndRenderPass();
-		currFrame.main_command_context_->EndRecording();
+		currFrame.mainCommandBuffer->CmdEndRenderPass();
+		currFrame.mainCommandBuffer->EndRecording();
 
-		renderer->ExecuteCommandBuffer(currFrame.main_command_context_,
-			{frameInfo[prevFrameInfo].framebufferReady, currFrame.pre_renderpass_finished_},
-			{currFrame.main_renderpass_finished_},
-			currFrame.can_start_frame_);
+		renderer->ExecuteCommandBuffer(currFrame.mainCommandBuffer,
+			{frameInfo[prevFrameInfo].framebufferReady, currFrame.preRenderPassFinished},
+			{currFrame.mainRenderPassFinished},
+			currFrame.canStartFrame);
 
-		renderer->SwapWindow(currFrameInfoIdx, currFrame.main_renderpass_finished_);
+		renderer->SwapWindow(currFrameInfoIdx, currFrame.mainRenderPassFinished);
 	}
 };

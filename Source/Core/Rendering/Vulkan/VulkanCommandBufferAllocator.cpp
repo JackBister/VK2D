@@ -5,13 +5,13 @@
 
 #include "Core/Rendering/Vulkan/VulkanCommandBuffer.h"
 
-CommandBuffer * VulkanCommandBufferAllocator::CreateContext(CommandBufferCreateInfo const& createInfo)
+CommandBuffer * VulkanCommandBufferAllocator::CreateBuffer(CommandBufferCreateInfo const& createInfo)
 {
 	VkCommandBufferAllocateInfo allocateInfo = {};
 	allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocateInfo.commandBufferCount = 1;
 	allocateInfo.commandPool = commandPool;
-	allocateInfo.level = createInfo.level == RenderCommandContextLevel::PRIMARY ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+	allocateInfo.level = createInfo.level == CommandBufferLevel::PRIMARY ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 
 	VkCommandBuffer ret;
 	vkAllocateCommandBuffers(device, &allocateInfo, &ret);

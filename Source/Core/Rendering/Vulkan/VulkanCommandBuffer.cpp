@@ -42,7 +42,7 @@ void VulkanCommandBuffer::BeginRecording(CommandBuffer::InheritanceInfo * inheri
 		if (inheritanceInfo->renderPass != nullptr) {
 			vkInheritanceInfo.renderPass = ((VulkanRenderPassHandle *)inheritanceInfo->renderPass)->renderPass;
 		}
-		beginInfo.flags = inheritanceInfo->commandContextUsageFlags;
+		beginInfo.flags = inheritanceInfo->commandBufferUsageFlags;
 		beginInfo.pInheritanceInfo = &vkInheritanceInfo;
 	}
 

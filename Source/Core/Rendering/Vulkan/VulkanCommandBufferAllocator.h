@@ -3,11 +3,11 @@
 
 #include <vulkan/vulkan.h>
 
-class VulkanCommandBufferAllocator : CommandContextAllocator
+class VulkanCommandBufferAllocator : CommandBufferAllocator
 {
 public:
 	friend class VulkanResourceContext;
-	CommandBuffer * CreateContext(CommandBufferCreateInfo const&  createInfo) final override;
+	CommandBuffer * CreateBuffer(CommandBufferCreateInfo const&  createInfo) final override;
 	void DestroyContext(CommandBuffer *) final override;
 	void Reset() final override;
 

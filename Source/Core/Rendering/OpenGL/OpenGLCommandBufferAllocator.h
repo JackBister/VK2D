@@ -2,9 +2,9 @@
 
 #include "Core/Rendering/Context/RenderContext.h"
 
-struct OpenGLCommandBufferAllocator : CommandContextAllocator
+struct OpenGLCommandBufferAllocator : CommandBufferAllocator
 {
-	CommandBuffer * CreateContext(CommandBufferCreateInfo const& createInfo) final override;
+	CommandBuffer * CreateBuffer(CommandBufferCreateInfo const& createInfo) final override;
 
 	void DestroyContext(CommandBuffer *) final override;
 

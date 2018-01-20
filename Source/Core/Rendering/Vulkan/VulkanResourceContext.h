@@ -8,8 +8,8 @@ class VulkanResourceContext : public ResourceCreationContext
 {
 	friend class Renderer;
 public:
-	CommandContextAllocator * CreateCommandContextAllocator() final override;
-	void DestroyCommandContextAllocator(CommandContextAllocator *) final override;
+	CommandBufferAllocator * CreateCommandBufferAllocator() final override;
+	void DestroyCommandBufferAllocator(CommandBufferAllocator *) final override;
 
 	void BufferSubData(BufferHandle *, uint8_t *, size_t offset, size_t size) final override;
 	BufferHandle * CreateBuffer(BufferCreateInfo const& ) final override;

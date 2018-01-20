@@ -52,7 +52,7 @@ enum BufferUsageFlags
 	INDIRECT_BUFFER_BIT = 0x00000100,
 };
 
-enum CommandContextUsageFlagBits {
+enum CommandBufferUsageFlagBits {
 	ONE_TIME_SUBMIT_BIT = 0x00000001,
 	RENDER_PASS_CONTINUE_BIT = 0x00000002,
 	SIMULTANEOUS_USE_BIT = 0x00000004,
@@ -166,7 +166,7 @@ enum PipelineStageFlagBits
 	ALL_COMMANDS_BIT = 0x00010000,
 };
 
-enum class RenderCommandContextLevel
+enum class CommandBufferLevel
 {
 	PRIMARY,
 	SECONDARY
@@ -202,13 +202,13 @@ struct BufferHandle
 {
 };
 
-struct CommandContextAllocator
+struct CommandBufferAllocator
 {
 	struct CommandBufferCreateInfo
 	{
-		RenderCommandContextLevel level;
+		CommandBufferLevel level;
 	};
-	virtual CommandBuffer * CreateContext(CommandBufferCreateInfo const& pCreateInfo) = 0;
+	virtual CommandBuffer * CreateBuffer(CommandBufferCreateInfo const& pCreateInfo) = 0;
 	virtual void DestroyContext(CommandBuffer *) = 0;
 	virtual void Reset() = 0;
 };
@@ -451,7 +451,7 @@ public:
 		RenderPassHandle * renderPass;
 		uint32_t subpass;
 		FramebufferHandle * framebuffer;
-		uint32_t commandContextUsageFlags;
+		uint32_t commandBufferUsageFlags;
 	};
 	virtual void BeginRecording(InheritanceInfo *) = 0;
 	virtual void EndRecording() = 0;
@@ -486,8 +486,8 @@ protected:
 class ResourceCreationContext
 {
 public:
-	virtual CommandContextAllocator * CreateCommandContextAllocator() = 0;
-	virtual void DestroyCommandContextAllocator(CommandContextAllocator *) = 0;
+	virtual CommandBufferAllocator * CreateCommandBufferAllocator() = 0;
+	virtual void DestroyCommandBufferAllocator(CommandBufferAllocator *) = 0;
 
 	virtual void BufferSubData(BufferHandle *, uint8_t *, size_t offset, size_t size) = 0;
 	/*

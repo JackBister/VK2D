@@ -45,24 +45,24 @@ Deserializable * SpriteComponent::s_Deserialize(ResourceManager * resourceManage
 	
 	{
 		resourceManager->CreateResources([ret, img, layout](ResourceCreationContext& ctx) {
-			std::vector<float> full_uv{
+			std::vector<float> fullUv{
 				0.f, 0.f,
 				1.f, 1.f
 			};
 			ret->uvs = ctx.CreateBuffer({
-				sizeof(glm::mat4) + full_uv.size() * sizeof(float),
+				sizeof(glm::mat4) + fullUv.size() * sizeof(float),
 				BufferUsageFlags::UNIFORM_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
 				DEVICE_LOCAL_BIT
 			});
-			ctx.BufferSubData(ret->uvs, (uint8_t *)&full_uv[0], sizeof(glm::mat4), full_uv.size() * sizeof(float));
+			ctx.BufferSubData(ret->uvs, (uint8_t *)&fullUv[0], sizeof(glm::mat4), fullUv.size() * sizeof(float));
 
-			ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uv_descriptor = {
+			ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uvDescriptor = {
 				ret->uvs,
 				0,
-				sizeof(glm::mat4) + full_uv.size() * sizeof(float)
+				sizeof(glm::mat4) + fullUv.size() * sizeof(float)
 			};
 
-			ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor img_descriptor = {
+			ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imgDescriptor = {
 				img->GetSampler(),
 				img->GetImageView()
 			};
@@ -71,12 +71,12 @@ Deserializable * SpriteComponent::s_Deserialize(ResourceManager * resourceManage
 				{
 					DescriptorType::UNIFORM_BUFFER,
 					0,
-					uv_descriptor
+					uvDescriptor
 				},
 				{
 					DescriptorType::COMBINED_IMAGE_SAMPLER,
 					1,
-					img_descriptor
+					imgDescriptor
 				}
 			};
 

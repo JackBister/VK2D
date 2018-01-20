@@ -43,8 +43,8 @@ public:
 	SemaphoreHandle * CreateSemaphore() final override;
 	void DestroySemaphore(SemaphoreHandle *) final override;
 
-	CommandContextAllocator * CreateCommandContextAllocator() final override;
-	void DestroyCommandContextAllocator(CommandContextAllocator *) final override;
+	CommandBufferAllocator * CreateCommandBufferAllocator() final override;
+	void DestroyCommandBufferAllocator(CommandBufferAllocator *) final override;
 	FenceHandle * CreateFence(bool startSignaled) final override;
 	void DestroyFence(FenceHandle *) final override;
 };

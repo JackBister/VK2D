@@ -356,14 +356,14 @@ void OpenGLResourceContext::DestroySemaphore(SemaphoreHandle * sem)
 	allocator.deallocate((uint8_t *)nativeHandle, sizeof(OpenGLSemaphoreHandle));
 }
 
-CommandContextAllocator * OpenGLResourceContext::CreateCommandContextAllocator()
+CommandBufferAllocator * OpenGLResourceContext::CreateCommandBufferAllocator()
 {
 	auto mem = allocator.allocate(sizeof(OpenGLCommandBufferAllocator));
 	auto ret = new (mem) OpenGLCommandBufferAllocator();
 	return ret;
 }
 
-void OpenGLResourceContext::DestroyCommandContextAllocator(CommandContextAllocator * alloc)
+void OpenGLResourceContext::DestroyCommandBufferAllocator(CommandBufferAllocator * alloc)
 {
 	assert(alloc != nullptr);
 	allocator.deallocate((uint8_t *)alloc, sizeof(OpenGLCommandBufferAllocator));

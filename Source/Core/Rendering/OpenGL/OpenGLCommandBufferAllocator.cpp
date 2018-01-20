@@ -5,7 +5,7 @@
 
 #include "Core/Rendering/OpenGL/OpenGLCommandBuffer.h"
 
-CommandBuffer * OpenGLCommandBufferAllocator::CreateContext(CommandBufferCreateInfo const& createInfo)
+CommandBuffer * OpenGLCommandBufferAllocator::CreateBuffer(CommandBufferCreateInfo const& createInfo)
 {
 	return new OpenGLCommandBuffer(new std::allocator<uint8_t>());
 }
