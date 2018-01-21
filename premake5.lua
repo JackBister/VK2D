@@ -62,14 +62,14 @@ solution "Vulkan2D"
 
 		sysincludedirs { "include",  staticPlatformDirectory .. "include", platformdirectory .. "include" }
 
+		flags { "MultiProcessorCompile" }
+
 		if isModuleAvailable("premake-compilationunit/compilationunit") then
 			compilationunitenabled (true)
 			--Exclude these because they include Windows.h which defines a gorillion macros which screw everything up in the merged files
 			filter "files:Source/Core/DlOpen.cpp or Source/Core/GameModuleDllLoading.cpp or Source/Core/main.cpp"
 				compilationunitenabled(false)
 		end
-
-		flags { "MultiProcessorCompile" }
 
 		filter "Debug"
 			libdirs { staticPlatformDirectory .. "debug/lib", platformdirectory .. "debug/lib" }
