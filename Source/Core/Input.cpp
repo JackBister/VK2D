@@ -1,4 +1,3 @@
-#define KEYCODE_IMPL
 #include "Core/Input.h"
 
 #include <algorithm>

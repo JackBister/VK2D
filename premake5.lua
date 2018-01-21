@@ -1,9 +1,28 @@
 #!lua
 
+function isModuleAvailable(name)
+	if package.loaded[name] then
+		return true
+	else
+		for _, searcher in ipairs(package.searchers or package.loaders) do
+			local loader = searcher(name)
+			if type(loader) == 'function' then
+				package.preload[name] = loader
+				return true
+			end
+		end
+		return false
+	end
+end
+
 function os.winSdkVersion()
     local reg_arch = iif( os.is64bit(), "\\Wow6432Node\\", "\\" )
     local sdk_version = os.getWindowsRegistry( "HKLM:SOFTWARE" .. reg_arch .."Microsoft\\Microsoft SDKs\\Windows\\v10.0\\ProductVersion" )
     if sdk_version ~= nil then return sdk_version end
+end
+
+if isModuleAvailable("premake-compilationunit/compilationunit") then
+	require("premake-compilationunit/compilationunit")
 end
 
 solution "Vulkan2D"
@@ -42,6 +61,15 @@ solution "Vulkan2D"
 		links { "opengl32", "vulkan-1" }
 
 		sysincludedirs { "include",  staticPlatformDirectory .. "include", platformdirectory .. "include" }
+
+		if isModuleAvailable("premake-compilationunit/compilationunit") then
+			compilationunitenabled (true)
+			--Exclude these because they include Windows.h which defines a gorillion macros which screw everything up in the merged files
+			filter "files:Source/Core/DlOpen.cpp or Source/Core/GameModuleDllLoading.cpp or Source/Core/main.cpp"
+				compilationunitenabled(false)
+		end
+
+		flags { "MultiProcessorCompile" }
 
 		filter "Debug"
 			libdirs { staticPlatformDirectory .. "debug/lib", platformdirectory .. "debug/lib" }
@@ -82,6 +110,12 @@ solution "Vulkan2D"
 		targetdir "Examples/FlappyPong/build"
 
 		sysincludedirs { "Source", "include",  staticPlatformDirectory .. "include", platformdirectory .. "include" }
+
+		if isModuleAvailable("premake-compilationunit/compilationunit") then
+			compilationunitenabled (true)
+		end
+
+		flags { "MultiProcessorCompile" }
 
 		filter "configurations:Debug"
 			kind "SharedLib"
