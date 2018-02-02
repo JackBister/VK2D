@@ -5,3 +5,7 @@
 #else
 #define EAPI __declspec(dllexport)
 #endif
+
+#ifdef __INTELLISENSE__
+#define EAPI
+#endif
