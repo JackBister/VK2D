@@ -45,9 +45,7 @@ solution "Vulkan2D"
 		exceptionhandling "Off"
 
 		files { "Source/Core/**.h", "Source/Core/**.cpp",
-				"shaders/*",
-				--Should be cleaned up in the future to be a separate project
-				"Examples/**.h", "Examples/**.cpp" }
+				"shaders/*" }
 		buildlog "build/build.log"
 		debugargs { "main.scene" }
 		debugdir "Examples/FlappyPong"
