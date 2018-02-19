@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/DllExport.h"
+#include "Core/Math/mathtypes.h"
 #include "Core/Queue.h"
 
 class CameraComponent;
@@ -30,6 +31,7 @@ namespace GameModule {
 	void DestroySecondaryCommandContexts(std::vector<CommandBuffer *>);
 	//TODO:
 	PhysicsWorld * GetPhysicsWorld();
+	IVec2 GetResolution();
 	size_t GetSwapCount();
 	size_t GetCurrFrame();
 	void Init(ResourceManager * resMan, Renderer * renderer);

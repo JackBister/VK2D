@@ -5,6 +5,12 @@
 
 #include "Core/DllExport.h"
 
+struct EAPI IVec2 : glm::ivec2
+{
+public:
+	using glm::ivec2::tvec2;
+};
+
 struct EAPI Vec3 : glm::vec3
 {
 public:

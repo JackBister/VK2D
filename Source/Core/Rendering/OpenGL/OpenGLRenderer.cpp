@@ -77,12 +77,17 @@ std::vector<FramebufferHandle *> Renderer::CreateBackbuffers(RenderPassHandle * 
 	};
 }
 
-Format Renderer::GetBackbufferFormat() 
+Format Renderer::GetBackbufferFormat() const
 {
 	return Format::RGBA8;
 }
 
-uint32_t Renderer::GetSwapCount() 
+IVec2 Renderer::GetResolution() const
+{
+	return dimensions;
+}
+
+uint32_t Renderer::GetSwapCount() const
 {
 	return 1;
 }

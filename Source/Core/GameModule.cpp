@@ -335,6 +335,11 @@ namespace GameModule {
 		return physicsWorld;
 	}
 
+	IVec2 GetResolution()
+	{
+		return renderer->GetResolution();
+	}
+
 	size_t GetSwapCount()
 	{
 		return frameInfo.size();
@@ -453,6 +458,7 @@ namespace GameModule {
 		}
 			}
 		};
+		auto res = GetResolution();
 		CommandBuffer::RenderPassBeginInfo beginInfo = {
 			currFrame.mainRenderPass,
 			currFrame.framebuffer,
@@ -462,9 +468,8 @@ namespace GameModule {
 				0
 			},
 			{
-				//TODO:
-				800,
-				600
+				res.x,
+				res.y
 			}
 		},
 			1,

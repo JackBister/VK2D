@@ -206,7 +206,7 @@ std::vector<FramebufferHandle *> Renderer::CreateBackbuffers(RenderPassHandle * 
 	return ret;
 }
 
-Format Renderer::GetBackbufferFormat()
+Format Renderer::GetBackbufferFormat() const
 {
 	return ToAbstractFormat(swapchain.format);
 }
@@ -237,7 +237,12 @@ void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
 	auto res = vkQueuePresentKHR(presentQueue, &presentInfo);
 }
 
-uint32_t Renderer::GetSwapCount()
+IVec2 Renderer::GetResolution() const
+{
+	return dimensions;
+}
+
+uint32_t Renderer::GetSwapCount() const
 {
 	return (uint32_t)swapchain.images.size();
 }

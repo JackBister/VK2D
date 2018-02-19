@@ -131,12 +131,13 @@ void SpriteComponent::OnEvent(HashedString name, EventArgs args)
 			auto img = sprite.image->GetImage();
 			auto camera = (SubmittedCamera *)args["camera"].asPointer;
 			auto ctx = frameInfo[GameModule::GetCurrFrame()].mainCommandContext;
+			auto res = GameModule::GetResolution();
 			GameModule::BeginSecondaryCommandContext(ctx);
 			CommandBuffer::Viewport viewport = {
 				0.f,
 				0.f,
-				800.f,
-				600.f,
+				res.x,
+				res.y,
 				0.f,
 				1.f
 			};
@@ -148,8 +149,8 @@ void SpriteComponent::OnEvent(HashedString name, EventArgs args)
 					0
 				},
 				{
-					800,
-					600
+					res.x,
+					res.y
 				}
 			};
 			ctx->CmdSetScissor(0, 1, &scissor);
