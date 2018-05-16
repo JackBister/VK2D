@@ -2,6 +2,12 @@
 
 #include "nlohmann/json.hpp"
 
+REFLECT_STRUCT_BEGIN(Transform)
+REFLECT_STRUCT_MEMBER(position)
+REFLECT_STRUCT_MEMBER(rotation)
+REFLECT_STRUCT_MEMBER(scale)
+REFLECT_STRUCT_END()
+
 glm::mat4 const& Transform::GetLocalToParent()
 {
 	glm::mat4 trans = glm::translate(glm::mat4(), position);

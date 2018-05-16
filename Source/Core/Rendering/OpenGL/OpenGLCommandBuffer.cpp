@@ -92,7 +92,7 @@ void OpenGLCommandBuffer::CmdBindVertexBuffer(BufferHandle * buffer, uint32_t bi
 
 void OpenGLCommandBuffer::CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset)
 {
-	commandList.push_back(DrawIndexedArgs{static_cast<int>(indexCount), (void const *)firstIndex, static_cast<int>(instanceCount)});
+	commandList.push_back(DrawIndexedArgs{static_cast<int>(indexCount), (void const *)firstIndex, static_cast<int>(instanceCount), vertexOffset});
 }
 
 void OpenGLCommandBuffer::CmdEndRenderPass()
@@ -194,6 +194,13 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
 		{
 			auto args = std::get<BindPipelineArgs>(rc);
 			assert(args.program != 0);
+			if (args.cullMode == GL_NONE) {
+				glDisable(GL_CULL_FACE);
+			} else {
+				glEnable(GL_CULL_FACE);
+				glCullFace(args.cullMode);
+			}
+			glFrontFace(args.frontFace);
 			glUseProgram(args.program);
 			glBindVertexArray(args.vao);
 			break;
@@ -209,7 +216,7 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
 		{
 			auto args = std::get<DrawIndexedArgs>(rc);
 			assert(indexBufferType == GL_UNSIGNED_SHORT || indexBufferType == GL_UNSIGNED_INT);
-			glDrawElementsInstanced(GL_TRIANGLES, args.count, indexBufferType, args.indices, args.primcount);
+			glDrawElementsInstancedBaseVertex(GL_TRIANGLES, args.count, indexBufferType, args.indices, args.primcount, args.basevertex);
 			break;
 		}
 		case RenderCommandType::EXECUTE_COMMANDS:
@@ -276,9 +283,12 @@ void OpenGLCommandBuffer::Reset()
 
 void OpenGLCommandBuffer::CmdBindPipeline(RenderPassHandle::PipelineBindPoint bp, PipelineHandle * handle)
 {
+	auto nativeHandle = (OpenGLPipelineHandle *)handle;
 	commandList.push_back(BindPipelineArgs{
-		((OpenGLPipelineHandle *)handle)->nativeHandle,
-		((OpenGLVertexInputStateHandle *)handle->vertexInputState)->nativeHandle
+		nativeHandle->nativeHandle,
+		((OpenGLVertexInputStateHandle *)handle->vertexInputState)->nativeHandle,
+		ToGLCullMode(nativeHandle->rasterizationState.cullMode),
+		ToGLFrontFace(nativeHandle->rasterizationState.frontFace)
 	});
 }
 

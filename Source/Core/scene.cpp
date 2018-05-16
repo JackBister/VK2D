@@ -64,8 +64,8 @@ void Scene::LoadFile(std::string const& fileName)
 
 	for (auto& je : j["entities"]) {
 		Entity * tmp = static_cast<Entity *>(Deserializable::DeserializeString(resourceManager, je.dump()));
-		tmp->scene = this;
 		this->entities.push_back(tmp);
+		GameModule::AddEntity(tmp);
 	}
 }
 
@@ -89,7 +89,7 @@ void Scene::SerializeToFile(std::string const& filename)
 void Scene::Unload()
 {
 	for (auto const e : entities) {
-		delete e;
+		GameModule::RemoveEntity(e);
 	}
 	entities = std::vector<Entity *>();
 	for (auto const& fn : dllFileNames) {

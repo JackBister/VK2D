@@ -8,6 +8,7 @@
 
 #include "Core/DllExport.h"
 #include "Core/Math/mathtypes.h"
+#include "Core/Reflect.h"
 
 class EAPI Transform final
 {
@@ -28,6 +29,7 @@ public:
 	void SetRotation(Quat const&);
 	void SetScale(Vec3 const&);
 
+	REFLECT()
 private:
 	Transform * parent = nullptr;
 

@@ -484,6 +484,8 @@ void VulkanResourceContext::DestroyFramebuffer(FramebufferHandle * fb)
 
 PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsPipelineCreateInfo const& ci)
 {
+	assert(ci.rasterizationState != nullptr);
+
 	std::vector<uint32_t> specializationData{
 		0
 	};
@@ -590,8 +592,8 @@ PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationC
 		VK_FALSE,
 		VK_FALSE,
 		VK_POLYGON_MODE_FILL,
-		VK_CULL_MODE_BACK_BIT,
-		VK_FRONT_FACE_CLOCKWISE,
+		ToVulkanCullMode(ci.rasterizationState->cullMode),
+		ToVulkanFrontFace(ci.rasterizationState->frontFace),
 		VK_FALSE,
 		0.f,
 		0.f,
@@ -612,11 +614,11 @@ PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationC
 	};
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{
-		VK_FALSE,
-		VK_BLEND_FACTOR_ONE,
-		VK_BLEND_FACTOR_ZERO,
+		VK_TRUE,
+		VK_BLEND_FACTOR_SRC_ALPHA,
+		VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 		VK_BLEND_OP_ADD,
-		VK_BLEND_FACTOR_ONE,
+		VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 		VK_BLEND_FACTOR_ZERO,
 		VK_BLEND_OP_ADD,
 		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
@@ -631,6 +633,18 @@ PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationC
 		1,
 		&colorBlendAttachment,
 		{ 0.f, 0.f, 0.f, 0.f }
+	};
+
+	VkDynamicState dynamicStates[] = {
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
+	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+		nullptr,
+		0,
+		sizeof(dynamicStates) / sizeof(VkDynamicState),
+		dynamicStates
 	};
 
 	VkPipelineLayoutCreateInfo layoutCreateInfo{
@@ -659,6 +673,7 @@ PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationC
 	pipelineInfo.pRasterizationState = &raserizationState;
 	pipelineInfo.pMultisampleState = &multisampleState;
 	pipelineInfo.pColorBlendState = &colorBlendState;
+	pipelineInfo.pDynamicState = &dynamicStateCreateInfo;
 	pipelineInfo.layout = layout;
 	pipelineInfo.renderPass = ((VulkanRenderPassHandle *)ci.renderPass)->renderPass;
 	pipelineInfo.subpass = ci.subpass;

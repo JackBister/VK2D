@@ -10,8 +10,6 @@
 #include "Core/HashedString.h"
 #include "Core/transform.h"
 
-class Scene;
-
 class Entity final : public Deserializable
 {
 public:
@@ -22,8 +20,9 @@ public:
 	Component * GetComponent(std::string type) const;
 
 	std::string name;
-	Scene * scene;
 	Transform transform;
 
 	std::vector<std::unique_ptr<Component>> components;
+
+	REFLECT();
 };

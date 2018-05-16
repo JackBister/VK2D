@@ -8,6 +8,11 @@
 
 COMPONENT_IMPL(BallComponent, &BallComponent::s_Deserialize)
 
+REFLECT_STRUCT_BEGIN(BallComponent)
+REFLECT_STRUCT_MEMBER(velocityDir)
+REFLECT_STRUCT_MEMBER(moveSpeed)
+REFLECT_STRUCT_END();
+
 Deserializable * BallComponent::s_Deserialize(ResourceManager *, std::string const& str)
 {
 	auto ret = new BallComponent();
@@ -54,7 +59,7 @@ void BallComponent::OnEvent(HashedString name, EventArgs args)
 			velocityDir.x = -velocityDir.x;
 		} else {
 			auto norm = glm::normalize(glm::vec2(collisionInfo->normals[0]));
-			velocityDir -= 2 * glm::dot(velocityDir, norm) * norm;
+			velocityDir -= 2 * glm::dot((glm::vec2)velocityDir, norm) * norm;
 		}
 	}
 }

@@ -1,27 +1,43 @@
 #include "Core/dtime.h"
 
-using std::chrono::high_resolution_clock;
 
-void Time::Start(float ts)
-{
-	timeScale = ts;
-	startTime = high_resolution_clock::now();
-	lastTime = startTime;
-}
+namespace Time {
+	using std::chrono::high_resolution_clock;
+	float unscaledDeltaTime;
+	float timeScale;
+	std::chrono::high_resolution_clock::time_point lastTime;
+	std::chrono::high_resolution_clock::time_point startTime;
 
-void Time::Frame()
-{
-	high_resolution_clock::time_point currTime = high_resolution_clock::now();
-	deltaTime = timeScale * std::chrono::duration<float>(currTime - lastTime).count();
-	lastTime = currTime;
-}
+	void Start(float ts)
+	{
+		timeScale = ts;
+		startTime = high_resolution_clock::now();
+		lastTime = startTime;
+	}
 
-float Time::GetDeltaTime()
-{
-	return deltaTime;
-}
+	void Frame()
+	{
+		high_resolution_clock::time_point currTime = high_resolution_clock::now();
+		unscaledDeltaTime = std::chrono::duration<float>(currTime - lastTime).count();
+		lastTime = currTime;
+	}
 
-std::chrono::high_resolution_clock::time_point Time::GetLastTime()
-{
-	return lastTime;
+	float GetDeltaTime()
+	{
+		return timeScale * unscaledDeltaTime;
+	}
+
+	float GetUnscaledDeltaTime()
+	{
+		return unscaledDeltaTime;
+	}
+
+	std::chrono::high_resolution_clock::time_point GetLastTime()
+	{
+		return lastTime;
+	}
+	void SetTimeScale(float scale)
+	{
+		timeScale = scale;
+	}
 }

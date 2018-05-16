@@ -48,7 +48,8 @@
 				{
 					"type": "CameraComponent",
 					"aspect": 0.75,
-					"viewSize": 60
+					"viewSize": 60,
+					"defaultsToMain": true
 				}
 			]
 		},

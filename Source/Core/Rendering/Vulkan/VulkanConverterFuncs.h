@@ -10,9 +10,11 @@ static constexpr VkAttachmentReference ToVulkanAttachmentReference(RenderPassHan
 static constexpr uint32_t ToVulkanBufferUsageFlagBits(BufferUsageFlags flags);
 static constexpr VkComponentMapping ToVulkanComponentMapping(ImageViewHandle::ComponentMapping mapping);
 static constexpr VkComponentSwizzle ToVulkanComponentSwizzle(ComponentSwizzle swizzle);
+static constexpr VkCullModeFlagBits ToVulkanCullMode(CullMode cullMode);
 static constexpr VkDescriptorType ToVulkanDescriptorType(DescriptorType descriptorType);
 static constexpr VkFilter ToVulkanFilter(Filter filter);
 static constexpr VkFormat ToVulkanFormat(Format const& format);
+static constexpr VkFrontFace ToVulkanFrontFace(FrontFace frontFace);
 static constexpr VkImageLayout ToVulkanImageLayout(ImageLayout layout);
 static constexpr VkAttachmentLoadOp ToVulkanLoadOp(RenderPassHandle::AttachmentDescription::LoadOp op);
 static constexpr VkPipelineBindPoint ToVulkanPipelineBindPoint(RenderPassHandle::PipelineBindPoint point);
@@ -81,6 +83,23 @@ static constexpr VkComponentSwizzle ToVulkanComponentSwizzle(ComponentSwizzle sw
 	}
 }
 
+static constexpr VkCullModeFlagBits ToVulkanCullMode(CullMode cullMode)
+{
+	switch (cullMode) {
+	case CullMode::NONE:
+		return VK_CULL_MODE_NONE;
+	case CullMode::BACK:
+		return VK_CULL_MODE_BACK_BIT;
+	case CullMode::FRONT:
+		return VK_CULL_MODE_FRONT_BIT;
+	case CullMode::FRONT_AND_BACK:
+		return VK_CULL_MODE_FRONT_AND_BACK;
+	default:
+		assert(false);
+		return VK_CULL_MODE_NONE;
+	}
+}
+
 static constexpr VkDescriptorType ToVulkanDescriptorType(DescriptorType descriptorType) {
 	switch (descriptorType) {
 	case DescriptorType::COMBINED_IMAGE_SAMPLER:
@@ -117,6 +136,19 @@ static constexpr VkFormat ToVulkanFormat(Format const& format) {
 		return VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
 	default:
 		return VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
+	}
+}
+
+static constexpr VkFrontFace ToVulkanFrontFace(FrontFace frontFace)
+{
+	switch (frontFace) {
+	case FrontFace::COUNTER_CLOCKWISE:
+		return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	case FrontFace::CLOCKWISE:
+		return VK_FRONT_FACE_CLOCKWISE;
+	default:
+		assert(false);
+		return VK_FRONT_FACE_CLOCKWISE;
 	}
 }
 

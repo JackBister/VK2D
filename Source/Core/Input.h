@@ -3,11 +3,12 @@
 #include "Core/DllExport.h"
 #include "Core/HashedString.h"
 #include "Core/keycodes.h"
+#include "Core/Math/mathtypes.h"
 
 namespace Input
 {
-	void EAPI AddKeybind(HashedString, Keycode);
 	void Frame();
+	void Init();
 	bool EAPI GetKey(Keycode);
 	bool EAPI GetKeyDown(Keycode);
 	bool EAPI GetKeyUp(Keycode);
@@ -16,5 +17,8 @@ namespace Input
 	bool EAPI GetButtonDown(HashedString);
 	bool EAPI GetButtonUp(HashedString);
 
+	IVec2 EAPI GetMousePosition();
+
+	void EAPI AddKeybind(HashedString, Keycode);
 	void EAPI RemoveKeybind(HashedString, Keycode);
 };

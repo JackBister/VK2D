@@ -175,6 +175,7 @@ PipelineHandle * OpenGLResourceContext::CreateGraphicsPipeline(ResourceCreationC
 		printf("[ERROR] Linking GL program.\n");
 	}
 
+	ret->rasterizationState = *ci.rasterizationState;
 	ret->vertexInputState = ci.vertexInputState;
 	ret->descriptorSetLayout = ci.descriptorSetLayout;
 

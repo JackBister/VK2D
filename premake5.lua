@@ -71,13 +71,13 @@ solution "Vulkan2D"
 
 		filter "Debug"
 			libdirs { staticPlatformDirectory .. "debug/lib", platformdirectory .. "debug/lib" }
-			links { "glew32d", "SDL2d",  "BulletDynamics_Debug", "BulletCollision_Debug", "LinearMath_Debug" }
+			links { "glew32d", "SDL2d",  "BulletDynamics_Debug", "BulletCollision_Debug", "LinearMath_Debug", "imguid" }
 			optimize "Off"
 			symbols "On"
 
 		filter "Release"
 			libdirs { staticPlatformDirectory .. "lib", platformdirectory .. "lib" }
-			links { "glew32", "SDL2", "BulletDynamics", "BulletCollision", "LinearMath" }
+			links { "glew32", "SDL2", "BulletDynamics", "BulletCollision", "LinearMath", "imgui" }
 			optimize "Full"
 
 		--CUSTOM BUILD COMMANDS--

@@ -19,6 +19,7 @@
 #include "Core/transform.h"
 
 #if defined(_WIN64) && defined(_DEBUG)
+#define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
 #endif
 

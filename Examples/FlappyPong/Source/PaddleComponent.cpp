@@ -8,6 +8,13 @@
 
 COMPONENT_IMPL(PaddleComponent, &PaddleComponent::s_Deserialize)
 
+REFLECT_STRUCT_BEGIN(PaddleComponent)
+REFLECT_STRUCT_MEMBER(flapSpeed)
+REFLECT_STRUCT_MEMBER(gravity)
+REFLECT_STRUCT_MEMBER(isColliding)
+REFLECT_STRUCT_MEMBER(velocityY)
+REFLECT_STRUCT_END()
+
 Deserializable * PaddleComponent::s_Deserialize(ResourceManager *, std::string const& str)
 {
 	auto ret = new PaddleComponent();

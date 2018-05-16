@@ -12,6 +12,11 @@
 
 DESERIALIZABLE_IMPL(Entity, &Entity::s_Deserialize)
 
+REFLECT_STRUCT_BEGIN(Entity)
+REFLECT_STRUCT_MEMBER(transform)
+REFLECT_STRUCT_MEMBER(components)
+REFLECT_STRUCT_END()
+
 void Entity::FireEvent(HashedString ename, EventArgs args)
 {
 	for (auto const& c : components) {

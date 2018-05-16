@@ -1,0 +1,419 @@
+//This file is a bit of a mess right now. It combines header and implementation. It uses old style include guards because of this.
+//This is because I want to link it directly in both core and DLLs.
+
+#ifndef REFLECT_H
+#define REFLECT_H
+
+#ifdef _DEBUG
+
+#include <cstddef>
+#include <iostream>
+#include <memory>
+
+#include <sstream>
+#include <string>
+#include <variant>
+#include <vector>
+
+#include <imgui.h>
+
+class EditorNode
+{
+public:
+	enum Type
+	{
+		NULLPTR,
+		TREE,
+		BOOL,
+		FLOAT,
+		INT
+	};
+
+	struct NullPtr
+	{
+		std::string label;
+	};
+
+	struct Tree
+	{
+		std::string label;
+		std::vector<std::unique_ptr<EditorNode>> children;
+	};
+
+	struct Bool
+	{
+		std::string label;
+		bool * v;
+	};
+
+	struct Float
+	{
+		std::string label;
+		float * v;
+		int extra_flags;
+	};
+
+	struct Int
+	{
+		std::string label;
+		int * v;
+		int extra_flags;
+	};
+
+	EditorNode(std::variant<NullPtr, Tree, Bool, Float, Int>&& node) : type(node.index()), node(std::move(node)) {}
+
+	size_t type;
+	std::variant<NullPtr, Tree, Bool, Float, Int> node;
+};
+
+namespace reflect {
+
+	//--------------------------------------------------------
+	// Base class of all type descriptors
+	//--------------------------------------------------------
+
+	struct TypeDescriptor {
+		const char* name;
+		size_t size;
+
+		TypeDescriptor(const char* name, size_t size)
+			: name{name}, size{size}
+		{
+		}
+		virtual ~TypeDescriptor() {}
+		virtual std::string getFullName() const { return name; }
+		virtual void dump(const void* obj, int indentLevel = 0) const = 0;
+		virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const = 0;
+	};
+
+	//--------------------------------------------------------
+	// Finding type descriptors
+	//--------------------------------------------------------
+
+	// Declare the function template that handles primitive types such as int, std::string, etc.:
+	template <typename T>
+	TypeDescriptor* getPrimitiveDescriptor();
+
+	// A helper class to find TypeDescriptors in different ways:
+	struct DefaultResolver {
+		template <typename T> static char func(decltype(&T::Reflection));
+		template <typename T> static int func(...);
+		template <typename T>
+		struct IsReflected {
+			enum { value = (sizeof(func<T>(nullptr)) == sizeof(char)) };
+		};
+
+		template <typename T> static char f(decltype(&T::GetReflection));
+		template <typename T> static int f(...);
+		template <typename T>
+		struct IsInheritanceReflected {
+			enum { value = (sizeof(f<T>(nullptr)) == sizeof(char)) };
+		};
+
+		// This version is called if T has a static member named "Reflection":
+		template <typename T, typename std::enable_if<IsReflected<T>::value, int>::type = 0>
+		static TypeDescriptor* get() {
+			return &T::Reflection;
+		}
+
+		// This version is called otherwise:
+		template <typename T, typename std::enable_if<!IsReflected<T>::value, int>::type = 0>
+		static TypeDescriptor* get() {
+			return getPrimitiveDescriptor<T>();
+		}
+
+		template <typename T, typename std::enable_if<IsInheritanceReflected<T>::value, int>::type = 0>
+		static TypeDescriptor * get(T * v) {
+			return v->GetReflection();
+		}
+
+		template <typename T, typename std::enable_if<!IsInheritanceReflected<T>::value, int>::type = 0>
+		static TypeDescriptor * get(T * v) {
+			return get<T>();
+		}
+	};
+
+	// This is the primary class template for finding all TypeDescriptors:
+	template <typename T>
+	struct TypeResolver {
+		static TypeDescriptor* get() {
+			return DefaultResolver::get<T>();
+		}
+
+		static TypeDescriptor * get(T * v) {
+			return DefaultResolver::get<T>(v);
+		}
+	};
+
+	//--------------------------------------------------------
+	// Type descriptors for user-defined structs/classes
+	//--------------------------------------------------------
+	struct TypeDescriptor_Struct : TypeDescriptor {
+		struct Member {
+			const char* name;
+			size_t offset;
+			TypeDescriptor* type;
+		};
+
+		std::vector<Member> members;
+
+		TypeDescriptor_Struct(void(*init)(TypeDescriptor_Struct*)) : TypeDescriptor{nullptr, 0} {
+			init(this);
+		}
+		TypeDescriptor_Struct(const char* name, size_t size, const std::initializer_list<Member>& init) : TypeDescriptor{nullptr, 0}, members{init} {
+		}
+		virtual void dump(const void* obj, int indentLevel) const override {
+			std::cout << name << " {" << std::endl;
+			for (const Member& member : members) {
+				std::cout << std::string(4 * (indentLevel + 1), ' ') << member.name << " = ";
+				member.type->dump((char*)obj + member.offset, indentLevel + 1);
+				std::cout << std::endl;
+			}
+			std::cout << std::string(4 * indentLevel, ' ') << "}";
+		}
+		virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
+		{
+			EditorNode::Tree ret;
+			ret.label = name;
+			ret.label.append(" <").append(this->name).append(">");
+			for (auto const& member : members) {
+				ret.children.push_back(std::move(member.type->DrawEditorGui(member.name, (char *)obj + member.offset, isLocked)));
+			}
+			return std::make_unique<EditorNode>(std::move(ret));
+		}
+	};
+
+	//--------------------------------------------------------
+	// Type descriptors for std::unique_ptr
+	//--------------------------------------------------------
+	template <typename TargetType>
+	struct TypeDescriptor_StdUniquePtr : TypeDescriptor {
+		TypeDescriptor* targetType;
+		const void* (*getTarget)(const void*);
+
+		// Template constructor:
+		TypeDescriptor_StdUniquePtr(TargetType* /* dummy argument */)
+			: TypeDescriptor{"std::unique_ptr<>", sizeof(std::unique_ptr<TargetType>)},
+			targetType{TypeResolver<TargetType>::get()} {
+			getTarget = [](const void* uniquePtrPtr) -> const void* {
+				const auto& uniquePtr = *(const std::unique_ptr<TargetType>*) uniquePtrPtr;
+				return uniquePtr.get();
+			};
+		}
+
+		virtual std::string getFullName() const override {
+			return std::string("std::unique_ptr<") + targetType->getFullName() + ">";
+		}
+
+		virtual void dump(const void* obj, int indentLevel) const override {
+			std::cout << getFullName() << "{";
+			const void* targetObj = getTarget(obj);
+			if (targetObj == nullptr) {
+				std::cout << "nullptr";
+			} else {
+				std::cout << std::endl;
+				std::cout << std::string(4 * (indentLevel + 1), ' ');
+				targetType->dump(targetObj, indentLevel + 1);
+				std::cout << std::endl;
+				std::cout << std::string(4 * indentLevel, ' ');
+			}
+			std::cout << "}";
+		}
+
+		virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
+		{
+			void const * target = getTarget(obj);
+			if (target == nullptr) {
+				return std::make_unique<EditorNode>(EditorNode::NullPtr{name});
+			}
+			auto derived = TypeResolver<TargetType>::get((TargetType *)target);
+			return derived->DrawEditorGui(name, target, isLocked);
+		}
+	};
+
+	template <typename T>
+	class TypeResolver<std::unique_ptr<T>> {
+	public:
+		static TypeDescriptor* get() {
+			static TypeDescriptor_StdUniquePtr<T> typeDesc{(T*) nullptr};
+			return &typeDesc;
+		}
+
+		static TypeDescriptor * get(std::unique_ptr<T>&) {
+			static TypeDescriptor_StdUniquePtr<T> typeDesc{(T*) nullptr};
+			return &typeDesc;
+		}
+	};
+
+	//--------------------------------------------------------
+	// Type descriptors for std::vector
+	//--------------------------------------------------------
+	template <typename ItemType>
+	struct TypeDescriptor_StdVector : TypeDescriptor {
+		TypeDescriptor* itemType;
+		size_t(*getSize)(const void*);
+		const void* (*getItem)(const void*, size_t);
+
+		TypeDescriptor_StdVector(ItemType*)
+			: TypeDescriptor{"std::vector<>", sizeof(std::vector<ItemType>)},
+			itemType{TypeResolver<ItemType>::get()} {
+			getSize = [](const void* vecPtr) -> size_t {
+				const auto& vec = *(const std::vector<ItemType>*) vecPtr;
+				return vec.size();
+			};
+			getItem = [](const void* vecPtr, size_t index) -> const void* {
+				const auto& vec = *(const std::vector<ItemType>*) vecPtr;
+				return &vec[index];
+			};
+		}
+		virtual std::string getFullName() const override {
+			return std::string("std::vector<") + itemType->getFullName() + ">";
+		}
+		virtual void dump(const void* obj, int indentLevel) const override {
+			size_t numItems = getSize(obj);
+			std::cout << getFullName();
+			if (numItems == 0) {
+				std::cout << "{}";
+			} else {
+				std::cout << "{" << std::endl;
+				for (size_t index = 0; index < numItems; index++) {
+					std::cout << std::string(4 * (indentLevel + 1), ' ') << "[" << index << "] ";
+					itemType->dump(getItem(obj, index), indentLevel + 1);
+					std::cout << std::endl;
+				}
+				std::cout << std::string(4 * indentLevel, ' ') << "}";
+			}
+		}
+
+		virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
+		{
+			EditorNode::Tree ret;
+			ret.label = name;
+			auto numItems = getSize(obj);
+			for (size_t i = 0; i < numItems; ++i) {
+				std::stringstream ss;
+				ss << '[' << i << ']';
+				auto derived = TypeResolver<ItemType>::get(*(ItemType*)getItem(obj, i));
+				ret.children.push_back(std::move(derived->DrawEditorGui(ss.str().c_str(), getItem(obj, i), isLocked)));
+			}
+			return std::make_unique<EditorNode>(std::move(ret));
+		}
+	};
+
+	// Partially specialize TypeResolver<> for std::vectors:
+	template <typename T>
+	class TypeResolver<std::vector<T>> {
+	public:
+		static TypeDescriptor* get() {
+			static TypeDescriptor_StdVector<T> typeDesc{(T*) nullptr};
+			return &typeDesc;
+		}
+	};
+
+#define REFLECT_INHERITANCE() \
+	virtual reflect::TypeDescriptor_Struct * GetReflection() \
+	{ \
+		return &Reflection; \
+	}
+
+#define REFLECT() \
+    friend struct reflect::DefaultResolver; \
+    static reflect::TypeDescriptor_Struct Reflection; \
+    static void initReflection(reflect::TypeDescriptor_Struct*);
+
+#define REFLECT_STRUCT_BEGIN(type) \
+    reflect::TypeDescriptor_Struct type::Reflection{type::initReflection}; \
+    void type::initReflection(reflect::TypeDescriptor_Struct* typeDesc) { \
+        using T = type; \
+        typeDesc->name = #type; \
+        typeDesc->size = sizeof(T); \
+        typeDesc->members = {
+
+#define REFLECT_STRUCT_MEMBER(name) \
+            {#name, offsetof(T, name), reflect::TypeResolver<decltype(T::name)>::get()},
+
+#define REFLECT_STRUCT_END() \
+        }; \
+    }
+} // namespace reflect
+
+#else //_DEBUG
+#define REFLECT_INHERITANCE()
+#define REFLECT()
+#define REFLECT_STRUCT_BEGIN(type)
+#define REFLECT_STRUCT_MEMBER(name)
+#define REFLECT_STRUCT_END()
+#endif //_DEBUG
+
+#endif //REFLECT_H
+
+#ifdef REFLECT_IMPL
+
+namespace reflect
+{
+	//--------------------------------------------------------
+	// Type descriptors for primitive types
+	//--------------------------------------------------------
+	struct TypeDescriptor_Bool : TypeDescriptor
+	{
+		TypeDescriptor_Bool() : TypeDescriptor{"bool", sizeof(bool)} {}
+		virtual void dump(void const * obj, int) const override
+		{
+			std::cout << "bool{" << *(bool *)obj << "}";
+		}
+
+		virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
+		{
+			return std::make_unique<EditorNode>(EditorNode::Bool{name, (bool *)obj});
+		}
+	};
+
+	template <>
+	TypeDescriptor* getPrimitiveDescriptor<bool>() {
+		static TypeDescriptor_Bool typeDesc;
+		return &typeDesc;
+	}
+
+	struct TypeDescriptor_Float : TypeDescriptor
+	{
+		TypeDescriptor_Float() : TypeDescriptor{"float", sizeof(float)} {}
+		virtual void dump(const void * obj, int) const override
+		{
+			std::cout << "float{" << *(float *)obj << "}";
+		}
+
+		virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
+		{
+			return std::make_unique<EditorNode>(EditorNode::Float{name, (float *)obj, isLocked ? ImGuiInputTextFlags_ReadOnly : 0});
+		}
+	};
+
+	template <>
+	TypeDescriptor* getPrimitiveDescriptor<float>() {
+		static TypeDescriptor_Float typeDesc;
+		return &typeDesc;
+	}
+
+	struct TypeDescriptor_Int : TypeDescriptor
+	{
+		TypeDescriptor_Int() : TypeDescriptor{"int", sizeof(int)} {}
+		virtual void dump(const void * obj, int) const override
+		{
+			std::cout << "int{" << *(int *)obj << "}";
+		}
+
+		virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
+		{
+			return std::make_unique<EditorNode>(EditorNode::Int{name, (int *)obj, isLocked ? ImGuiInputTextFlags_ReadOnly : 0});
+		}
+	};
+
+	template <>
+	TypeDescriptor* getPrimitiveDescriptor<int>() {
+		static TypeDescriptor_Int typeDesc;
+		return &typeDesc;
+	}
+
+}
+
+#endif

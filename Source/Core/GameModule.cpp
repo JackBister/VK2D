@@ -4,18 +4,22 @@
 #include <vector>
 
 #include "Core/Components/CameraComponent.h"
+#include "Core/entity.h"
 #include "Core/Input.h"
 #include "Core/physicsworld.h"
 #include "Core/Rendering/Renderer.h"
 #include "Core/Rendering/Shaders/passthrough.frag.spv.h"
 #include "Core/Rendering/Shaders/passthrough-transform.vert.spv.h"
+#include "Core/Rendering/Shaders/ui.frag.spv.h"
+#include "Core/Rendering/Shaders/ui.vert.spv.h"
 #include "Core/scene.h"
+#include "Core/UI/EditorSystem.h"
+#include "Core/UI/UiSystem.h"
 #include "Core/dtime.h"
 
 namespace GameModule {
 	struct FrameInfo
 	{
-		std::vector<SubmittedCamera> camerasToSubmit;
 		std::vector<CommandBuffer *> commandBuffers;
 
 		FramebufferHandle * framebuffer;
@@ -36,12 +40,19 @@ namespace GameModule {
 
 	uint32_t currFrameInfoIdx = 0;
 	FrameStage currFrameStage;
+	std::vector<Entity *> entities;
 	std::vector<FrameInfo> frameInfo;
+	Entity * mainCameraEntity;
+	CameraComponent * mainCameraComponent;
 	PhysicsWorld * physicsWorld;
 	Renderer * renderer;
 	ResourceManager * resourceManager;
-	Time time;
 	std::vector<Scene> scenes;
+
+	void AddEntity(Entity * e)
+	{
+		entities.push_back(e);
+	}
 
 	void BeginPlay()
 	{
@@ -99,11 +110,19 @@ namespace GameModule {
 
 		DescriptorSetLayoutHandle * ptPipelineDescriptorSetLayout;
 
+		DescriptorSetLayoutHandle * uiPipelineDescriptorSetLayout;
+
 		ShaderModuleHandle * ptvShader;
 		ShaderModuleHandle * pfShader;
 
+		ShaderModuleHandle * uivShader;
+		ShaderModuleHandle * uifShader;
+
 		VertexInputStateHandle * ptInputState;
 		PipelineHandle * ptPipeline;
+
+		VertexInputStateHandle * uiInputState;
+		PipelineHandle * uiPipeline;
 
 		frameInfo = std::vector<FrameInfo>(renderer->GetSwapCount());
 
@@ -139,6 +158,21 @@ namespace GameModule {
 				ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER,
 				shaders_passthrough_frag_spv_len,
 				shaders_passthrough_frag_spv
+				});
+
+			/*
+				Create UI shaders
+			*/
+			uivShader = ctx.CreateShaderModule({
+				ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER,
+				shaders_ui_vert_spv_len,
+				shaders_ui_vert_spv
+				});
+
+			uifShader = ctx.CreateShaderModule({
+				ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER,
+				shaders_ui_frag_spv_len,
+				shaders_ui_frag_spv
 				});
 
 			/*
@@ -258,6 +292,11 @@ namespace GameModule {
 				}
 			};
 
+			ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineRasterizationStateCreateInfo ptRasterization{
+				CullMode::BACK,
+				FrontFace::CLOCKWISE
+			};
+
 			ptInputState = ctx.CreateVertexInputState({
 				1,
 				&binding,
@@ -269,7 +308,91 @@ namespace GameModule {
 				2,
 				stages,
 				ptInputState,
+				&ptRasterization,
 				ptPipelineDescriptorSetLayout,
+				frameInfo[0].mainRenderPass,
+				0
+				});
+
+			/*
+				Create UI shader program
+			*/
+			ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding uiBindings[1] = {
+				{
+					0,
+					DescriptorType::COMBINED_IMAGE_SAMPLER,
+					ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT
+				}
+			};
+
+			uiPipelineDescriptorSetLayout = ctx.CreateDescriptorSetLayout({
+				1,
+				uiBindings
+				});
+
+			ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineShaderStageCreateInfo uiStages[2] = {
+				{
+					ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT,
+					uivShader,
+					"UI Vertex Shader"
+				},
+				{
+					ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT,
+					uifShader,
+					"UI Fragment Shader"
+				}
+			};
+
+			ResourceCreationContext::VertexInputStateCreateInfo::VertexBindingDescription uiBinding = {
+				0,
+				4 * sizeof(float) + 4 * sizeof(uint8_t)
+			};
+
+			ResourceCreationContext::VertexInputStateCreateInfo::VertexAttributeDescription uiAttributes[3] = {
+				{
+					0,
+					0,
+					VertexComponentType::FLOAT,
+					2,
+					false,
+					0
+				},
+				{
+					0,
+					1,
+					VertexComponentType::FLOAT,
+					2,
+					false,
+					2 * sizeof(float)
+				},
+				{
+					0,
+					2,
+					VertexComponentType::UBYTE,
+					4,
+					true,
+					4 * sizeof(float)
+				}
+			};
+
+			ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineRasterizationStateCreateInfo uiRasterization{
+				CullMode::NONE,
+				FrontFace::COUNTER_CLOCKWISE
+			};
+
+			uiInputState = ctx.CreateVertexInputState({
+				1,
+				&uiBinding,
+				3,
+				uiAttributes
+				});
+
+			uiPipeline = ctx.CreateGraphicsPipeline({
+				2,
+				uiStages,
+				uiInputState,
+				&uiRasterization,	
+				uiPipelineDescriptorSetLayout,
 				frameInfo[0].mainRenderPass,
 				0
 				});
@@ -296,9 +419,16 @@ namespace GameModule {
 		resourceManager->AddResource("_Primitives/Shaders/passthrough-transform.vert", ptvShader);
 		resourceManager->AddResource("_Primitives/Shaders/passthrough.frag", pfShader);
 
+		resourceManager->AddResource("_Primitives/Shaders/ui.vert", uivShader);
+		resourceManager->AddResource("_Primitives/Shaders/ui.frag", uifShader);
+
 		resourceManager->AddResource("_Primitives/VertexInputStates/passthrough-transform.state", ptInputState);
 		resourceManager->AddResource("_Primitives/Pipelines/passthrough-transform.pipe", ptPipeline);
 		resourceManager->AddResource("_Primitives/DescriptorSetLayouts/passthrough-transform.layout", ptPipelineDescriptorSetLayout);
+
+		resourceManager->AddResource("_Primitives/VertexInputStates/ui.state", uiInputState);
+		resourceManager->AddResource("_Primitives/Pipelines/ui.pipe", uiPipeline);
+		resourceManager->AddResource("_Primitives/DescriptorSetLayouts/ui.layout", uiPipelineDescriptorSetLayout);
 	}
 
 	std::vector<CommandBuffer *> CreateSecondaryCommandContexts()
@@ -315,7 +445,7 @@ namespace GameModule {
 	void DeserializePhysics(std::string const& str)
 	{
 		if (physicsWorld == nullptr) {
-			physicsWorld = (PhysicsWorld *) Deserializable::DeserializeString(resourceManager, str);
+			physicsWorld = (PhysicsWorld *)Deserializable::DeserializeString(resourceManager, str);
 			return;
 		}
 		auto j = nlohmann::json::parse(str);
@@ -328,6 +458,35 @@ namespace GameModule {
 		for (size_t i = 0; i < frameInfo.size(); ++i) {
 			frameInfo[i].commandBufferAllocator->DestroyContext(cbs[i]);
 		}
+	}
+
+	Entity * GetEntityByIdx(size_t idx)
+	{
+		if (entities.size() <= idx) {
+			return nullptr;
+		}
+		return entities[idx];
+	}
+
+	Entity * GetEntityByName(std::string const& name)
+	{
+		for (auto& s : scenes) {
+			auto ret = s.GetEntityByName(name);
+			if (ret != nullptr) {
+				return ret;
+			}
+		}
+		return nullptr;
+	}
+
+	size_t GetEntityCount()
+	{
+		return entities.size();
+	}
+
+	Entity * GetMainCamera()
+	{
+		return mainCameraEntity;
 	}
 
 	PhysicsWorld * GetPhysicsWorld()
@@ -358,7 +517,9 @@ namespace GameModule {
 
 		CreatePrimitives();
 
-		time.Start();
+		Input::Init();
+		Time::Start();
+		UiSystem::Init(resMan);
 	}
 
 	void LoadScene(std::string const& filename)
@@ -366,14 +527,19 @@ namespace GameModule {
 		scenes.emplace_back(filename, resourceManager, filename);
 	}
 
+	void RemoveEntity(Entity * entity)
+	{
+		for (auto it = entities.begin(); it != entities.end(); ++it) {
+			if (*it == entity) {
+				delete *it;
+				entities.erase(it);
+			}
+		}
+	}
+
 	std::string SerializePhysics()
 	{
 		return physicsWorld->Serialize();
-	}
-
-	void SubmitCamera(CameraComponent * cam)
-	{
-		frameInfo[currFrameInfoIdx].camerasToSubmit.push_back({cam->GetView(), cam->GetProjection()});
 	}
 
 	void SubmitCommandBuffer(CommandBuffer * ctx)
@@ -381,12 +547,18 @@ namespace GameModule {
 		frameInfo[currFrameInfoIdx].commandBuffers.push_back(ctx);
 	}
 
+	void TakeCameraFocus(Entity * camera)
+	{
+		mainCameraEntity = camera;
+		mainCameraComponent = (CameraComponent *) camera->GetComponent("CameraComponent");
+	}
+
 	void Tick()
 	{
 		currFrameStage = FrameStage::INPUT;
 		Input::Frame();
 		currFrameStage = FrameStage::TIME;
-		time.Frame();
+		Time::Frame();
 
 		//TODO: remove these (hardcoded serialize + dump keybinds)
 #ifdef _DEBUG
@@ -417,22 +589,22 @@ namespace GameModule {
 		currFrame.canStartFrame->Wait(std::numeric_limits<uint64_t>::max());
 		currFrame.commandBufferAllocator->Reset();
 
-		currFrame.camerasToSubmit.clear();
 		currFrame.commandBuffers.clear();
 
 		currFrameStage = FrameStage::PHYSICS;
 		//TODO: substeps
-		physicsWorld->world->stepSimulation(time.GetDeltaTime());
+		physicsWorld->world->stepSimulation(Time::GetDeltaTime());
 		currFrameStage = FrameStage::TICK;
 		for (auto& s : scenes) {
-			s.BroadcastEvent("Tick", {{"deltaTime", time.GetDeltaTime()}});
+			s.BroadcastEvent("Tick", {{"deltaTime", Time::GetDeltaTime()}});
 		}
 
 		currFrameStage = FrameStage::PRE_RENDERPASS;
+		SubmittedCamera submittedCamera;
+		submittedCamera.projection = mainCameraComponent->GetProjection();
+		submittedCamera.view = mainCameraComponent->GetView();
 		for (auto& s : scenes) {
-			for (auto& cc : currFrame.camerasToSubmit) {
-				s.BroadcastEvent("PreRenderPass", {{"camera", &cc}});
-			}
+			s.BroadcastEvent("PreRenderPass", {{"camera", &submittedCamera}});
 		}
 
 		currFrame.preRenderPassCommandBuffer->Reset();
@@ -480,10 +652,12 @@ namespace GameModule {
 		currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::SECONDARY_COMMAND_BUFFERS);
 		currFrame.currentSubpass = 0;
 		for (auto& s : scenes) {
-			for (auto& cc : currFrame.camerasToSubmit) {
-				s.BroadcastEvent("MainRenderPass", {{"camera", &cc}});
-			}
+			s.BroadcastEvent("MainRenderPass", {{"camera", &submittedCamera}});
 		}
+
+		UiSystem::BeginFrame();
+		EditorSystem::OnGui();
+		UiSystem::EndFrame();
 
 		//TODO: Assumes single thread
 		if (currFrame.commandBuffers.size() > 0) {

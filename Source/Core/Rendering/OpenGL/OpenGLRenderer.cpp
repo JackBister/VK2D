@@ -113,7 +113,11 @@ void Renderer::DrainQueue()
 	{
 		auto fun = std::get<RenderCommand::CreateResourceParams>(command.params).fun;
 		OpenGLResourceContext ctx;
+		glFlush();
+		glFinish();
 		fun(ctx);
+		glFlush();
+		glFinish();
 		break;
 	}
 	case RenderCommand::Type::EXECUTE_COMMAND_CONTEXT:

@@ -6,6 +6,7 @@
 #include "Core/DllExport.h"
 #include "Core/eventarg.h"
 #include "Core/HashedString.h"
+#include "Core/Reflect.h"
 
 class Entity;
 
@@ -24,4 +25,7 @@ public:
 	Entity * entity;
 	bool isActive = true;
 	bool receiveTicks;
+
+	REFLECT()
+	REFLECT_INHERITANCE()
 };

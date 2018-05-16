@@ -451,6 +451,7 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 	graphicsQueueIdx = graphicsQueueIdx;
 	vkGetDeviceQueue(basics.device, graphicsQueueIdx, 0, &graphicsQueue);
 	presentQueueIdx = presentQueueIdx;
+	//TODO: graphicsQueueIdx == presentQueueIdx => same queue used for present and graphics => ?
 	vkGetDeviceQueue(basics.device, presentQueueIdx, 0, &presentQueue);
 
 	//Create command pools

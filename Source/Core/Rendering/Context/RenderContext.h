@@ -69,6 +69,14 @@ enum class ComponentSwizzle
 	A
 };
 
+enum class CullMode
+{
+	NONE,
+	BACK,
+	FRONT,
+	FRONT_AND_BACK
+};
+
 enum class DependencyFlagBits
 {
 	BY_REGION_BIT = 0x00000001
@@ -103,6 +111,12 @@ enum class Format
 	RG8,
 	RGB8,
 	RGBA8
+};
+
+enum class FrontFace
+{
+	COUNTER_CLOCKWISE,
+	CLOCKWISE,
 };
 
 enum class ImageLayout
@@ -272,7 +286,10 @@ struct ImageViewHandle
 		ComponentSwizzle g;
 		ComponentSwizzle b;
 		ComponentSwizzle a;
+
+		static const ComponentMapping IDENTITY;
 	};
+
 	struct ImageSubresourceRange
 	{
 		uint32_t aspectMask;
@@ -610,10 +627,16 @@ public:
 			ShaderModuleHandle * module;
 			std::string name;
 		};
+
+		struct PipelineRasterizationStateCreateInfo {
+			CullMode cullMode;
+			FrontFace frontFace;
+		};
 	
 		uint32_t stageCount;
 		PipelineShaderStageCreateInfo * pStages;
 		VertexInputStateHandle * vertexInputState;
+		PipelineRasterizationStateCreateInfo * rasterizationState;
 		DescriptorSetLayoutHandle * descriptorSetLayout;
 		RenderPassHandle * renderPass;
 		uint32_t subpass;

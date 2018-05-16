@@ -49,6 +49,7 @@ struct OpenGLRenderPassHandle : RenderPassHandle
 struct OpenGLPipelineHandle : PipelineHandle
 {
 	GLuint nativeHandle;
+	ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineRasterizationStateCreateInfo rasterizationState;
 };
 
 struct OpenGLSamplerHandle : SamplerHandle

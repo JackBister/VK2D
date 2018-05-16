@@ -12,6 +12,8 @@ public:
 
 	void OnEvent(HashedString name, EventArgs args = {}) override;
 
+	REFLECT()
+	REFLECT_INHERITANCE()
 private:
 	float flapSpeed = 40.f;
 	float gravity = 50.f;

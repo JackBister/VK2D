@@ -1,5 +1,7 @@
 #pragma once
 #include <Core/Components/Component.h>
+#include <Core/Math/mathtypes.h>
+#include <Core/Reflect.h>
 
 class BallComponent : public Component
 {
@@ -12,7 +14,9 @@ public:
 
 	void OnEvent(HashedString name, EventArgs args = {}) override;
 
+	REFLECT()
+	REFLECT_INHERITANCE()
 private:
-	glm::vec2 velocityDir;
+	Vec2 velocityDir;
 	float moveSpeed;
 };

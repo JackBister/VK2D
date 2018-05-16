@@ -94,6 +94,8 @@ private:
 	{
 		GLuint program;
 		GLuint vao;
+		GLenum cullMode;
+		GLenum frontFace;
 	};
 	struct BindVertexBufferArgs
 	{
@@ -108,6 +110,7 @@ private:
 		//Why the hell does OpenGL want a pointer for this?
 		void const * indices;
 		GLsizei primcount;
+		GLint basevertex;
 	};
 	struct EndRenderPassArgs
 	{

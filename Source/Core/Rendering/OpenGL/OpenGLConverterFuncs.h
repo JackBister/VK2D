@@ -31,6 +31,23 @@ static GLint ToGLAddressMode(AddressMode addressMode)
 	}
 }
 
+static GLenum ToGLCullMode(CullMode cullMode)
+{
+	switch (cullMode) {
+	case CullMode::NONE:
+		return GL_NONE;
+	case CullMode::BACK:
+		return GL_BACK;
+	case CullMode::FRONT:
+		return GL_FRONT;
+	case CullMode::FRONT_AND_BACK:
+		return GL_FRONT_AND_BACK;
+	default:
+		assert(false);
+		return GL_NONE;
+	}
+}
+
 static GLint ToGLFilter(Filter filter)
 {
 	switch (filter) {
@@ -60,6 +77,19 @@ static GLint ToGLFormat(Format format)
 		printf("[ERROR] Unrecognized image format: %d\n", ToUnderlyingType(format));
 		assert(false);
 		return GL_RGBA;
+	}
+}
+
+static GLenum ToGLFrontFace(FrontFace frontFace)
+{
+	switch (frontFace) {
+	case FrontFace::CLOCKWISE:
+		return GL_CW;
+	case FrontFace::COUNTER_CLOCKWISE:
+		return GL_CCW;
+	default:
+		assert(false);
+		return GL_CW;
 	}
 }
 
