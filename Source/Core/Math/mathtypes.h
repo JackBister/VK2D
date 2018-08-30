@@ -6,14 +6,6 @@
 #include "Core/DllExport.h"
 #include "Core/Reflect.h"
 
-struct EAPI IVec2 : glm::ivec2
-{
-public:
-	using glm::ivec2::tvec2;
-
-	REFLECT()
-};
-
 struct EAPI Mat4 : glm::mat4
 {
 public:
@@ -34,6 +26,8 @@ struct EAPI IVec2 : glm::ivec2
 {
 public:
 	using glm::ivec2::tvec2;
+
+	REFLECT()
 };
 
 struct EAPI Vec3 : glm::vec3

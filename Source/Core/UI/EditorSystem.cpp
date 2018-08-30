@@ -5,9 +5,11 @@
 
 #include "Core/entity.h"
 #include "Core/GameModule.h"
+#include "Core/Input.h"
 #define REFLECT_IMPL
 #include "Core/Reflect.h"
 #undef REFLECT_IMPL
+#include "Core/dtime.h"
 
 void DrawEditorNode(EditorNode * e)
 {
