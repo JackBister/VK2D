@@ -270,7 +270,8 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
 #endif
 	std::vector<const char *> const instanceLayers = {
 #if defined(_DEBUG)
-		"VK_LAYER_LUNARG_standard_validation"
+		"VK_LAYER_LUNARG_assistant_layer",
+		"VK_LAYER_LUNARG_standard_validation",
 #endif
 #if defined(VULKAN_API_DUMP)
 		"VK_LAYER_LUNARG_api_dump"
