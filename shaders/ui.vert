@@ -16,7 +16,7 @@ void main()
     Texcoord = uv;
     gl_Position = vec4(pos * vec2(2.0/800.0, 2.0/600.0) - vec2(1.0, 1.0), 0, 1);
 
-	if (gfxApi != GFX_API_VULKAN) {
+	if (gfxApi == GFX_API_OPENGL) {
 		gl_Position.y = -gl_Position.y;
 		gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
 	}
