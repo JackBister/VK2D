@@ -533,6 +533,7 @@ namespace GameModule {
 			if (*it == entity) {
 				delete *it;
 				entities.erase(it);
+				return;
 			}
 		}
 	}
@@ -577,6 +578,8 @@ namespace GameModule {
 				fi.preRenderPassCommandBuffer->EndRecording();
 				renderer->ExecuteCommandBuffer(fi.preRenderPassCommandBuffer, {}, {}, fi.canStartFrame);
 			}
+			mainCameraComponent = nullptr;
+			mainCameraEntity = nullptr;
 			scenes[0].Unload();
 		}
 #endif
@@ -601,10 +604,13 @@ namespace GameModule {
 
 		currFrameStage = FrameStage::PRE_RENDERPASS;
 		SubmittedCamera submittedCamera;
-		submittedCamera.projection = mainCameraComponent->GetProjection();
-		submittedCamera.view = mainCameraComponent->GetView();
+		if (mainCameraComponent) {
+			submittedCamera.projection = mainCameraComponent->GetProjection();
+			submittedCamera.view = mainCameraComponent->GetView();
+		}
+
 		for (auto& s : scenes) {
-			s.BroadcastEvent("PreRenderPass", {{"camera", &submittedCamera}});
+			s.BroadcastEvent("PreRenderPass", { {"camera", &submittedCamera} });
 		}
 
 		currFrame.preRenderPassCommandBuffer->Reset();
