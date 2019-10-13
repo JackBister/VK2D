@@ -1,0 +1,45 @@
+
+# Generated shader files
+*.spv.h
+
+# Files generated at runtime
+_dump.scene
+imgui.ini
+
+# CLion stuff
+.idea
+
+# Visual studio stuff
+*.sln
+*.vcxproj*
+
+# Binaries
+*.dll
+*.exe
+*.pdb
+*.spv
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Build results
+cmake-build-debug
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio 2015 cache/options directory
+.vs/
