@@ -36,5 +36,5 @@ private:
 	Mat4 view;
 	float viewSize;
 
-	Vec2 deltaLastFrame;
+	Vec2 deltaLastFrame = Vec2(0.0, 0.0);
 };

@@ -9,7 +9,7 @@
 struct EAPI Mat4 : glm::mat4
 {
 public:
-	using glm::mat4::tmat4x4;
+    using glm::mat4::mat;
 
 	REFLECT()
 };
@@ -17,7 +17,7 @@ public:
 struct EAPI Vec2 : glm::vec2
 {
 public:
-	using glm::vec2::tvec2;
+    using glm::vec2::vec;
 
 	REFLECT()
 };
@@ -25,7 +25,7 @@ public:
 struct EAPI IVec2 : glm::ivec2
 {
 public:
-	using glm::ivec2::tvec2;
+    using glm::ivec2::vec;
 
 	REFLECT()
 };
@@ -33,7 +33,7 @@ public:
 struct EAPI Vec3 : glm::vec3
 {
 public:
-	using glm::vec3::tvec3;
+    using glm::vec3::vec;
 
 	REFLECT()
 };
@@ -41,7 +41,7 @@ public:
 struct EAPI Quat : glm::quat
 {
 public:
-	using glm::quat::tquat;
+    using glm::quat::qua;
 
 	REFLECT()
 };

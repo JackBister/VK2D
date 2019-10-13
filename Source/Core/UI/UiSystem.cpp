@@ -32,7 +32,7 @@ namespace UiSystem
 	{
 		auto deltaTime = Time::GetDeltaTime();
 		auto& io = ImGui::GetIO();
-		io.DeltaTime = deltaTime;
+		io.DeltaTime = Time::GetUnscaledDeltaTime();
 		ImGui::NewFrame();
 	}
 

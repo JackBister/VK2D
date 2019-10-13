@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 
 #include <Core/Math/mathtypes.h>
 #include <Core/Rendering/Context/RenderContext.h>

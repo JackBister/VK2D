@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "Core/DllExport.h"
 #include "Core/Math/mathtypes.h"
 #include "Core/Queue.h"

@@ -109,7 +109,7 @@ namespace EditorSystem
 						cameraDragMultiplier = CAMERA_DRAG_MULTIPLIER_MAX;
 					}
 				}
-				ImGui::SetMouseCursor(ImGuiMouseCursor_Move);
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
 				if (ImGui::IsMouseDragging()) {
 					auto dragDelta = ImGui::GetMouseDragDelta();
 					ImGui::ResetMouseDragDelta();

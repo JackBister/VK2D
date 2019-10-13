@@ -1,4 +1,4 @@
-#include "Core/Components/physicscomponent.h"
+#include "Core/Components/PhysicsComponent.h"
 
 #include "BulletCollision/CollisionShapes/btBox2dShape.h"
 #include "nlohmann/json.hpp"

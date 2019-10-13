@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdio>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -71,17 +72,17 @@ std::shared_ptr<T> ResourceManager::LoadResource(std::string const& fileName)
 			return ret;
 		}
 	}
-	std::experimental::filesystem::path filePath(fileName);
-	auto status = std::experimental::filesystem::status(filePath);
+	std::filesystem::path filePath(fileName);
+	auto status = std::filesystem::status(filePath);
 	Resource * mem = (Resource *)allocator.Allocate(sizeof(T));
-	if (status.type() != std::experimental::filesystem::file_type::regular) {
+	if (status.type() != std::filesystem::file_type::regular) {
 		auto ret = std::shared_ptr<T>(new (mem) T(this, fileName));
 		rcCache[fileName] = std::weak_ptr<void>(ret);
 		return ret;
 	} else {
 		//For some awful reason this wont work for binary files like PNG. Otherwise I think it's a prettier solution.
 #if 0
-		std::experimental::filesystem::ifstream is(fileName, std::ios::in | std::ios::binary);
+		std::filesystem::ifstream is(fileName, std::ios::in | std::ios::binary);
 		auto ret = std::shared_ptr<T>(new (mem) T(fileName, is));
 #endif
 		FILE * f = fopen(fileName.c_str(), "rb");

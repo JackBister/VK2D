@@ -1,6 +1,6 @@
 {
 	"dlls": [
-		"build/FlappyPong.dll"
+		"FlappyPong.dll"
 	],
 	"input": {
 		"type": "Input",

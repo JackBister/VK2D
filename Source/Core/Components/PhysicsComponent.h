@@ -3,7 +3,7 @@
 
 #include "btBulletDynamicsCommon.h"
 
-#include "Core/Components/component.h"
+#include "Core/Components/Component.h"
 
 class PhysicsComponent : public Component, public btMotionState
 {

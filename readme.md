@@ -6,12 +6,14 @@ The engine uses C++17 features such as std::filesystem and std::variant, and the
 
 The following libraries are currently used by the engine:
 
-* [Bullet3 2.87](https://github.com/bulletphysics/bullet3)
-* [GLEW 2.1.0](http://glew.sourceforge.net/)
+* [Bullet3](https://github.com/bulletphysics/bullet3)
+* [GLEW](http://glew.sourceforge.net/)
 * [GLM](https://github.com/g-truc/glm)
+* [imgui](https://github.com/ocornut/imgui)
 * [moodycamel::ConcurrentQueue](https://github.com/cameron314/concurrentqueue)
 * [nlohmann::json](https://github.com/nlohmann/json)
-* [SDL 2.0.7](https://www.libsdl.org/index.php)
+* [SDL](https://www.libsdl.org/index.php)
+* [stb](https://github.com/nothings/stb)
 
 During a pre-build step, GLSL shaders are compiled to SPIR-V and transformed into headers included directly by the engine. For this compilation step, the following are used:
 
@@ -24,14 +26,9 @@ When it comes to graphics APIs, the engine currently targets:
 * OpenGL 4.6 - SPIR-V support was standardized in 4.6, and the engine only supports SPIR-V shaders as of now.
 
 ## Installing the required libraries on Windows
-On Windows, I have been using [vcpkg](https://github.com/Microsoft/vcpkg) to install all the required libraries and then copying the "installed" folder from the vcpkg root directory into the root directory of the engine. I never got the "vcpkg integrate" thing working and it feels like a weird thing to rely on either way.
+On Windows, I have been using [vcpkg](https://github.com/Microsoft/vcpkg) to install all the required libraries. The following command line should give you everything you need:
+```
+vcpkg install --triplet=x64-windows bullet3 concurrentqueue glew glm imgui nlohmann-json sdl2 sdl2[vulkan] stb
+```
 
 One thing to note if using vcpkg is that currently the SDL package specifically disables Vulkan support, so you need to manually edit the ports file.
-
-If you don't want to use vcpkg, it's still possible to build by copying the .lib files into the folder structure used by vcpkg.
-
-## Building
-A version of [Premake](https://github.com/premake/premake-core) newer than Premake5-alpha12 is required to build on Windows. On Linux/Mac, older versions may suffice.
-
-### Windows
-Building is as simple as running `.\premake5.exe vs2017`, opening the generated .sln file and pressing "Build Solution".

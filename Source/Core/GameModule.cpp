@@ -524,7 +524,7 @@ namespace GameModule {
 
 	void LoadScene(std::string const& filename)
 	{
-		scenes.emplace_back(filename, resourceManager, filename);
+		scenes.push_back(Scene(filename, resourceManager, filename));
 	}
 
 	void RemoveEntity(Entity * entity)

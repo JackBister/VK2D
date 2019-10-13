@@ -2,6 +2,7 @@
 #ifndef USE_OGL_RENDERER
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <vector>
 

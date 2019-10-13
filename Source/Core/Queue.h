@@ -1,6 +1,6 @@
 #pragma once
 
-#include <concurrentqueue.h>
+#include <concurrentqueue/concurrentqueue.h>
 #include <optional>
 #include <variant>
 
