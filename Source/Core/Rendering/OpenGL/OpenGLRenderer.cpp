@@ -82,7 +82,7 @@ Format Renderer::GetBackbufferFormat() const
 	return Format::RGBA8;
 }
 
-IVec2 Renderer::GetResolution() const
+glm::ivec2 Renderer::GetResolution() const
 {
 	return dimensions;
 }

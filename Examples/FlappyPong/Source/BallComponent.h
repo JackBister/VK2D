@@ -1,6 +1,5 @@
 #pragma once
 #include <Core/Components/Component.h>
-#include <Core/Math/mathtypes.h>
 #include <Core/Reflect.h>
 
 class BallComponent : public Component
@@ -17,6 +16,6 @@ public:
 	REFLECT()
 	REFLECT_INHERITANCE()
 private:
-	Vec2 velocityDir;
+    glm::vec2 velocityDir;
 	float moveSpeed;
 };

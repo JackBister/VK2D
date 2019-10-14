@@ -15,7 +15,6 @@ foreach(ShaderSource ${ShaderSources})
     add_custom_command(OUTPUT ${ShaderOutputPath} COMMAND glslc -o ${ShaderSource}.spv ${ShaderSource} && xxd -i shaders/${FileName}.spv > ${ShaderOutputPath} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endforeach()
 
-message(${CompiledShaders})
 add_custom_target(compile_shaders ALL DEPENDS ${CompiledShaders})
 
 project(vk2d C CXX)
@@ -35,9 +34,6 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -lstdc++fs")
 endif()
 
-include(FindVulkan)
-
-find_package(GLEW REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
@@ -49,7 +45,7 @@ find_path(GLM_INCLUDE_DIR glm/glm.hpp)
 find_path(MOODY_QUEUE_DIR concurrentqueue/concurrentqueue.h)
 find_path(STB_IMAGE_INCLUDE_DIR stb_image.h)
 target_include_directories(Main PUBLIC Source)
-target_include_directories(Main SYSTEM PUBLIC include ${BULLET_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${MOODY_QUEUE_DIR} ${STB_IMAGE_INCLUDE_DIR} ${Vulkan_INCLUDE_DIRS})
+target_include_directories(Main SYSTEM PUBLIC include ${BULLET_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${MOODY_QUEUE_DIR} ${STB_IMAGE_INCLUDE_DIR})
 
 find_library(BULLETDYNAMICS_LIBRARY BulletDynamics_Debug)
 find_library(BULLETCOLLISION_LIBRARY BulletCollision_Debug)
@@ -63,10 +59,27 @@ target_link_libraries(
         imgui::imgui
         ${LINEARMATH_LIBRARY}
         ${SDL2_LIBRARY}
-        ${Vulkan_LIBRARIES}
 )
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/Source FILES ${SOURCES})
+
+if (USE_OGL_RENDERER)
+    add_definitions(-DUSE_OGL_RENDERER=1)
+    include(FindOpenGL)
+    find_package(GLEW REQUIRED)
+    target_link_libraries(
+        Main
+        ${GLEW_LIBRARY}
+        ${OPENGL_LIBRARIES}
+    )
+else()
+    include(FindVulkan)
+    target_include_directories(Main SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
+    target_link_libraries(
+        Main
+        ${Vulkan_LIBRARIES}
+    )
+endif()
 
 file(GLOB_RECURSE FLAPPYPONG_SOURCES Examples/FlappyPong/Source/*.c Examples/FlappyPong/Source/*.cpp Examples/FlappyPong/Source/*.h)
 add_library(FlappyPong SHARED ${FLAPPYPONG_SOURCES})

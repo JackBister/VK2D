@@ -10,10 +10,10 @@ REFLECT_STRUCT_END()
 
 glm::mat4 const& Transform::GetLocalToParent()
 {
-	glm::mat4 trans = glm::translate(glm::mat4(), position);
+	glm::mat4 trans = glm::translate(glm::mat4(1.f), position);
 	glm::mat4 rotXYZ = glm::mat4_cast(rotation);
 	glm::mat4 transrot = trans * rotXYZ;
-	glm::mat4 scalem = glm::scale(glm::mat4(), scale);
+	glm::mat4 scalem = glm::scale(glm::mat4(1.f), scale);
 	toParent = transrot * scalem;
 	isParentDirty = false;
 	return toParent;
@@ -37,17 +37,17 @@ Transform * Transform::GetParent() const
 	return parent;
 }
 
-Vec3 const& Transform::GetPosition() const
+glm::vec3 const& Transform::GetPosition() const
 {
 	return position;
 }
 
-Quat const& Transform::GetRotation() const
+glm::quat const& Transform::GetRotation() const
 {
 	return rotation;
 }
 
-Vec3 const& Transform::GetScale() const
+glm::vec3 const& Transform::GetScale() const
 {
 	return scale;
 }
@@ -79,21 +79,21 @@ void Transform::SetParent(Transform * p)
 	isWorldDirty = true;
 }
 
-void Transform::SetPosition(Vec3 const& p)
+void Transform::SetPosition(glm::vec3 const& p)
 {
 	position = p;
 	isParentDirty = true;
 	isWorldDirty = true;
 }
 
-void Transform::SetRotation(Quat const& r)
+void Transform::SetRotation(glm::quat const& r)
 {
 	rotation = r;
 	isParentDirty = true;
 	isWorldDirty = true;
 }
 
-void Transform::SetScale(Vec3 const& s)
+void Transform::SetScale(glm::vec3 const& s)
 {
 	scale = s;
 	isParentDirty = true;

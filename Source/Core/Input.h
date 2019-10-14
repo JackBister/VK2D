@@ -1,9 +1,9 @@
 #pragma once
 
+#include <glm/fwd.hpp>
 #include "Core/DllExport.h"
 #include "Core/HashedString.h"
 #include "Core/keycodes.h"
-#include "Core/Math/mathtypes.h"
 
 namespace Input
 {
@@ -17,7 +17,7 @@ namespace Input
 	bool EAPI GetButtonDown(HashedString);
 	bool EAPI GetButtonUp(HashedString);
 
-	IVec2 EAPI GetMousePosition();
+	glm::ivec2 EAPI GetMousePosition();
 
 	void EAPI AddKeybind(HashedString, Keycode);
 	void EAPI RemoveKeybind(HashedString, Keycode);

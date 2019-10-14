@@ -1,4 +1,5 @@
 #ifdef USE_OGL_RENDERER
+#include <cassert>
 #include <type_traits>
 
 #include <GL/glew.h>

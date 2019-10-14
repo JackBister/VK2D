@@ -1,6 +1,7 @@
 #include "Core/Input.h"
 
 #include <algorithm>
+#include <glm/glm.hpp>
 #include <SDL2/SDL.h>
 #include <set>
 #include <unordered_map>
@@ -15,7 +16,7 @@ namespace Input
 	std::unordered_map<Keycode, bool, std::hash<int>> heldKeys;
 	std::unordered_map<Keycode, bool, std::hash<int>> upKeys;
 
-	IVec2 mousePosition;
+	glm::ivec2 mousePosition;
 
 	void Frame()
 	{
@@ -170,7 +171,7 @@ namespace Input
 		return false;
 	}
 
-	IVec2 EAPI GetMousePosition()
+	glm::ivec2 EAPI GetMousePosition()
 	{
 		return mousePosition;
 	}

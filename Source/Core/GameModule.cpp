@@ -449,7 +449,7 @@ namespace GameModule {
 			return;
 		}
 		auto j = nlohmann::json::parse(str);
-		physicsWorld->SetGravity(Vec3(j["gravity"]["x"], j["gravity"]["y"], j["gravity"]["z"]));
+		physicsWorld->SetGravity(glm::vec3(j["gravity"]["x"], j["gravity"]["y"], j["gravity"]["z"]));
 	}
 
 	void DestroySecondaryCommandContexts(std::vector<CommandBuffer*> cbs)
@@ -494,7 +494,7 @@ namespace GameModule {
 		return physicsWorld;
 	}
 
-	IVec2 GetResolution()
+	glm::ivec2 GetResolution()
 	{
 		return renderer->GetResolution();
 	}

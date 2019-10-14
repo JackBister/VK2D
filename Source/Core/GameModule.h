@@ -1,9 +1,9 @@
 #pragma once
 
 #include <functional>
+#include <glm/fwd.hpp>
 
 #include "Core/DllExport.h"
-#include "Core/Math/mathtypes.h"
 #include "Core/Queue.h"
 
 class CameraComponent;
@@ -39,7 +39,7 @@ namespace GameModule {
 	Entity * GetMainCamera();
 	//TODO:
 	PhysicsWorld * GetPhysicsWorld();
-	IVec2 GetResolution();
+	glm::ivec2 GetResolution();
 	size_t GetSwapCount();
 	size_t GetCurrFrame();
 	void Init(ResourceManager * resMan, Renderer * renderer);

@@ -29,7 +29,7 @@ imgui.ini
 *.userprefs
 
 # Build results
-cmake-build-debug
+cmake-build-*/
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/

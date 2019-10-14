@@ -17,7 +17,7 @@ public:
 	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
 
 	std::string Serialize() const override;
-	void SetGravity(Vec3 const&);
+	void SetGravity(glm::vec3 const&);
 
 	std::unique_ptr<btBroadphaseInterface> broadphase;
 	std::unique_ptr<btCollisionConfiguration> collisionConfig;

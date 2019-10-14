@@ -73,7 +73,7 @@ namespace EditorSystem
 	const float CAMERA_DRAG_MULTIPLIER_MAX = 100.f;
 	const float CAMERA_DRAG_INCREASE_STEP = 20.f;
 	float cameraDragMultiplier = 30.f;
-	Vec3 cameraPosBeforeEditorWasOpened;
+	glm::vec3 cameraPosBeforeEditorWasOpened;
 
 	//Entity Editor state
 	bool isEntityEditorOpen = false;
@@ -113,7 +113,7 @@ namespace EditorSystem
 				if (ImGui::IsMouseDragging()) {
 					auto dragDelta = ImGui::GetMouseDragDelta();
 					ImGui::ResetMouseDragDelta();
-					Vec2 delta(-dragDelta.x * cameraDragMultiplier, dragDelta.y * cameraDragMultiplier);
+					glm::vec2 delta(-dragDelta.x * cameraDragMultiplier, dragDelta.y * cameraDragMultiplier);
 					GameModule::GetMainCamera()->FireEvent("CameraEditorDrag", {{"delta", &delta}});
 				}
 			}

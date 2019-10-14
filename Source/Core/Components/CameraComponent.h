@@ -3,7 +3,6 @@
 #include "glm/glm.hpp"
 
 #include "Core/Components/component.h"
-#include "Core/Math/mathtypes.h"
 
 class CameraComponent : public Component
 {
@@ -16,8 +15,8 @@ public:
 
 	void OnEvent(HashedString name, EventArgs args = {}) override;
 
-	Mat4 const& GetProjection();
-	Mat4 const& GetView();
+	glm::mat4 const& GetProjection();
+    glm::mat4 const& GetView();
 
 	float GetAspect();
 	void SetAspect(float);
@@ -32,9 +31,9 @@ private:
 	bool defaultsToMain = false;
 	bool isProjectionDirty = true;
 	bool isViewDirty = true;
-	Mat4 projection;
-	Mat4 view;
+    glm::mat4 projection;
+    glm::mat4 view;
 	float viewSize;
 
-	Vec2 deltaLastFrame = Vec2(0.0, 0.0);
+	glm::vec2 deltaLastFrame = glm::vec2(0.0, 0.0);
 };

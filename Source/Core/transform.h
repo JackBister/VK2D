@@ -7,7 +7,6 @@
 #include "glm/gtc/quaternion.hpp"
 
 #include "Core/DllExport.h"
-#include "Core/Math/mathtypes.h"
 #include "Core/Reflect.h"
 
 class EAPI Transform final
@@ -18,24 +17,24 @@ public:
 	glm::mat4 const& GetLocalToParent();
 	glm::mat4 const& GetLocalToWorld();
 	Transform * GetParent() const;
-	Vec3 const& GetPosition() const;
-	Quat const& GetRotation() const;
-	Vec3 const& GetScale() const;
+	glm::vec3 const& GetPosition() const;
+	glm::quat const& GetRotation() const;
+    glm::vec3 const& GetScale() const;
 
 	std::string Serialize() const;
 
 	void SetParent(Transform *);
-	void SetPosition(Vec3 const&);
-	void SetRotation(Quat const&);
-	void SetScale(Vec3 const&);
+	void SetPosition(glm::vec3 const&);
+	void SetRotation(glm::quat const&);
+	void SetScale(glm::vec3 const&);
 
 	REFLECT()
 private:
 	Transform * parent = nullptr;
 
-	Vec3 position = Vec3(0.f, 0.f, 0.f);
-	Quat rotation = Quat(0.f, 0.f, 0.f, 0.f);
-	Vec3 scale = Vec3(1.f, 1.f, 1.f);
+	glm::vec3 position = glm::vec3(0.f, 0.f, 0.f);
+	glm::quat rotation = glm::quat(0.f, 0.f, 0.f, 0.f);
+	glm::vec3 scale = glm::vec3(1.f, 1.f, 1.f);
 
 	bool isParentDirty = true;
 	bool isWorldDirty = true;

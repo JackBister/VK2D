@@ -23,10 +23,10 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 		int numContacts = contactManifold->getNumContacts();
 		bool collisionStart = true;
 		//TODO: This is absolutely disgusting.
-		std::vector<Vec3> pointsA(numContacts);
-		std::vector<Vec3> pointsB(numContacts);
-		std::vector<Vec3> normalsA(numContacts);
-		std::vector<Vec3> normalsB(numContacts);
+		std::vector<glm::vec3> pointsA(numContacts);
+		std::vector<glm::vec3> pointsB(numContacts);
+		std::vector<glm::vec3> normalsA(numContacts);
+		std::vector<glm::vec3> normalsB(numContacts);
 
 		for (int j = 0; j < numContacts; ++j) {
 			btManifoldPoint& pt = contactManifold->getContactPoint(j);
@@ -37,10 +37,10 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 			btVector3 const& ptB = pt.getPositionWorldOnB();
 			btVector3 const& normalOnA = pt.m_normalWorldOnB;
 			btVector3 const& normalOnB = pt.m_normalWorldOnB;
-			pointsA[j] = Vec3(ptA.x(), ptA.y(), ptA.z());
-			pointsB[j] = Vec3(ptB.x(), ptB.y(), ptB.z());
-			normalsA[j] = Vec3(normalOnA.x(), normalOnA.y(), normalOnA.z());
-			normalsB[j] = Vec3(normalOnB.x(), normalOnB.y(), normalOnB.z());
+			pointsA[j] = glm::vec3(ptA.x(), ptA.y(), ptA.z());
+			pointsB[j] = glm::vec3(ptB.x(), ptB.y(), ptB.z());
+			normalsA[j] = glm::vec3(normalOnA.x(), normalOnA.y(), normalOnA.z());
+			normalsB[j] = glm::vec3(normalOnB.x(), normalOnB.y(), normalOnB.z());
 		}
 
 		auto compA = static_cast<PhysicsComponent *>(obA->getUserPointer());
@@ -119,7 +119,7 @@ std::string PhysicsWorld::Serialize() const
 	return j.dump();
 }
 
-void PhysicsWorld::SetGravity(Vec3 const& grav)
+void PhysicsWorld::SetGravity(glm::vec3 const& grav)
 {
 	world->setGravity(btVector3(grav.x, grav.y, grav.z));
 }

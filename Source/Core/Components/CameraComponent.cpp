@@ -43,7 +43,7 @@ void CameraComponent::SetViewSize(float f)
 	viewSize = f;
 }
 
-Mat4 const& CameraComponent::GetProjection()
+glm::mat4 const& CameraComponent::GetProjection()
 {
 	if (isProjectionDirty) {
 		projection = glm::ortho(-viewSize / aspect, viewSize / aspect, -viewSize, viewSize);
@@ -51,7 +51,7 @@ Mat4 const& CameraComponent::GetProjection()
 	return projection;
 }
 
-Mat4 const& CameraComponent::GetView()
+glm::mat4 const& CameraComponent::GetView()
 {
 	if (isViewDirty) {
 		view = glm::inverse(entity->transform.GetLocalToWorld());
@@ -91,9 +91,9 @@ void CameraComponent::OnEvent(HashedString name, EventArgs args)
 	} else if (name == "TakeCameraFocus") {
 		GameModule::TakeCameraFocus(entity);
 	} else if (name == "CameraEditorDrag") {
-		deltaLastFrame = *(Vec2 *)args["delta"].asPointer;
+		deltaLastFrame = *(glm::vec2 *)args["delta"].asPointer;
 	} else if (name == "SetPosition") {
-		Vec3 newPos = *(Vec3 *)args["pos"].asPointer;
+		glm::vec3 newPos = *(glm::vec3 *)args["pos"].asPointer;
 		entity->transform.SetPosition(newPos);
 	} else if (name == "Tick") {
 		auto pos = entity->transform.GetPosition();
@@ -101,6 +101,6 @@ void CameraComponent::OnEvent(HashedString name, EventArgs args)
 		pos.x += deltaLastFrame.x * unscaledDt;
 		pos.y += deltaLastFrame.y * unscaledDt;
 		entity->transform.SetPosition(pos);
-		deltaLastFrame = Vec2(0.f, 0.f);
+		deltaLastFrame = glm::vec2(0.f, 0.f);
 	}
 }

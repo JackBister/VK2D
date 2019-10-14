@@ -16,6 +16,8 @@
 #include <vector>
 
 #include <imgui.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 class EditorNode
 {
@@ -160,7 +162,7 @@ namespace reflect {
 		TypeDescriptor_Struct(void(*init)(TypeDescriptor_Struct*)) : TypeDescriptor{nullptr, 0} {
 			init(this);
 		}
-		TypeDescriptor_Struct(const char* name, size_t size, const std::initializer_list<Member>& init) : TypeDescriptor{nullptr, 0}, members{init} {
+		TypeDescriptor_Struct(const char* name, size_t size, const std::initializer_list<Member>& init) : TypeDescriptor{name, size}, members{init} {
 		}
 		virtual void dump(const void* obj, int indentLevel) const override {
 			std::cout << name << " {" << std::endl;
@@ -310,6 +312,193 @@ namespace reflect {
 		}
 	};
 
+    //--------------------------------------------------------
+    // Type descriptors for glm classes
+    //--------------------------------------------------------
+    template<>
+    class TypeResolver<glm::ivec2> {
+    public:
+        static TypeDescriptor* get() {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::ivec2",
+                    sizeof(glm::ivec2),
+                    {
+                            { "x", offsetof(glm::ivec2, x), TypeResolver<float>::get() },
+                            { "y", offsetof(glm::ivec2, y), TypeResolver<float>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+
+        static TypeDescriptor * get(glm::ivec2&) {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::ivec2",
+                    sizeof(glm::ivec2),
+                    {
+                            { "x", offsetof(glm::ivec2, x), TypeResolver<float>::get() },
+                            { "y", offsetof(glm::ivec2, y), TypeResolver<float>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+    };
+
+    template<>
+    class TypeResolver<glm::vec2> {
+    public:
+        static TypeDescriptor* get() {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::vec2",
+                    sizeof(glm::vec2),
+                    {
+                            { "x", offsetof(glm::vec2, x), TypeResolver<float>::get() },
+                            { "y", offsetof(glm::vec2, y), TypeResolver<float>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+
+        static TypeDescriptor * get(glm::vec2&) {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::vec2",
+                    sizeof(glm::vec2),
+                    {
+                            { "x", offsetof(glm::vec2, x), TypeResolver<float>::get() },
+                            { "y", offsetof(glm::vec2, y), TypeResolver<float>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+    };
+
+    template<>
+    class TypeResolver<glm::vec3> {
+    public:
+        static TypeDescriptor* get() {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::vec3",
+                    sizeof(glm::vec3),
+                    {
+                            { "x", offsetof(glm::vec3, x), TypeResolver<float>::get() },
+                            { "y", offsetof(glm::vec3, y), TypeResolver<float>::get() },
+                            { "z", offsetof(glm::vec3, z), TypeResolver<float>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+
+        static TypeDescriptor * get(glm::vec3&) {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::vec3",
+                    sizeof(glm::vec3),
+                    {
+                            { "x", offsetof(glm::vec3, x), TypeResolver<float>::get() },
+                            { "y", offsetof(glm::vec3, y), TypeResolver<float>::get() },
+                            { "z", offsetof(glm::vec3, z), TypeResolver<float>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+    };
+
+    template<>
+    class TypeResolver<glm::vec4> {
+    public:
+        static TypeDescriptor* get() {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::vec4",
+                    sizeof(glm::vec4),
+                    {
+                            { "x", offsetof(glm::vec4, x), TypeResolver<float>::get() },
+                            { "y", offsetof(glm::vec4, y), TypeResolver<float>::get() },
+                            { "z", offsetof(glm::vec4, y), TypeResolver<float>::get() },
+                            { "w", offsetof(glm::vec4, w), TypeResolver<float>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+
+        static TypeDescriptor * get(glm::vec4&) {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::vec4",
+                    sizeof(glm::vec4),
+                    {
+                            { "x", offsetof(glm::vec4, x), TypeResolver<float>::get() },
+                            { "y", offsetof(glm::vec4, y), TypeResolver<float>::get() },
+                            { "z", offsetof(glm::vec4, y), TypeResolver<float>::get() },
+                            { "w", offsetof(glm::vec4, w), TypeResolver<float>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+    };
+
+    template<>
+    class TypeResolver<glm::quat> {
+    public:
+        static TypeDescriptor* get() {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::quat",
+                    sizeof(glm::quat),
+                    {
+                            { "x", offsetof(glm::quat, x), TypeResolver<float>::get() },
+                            { "y", offsetof(glm::quat, y), TypeResolver<float>::get() },
+                            { "z", offsetof(glm::quat, y), TypeResolver<float>::get() },
+                            { "w", offsetof(glm::quat, w), TypeResolver<float>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+
+        static TypeDescriptor * get(glm::quat&) {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::quat",
+                    sizeof(glm::quat),
+                    {
+                            { "x", offsetof(glm::quat, x), TypeResolver<float>::get() },
+                            { "y", offsetof(glm::quat, y), TypeResolver<float>::get() },
+                            { "z", offsetof(glm::quat, y), TypeResolver<float>::get() },
+                            { "w", offsetof(glm::quat, w), TypeResolver<float>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+    };
+
+    template<>
+    class TypeResolver<glm::mat4> {
+    public:
+        static TypeDescriptor* get() {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::mat4",
+                    sizeof(glm::mat4),
+                    {
+                        // TODO: Dangerous hardcoded offsets
+                            { "[0]", 0, TypeResolver<glm::vec4>::get() },
+                            { "[1]", 16, TypeResolver<glm::vec4>::get() },
+                            { "[2]", 32, TypeResolver<glm::vec4>::get() },
+                            { "[3]", 48, TypeResolver<glm::vec4>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+
+        static TypeDescriptor * get(glm::mat4&) {
+            static TypeDescriptor_Struct typeDesc{
+                    "glm::mat4",
+                    sizeof(glm::mat4),
+                    {
+                            // TODO: Dangerous hardcoded offsets
+                            { "[0]", 0, TypeResolver<glm::vec4>::get() },
+                            { "[1]", 16, TypeResolver<glm::vec4>::get() },
+                            { "[2]", 32, TypeResolver<glm::vec4>::get() },
+                            { "[3]", 48, TypeResolver<glm::vec4>::get() }
+                    }
+            };
+            return &typeDesc;
+        }
+    };
+
 #define REFLECT_INHERITANCE() \
 	virtual reflect::TypeDescriptor_Struct * GetReflection() \
 	{ \
@@ -335,7 +524,7 @@ namespace reflect {
 #define REFLECT_STRUCT_END() \
         }; \
     }
-} // namespace reflect
+}; // namespace reflect
 
 #else //_DEBUG
 #define REFLECT_INHERITANCE()

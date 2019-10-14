@@ -237,7 +237,7 @@ void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
 	auto res = vkQueuePresentKHR(presentQueue, &presentInfo);
 }
 
-IVec2 Renderer::GetResolution() const
+glm::ivec2 Renderer::GetResolution() const
 {
 	return dimensions;
 }
