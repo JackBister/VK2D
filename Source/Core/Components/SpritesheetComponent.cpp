@@ -1,4 +1,4 @@
-#include "Core/Components/spritesheetcomponent.h"
+#include "Core/Components/SpritesheetComponent.h"
 
 #include "nlohmann/json.hpp"
 

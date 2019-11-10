@@ -1,4 +1,4 @@
-#include "Core/Components/component.h"
+#include "Core/Components/Component.h"
 
 #include "nlohmann/json.hpp"
 

@@ -1,4 +1,4 @@
-#include "Core/Components/cameracomponent.h"
+#include "Core/Components/CameraComponent.h"
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "nlohmann/json.hpp"
