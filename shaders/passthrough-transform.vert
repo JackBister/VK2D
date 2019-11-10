@@ -9,8 +9,6 @@ layout (location = 2) in vec2 texcoord;
 
 layout (std140, binding = 0) uniform numbers {
 	mat4 pvm;
-	vec2 minUV;
-	vec2 sizeUV;
 };
 
 layout (location = 0) out vec3 Color;
