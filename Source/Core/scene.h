@@ -11,15 +11,11 @@
 #include "Core/GameModule.h"
 #include "Core/Input.h"
 #include "Core/Queue.h"
-#include "Core/Rendering/RenderCommand.h"
-#include "Core/Rendering/Context/RenderContext.h"
 #include "Core/Resource.h"
 
 //TODO: Allocate all entities/components from same block for cache
 
-class CameraComponent;
 class Entity;
-class PhysicsWorld;
 class ResourceManager;
 
 class Scene : public Resource
@@ -42,7 +38,6 @@ public:
 	Entity * GetEntityByName(std::string);
 
 private:
-	Renderer * renderer;
 	ResourceManager * resourceManager;
 
 	std::vector<std::string> dllFileNames;

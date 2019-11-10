@@ -1,8 +1,9 @@
 #include <cstdio>
 #include <thread>
 
-#include "glm/glm.hpp"
-#include "SDL2/SDL.h"
+#include <glm/glm.hpp>
+#include <imgui.h>
+#include <SDL2/SDL.h>
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/Components/component.h"
@@ -10,13 +11,14 @@
 #include "Core/Input.h"
 #include "Core/physicsworld.h"
 #include "Core/Queue.h"
-#include "Core/Rendering/RenderCommand.h"
-#include "Core/Rendering/Renderer.h"
+#include "Core/Rendering/Backend/Renderer.h"
+#include "Core/Rendering/RenderSystem.h"
 #include "Core/ResourceManager.h"
 #include "Core/scene.h"
 #include "Core/Semaphore.h"
 #include "Core/sprite.h"
 #include "Core/transform.h"
+#include "Core/Util/DefaultFileSlurper.h"
 
 #if defined(_WIN64) && defined(_DEBUG)
 #define WIN32_LEAN_AND_MEAN
@@ -62,15 +64,17 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	std::string sceneFileName(argv[1]);
+	ImGui::CreateContext();
 	SDL_Init(SDL_INIT_EVERYTHING);
 	Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
 	ResourceManager resMan(&renderer);
+	RenderSystem renderSystem(&renderer, &resMan);
 
 #ifdef _DEBUG
 	SetThreadName(std::this_thread::get_id(), "Main Thread");
 #endif
 
-	GameModule::Init(&resMan, &renderer);
+	GameModule::Init(&resMan, &renderSystem);
 
 	GameModule::LoadScene(sceneFileName);
 

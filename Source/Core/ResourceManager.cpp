@@ -1,12 +1,13 @@
-#include "Core/ResourceManager.h"
+﻿#include "Core/ResourceManager.h"
 
-#include "Core/Rendering/Renderer.h"
+#include "Core/Rendering/Backend/Renderer.h"
 
-ResourceManager::ResourceManager(Renderer * renderer, Allocator & a) : allocator(a), renderer(renderer)
+ResourceManager::ResourceManager(Renderer * renderer, Allocator & a)
+    : allocator(a), renderer(renderer)
 {
 }
 
-void ResourceManager::CreateResources(std::function<void(ResourceCreationContext&)> fun)
+void ResourceManager::CreateResources(std::function<void(ResourceCreationContext &)> fun)
 {
-	renderer->CreateResources(fun);
+    renderer->CreateResources(fun);
 }

@@ -136,9 +136,6 @@ void SpritesheetComponent::OnEvent(HashedString name, EventArgs args)
 			}
 		}
 	}
-	if (name == "MainRenderPass") {
-
-	}
 }
 
 void SpritesheetComponent::PlayAnimationByName(std::string name)

@@ -11,7 +11,6 @@
 #include "Core/entity.h"
 #include "Core/Input.h"
 #include "Core/physicsworld.h"
-#include "Core/Rendering/Renderer.h"
 #include "Core/sprite.h"
 #include "Core/transform.h"
 

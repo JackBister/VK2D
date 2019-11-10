@@ -5,7 +5,6 @@
 #include <optional>
 #include <string>
 
-#include "./Context/RenderContext.h"
 #include "Core/Util/FileSlurper.h"
 
 class SpirvCompilationResult {

@@ -95,7 +95,6 @@ namespace Input
 
 	void Init()
 	{
-	    ImGui::CreateContext();
 	 	auto& io = ImGui::GetIO();
 	 	io.KeyMap[ImGuiKey_Tab] = SDL_SCANCODE_TAB;
 		io.KeyMap[ImGuiKey_LeftArrow] = SDL_SCANCODE_LEFT;

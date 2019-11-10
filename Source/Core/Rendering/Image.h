@@ -4,7 +4,7 @@
 #include <variant>
 #include <vector>
 
-#include "Core/Rendering/Context/RenderContext.h"
+#include "Core/Rendering/Backend/Abstract/RenderResources.h"
 #include "Core/Resource.h"
 
 struct ImageCreateInfo;
