@@ -17,9 +17,6 @@ class RenderSystem
     struct FrameInfo {
         FramebufferHandle * framebuffer;
 
-        RenderPassHandle * mainRenderPass;
-        uint32_t currentSubpass;
-
         CommandBuffer * mainCommandBuffer;
         CommandBuffer * preRenderPassCommandBuffer;
 
@@ -47,6 +44,8 @@ class RenderSystem
 
     // Rendering resources
     PipelineHandle * passthroughTransformPipeline;
+    RenderPassHandle * mainRenderpass;
+
     BufferHandle * quadEbo;
     BufferHandle * quadVbo;
 

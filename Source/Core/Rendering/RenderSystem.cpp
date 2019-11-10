@@ -117,10 +117,10 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
 				0,
 				nullptr
 			};
+            mainRenderpass = ctx.CreateRenderPass(passInfo);
 
             // Create FrameInfo
             for (size_t i = 0; i < frameInfo.size(); ++i) {
-                frameInfo[i].mainRenderPass = ctx.CreateRenderPass(passInfo);
                 frameInfo[i].commandBufferAllocator = ctx.CreateCommandBufferAllocator();
                 frameInfo[i].canStartFrame = ctx.CreateFence(true);
                 frameInfo[i].framebufferReady = ctx.CreateSemaphore();
@@ -163,7 +163,7 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
 
             passthroughTransformPipeline = ctx.CreateGraphicsPipeline(
                 {2, stages, ptInputState, &ptRasterization, ptPipelineDescriptorSetLayout,
-                 frameInfo[0].mainRenderPass, 0});
+                 mainRenderpass, 0});
 
             /*
                     Create UI shader program
@@ -195,8 +195,7 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
             uiInputState = ctx.CreateVertexInputState({1, &uiBinding, 3, uiAttributes});
 
             uiPipeline = ctx.CreateGraphicsPipeline({2, uiStages, uiInputState, &uiRasterization,
-                                                     uiPipelineDescriptorSetLayout,
-                                                     frameInfo[0].mainRenderPass, 0});
+                                                     uiPipelineDescriptorSetLayout, mainRenderpass, 0});
 
             finishedJobs++;
         });
@@ -205,7 +204,7 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
             std::this_thread::sleep_for(1ms);
         }
 
-        auto framebuffers = renderer->CreateBackbuffers(frameInfo[0].mainRenderPass);
+        auto framebuffers = renderer->CreateBackbuffers(mainRenderpass);
         CommandBufferAllocator::CommandBufferCreateInfo ctxCreateInfo = {};
         ctxCreateInfo.level = CommandBufferLevel::PRIMARY;
         for (size_t i = 0; i < frameInfo.size(); ++i) {
@@ -295,7 +294,7 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
         {CommandBuffer::ClearValue::Type::COLOR, {0.f, 0.f, 1.f, 1.f}}};
     auto res = renderer->GetResolution();
     CommandBuffer::RenderPassBeginInfo beginInfo = {
-        currFrame.mainRenderPass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 1, clearValues};
+        mainRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 1, clearValues};
     currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo,
                                                     CommandBuffer::SubpassContents::INLINE);
     for (auto const & camera : frame.cameras) {
