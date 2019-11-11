@@ -257,6 +257,7 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
 		{
 			auto args = std::get<UpdateBufferArgs>(rc);
 			glNamedBufferSubData(args.buffer, args.offset, args.size, args.data);
+            allocator->deallocate((uint8_t *)args.data, args.size);
 			break;
 		}
 		default:
