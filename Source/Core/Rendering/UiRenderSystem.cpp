@@ -11,10 +11,11 @@ UiRenderSystem::UiRenderSystem(Renderer * renderer) : renderer(renderer), frameD
 }
 
 void UiRenderSystem::Init(DescriptorSetLayoutHandle * descriptorSetLayout,
-                          PipelineHandle * pipelineHandle)
+                          PipelineHandle * pipelineHandle, PipelineLayoutHandle * inPipelineLayout)
 {
     layout = descriptorSetLayout;
     gfxPipeline = pipelineHandle;
+    pipelineLayout = inPipelineLayout;
 
     auto & imguiIo = ImGui::GetIO();
     imguiIo.MouseDrawCursor = false;
@@ -149,7 +150,7 @@ void UiRenderSystem::RenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer
 	}
 
     commandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS, gfxPipeline);
-    commandBuffer->CmdBindDescriptorSet(descriptorSet);
+    commandBuffer->CmdBindDescriptorSets(pipelineLayout, 0, {descriptorSet});
     commandBuffer->CmdBindIndexBuffer(fd.indexBuffer, 0, CommandBuffer::IndexType::UINT16);
     commandBuffer->CmdBindVertexBuffer(fd.vertexBuffer, 0, 0, sizeof(ImDrawVert));
     // TODO: translation

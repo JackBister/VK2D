@@ -482,6 +482,37 @@ void VulkanResourceContext::DestroyFramebuffer(FramebufferHandle * fb)
 	allocator.deallocate((uint8_t *)fb, sizeof(VulkanFramebufferHandle));
 }
 
+PipelineLayoutHandle * VulkanResourceContext::CreatePipelineLayout(PipelineLayoutCreateInfo const & ci)
+{
+    std::vector<VkDescriptorSetLayout> nativeLayouts(ci.setLayouts.size());
+    for (size_t i = 0; i < ci.setLayouts.size(); ++i) {
+        nativeLayouts[i] = ((VulkanDescriptorSetLayoutHandle *)ci.setLayouts[i])->layout;
+	}
+
+    VkPipelineLayoutCreateInfo layoutInfo;
+    layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layoutInfo.pNext = nullptr;
+    layoutInfo.flags = 0;
+    layoutInfo.setLayoutCount = nativeLayouts.size();
+    layoutInfo.pSetLayouts = &nativeLayouts[0];
+    layoutInfo.pushConstantRangeCount = 0;
+    layoutInfo.pPushConstantRanges = nullptr;
+
+	auto ret = (VulkanPipelineLayoutHandle *)allocator.allocate(sizeof(VulkanPipelineLayoutHandle));
+    auto res = vkCreatePipelineLayout(renderer->basics.device, &layoutInfo, nullptr, &ret->pipelineLayout);
+    assert(res == VK_SUCCESS);
+
+	return ret;
+}
+
+void VulkanResourceContext::DestroyPipelineLayout(PipelineLayoutHandle * layout)
+{
+    assert(layout != nullptr);
+
+	vkDestroyPipelineLayout(renderer->basics.device, ((VulkanPipelineLayoutHandle *)layout)->pipelineLayout, nullptr);
+    allocator.deallocate((uint8_t *)layout, sizeof(VulkanPipelineLayoutHandle));
+}
+
 PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsPipelineCreateInfo const& ci)
 {
 	assert(ci.rasterizationState != nullptr);
@@ -648,21 +679,7 @@ PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationC
 		dynamicStates
 	};
 
-	VkPipelineLayoutCreateInfo layoutCreateInfo{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		nullptr,
-		0,
-		1,
-		&((VulkanDescriptorSetLayoutHandle *)ci.descriptorSetLayout)->layout,
-		0,
-		nullptr
-	};
-
-	VkPipelineLayout layout;
-	{
-		auto res = vkCreatePipelineLayout(renderer->basics.device, &layoutCreateInfo, nullptr, &layout);
-		assert(res == VK_SUCCESS);
-	}
+	auto layout = ((VulkanPipelineLayoutHandle *)ci.pipelineLayout)->pipelineLayout;
 
 	VkGraphicsPipelineCreateInfo pipelineInfo = {};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -683,7 +700,6 @@ PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationC
 	auto ret = (VulkanPipelineHandle *)allocator.allocate(sizeof(VulkanPipelineHandle));
 	auto res = vkCreateGraphicsPipelines(renderer->basics.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &ret->pipeline);
 	assert(res == VK_SUCCESS);
-	ret->descriptorSetLayout = ci.descriptorSetLayout;
 	ret->vertexInputState = ci.vertexInputState;
 
 	return ret;
@@ -893,25 +909,8 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
 
 	vkUpdateDescriptorSets(renderer->basics.device, (uint32_t)writes.size(), &writes[0], 0, nullptr);
 
-	VkPipelineLayoutCreateInfo layoutCreateInfo{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		nullptr,
-		0,
-		1,
-		&layout,
-		0,
-		nullptr
-	};
-
-	VkPipelineLayout pipeline_layout;
-	{
-		auto res = vkCreatePipelineLayout(renderer->basics.device, &layoutCreateInfo, nullptr, &pipeline_layout);
-		assert(res == VK_SUCCESS);
-	}
-
 	auto ret = (VulkanDescriptorSet *)allocator.allocate(sizeof(VulkanDescriptorSet));
 	ret->layout = layout;
-	ret->pipelineLayout = pipeline_layout;
 	ret->set = set;
 
 	return ret;
@@ -923,7 +922,6 @@ void VulkanResourceContext::DestroyDescriptorSet(DescriptorSet * set)
 
 	auto nativeDescriptorSet = (VulkanDescriptorSet *)set;
 
-	vkDestroyPipelineLayout(renderer->basics.device, nativeDescriptorSet->pipelineLayout, nullptr);
 	auto res = vkFreeDescriptorSets(renderer->basics.device, renderer->descriptorPool, 1, &(nativeDescriptorSet->set));
 	assert(res == VK_SUCCESS);
 	allocator.deallocate((uint8_t *)nativeDescriptorSet, sizeof(VulkanDescriptorSet));

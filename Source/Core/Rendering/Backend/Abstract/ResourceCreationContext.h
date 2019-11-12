@@ -144,13 +144,20 @@ public:
 		uint32_t stageCount;
 		PipelineShaderStageCreateInfo * pStages;
 		VertexInputStateHandle * vertexInputState;
-		PipelineRasterizationStateCreateInfo * rasterizationState;
-		DescriptorSetLayoutHandle * descriptorSetLayout;
+        PipelineRasterizationStateCreateInfo * rasterizationState;
+        PipelineLayoutHandle * pipelineLayout;
 		RenderPassHandle * renderPass;
 		uint32_t subpass;
 	};
 	virtual PipelineHandle * CreateGraphicsPipeline(GraphicsPipelineCreateInfo const&) = 0;
 	virtual void DestroyPipeline(PipelineHandle *) = 0;
+
+	struct PipelineLayoutCreateInfo
+	{
+        std::vector<DescriptorSetLayoutHandle *> setLayouts;
+    };
+    virtual PipelineLayoutHandle * CreatePipelineLayout(PipelineLayoutCreateInfo const &) = 0;
+    virtual void DestroyPipelineLayout(PipelineLayoutHandle *) = 0;
 
 	struct RenderPassCreateInfo
 	{

@@ -13,7 +13,7 @@ class UiRenderSystem
   public:
     UiRenderSystem(Renderer * renderer);
 
-    void Init(DescriptorSetLayoutHandle * descriptorSetLayout, PipelineHandle * pipelineHandle);
+    void Init(DescriptorSetLayoutHandle * descriptorSetLayout, PipelineHandle * pipelineHandle, PipelineLayoutHandle * pipelineLayout);
 
     void StartFrame();
     void PreRenderUi(uint32_t frameIndex, CommandBuffer *);
@@ -37,6 +37,7 @@ class UiRenderSystem
     ImageHandle * fontAtlas;
     ImageViewHandle * fontAtlasView;
     PipelineHandle * gfxPipeline;
+    PipelineLayoutHandle * pipelineLayout;
     SamplerHandle * fontSampler;
 
     // Other systems

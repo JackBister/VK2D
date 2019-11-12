@@ -32,8 +32,9 @@ class RenderSystem
     void PreRenderFrame(SubmittedFrame const & frame);
     void MainRenderFrame(SubmittedFrame const & frame);
 
-    void PreRenderSprites(SubmittedCamera const & camera,
-                          std::vector<SubmittedSprite> const & sprites);
+	void PreRenderCameras(std::vector<SubmittedCamera> const & cameras);
+
+    void PreRenderSprites(std::vector<SubmittedSprite> const & sprites);
     void RenderSprites(SubmittedCamera const & camera,
                        std::vector<SubmittedSprite> const & sprites);
 
@@ -48,6 +49,8 @@ class RenderSystem
 
     BufferHandle * quadEbo;
     BufferHandle * quadVbo;
+
+	PipelineLayoutHandle * ptPipelineLayout;
 
     // Other systems
     Renderer * renderer;

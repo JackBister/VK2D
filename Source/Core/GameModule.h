@@ -13,6 +13,7 @@ class PhysicsWorld;
 class ResourceCreationContext;
 class ResourceManager;
 class RenderSystem;
+struct SubmittedCamera;
 struct SubmittedSprite;
 
 namespace GameModule {
@@ -41,6 +42,7 @@ namespace GameModule {
 	void LoadScene(std::string const&);
 	void RemoveEntity(Entity *);
 	std::string SerializePhysics();
+    void SubmitCamera(SubmittedCamera const & camera);
     void SubmitSprite(SubmittedSprite const & sprite);
 	void TakeCameraFocus(Entity *);
 	void Tick();

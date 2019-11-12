@@ -26,7 +26,7 @@ Deserializable * SpriteComponent::s_Deserialize(ResourceManager * resourceManage
 	SpriteComponent * ret = new SpriteComponent();
 	auto j = nlohmann::json::parse(str);
 	auto img = resourceManager->LoadResource<Image>(j["file"]);
-	auto layout = resourceManager->GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/passthrough-transform.layout");
+	auto layout = resourceManager->GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/spritePt.layout");
 	ret->file = j["file"].get<std::string>();
 	ret->sprite = Sprite(img);
 	

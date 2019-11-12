@@ -14,7 +14,6 @@ struct VulkanBufferHandle : BufferHandle
 struct VulkanDescriptorSet : DescriptorSet
 {
 	VkDescriptorSetLayout layout;
-	VkPipelineLayout pipelineLayout;
 	VkDescriptorSet set;
 };
 
@@ -50,6 +49,11 @@ struct VulkanImageViewHandle : ImageViewHandle
 struct VulkanRenderPassHandle : RenderPassHandle
 {
 	VkRenderPass renderPass;
+};
+
+struct VulkanPipelineLayoutHandle : PipelineLayoutHandle
+{
+    VkPipelineLayout pipelineLayout;
 };
 
 struct VulkanPipelineHandle : PipelineHandle

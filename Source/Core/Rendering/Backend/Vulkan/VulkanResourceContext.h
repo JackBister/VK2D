@@ -30,6 +30,9 @@ public:
 
 	 FramebufferHandle * CreateFramebuffer(ResourceCreationContext::FramebufferCreateInfo const& ) final override;
 	 void DestroyFramebuffer(FramebufferHandle *) final override;
+	 
+    PipelineLayoutHandle * CreatePipelineLayout(PipelineLayoutCreateInfo const &) final override;
+	void DestroyPipelineLayout(PipelineLayoutHandle *) final override;
 
 	 PipelineHandle * CreateGraphicsPipeline(ResourceCreationContext::GraphicsPipelineCreateInfo const& ) final override;
 	 void DestroyPipeline(PipelineHandle *) final override;

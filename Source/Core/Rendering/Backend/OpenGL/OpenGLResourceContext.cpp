@@ -151,6 +151,21 @@ void OpenGLResourceContext::DestroyFramebuffer(FramebufferHandle * handle)
 	allocator.deallocate((uint8_t *)handle, sizeof(OpenGLFramebufferHandle));
 }
 
+PipelineLayoutHandle * OpenGLResourceContext::CreatePipelineLayout(PipelineLayoutCreateInfo const& ci)
+{
+    auto ret = (OpenGLPipelineLayoutHandle *)allocator.allocate(sizeof(OpenGLPipelineLayoutHandle));
+    ret = new (ret) OpenGLPipelineLayoutHandle();
+    ret->descriptorLayouts = std::vector<DescriptorSetLayoutHandle *>();
+    ret->descriptorLayouts = ci.setLayouts;
+    return ret;
+}
+
+void OpenGLResourceContext::DestroyPipelineLayout(PipelineLayoutHandle * layout)
+{
+    assert(layout != nullptr);
+    allocator.deallocate((uint8_t *)layout, sizeof(PipelineLayoutHandle));
+}
+
 PipelineHandle * OpenGLResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsPipelineCreateInfo const& ci)
 {
 	assert(ci.stageCount != 0);
@@ -165,19 +180,28 @@ PipelineHandle * OpenGLResourceContext::CreateGraphicsPipeline(ResourceCreationC
 		glAttachShader(ret->nativeHandle, ((OpenGLShaderModuleHandle *)stageInfo.module)->nativeHandle);
 		GLenum glErr = GL_NO_ERROR;
 		if ((glErr = glGetError()) != GL_NO_ERROR) {
-			printf("[ERROR] Attaching shader with name %s %d\n", stageInfo.name.c_str(), glErr);
+			printf("[ERROR] Attaching shader with name %s %d %s\n", stageInfo.name.c_str(), glErr);
 		}
 	}
 
 	glLinkProgram(ret->nativeHandle);
 	GLenum glErr = GL_NO_ERROR;
 	if ((glErr = glGetError()) != GL_NO_ERROR) {
-		printf("[ERROR] Linking GL program.\n");
+        GLsizei log_length = 0;
+        GLchar message[1024];
+        glGetProgramInfoLog(ret->nativeHandle, 1024, &log_length, message);
+		printf("[ERROR] Linking GL program. %s\n", message);
+	}
+
+	// This is sort of a hack to help map the combination of descriptorset + binding to just a binding
+	GLint numUniformBlocks;
+    glGetProgramiv(ret->nativeHandle, GL_ACTIVE_UNIFORM_BLOCKS, &numUniformBlocks);
+    for (int i = 0; i < numUniformBlocks; ++i) {
+        glUniformBlockBinding(ret->nativeHandle, i, i);
 	}
 
 	ret->rasterizationState = *ci.rasterizationState;
 	ret->vertexInputState = ci.vertexInputState;
-	ret->descriptorSetLayout = ci.descriptorSetLayout;
 
 	return ret;
 }

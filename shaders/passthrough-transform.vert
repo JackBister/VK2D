@@ -7,8 +7,11 @@ layout (location = 0) in vec3 pos;
 layout (location = 1) in vec3 color;
 layout (location = 2) in vec2 texcoord;
 
-layout (std140, binding = 0) uniform numbers {
-	mat4 pvm;
+layout (std140, set = 0, binding = 0) uniform camera {
+	mat4 pv;
+};
+layout (std140, set = 1, binding = 0) uniform model {
+	mat4 m;
 };
 
 layout (location = 0) out vec3 Color;
@@ -17,6 +20,7 @@ layout (location = 1) out vec2 Texcoord;
 void main() {
 	//floor aligns the quad to the pixel grid
 	//gl_Position = projection * floor(view * model * vec4(pos, 1.0));
+	mat4 pvm = pv * m;
 	gl_Position = pvm * vec4(pos, 1.0);
 	//gl_Position.y = -gl_Position.y;
 	Color = color;

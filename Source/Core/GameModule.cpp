@@ -25,6 +25,7 @@ ResourceManager * resourceManager;
 std::vector<Scene> scenes;
 
 // TODO: Remove
+std::vector<SubmittedCamera> submittedCameras;
 std::vector<SubmittedSprite> submittedSprites;
 
 void AddEntity(Entity * e)
@@ -120,6 +121,12 @@ std::string SerializePhysics()
 }
 
 // TODO: Remove
+void SubmitCamera(SubmittedCamera const & camera)
+{
+    submittedCameras.push_back(camera);
+}
+
+// TODO: Remove
 void SubmitSprite(SubmittedSprite const & sprite)
 {
     submittedSprites.push_back(sprite);
@@ -174,18 +181,13 @@ void Tick()
 
     EditorSystem::OnGui();
 
-    SubmittedCamera submittedCamera;
-    if (mainCameraComponent) {
-        submittedCamera.projection = mainCameraComponent->GetProjection();
-        submittedCamera.view = mainCameraComponent->GetView();
-    }
-
     currFrameStage = FrameStage::RENDER;
 	renderSystem->RenderFrame({
-        std::vector<SubmittedCamera>({submittedCamera}),
+        submittedCameras,
 		submittedSprites
 		});
 
+	submittedCameras.clear();
 	submittedSprites.clear();
 }
 };

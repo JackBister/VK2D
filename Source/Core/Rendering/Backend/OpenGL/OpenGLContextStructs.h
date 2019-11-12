@@ -1,5 +1,8 @@
 #pragma once
 #ifdef USE_OGL_RENDERER
+#include "Core/Rendering/Backend/Abstract/RenderResources.h"
+#include "Core/Rendering/Backend/OpenGL/OpenGLResourceContext.h"
+
 #include "Core/Semaphore.h"
 
 struct OpenGLBufferHandle : BufferHandle
@@ -44,6 +47,11 @@ struct OpenGLImageViewHandle : ImageViewHandle
 struct OpenGLRenderPassHandle : RenderPassHandle
 {
 
+};
+
+struct OpenGLPipelineLayoutHandle : PipelineLayoutHandle
+{
+    std::vector<DescriptorSetLayoutHandle *> descriptorLayouts;
 };
 
 struct OpenGLPipelineHandle : PipelineHandle

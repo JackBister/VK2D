@@ -267,10 +267,13 @@ struct ImageViewHandle
 	ImageSubresourceRange subresourceRange;
 };
 
+struct PipelineLayoutHandle
+{
+};
+
 struct PipelineHandle
 {
 	VertexInputStateHandle * vertexInputState;
-	DescriptorSetLayoutHandle * descriptorSetLayout;
 };
 
 struct RenderPassHandle

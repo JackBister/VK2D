@@ -26,7 +26,7 @@ public:
 	 void EndRecording() final override;
 
 	 void CmdBeginRenderPass(CommandBuffer::RenderPassBeginInfo * pRenderPassBegin, CommandBuffer::SubpassContents contents) final override;
-	 void CmdBindDescriptorSet(DescriptorSet *) final override;
+	 void CmdBindDescriptorSets(PipelineLayoutHandle *, uint32_t offset, std::vector<DescriptorSet *> sets) final override;
 	 void CmdBindIndexBuffer(BufferHandle * buffer, size_t offset, CommandBuffer::IndexType indexType) final override;
 	 void CmdBindPipeline(RenderPassHandle::PipelineBindPoint, PipelineHandle *) final override;
 	 void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) final override;

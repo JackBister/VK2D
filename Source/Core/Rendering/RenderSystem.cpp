@@ -25,9 +25,12 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
 
         std::atomic_int finishedJobs = 0;
 
-        DescriptorSetLayoutHandle * ptPipelineDescriptorSetLayout;
+        DescriptorSetLayoutHandle * cameraPtLayout;
+        DescriptorSetLayoutHandle * spritePtLayout;
 
         DescriptorSetLayoutHandle * uiPipelineDescriptorSetLayout;
+
+        PipelineLayoutHandle * uiLayout;
 
         ShaderModuleHandle * ptvShader;
         ShaderModuleHandle * pfShader;
@@ -109,14 +112,8 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
                 0,
                 nullptr};
 
-            ResourceCreationContext::RenderPassCreateInfo passInfo = {
-				1,
-				&attachment,
-				1,
-				&subpass,
-				0,
-				nullptr
-			};
+            ResourceCreationContext::RenderPassCreateInfo passInfo = {1, &attachment, 1, &subpass,
+                                                                      0, nullptr};
             mainRenderpass = ctx.CreateRenderPass(passInfo);
 
             // Create FrameInfo
@@ -131,15 +128,21 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
             /*
                     Create passthrough shader program
             */
-            ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding uniformBindings[2] = {
-                {0, DescriptorType::UNIFORM_BUFFER,
-                 ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT |
-                     ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT},
-                {1, DescriptorType::COMBINED_IMAGE_SAMPLER,
-                 ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
+            ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding
+                cameraUniformBindings[1] = {{0, DescriptorType::UNIFORM_BUFFER,
+                                             ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT}};
 
-            // DescriptorSetLayout
-            ptPipelineDescriptorSetLayout = ctx.CreateDescriptorSetLayout({2, uniformBindings});
+            cameraPtLayout = ctx.CreateDescriptorSetLayout({1, cameraUniformBindings});
+
+            ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding
+                spriteUniformBindings[2] = {{0, DescriptorType::UNIFORM_BUFFER,
+                                             ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT},
+                                            {1, DescriptorType::COMBINED_IMAGE_SAMPLER,
+                                             ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
+
+            spritePtLayout = ctx.CreateDescriptorSetLayout({2, spriteUniformBindings});
+
+            ptPipelineLayout = ctx.CreatePipelineLayout({{cameraPtLayout, spritePtLayout}});
 
             ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineShaderStageCreateInfo
                 stages[2] = {{ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT, ptvShader,
@@ -162,8 +165,7 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
             ptInputState = ctx.CreateVertexInputState({1, &binding, 3, attributes});
 
             passthroughTransformPipeline = ctx.CreateGraphicsPipeline(
-                {2, stages, ptInputState, &ptRasterization, ptPipelineDescriptorSetLayout,
-                 mainRenderpass, 0});
+                {2, stages, ptInputState, &ptRasterization, ptPipelineLayout, mainRenderpass, 0});
 
             /*
                     Create UI shader program
@@ -173,6 +175,8 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
                  ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
 
             uiPipelineDescriptorSetLayout = ctx.CreateDescriptorSetLayout({1, uiBindings});
+
+            uiLayout = ctx.CreatePipelineLayout({{uiPipelineDescriptorSetLayout}});
 
             ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineShaderStageCreateInfo
                 uiStages[2] = {
@@ -194,8 +198,8 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
 
             uiInputState = ctx.CreateVertexInputState({1, &uiBinding, 3, uiAttributes});
 
-            uiPipeline = ctx.CreateGraphicsPipeline({2, uiStages, uiInputState, &uiRasterization,
-                                                     uiPipelineDescriptorSetLayout, mainRenderpass, 0});
+            uiPipeline = ctx.CreateGraphicsPipeline(
+                {2, uiStages, uiInputState, &uiRasterization, uiLayout, mainRenderpass, 0});
 
             finishedJobs++;
         });
@@ -228,17 +232,22 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
                                      ptInputState);
         resourceManager->AddResource("_Primitives/Pipelines/passthrough-transform.pipe",
                                      passthroughTransformPipeline);
-        resourceManager->AddResource(
-            "_Primitives/DescriptorSetLayouts/passthrough-transform.layout",
-            ptPipelineDescriptorSetLayout);
+        resourceManager->AddResource("_Primitives/DescriptorSetLayouts/cameraPt.layout",
+                                     cameraPtLayout);
+        resourceManager->AddResource("_Primitives/DescriptorSetLayouts/spritePt.layout",
+                                     spritePtLayout);
 
         resourceManager->AddResource("_Primitives/VertexInputStates/ui.state", uiInputState);
         resourceManager->AddResource("_Primitives/Pipelines/ui.pipe", uiPipeline);
         resourceManager->AddResource("_Primitives/DescriptorSetLayouts/ui.layout",
                                      uiPipelineDescriptorSetLayout);
 
+        resourceManager->AddResource("_Primitives/PipelineLayouts/pt.pipelinelayout",
+                                     ptPipelineLayout);
+        resourceManager->AddResource("_Primitives/PipelineLayouts/ui.pipelinelayout", uiLayout);
+
         // TODO: this is ugly
-        uiRenderSystem.Init(uiPipelineDescriptorSetLayout, uiPipeline);
+        uiRenderSystem.Init(uiPipelineDescriptorSetLayout, uiPipeline, uiLayout);
     }
 }
 
@@ -275,9 +284,8 @@ void RenderSystem::PreRenderFrame(SubmittedFrame const & frame)
     auto & currFrame = frameInfo[currFrameInfoIdx];
     currFrame.preRenderPassCommandBuffer->Reset();
     currFrame.preRenderPassCommandBuffer->BeginRecording(nullptr);
-    for (auto const & camera : frame.cameras) {
-        PreRenderSprites(camera, frame.sprites);
-    }
+    PreRenderCameras(frame.cameras);
+    PreRenderSprites(frame.sprites);
     uiRenderSystem.PreRenderUi(currFrameInfoIdx, currFrame.preRenderPassCommandBuffer);
     currFrame.preRenderPassCommandBuffer->EndRecording();
     renderer->ExecuteCommandBuffer(currFrame.preRenderPassCommandBuffer, {},
@@ -311,17 +319,23 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
         {currFrame.mainRenderPassFinished}, currFrame.canStartFrame);
 }
 
-void RenderSystem::PreRenderSprites(SubmittedCamera const & camera,
-                                    std::vector<SubmittedSprite> const & sprites)
+void RenderSystem::PreRenderCameras(std::vector<SubmittedCamera> const & cameras)
 {
     auto & currFrame = frameInfo[currFrameInfoIdx];
-    auto res = renderer->GetResolution();
+    for (auto const & camera : cameras) {
+        auto pv = camera.projection * camera.view;
+        currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(camera.uniforms, 0, sizeof(glm::mat4),
+                                                              (uint32_t *)glm::value_ptr(pv));
+    }
+}
 
-    // TODO: Broken for scenes with multiple cameras
+void RenderSystem::PreRenderSprites(std::vector<SubmittedSprite> const & sprites)
+{
+    auto & currFrame = frameInfo[currFrameInfoIdx];
+
     for (auto const & sprite : sprites) {
-        auto pvm = camera.projection * camera.view * sprite.localToWorld;
-        currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(sprite.uniforms, 0, sizeof(glm::mat4),
-                                                              (uint32_t *)glm::value_ptr(pvm));
+        currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
+            sprite.uniforms, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(sprite.localToWorld));
     }
 }
 
@@ -343,8 +357,10 @@ void RenderSystem::RenderSprites(SubmittedCamera const & camera,
     currFrame.mainCommandBuffer->CmdBindIndexBuffer(quadEbo, 0, CommandBuffer::IndexType::UINT32);
     currFrame.mainCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, 8 * sizeof(float));
 
+    currFrame.mainCommandBuffer->CmdBindDescriptorSets(ptPipelineLayout, 0, {camera.descriptorSet});
+
     for (auto const & sprite : sprites) {
-        currFrame.mainCommandBuffer->CmdBindDescriptorSet(sprite.descriptorSet);
+        currFrame.mainCommandBuffer->CmdBindDescriptorSets(ptPipelineLayout, 1, {sprite.descriptorSet});
         currFrame.mainCommandBuffer->CmdDrawIndexed(6, 1, 0, 0);
     }
 }

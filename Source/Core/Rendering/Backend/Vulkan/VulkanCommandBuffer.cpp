@@ -95,13 +95,20 @@ void VulkanCommandBuffer::CmdBeginRenderPass(CommandBuffer::RenderPassBeginInfo 
 	vkCmdBeginRenderPass(this->buffer, &beginInfo, subpassContents);
 }
 
-void VulkanCommandBuffer::CmdBindDescriptorSet(DescriptorSet * set)
+void VulkanCommandBuffer::CmdBindDescriptorSets(PipelineLayoutHandle * layout, uint32_t offset, std::vector<DescriptorSet *> sets)
 {
-	assert(set != nullptr);
-	auto nativeSet = (VulkanDescriptorSet *)set;
+    assert(sets.size() > 0);
 
-	//TODO: compute
-	vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, nativeSet->pipelineLayout, 0, 1, &nativeSet->set, 0, nullptr);
+	auto nativeLayout = ((VulkanPipelineLayoutHandle *)layout)->pipelineLayout;
+
+    std::vector<VkDescriptorSet> nativeSets(sets.size());
+    for (size_t i = 0; i < sets.size(); ++i) {
+        nativeSets[i] = ((VulkanDescriptorSet *)sets[i])->set;
+    }
+
+    // TODO: compute
+    vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, nativeLayout, offset,
+                            nativeSets.size(), &nativeSets[0], 0, nullptr);
 }
 
 void VulkanCommandBuffer::CmdBindIndexBuffer(BufferHandle * buffer, size_t offset, CommandBuffer::IndexType indexType)

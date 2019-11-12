@@ -5,6 +5,7 @@
 
 #include "Core/entity.h"
 #include "Core/scene.h"
+#include "Core/Rendering/SubmittedCamera.h"
 
 COMPONENT_IMPL(CameraComponent, CameraComponent::s_Deserialize)
 
@@ -70,6 +71,37 @@ Deserializable * CameraComponent::s_Deserialize(ResourceManager * resourceManage
 		ret->defaultsToMain = j["defaultsToMain"];
 	}
 
+
+	auto layout = resourceManager->GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraPt.layout");
+	GameModule::CreateResources([ret, layout](ResourceCreationContext& ctx) {
+		ret->uniforms = ctx.CreateBuffer({
+				sizeof(glm::mat4),
+				BufferUsageFlags::UNIFORM_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
+				DEVICE_LOCAL_BIT
+			});
+
+		ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uniformDescriptor = {
+			ret->uniforms,
+			0,
+			sizeof(glm::mat4)
+		};
+
+		ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
+				{
+					DescriptorType::UNIFORM_BUFFER,
+					0, uniformDescriptor
+				}
+		};
+
+		ret->descriptorSet = ctx.CreateDescriptorSet({
+				1,
+				descriptors,
+				layout
+			});
+
+		ret->hasCreatedLocalResources = true;
+	});
+
 	return ret;
 }
 
@@ -102,5 +134,14 @@ void CameraComponent::OnEvent(HashedString name, EventArgs args)
 		pos.y += deltaLastFrame.y * unscaledDt;
 		entity->transform.SetPosition(pos);
 		deltaLastFrame = glm::vec2(0.f, 0.f);
+
+		if (hasCreatedLocalResources) {
+            SubmittedCamera submittedCamera;
+            submittedCamera.descriptorSet = descriptorSet;
+            submittedCamera.projection = GetProjection();
+            submittedCamera.view = GetView();
+            submittedCamera.uniforms = uniforms;
+            GameModule::SubmitCamera(submittedCamera);
+		}
 	}
 }

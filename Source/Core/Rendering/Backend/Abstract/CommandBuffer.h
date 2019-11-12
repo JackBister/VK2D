@@ -90,7 +90,7 @@ public:
 	virtual void Reset() = 0;
 
 	virtual void CmdBeginRenderPass(RenderPassBeginInfo * pRenderPassBegin, SubpassContents contents) = 0;
-	virtual void CmdBindDescriptorSet(DescriptorSet *) = 0;
+	virtual void CmdBindDescriptorSets(PipelineLayoutHandle * layout, uint32_t offset, std::vector<DescriptorSet *>) = 0;
 	/*
 		OpenGL: glBindBuffer, state tracker saves offset and index type until glDrawElements is issued
 	*/

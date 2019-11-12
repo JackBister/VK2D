@@ -35,5 +35,9 @@ private:
     glm::mat4 view;
 	float viewSize;
 
+    std::atomic<bool> hasCreatedLocalResources{false};
+	DescriptorSet * descriptorSet;
+    BufferHandle * uniforms;
+
 	glm::vec2 deltaLastFrame = glm::vec2(0.0, 0.0);
 };

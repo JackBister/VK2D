@@ -18,7 +18,7 @@ public:
 	virtual void Reset() override;
 
 	virtual void CmdBeginRenderPass(CommandBuffer::RenderPassBeginInfo *pRenderPassBegin, CommandBuffer::SubpassContents contents) override;
-	virtual void CmdBindDescriptorSet(DescriptorSet *) override;
+    virtual void CmdBindDescriptorSets(PipelineLayoutHandle * layout, uint32_t offset, std::vector<DescriptorSet *>) override;
 	virtual void CmdBindIndexBuffer(BufferHandle *buffer, size_t offset, CommandBuffer::IndexType indexType) override;
 	virtual void CmdBindPipeline(RenderPassHandle::PipelineBindPoint, PipelineHandle *) override;
 	virtual void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) override;

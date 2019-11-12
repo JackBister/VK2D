@@ -3,7 +3,9 @@
 
 #include <assert.h>
 #include <gl/glew.h>
+#include <unordered_map>
 
+#include "Core/Rendering/Backend/OpenGL/DescriptorSetBindingMap.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLConverterFuncs.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLResourceContext.h"
 #include "Core/Rendering/Backend/Renderer.h"
@@ -28,37 +30,51 @@ void OpenGLCommandBuffer::CmdBeginRenderPass(CommandBuffer::RenderPassBeginInfo 
 	commandList.push_back(args);
 }
 
-void OpenGLCommandBuffer::CmdBindDescriptorSet(DescriptorSet * set)
+void OpenGLCommandBuffer::CmdBindDescriptorSets(PipelineLayoutHandle * layout, uint32_t offset, std::vector<DescriptorSet *> sets)
 {
-	auto nativeSet = (OpenGLDescriptorSet *)set;
-	BindDescriptorSetArgs args;
-	for (auto& d : nativeSet->descriptors) {
-		switch (d.type) {
-		case DescriptorType::COMBINED_IMAGE_SAMPLER: {
-			auto image = std::get<ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor>(d.descriptor);
-			auto nativeImageView = (OpenGLImageViewHandle *)image.imageView;
-			auto nativeSampler = (OpenGLSamplerHandle *)image.sampler;
-			args.images.push_back({
-				d.binding,
-				((OpenGLImageHandle *)nativeImageView->image)->nativeHandle,
-				nativeSampler->nativeHandle
-			});
-			break;
-		}
-		case DescriptorType::UNIFORM_BUFFER:
-			auto buf = std::get<0>(d.descriptor);
-			args.buffers.push_back({
-				d.binding,
-				((OpenGLBufferHandle *)buf.buffer)->nativeHandle,
-				(GLintptr)buf.offset,
-				(GLsizeiptr)buf.range
-			});
-			break;
-		default:
-			printf("[ERROR] Unknown descriptor type.\n");
-			break;
-		}
+    auto nativeLayout = (OpenGLPipelineLayoutHandle *)layout;
+    std::vector<OpenGLDescriptorSet *> nativeSets(sets.size());
+    for (size_t i = 0; i < sets.size(); ++i) {
+        nativeSets[i] = (OpenGLDescriptorSet *)sets[i];
 	}
+	BindDescriptorSetArgs args;
+    DescriptorSetBindingMap descriptorSetBindingMap(nativeLayout);
+
+	for (size_t i = 0; i < sets.size(); ++i) {
+        auto nativeSet = (OpenGLDescriptorSet *)sets[i];
+        for (auto & d : nativeSet->descriptors) {
+            auto set = i + offset;
+            auto finalBinding = descriptorSetBindingMap.GetBinding(set, d.binding);
+            switch (d.type) {
+            case DescriptorType::COMBINED_IMAGE_SAMPLER: {
+                auto image =
+                    std::get<ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor>(
+                        d.descriptor);
+                auto nativeImageView = (OpenGLImageViewHandle *)image.imageView;
+                auto nativeSampler = (OpenGLSamplerHandle *)image.sampler;
+                args.images.push_back({
+					finalBinding,
+					((OpenGLImageHandle *)nativeImageView->image)->nativeHandle,
+                        nativeSampler->nativeHandle
+				});
+                break;
+            }
+            case DescriptorType::UNIFORM_BUFFER:
+                auto buf = std::get<0>(d.descriptor);
+                args.buffers.push_back({
+					finalBinding,
+					((OpenGLBufferHandle *)buf.buffer)->nativeHandle,
+					(GLintptr)buf.offset,
+					(GLsizeiptr)buf.range
+				});
+                break;
+            default:
+                printf("[ERROR] Unknown descriptor type.\n");
+                break;
+            }
+        }
+	}
+
 	commandList.push_back(args);
 }
 
@@ -174,9 +190,8 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
 				glBindBufferRange(GL_UNIFORM_BUFFER, b.binding, b.buffer, b.offset, b.size);
 			}
 			for (auto i : args.images) {
-				glActiveTexture(GL_TEXTURE0 + i.binding);
-				glBindTexture(GL_TEXTURE_2D, i.image);
-				glBindSampler(i.binding, i.sampler);
+				glUniform1i(i.binding, i.binding);
+                glBindSampler(i.binding, i.sampler);
 			}
 			break;
 		}
