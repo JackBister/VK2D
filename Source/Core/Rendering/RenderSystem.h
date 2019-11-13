@@ -13,17 +13,21 @@ class RenderSystem
     void StartFrame();
     void RenderFrame(SubmittedFrame const & frame);
 
+	void DebugOverrideBackbuffer(ImageViewHandle * image);
+
   private:
     struct FrameInfo {
         FramebufferHandle * framebuffer;
 
-        CommandBuffer * mainCommandBuffer;
         CommandBuffer * preRenderPassCommandBuffer;
+        CommandBuffer * mainCommandBuffer;
+        CommandBuffer * postProcessCommandBuffer;
 
         FenceHandle * canStartFrame;
         SemaphoreHandle * framebufferReady;
         SemaphoreHandle * preRenderPassFinished;
         SemaphoreHandle * mainRenderPassFinished;
+        SemaphoreHandle * postprocessFinished;
 
         CommandBufferAllocator * commandBufferAllocator;
     };
@@ -31,6 +35,7 @@ class RenderSystem
 	void AcquireNextFrame();
     void PreRenderFrame(SubmittedFrame const & frame);
     void MainRenderFrame(SubmittedFrame const & frame);
+    void PostProcessFrame();
 
 	void PreRenderCameras(std::vector<SubmittedCamera> const & cameras);
 
@@ -44,16 +49,25 @@ class RenderSystem
     std::vector<FrameInfo> frameInfo;
 
     // Rendering resources
-    PipelineHandle * passthroughTransformPipeline;
     RenderPassHandle * mainRenderpass;
+    RenderPassHandle * postprocessRenderpass;
+
+    PipelineLayoutHandle * ptPipelineLayout;
+    PipelineHandle * passthroughTransformPipeline;
+
+	SamplerHandle * postprocessSampler;
+	DescriptorSetLayoutHandle * postprocessDescriptorSetLayout;
+	PipelineLayoutHandle * postprocessLayout;
+    PipelineHandle * postprocessPipeline;
 
     BufferHandle * quadEbo;
     BufferHandle * quadVbo;
-
-	PipelineLayoutHandle * ptPipelineLayout;
 
     // Other systems
     Renderer * renderer;
     ResourceManager * resourceManager;
     UiRenderSystem uiRenderSystem;
+
+	// Options
+    DescriptorSet * backbufferOverride = nullptr;
 };

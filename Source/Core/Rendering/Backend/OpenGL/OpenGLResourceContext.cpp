@@ -180,7 +180,7 @@ PipelineHandle * OpenGLResourceContext::CreateGraphicsPipeline(ResourceCreationC
 		glAttachShader(ret->nativeHandle, ((OpenGLShaderModuleHandle *)stageInfo.module)->nativeHandle);
 		GLenum glErr = GL_NO_ERROR;
 		if ((glErr = glGetError()) != GL_NO_ERROR) {
-			printf("[ERROR] Attaching shader with name %s %d %s\n", stageInfo.name.c_str(), glErr);
+			printf("[ERROR] Attaching shader with name %s %d\n", stageInfo.name.c_str(), glErr);
 		}
 	}
 

@@ -76,7 +76,7 @@ void VulkanCommandBuffer::CmdBeginRenderPass(CommandBuffer::RenderPassBeginInfo 
 		((VulkanFramebufferHandle *)pRenderPassBegin->framebuffer)->framebuffer,
 		ToVulkanRect2D(pRenderPassBegin->renderArea),
 		(uint32_t)clearValues.size(),
-		&clearValues[0]
+        clearValues.data()
 	};
 
 	VkSubpassContents subpassContents;

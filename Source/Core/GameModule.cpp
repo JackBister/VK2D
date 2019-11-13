@@ -5,6 +5,7 @@
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/Input.h"
+#include "Core/Rendering/Image.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/SubmittedCamera.h"
 #include "Core/UI/EditorSystem.h"
@@ -167,6 +168,14 @@ void Tick()
         scenes[0].Unload();
     }
 #endif
+
+	if (Input::GetKeyDown(KC_F1)) {
+        auto image = resourceManager->LoadResource<Image>("white_pixel.png");
+		renderSystem->DebugOverrideBackbuffer(image->GetImageView());
+	}
+    if (Input::GetKeyDown(KC_F2)) {
+        renderSystem->DebugOverrideBackbuffer(nullptr);
+	}
 
     currFrameStage = FrameStage::FENCE_WAIT;
     renderSystem->StartFrame();

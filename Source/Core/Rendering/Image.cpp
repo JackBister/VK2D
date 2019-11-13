@@ -106,25 +106,10 @@ Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint
 {
 	this->name = name;
 	int n;
-	uint8_t const * imageData = stbi_load_from_memory((stbi_uc const *)&input[0], (int)input.size(), (int *)&width, (int *)&height, (int *)&n, 0);
-	data = std::vector<uint8_t>(width * height * n);
-	memcpy(&data[0], imageData, width * height * n);
+	uint8_t const * imageData = stbi_load_from_memory((stbi_uc const *)&input[0], (int)input.size(), (int *)&width, (int *)&height, (int *)&n, 4);
+	data = std::vector<uint8_t>(width * height * 4);
+	memcpy(&data[0], imageData, width * height * 4);
 	Format format = Format::RGBA8;
-	//TODO: pads to RGBA8 in a terrible way
-	{
-		auto idx = 1;
-		auto pad = data.size() % 4;
-		for (auto it = data.begin(); it != data.end(); ++it) {
-			if (idx % 4 == pad) {
-				for (auto i = 0; i < 4 - pad; ++i) {
-					it = data.insert(++it, 0xFF);
-					idx++;
-				}
-			} else {
-				idx++;
-			}
-		}
-	}
 	resMan->CreateResources([this](ResourceCreationContext& ctx) {
 		ResourceCreationContext::ImageCreateInfo ic = {
 			Format::RGBA8,

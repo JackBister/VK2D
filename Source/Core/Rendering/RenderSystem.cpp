@@ -2,11 +2,17 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Core/Rendering/Shaders/passthrough-transform.frag.spv.h"
 #include "Core/Rendering/Shaders/passthrough-transform.vert.spv.h"
 #include "Core/Rendering/Shaders/passthrough.frag.spv.h"
+#include "Core/Rendering/Shaders/passthrough.vert.spv.h"
 #include "Core/Rendering/Shaders/ui.frag.spv.h"
 #include "Core/Rendering/Shaders/ui.vert.spv.h"
 #include "Core/entity.h"
+
+static constexpr CommandBuffer::ClearValue DEFAULT_CLEAR_VALUES[] = {
+    {CommandBuffer::ClearValue::Type::COLOR, {0.f, 0.f, 1.f, 1.f}}};
+
 RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManager)
     : renderer(renderer), resourceManager(resourceManager), frameInfo(renderer->GetSwapCount()),
       uiRenderSystem(renderer)
@@ -31,6 +37,9 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
         DescriptorSetLayoutHandle * uiPipelineDescriptorSetLayout;
 
         PipelineLayoutHandle * uiLayout;
+
+        ShaderModuleHandle * passthroughNoTransformVertShader;
+        ShaderModuleHandle * passthroughNoTransformFragShader;
 
         ShaderModuleHandle * ptvShader;
         ShaderModuleHandle * pfShader;
@@ -72,7 +81,8 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
 
             pfShader = ctx.CreateShaderModule(
                 {ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER,
-                 shaders_passthrough_frag_spv_len, shaders_passthrough_frag_spv});
+                 shaders_passthrough_transform_frag_spv_len,
+                 shaders_passthrough_transform_frag_spv});
 
             /*
                     Create UI shaders
@@ -123,6 +133,7 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
                 frameInfo[i].framebufferReady = ctx.CreateSemaphore();
                 frameInfo[i].preRenderPassFinished = ctx.CreateSemaphore();
                 frameInfo[i].mainRenderPassFinished = ctx.CreateSemaphore();
+                frameInfo[i].postprocessFinished = ctx.CreateSemaphore();
             }
 
             /*
@@ -146,9 +157,9 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
 
             ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineShaderStageCreateInfo
                 stages[2] = {{ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT, ptvShader,
-                              "Passthrough Vertex Shader"},
+                              "Passthrough-Transform Vertex Shader"},
                              {ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT, pfShader,
-                              "Passthrough Fragment Shader"}};
+                              "Passthrough-Transform Fragment Shader"}};
 
             ResourceCreationContext::VertexInputStateCreateInfo::VertexBindingDescription binding =
                 {0, 8 * sizeof(float)};
@@ -166,6 +177,71 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
 
             passthroughTransformPipeline = ctx.CreateGraphicsPipeline(
                 {2, stages, ptInputState, &ptRasterization, ptPipelineLayout, mainRenderpass, 0});
+
+            // Create postprocess pipeline
+            ResourceCreationContext::SamplerCreateInfo postprocessSamplerCreateInfo;
+            postprocessSamplerCreateInfo.addressModeU = AddressMode::CLAMP_TO_EDGE;
+            postprocessSamplerCreateInfo.addressModeV = AddressMode::CLAMP_TO_EDGE;
+            postprocessSamplerCreateInfo.magFilter = Filter::NEAREST;
+            postprocessSamplerCreateInfo.minFilter = Filter::NEAREST;
+            postprocessSampler = ctx.CreateSampler(postprocessSamplerCreateInfo);
+
+            RenderPassHandle::AttachmentDescription postprocessAttachment = {
+                0,
+                renderer->GetBackbufferFormat(),
+				// TODO: Can probably be DONT_CARE once we're doing actual post processing
+                RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+                RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+                RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+                RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+                ImageLayout::UNDEFINED,
+                ImageLayout::PRESENT_SRC_KHR};
+
+            RenderPassHandle::AttachmentReference postprocessReference = {
+                0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+
+            RenderPassHandle::SubpassDescription postprocessSubpass = {
+                RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                0,
+                nullptr,
+                1,
+                &postprocessReference,
+                nullptr,
+                nullptr,
+                0,
+                nullptr};
+
+            ResourceCreationContext::RenderPassCreateInfo postprocessPassInfo = {
+                1, &postprocessAttachment, 1, &postprocessSubpass, 0, nullptr};
+            postprocessRenderpass = ctx.CreateRenderPass(postprocessPassInfo);
+
+            passthroughNoTransformVertShader = ctx.CreateShaderModule(
+                {ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER,
+                 shaders_passthrough_vert_spv_len, shaders_passthrough_vert_spv});
+
+            passthroughNoTransformFragShader = ctx.CreateShaderModule(
+                {ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER,
+                 shaders_passthrough_frag_spv_len, shaders_passthrough_frag_spv});
+
+            ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding postprocessBindings[1] =
+                {{0, DescriptorType::COMBINED_IMAGE_SAMPLER,
+                  ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
+
+            postprocessDescriptorSetLayout =
+                ctx.CreateDescriptorSetLayout({1, postprocessBindings});
+
+            postprocessLayout = ctx.CreatePipelineLayout({{postprocessDescriptorSetLayout}});
+
+            ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineShaderStageCreateInfo
+                postprocessStages[2] = {
+                    {ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT, passthroughNoTransformVertShader,
+                     "Passthrough-No Transform Vertex Shader"},
+                    {ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT,
+                     passthroughNoTransformFragShader, "Passthrough-No Transform Fragment Shader"}};
+
+            postprocessPipeline =
+                ctx.CreateGraphicsPipeline({2, postprocessStages, ptInputState, &ptRasterization,
+                                            postprocessLayout, postprocessRenderpass, 0});
 
             /*
                     Create UI shader program
@@ -213,9 +289,11 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
         ctxCreateInfo.level = CommandBufferLevel::PRIMARY;
         for (size_t i = 0; i < frameInfo.size(); ++i) {
             frameInfo[i].framebuffer = framebuffers[i];
+            frameInfo[i].preRenderPassCommandBuffer =
+                frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
             frameInfo[i].mainCommandBuffer =
                 frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
-            frameInfo[i].preRenderPassCommandBuffer =
+            frameInfo[i].postProcessCommandBuffer =
                 frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
         }
 
@@ -223,7 +301,7 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
         resourceManager->AddResource("_Primitives/Buffers/QuadEBO.buffer", quadEbo);
 
         resourceManager->AddResource("_Primitives/Shaders/passthrough-transform.vert", ptvShader);
-        resourceManager->AddResource("_Primitives/Shaders/passthrough.frag", pfShader);
+        resourceManager->AddResource("_Primitives/Shaders/passthrough-transform.frag", pfShader);
 
         resourceManager->AddResource("_Primitives/Shaders/ui.vert", uivShader);
         resourceManager->AddResource("_Primitives/Shaders/ui.frag", uifShader);
@@ -262,9 +340,48 @@ void RenderSystem::RenderFrame(SubmittedFrame const & frame)
 
     PreRenderFrame(frame);
     MainRenderFrame(frame);
+    PostProcessFrame();
 
     auto & currFrame = frameInfo[currFrameInfoIdx];
-    renderer->SwapWindow(currFrameInfoIdx, currFrame.mainRenderPassFinished);
+    renderer->SwapWindow(currFrameInfoIdx, currFrame.postprocessFinished);
+}
+
+void RenderSystem::DebugOverrideBackbuffer(ImageViewHandle * image)
+{
+    // Drain the queue so there is no outstanding command buffer using the descriptor set
+    // (Will validation layers complain here if RenderFrame is executing concurrently on a different
+    // thread?)
+    for (auto & fi : frameInfo) {
+        fi.canStartFrame->Wait(std::numeric_limits<uint64_t>::max());
+    }
+
+    renderer->CreateResources([this, image](ResourceCreationContext & ctx) {
+        if (backbufferOverride != nullptr) {
+            ctx.DestroyDescriptorSet(backbufferOverride);
+        }
+
+        if (image == nullptr) {
+            backbufferOverride = nullptr;
+            return;
+        }
+
+        ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imgDescriptor = {
+            postprocessSampler, image};
+
+        ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
+            {DescriptorType::COMBINED_IMAGE_SAMPLER, 0, imgDescriptor}};
+
+        backbufferOverride =
+            ctx.CreateDescriptorSet({1, descriptors, postprocessDescriptorSetLayout});
+    });
+
+    // Execute a dummy command buffer to signal that rendering can continue
+    for (auto & fi : frameInfo) {
+        fi.preRenderPassCommandBuffer->Reset();
+        fi.preRenderPassCommandBuffer->BeginRecording(nullptr);
+        fi.preRenderPassCommandBuffer->EndRecording();
+        renderer->ExecuteCommandBuffer(fi.preRenderPassCommandBuffer, {}, {}, fi.canStartFrame);
+    }
 }
 
 void RenderSystem::AcquireNextFrame()
@@ -298,25 +415,64 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
     currFrame.mainCommandBuffer->Reset();
     currFrame.mainCommandBuffer->BeginRecording(nullptr);
 
-    CommandBuffer::ClearValue clearValues[] = {
-        {CommandBuffer::ClearValue::Type::COLOR, {0.f, 0.f, 1.f, 1.f}}};
     auto res = renderer->GetResolution();
     CommandBuffer::RenderPassBeginInfo beginInfo = {
-        mainRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 1, clearValues};
+        mainRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 1, DEFAULT_CLEAR_VALUES};
     currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo,
                                                     CommandBuffer::SubpassContents::INLINE);
     for (auto const & camera : frame.cameras) {
         RenderSprites(camera, frame.sprites);
     }
 
-    uiRenderSystem.RenderUi(currFrameInfoIdx, currFrame.mainCommandBuffer);
-
     currFrame.mainCommandBuffer->CmdEndRenderPass();
     currFrame.mainCommandBuffer->EndRecording();
     renderer->ExecuteCommandBuffer(
         currFrame.mainCommandBuffer,
+        // TODO: If main renderpass doesn't render immediately to backbuffer in the future, framebufferReady
+        // should be moved to postprocess submit
         {frameInfo[prevFrameInfoIdx].framebufferReady, currFrame.preRenderPassFinished},
-        {currFrame.mainRenderPassFinished}, currFrame.canStartFrame);
+        {currFrame.mainRenderPassFinished});
+}
+
+void RenderSystem::PostProcessFrame()
+{
+    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto res = renderer->GetResolution();
+
+    currFrame.postProcessCommandBuffer->Reset();
+    currFrame.postProcessCommandBuffer->BeginRecording(nullptr);
+    CommandBuffer::RenderPassBeginInfo beginInfo = {
+        postprocessRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 0, nullptr};
+    currFrame.postProcessCommandBuffer->CmdBeginRenderPass(&beginInfo,
+                                                           CommandBuffer::SubpassContents::INLINE);
+
+    if (backbufferOverride != nullptr) {
+        CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+        currFrame.postProcessCommandBuffer->CmdSetViewport(0, 1, &viewport);
+
+        CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
+        currFrame.postProcessCommandBuffer->CmdSetScissor(0, 1, &scissor);
+
+        currFrame.postProcessCommandBuffer->CmdBindPipeline(
+            RenderPassHandle::PipelineBindPoint::GRAPHICS, postprocessPipeline);
+
+        currFrame.postProcessCommandBuffer->CmdBindIndexBuffer(quadEbo, 0,
+                                                               CommandBuffer::IndexType::UINT32);
+        currFrame.postProcessCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, 8 * sizeof(float));
+
+        currFrame.postProcessCommandBuffer->CmdBindDescriptorSets(postprocessLayout, 0,
+                                                                  {backbufferOverride});
+        currFrame.postProcessCommandBuffer->CmdDrawIndexed(6, 1, 0, 0);
+    }
+
+	// Render UI here since post processing shouldn't(?) affect the UI
+    uiRenderSystem.RenderUi(currFrameInfoIdx, currFrame.postProcessCommandBuffer);
+
+    currFrame.postProcessCommandBuffer->CmdEndRenderPass();
+    currFrame.postProcessCommandBuffer->EndRecording();
+    renderer->ExecuteCommandBuffer(currFrame.postProcessCommandBuffer,
+                                   {currFrame.mainRenderPassFinished},
+                                   {currFrame.postprocessFinished}, currFrame.canStartFrame);
 }
 
 void RenderSystem::PreRenderCameras(std::vector<SubmittedCamera> const & cameras)
@@ -360,7 +516,8 @@ void RenderSystem::RenderSprites(SubmittedCamera const & camera,
     currFrame.mainCommandBuffer->CmdBindDescriptorSets(ptPipelineLayout, 0, {camera.descriptorSet});
 
     for (auto const & sprite : sprites) {
-        currFrame.mainCommandBuffer->CmdBindDescriptorSets(ptPipelineLayout, 1, {sprite.descriptorSet});
+        currFrame.mainCommandBuffer->CmdBindDescriptorSets(ptPipelineLayout, 1,
+                                                           {sprite.descriptorSet});
         currFrame.mainCommandBuffer->CmdDrawIndexed(6, 1, 0, 0);
     }
 }
