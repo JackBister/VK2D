@@ -2,20 +2,18 @@
 
 #include <imgui.h>
 
-#include "Core/dtime.h"
 #include "Core/ResourceManager.h"
 #include "Core/Semaphore.h"
+#include "Core/dtime.h"
 
-UiRenderSystem::UiRenderSystem(Renderer * renderer) : renderer(renderer), frameData(renderer->GetSwapCount())
+UiRenderSystem::UiRenderSystem(Renderer * renderer, ResourceManager * resourceManager)
+    : renderer(renderer), resourceManager(resourceManager), frameData(renderer->GetSwapCount())
 {
-}
-
-void UiRenderSystem::Init(DescriptorSetLayoutHandle * descriptorSetLayout,
-                          PipelineHandle * pipelineHandle, PipelineLayoutHandle * inPipelineLayout)
-{
-    layout = descriptorSetLayout;
-    gfxPipeline = pipelineHandle;
-    pipelineLayout = inPipelineLayout;
+    layout = resourceManager->GetResource<DescriptorSetLayoutHandle>(
+        "_Primitives/DescriptorSetLayouts/ui.layout");
+    pipelineLayout = resourceManager->GetResource<PipelineLayoutHandle>(
+        "_Primitives/PipelineLayouts/ui.pipelinelayout");
+    gfxPipeline = resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/ui.pipe");
 
     auto & imguiIo = ImGui::GetIO();
     imguiIo.MouseDrawCursor = false;
@@ -28,7 +26,8 @@ void UiRenderSystem::Init(DescriptorSetLayoutHandle * descriptorSetLayout,
     std::vector<uint8_t> fontPixelVector(fontWidth * fontHeight * bytesPerPixel);
     memcpy(&fontPixelVector[0], fontPixels, fontWidth * fontHeight * bytesPerPixel);
 
-	renderer->CreateResources([=](ResourceCreationContext & ctx) {
+    Semaphore sem;
+    renderer->CreateResources([&](ResourceCreationContext & ctx) {
         ResourceCreationContext::ImageCreateInfo fontCreateInfo;
         fontCreateInfo.depth = 1;
         fontCreateInfo.format = Format::RGBA8;
@@ -78,7 +77,9 @@ void UiRenderSystem::Init(DescriptorSetLayoutHandle * descriptorSetLayout,
             ci.descriptors = &descriptor;
             ci.layout = layout;
             descriptorSet = ctx.CreateDescriptorSet(ci);
+            sem.Signal();
         }
+        sem.Wait();
     });
 }
 
@@ -145,9 +146,9 @@ void UiRenderSystem::RenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer
     auto data = ImGui::GetDrawData();
     auto & fd = frameData[frameIndex];
 
-	if (!fd.indexBuffer || !fd.vertexBuffer) {
+    if (!fd.indexBuffer || !fd.vertexBuffer) {
         return;
-	}
+    }
 
     commandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS, gfxPipeline);
     commandBuffer->CmdBindDescriptorSets(pipelineLayout, 0, {descriptorSet});

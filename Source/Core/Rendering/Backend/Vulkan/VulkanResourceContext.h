@@ -51,7 +51,7 @@ public:
 	 FenceHandle * CreateFence(bool startSignaled) final override;
 	 void DestroyFence(FenceHandle *) final override;
 
-	 VertexInputStateHandle * CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo const& ) final override;
+	 VertexInputStateHandle * CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo & ) final override;
 	 void DestroyVertexInputState(VertexInputStateHandle *) final override;
 
 	 DescriptorSet * CreateDescriptorSet(DescriptorSetCreateInfo const& ) final override;

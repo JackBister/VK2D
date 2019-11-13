@@ -545,17 +545,19 @@ PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationC
 	});
 
 	auto nativeVertexInputState = ((VulkanVertexInputStateHandle *)ci.vertexInputState)->createInfo;
-	std::vector<VkVertexInputBindingDescription> bindingDescriptions(nativeVertexInputState.vertexBindingDescriptionCount);
-	std::transform(nativeVertexInputState.pVertexBindingDescriptions, &nativeVertexInputState.pVertexBindingDescriptions[nativeVertexInputState.vertexBindingDescriptionCount], bindingDescriptions.begin(), [](VertexInputStateCreateInfo::VertexBindingDescription description) {
-		return VkVertexInputBindingDescription{
+	std::vector<VkVertexInputBindingDescription> bindingDescriptions(nativeVertexInputState.vertexBindingDescriptions.size());
+	for (size_t i = 0; i < bindingDescriptions.size(); ++i) {
+		auto & description = nativeVertexInputState.vertexBindingDescriptions[i];
+		bindingDescriptions[i] = VkVertexInputBindingDescription{
 			description.binding,
 			description.stride,
 			VK_VERTEX_INPUT_RATE_VERTEX
 		};
-	});
+	}
 
-	std::vector<VkVertexInputAttributeDescription> attributeDescriptions(nativeVertexInputState.vertexAttributeDescriptionCount);
-	std::transform(nativeVertexInputState.pVertexAttributeDescriptions, &nativeVertexInputState.pVertexAttributeDescriptions[nativeVertexInputState.vertexAttributeDescriptionCount], attributeDescriptions.begin(), [](VertexInputStateCreateInfo::VertexAttributeDescription description) {
+	std::vector<VkVertexInputAttributeDescription> attributeDescriptions(nativeVertexInputState.vertexAttributeDescriptions.size());
+	for (size_t i = 0; i < attributeDescriptions.size(); ++i) {
+		auto & description = nativeVertexInputState.vertexAttributeDescriptions[i];
 		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 		if (description.type == VertexComponentType::FLOAT) {
 			if (description.size == 1) {
@@ -568,13 +570,13 @@ PipelineHandle * VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationC
 				format = VK_FORMAT_R32G32B32A32_SFLOAT;
 			}
 		}
-		return VkVertexInputAttributeDescription{
+		attributeDescriptions[i] = VkVertexInputAttributeDescription{
 			description.location,
 			description.binding,
 			format,
 			description.offset
 		};
-	});
+	}
 
 	VkPipelineVertexInputStateCreateInfo vertexInputState{
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -839,9 +841,10 @@ void VulkanResourceContext::DestroyFence(FenceHandle * fence)
 	vkDestroyFence(renderer->basics.device, nativeHandle->fence, nullptr);
 }
 
-VertexInputStateHandle * VulkanResourceContext::CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo const& info)
+VertexInputStateHandle * VulkanResourceContext::CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo & info)
 {
 	auto ret = (VulkanVertexInputStateHandle *)allocator.allocate(sizeof(VulkanVertexInputStateHandle));
+	ret = new (ret) VulkanVertexInputStateHandle();
 	ret->createInfo = info;
 	return ret;
 }

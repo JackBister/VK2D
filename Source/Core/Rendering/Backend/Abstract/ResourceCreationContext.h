@@ -215,12 +215,10 @@ public:
 			uint32_t stride;
 		};
 
-		uint32_t vertexBindingDescriptionCount;
-		VertexBindingDescription const * pVertexBindingDescriptions;
-		uint32_t vertexAttributeDescriptionCount;
-		VertexAttributeDescription const * pVertexAttributeDescriptions;
+		std::vector<VertexAttributeDescription> vertexAttributeDescriptions;
+		std::vector<VertexBindingDescription> vertexBindingDescriptions;
 	};
-	virtual VertexInputStateHandle * CreateVertexInputState(VertexInputStateCreateInfo const&) = 0;
+	virtual VertexInputStateHandle * CreateVertexInputState(VertexInputStateCreateInfo &) = 0;
 	virtual void DestroyVertexInputState(VertexInputStateHandle *) = 0;
 
 protected:

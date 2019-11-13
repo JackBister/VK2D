@@ -12,6 +12,7 @@
 #include "Core/physicsworld.h"
 #include "Core/Queue.h"
 #include "Core/Rendering/Backend/Renderer.h"
+#include "Core/Rendering/RenderPrimitiveFactory.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/ResourceManager.h"
 #include "Core/scene.h"
@@ -68,6 +69,7 @@ int main(int argc, char *argv[])
 	SDL_Init(SDL_INIT_EVERYTHING);
 	Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
 	ResourceManager resMan(&renderer);
+	RenderPrimitiveFactory(&renderer, &resMan).CreatePrimitives();
 	RenderSystem renderSystem(&renderer, &resMan);
 
 #ifdef _DEBUG

@@ -10,16 +10,14 @@ class ResourceManager;
 
 class UiRenderSystem
 {
-  public:
-    UiRenderSystem(Renderer * renderer);
-
-    void Init(DescriptorSetLayoutHandle * descriptorSetLayout, PipelineHandle * pipelineHandle, PipelineLayoutHandle * pipelineLayout);
+public:
+    UiRenderSystem(Renderer * renderer, ResourceManager *);
 
     void StartFrame();
     void PreRenderUi(uint32_t frameIndex, CommandBuffer *);
     void RenderUi(uint32_t frameIndex, CommandBuffer *);
 
-  private:
+private:
     struct FrameInfo {
         BufferHandle * indexBuffer = nullptr;
         size_t indexBufferSize = 0;
@@ -42,4 +40,5 @@ class UiRenderSystem
 
     // Other systems
     Renderer * renderer;
+    ResourceManager * resourceManager;
 };

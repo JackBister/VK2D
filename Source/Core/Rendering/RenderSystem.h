@@ -7,15 +7,15 @@
 
 class RenderSystem
 {
-  public:
+public:
     RenderSystem(Renderer * renderer, ResourceManager * resourceManager);
 
     void StartFrame();
     void RenderFrame(SubmittedFrame const & frame);
 
-	void DebugOverrideBackbuffer(ImageViewHandle * image);
+    void DebugOverrideBackbuffer(ImageViewHandle * image);
 
-  private:
+private:
     struct FrameInfo {
         FramebufferHandle * framebuffer;
 
@@ -32,12 +32,12 @@ class RenderSystem
         CommandBufferAllocator * commandBufferAllocator;
     };
 
-	void AcquireNextFrame();
+    void AcquireNextFrame();
     void PreRenderFrame(SubmittedFrame const & frame);
     void MainRenderFrame(SubmittedFrame const & frame);
     void PostProcessFrame();
 
-	void PreRenderCameras(std::vector<SubmittedCamera> const & cameras);
+    void PreRenderCameras(std::vector<SubmittedCamera> const & cameras);
 
     void PreRenderSprites(std::vector<SubmittedSprite> const & sprites);
     void RenderSprites(SubmittedCamera const & camera,
@@ -52,12 +52,12 @@ class RenderSystem
     RenderPassHandle * mainRenderpass;
     RenderPassHandle * postprocessRenderpass;
 
-    PipelineLayoutHandle * ptPipelineLayout;
+    PipelineLayoutHandle * passthroughTransformPipelineLayout;
     PipelineHandle * passthroughTransformPipeline;
 
-	SamplerHandle * postprocessSampler;
-	DescriptorSetLayoutHandle * postprocessDescriptorSetLayout;
-	PipelineLayoutHandle * postprocessLayout;
+    SamplerHandle * postprocessSampler;
+    DescriptorSetLayoutHandle * postprocessDescriptorSetLayout;
+    PipelineLayoutHandle * postprocessLayout;
     PipelineHandle * postprocessPipeline;
 
     BufferHandle * quadEbo;
@@ -68,6 +68,6 @@ class RenderSystem
     ResourceManager * resourceManager;
     UiRenderSystem uiRenderSystem;
 
-	// Options
+    // Options
     DescriptorSet * backbufferOverride = nullptr;
 };

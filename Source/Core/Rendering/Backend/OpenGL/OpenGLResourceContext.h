@@ -37,7 +37,7 @@ public:
 
 	DescriptorSetLayoutHandle * CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo const&) final override;
 	void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle *) final override;
-	VertexInputStateHandle * CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo const&) final override;
+	VertexInputStateHandle * CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo &) final override;
 	void DestroyVertexInputState(VertexInputStateHandle *) final override;
 
 	DescriptorSet * CreateDescriptorSet(DescriptorSetCreateInfo const&) final override;

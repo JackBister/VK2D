@@ -298,12 +298,12 @@ void OpenGLResourceContext::DestroyDescriptorSetLayout(DescriptorSetLayoutHandle
 	allocator.deallocate((uint8_t *)handle, sizeof(OpenGLDescriptorSetLayoutHandle));
 }
 
-VertexInputStateHandle * OpenGLResourceContext::CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo const& ci)
+VertexInputStateHandle * OpenGLResourceContext::CreateVertexInputState(ResourceCreationContext::VertexInputStateCreateInfo & ci)
 {
 	auto ret = (OpenGLVertexInputStateHandle *)allocator.allocate(sizeof(OpenGLVertexInputStateHandle));
 	glCreateVertexArrays(1, &ret->nativeHandle);
-	for (uint32_t i = 0; i < ci.vertexAttributeDescriptionCount; ++i) {
-		auto attributeDescription = ci.pVertexAttributeDescriptions[i];
+    for (size_t i = 0; i < ci.vertexAttributeDescriptions.size(); ++i) {
+		auto & attributeDescription = ci.vertexAttributeDescriptions[i];
 		GLenum type = GL_FLOAT;
 		switch (attributeDescription.type) {
 		case VertexComponentType::BYTE:
