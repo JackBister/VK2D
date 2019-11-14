@@ -55,7 +55,7 @@ RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreation
                                                           RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
                                                           RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
                                                           ImageLayout::UNDEFINED,
-                                                          ImageLayout::PRESENT_SRC_KHR};
+                                                          ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
 
     RenderPassHandle::AttachmentReference reference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
 
@@ -78,7 +78,7 @@ RenderPassHandle * RenderPrimitiveFactory::CreatePostprocessRenderpass(ResourceC
         RenderPassHandle::AttachmentDescription::StoreOp::STORE,
         RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
         RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
-        ImageLayout::UNDEFINED,
+        ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
         ImageLayout::PRESENT_SRC_KHR};
 
     RenderPassHandle::AttachmentReference postprocessReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
