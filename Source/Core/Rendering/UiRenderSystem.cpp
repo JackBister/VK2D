@@ -164,6 +164,10 @@ void UiRenderSystem::RenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer
             if (imCmdBuf->UserCallback != nullptr) {
                 imCmdBuf->UserCallback(cmdList, imCmdBuf);
             } else {
+                auto res = renderer->GetResolution();
+                CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+                commandBuffer->CmdSetViewport(0, 1, &viewport);
+
                 CommandBuffer::Rect2D scissor;
                 scissor.offset.x = imCmdBuf->ClipRect.x > 0 ? imCmdBuf->ClipRect.x : 0;
                 scissor.offset.y = imCmdBuf->ClipRect.y > 0 ? imCmdBuf->ClipRect.y : 0;
