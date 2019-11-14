@@ -111,7 +111,7 @@ void OpenGLCommandBuffer::CmdBindVertexBuffer(BufferHandle * buffer, uint32_t bi
 
 void OpenGLCommandBuffer::CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset)
 {
-	commandList.push_back(DrawIndexedArgs{static_cast<int>(indexCount), (void const *)firstIndex, static_cast<int>(instanceCount), vertexOffset});
+	commandList.push_back(DrawIndexedArgs{static_cast<int>(indexCount), firstIndex, static_cast<int>(instanceCount), vertexOffset});
 }
 
 void OpenGLCommandBuffer::CmdEndRenderPass()
@@ -194,6 +194,8 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
 			}
 			for (auto i : args.images) {
 				glUniform1i(i.binding, i.binding);
+				glActiveTexture(GL_TEXTURE0 + i.binding);
+				glBindTexture(GL_TEXTURE_2D, i.image);
                 glBindSampler(i.binding, i.sampler);
 			}
 			break;
@@ -234,7 +236,8 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
 		{
 			auto args = std::get<DrawIndexedArgs>(rc);
 			assert(indexBufferType == GL_UNSIGNED_SHORT || indexBufferType == GL_UNSIGNED_INT);
-			glDrawElementsInstancedBaseVertex(GL_TRIANGLES, args.count, indexBufferType, args.indices, args.primcount, args.basevertex);
+			auto elementSize = indexBufferType == GL_UNSIGNED_SHORT ? sizeof(uint16_t) : sizeof(uint32_t);
+			glDrawElementsInstancedBaseVertex(GL_TRIANGLES, args.count, indexBufferType, (void *)(args.indices * elementSize), args.primcount, args.basevertex);
 			break;
 		}
 		case RenderCommandType::EXECUTE_COMMANDS:

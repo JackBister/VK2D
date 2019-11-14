@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <glm/glm.hpp>
+
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Rendering/SubmittedFrame.h"
 #include "Core/Rendering/UiRenderSystem.h"
@@ -12,6 +14,8 @@ public:
 
     void StartFrame();
     void RenderFrame(SubmittedFrame const & frame);
+
+	glm::ivec2 GetResolution();
 
     void DebugOverrideBackbuffer(ImageViewHandle * image);
 

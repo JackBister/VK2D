@@ -110,7 +110,7 @@ Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint
 	data = std::vector<uint8_t>(width * height * 4);
 	memcpy(&data[0], imageData, width * height * 4);
 	Format format = Format::RGBA8;
-	resMan->CreateResources([this](ResourceCreationContext& ctx) {
+	resMan->CreateResources([this, resMan](ResourceCreationContext& ctx) {
 		ResourceCreationContext::ImageCreateInfo ic = {
 			Format::RGBA8,
 			ImageHandle::Type::TYPE_2D,
@@ -136,6 +136,7 @@ Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint
 		ivc.subresourceRange.levelCount = 1;
 		ivc.viewType = ImageViewHandle::Type::TYPE_2D;
 		this->view = ctx.CreateImageView(ivc);
+		resMan->AddResource(this->name + "/view.imageview", this->view);
 
 		ResourceCreationContext::SamplerCreateInfo sc = {};
 		sc.addressModeU = AddressMode::REPEAT;

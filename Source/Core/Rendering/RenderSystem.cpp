@@ -2,8 +2,12 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Core/Console/Console.h"
+#include "Core/Logging/Logger.h"
 #include "Core/Semaphore.h"
 #include "Core/entity.h"
+
+static const auto logger = Logger::Create("RenderSystem");
 
 static constexpr CommandBuffer::ClearValue DEFAULT_CLEAR_VALUES[] = {
     {CommandBuffer::ClearValue::Type::COLOR, {0.f, 0.f, 1.f, 1.f}}};
@@ -61,6 +65,26 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
         frameInfo[i].postProcessCommandBuffer =
             frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
     }
+
+    CommandDefinition backbufferOverrideCommand(
+        "render_override_backbuffer",
+        "render_override_backbuffer <imageview resource name> - Overrides the renderer's output to "
+        "output the given imageview instead of the normal backbuffer. Call with the argument "
+        "'false' to go back to normal rendering.",
+        1, [this, resourceManager](auto args) {
+            auto imageViewName = args[0];
+            if (imageViewName == "false") {
+                this->DebugOverrideBackbuffer(nullptr);
+                return;
+            }
+            auto imageView = resourceManager->GetResource<ImageViewHandle>(imageViewName);
+            if (!imageView) {
+                logger->Errorf("Could not find resource '%s'", imageView);
+                return;
+            }
+            this->DebugOverrideBackbuffer(imageView);
+        });
+    Console::RegisterCommand(backbufferOverrideCommand);
 }
 
 void RenderSystem::StartFrame()
@@ -78,6 +102,11 @@ void RenderSystem::RenderFrame(SubmittedFrame const & frame)
 
     auto & currFrame = frameInfo[currFrameInfoIdx];
     renderer->SwapWindow(currFrameInfoIdx, currFrame.postprocessFinished);
+}
+
+glm::ivec2 RenderSystem::GetResolution()
+{
+    return renderer->GetResolution();
 }
 
 void RenderSystem::DebugOverrideBackbuffer(ImageViewHandle * image)

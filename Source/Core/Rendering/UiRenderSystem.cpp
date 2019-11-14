@@ -27,7 +27,7 @@ UiRenderSystem::UiRenderSystem(Renderer * renderer, ResourceManager * resourceMa
     memcpy(&fontPixelVector[0], fontPixels, fontWidth * fontHeight * bytesPerPixel);
 
     Semaphore sem;
-    renderer->CreateResources([&](ResourceCreationContext & ctx) {
+    renderer->CreateResources([this, &sem, fontHeight, fontWidth, fontPixelVector](ResourceCreationContext & ctx) {
         ResourceCreationContext::ImageCreateInfo fontCreateInfo;
         fontCreateInfo.depth = 1;
         fontCreateInfo.format = Format::RGBA8;
@@ -39,6 +39,7 @@ UiRenderSystem::UiRenderSystem(Renderer * renderer, ResourceManager * resourceMa
                                ImageUsageFlagBits::IMAGE_USAGE_FLAG_TRANSFER_DST_BIT;
         fontAtlas = ctx.CreateImage(fontCreateInfo);
         ctx.ImageData(fontAtlas, fontPixelVector);
+        auto & imguiIo = ImGui::GetIO();
         imguiIo.Fonts->TexID = fontAtlas;
 
         {

@@ -108,7 +108,7 @@ private:
 	{
 		GLsizei count;
 		//Why the hell does OpenGL want a pointer for this?
-		void const * indices;
+		uint32_t indices;
 		GLsizei primcount;
 		GLint basevertex;
 	};

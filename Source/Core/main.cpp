@@ -81,7 +81,6 @@ int main(int argc, char * argv[])
     GameModule::Init(&resMan, &renderSystem);
 
     GameModule::LoadScene(sceneFileName);
-
     GameModule::BeginPlay();
     while (true) {
         char const * sdlErr = SDL_GetError();

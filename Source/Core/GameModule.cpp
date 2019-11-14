@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Core/Components/CameraComponent.h"
+#include "Core/Console/Console.h"
 #include "Core/Input.h"
 #include "Core/Rendering/Image.h"
 #include "Core/Rendering/RenderSystem.h"
@@ -96,6 +97,7 @@ void Init(ResourceManager * resMan, RenderSystem * inRenderSystem)
     resourceManager = resMan;
     renderSystem = inRenderSystem;
 
+	Console::Init(renderSystem);
     Input::Init();
     Time::Start();
 }
@@ -169,12 +171,8 @@ void Tick()
     }
 #endif
 
-	if (Input::GetKeyDown(KC_F1)) {
-        auto image = resourceManager->LoadResource<Image>("white_pixel.png");
-		renderSystem->DebugOverrideBackbuffer(image->GetImageView());
-	}
-    if (Input::GetKeyDown(KC_F2)) {
-        renderSystem->DebugOverrideBackbuffer(nullptr);
+    if (Input::GetKeyDown(KC_F1)) {
+        Console::ToggleVisible();
 	}
 
     currFrameStage = FrameStage::FENCE_WAIT;
@@ -189,6 +187,7 @@ void Tick()
     }
 
     EditorSystem::OnGui();
+    Console::OnGui();
 
     currFrameStage = FrameStage::RENDER;
 	renderSystem->RenderFrame({
