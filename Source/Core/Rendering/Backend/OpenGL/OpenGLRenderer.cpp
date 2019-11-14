@@ -5,8 +5,11 @@
 #include <SDL2/SDL_opengl.h>
 #include <stb_image.h>
 
+#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLCommandBuffer.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLResourceContext.h"
+
+static const auto logger = Logger::Create("OpenGLRenderer");
 
 Renderer::~Renderer()
 {
@@ -29,9 +32,9 @@ Renderer::Renderer(char const * title, int const winX, int const winY, int const
 	glewExperimental = GL_TRUE;
 	GLenum err = glewInit();
 	if (GLEW_OK != err) {
-		fprintf(stderr, "GLEW Error: %s\n", glewGetErrorString(err));
+		logger->Errorf("GLEW Error: %s", glewGetErrorString(err));
 	}
-	printf("Program start glGetError(Expected 1280): %d\n", glGetError());
+	logger->Infof("Program start glGetError(Expected 1280): %d", glGetError());
 
 	stbi_set_flip_vertically_on_load(true);
 
@@ -155,11 +158,11 @@ void Renderer::DrainQueue()
 		break;
 	}
 	default:
-		printf("[WARNING] Unimplemented render command: %zu\n", command.params.index());
+		logger->Warnf("Unimplemented render command: %zu", command.params.index());
 	}
 	GLenum err = glGetError();
 	if (err) {
-		printf("RenderQueue pop error %u. RenderCommand %zu.\n", err, command.params.index());
+		logger->Errorf("RenderQueue pop error %u. RenderCommand %zu.", err, command.params.index());
 	}
 }
 #endif

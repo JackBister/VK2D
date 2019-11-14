@@ -5,6 +5,9 @@
 
 #include "Core/CollisionInfo.h"
 #include "Core/Entity.h"
+#include "Core/Logging/Logger.h"
+
+static const auto logger = Logger::Create("BallComponent");
 
 COMPONENT_IMPL(BallComponent, &BallComponent::s_Deserialize)
 
@@ -55,7 +58,8 @@ void BallComponent::OnEvent(HashedString name, EventArgs args)
 	} else if (name == "OnCollisionStart") {
 		auto collisionInfo = (CollisionInfo *)args["info"].asPointer;
 		if (collisionInfo->normals.size() == 0) {
-			printf("[WARNING] OnCollisionStart with no normals.");
+			logger->Warnf("OnCollisionStart with no normals. thisEntity='%s' otherEntity='%s'",
+				entity->name.c_str(), collisionInfo->other->name.c_str());
 			velocityDir.x = -velocityDir.x;
 		} else {
 			auto norm = glm::normalize(glm::vec2(collisionInfo->normals[0]));

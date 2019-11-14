@@ -4,8 +4,11 @@
 #include "nlohmann/json.hpp"
 
 #include "Core/entity.h"
+#include "Core/Logging/Logger.h"
 #include "Core/physicsworld.h"
 #include "Core/scene.h"
+
+static const auto logger = Logger::Create("PhysicsComponent");
 
 COMPONENT_IMPL(PhysicsComponent, &PhysicsComponent::s_Deserialize)
 
@@ -67,10 +70,10 @@ Deserializable * PhysicsComponent::s_Deserialize(ResourceManager * resourceManag
 	}
 	case INVALID_SHAPE_PROXYTYPE:
 		//TODO: Error handling. I mean, the engine's going to crash sooner or later anyway but this isn't very clean.
-		printf("[ERROR] PhysicsComponent: Invalid shapeType %s.", j["shapeType"].get<std::string>().c_str());
+		logger->Errorf("Invalid shapeType %s.", j["shapeType"].get<std::string>().c_str());
 		return nullptr;
 	default:
-		printf("[ERROR] PhysicsComponent: Unhandled shapeType %s.", j["shapeType"].get<std::string>().c_str());
+		logger->Errorf("Unhandled shapeType %s.", j["shapeType"].get<std::string>().c_str());
 		return nullptr;
 	}
 	if (j.find("isKinematic") != j.end()) {
@@ -104,10 +107,10 @@ std::string PhysicsComponent::Serialize() const
 		break;
 	}
 	case INVALID_SHAPE_PROXYTYPE:
-		printf("[ERROR] PhysicsComponent: Invalid shapeType %s.", j["shapeType"].get<std::string>().c_str());
+		logger->Errorf("Invalid shapeType %s.", j["shapeType"].get<std::string>().c_str());
 		break;
 	default:
-		printf("[ERROR] PhysicsComponent: Unhandled shapeType %s.", j["shapeType"].get<std::string>().c_str());
+		logger->Errorf("Unhandled shapeType %s.", j["shapeType"].get<std::string>().c_str());
 		break;
 	}
 

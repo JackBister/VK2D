@@ -2,6 +2,10 @@
 
 #include <string>
 
+#include "Core/Logging/Logger.h"
+
+static const auto logger = Logger::Create("EventArg");
+
 //We need to do this both in the move assignment and in destructor
 void EventArg::Delete()
 {
@@ -50,7 +54,7 @@ EventArg::EventArg(EventArg const& ea) : type(ea.type)
 		asVector = new std::vector<EventArg>(*ea.asVector);
 		break;
 	default:
-		printf("[ERROR] Unknown EventArg::type %d\n", type);
+		logger->Errorf("Unknown EventArg::type %d", type);
 	}
 }
 
@@ -82,7 +86,7 @@ EventArg::EventArg(EventArg&& ea) : type(ea.type)
 		ea.asVector = nullptr;
 		break;
 	default:
-		printf("[ERROR] Unknown EventArg::type %d\n", type);
+		logger->Errorf("Unknown EventArg::type %d", type);
 	}
 }
 
@@ -123,7 +127,7 @@ EventArg& EventArg::operator=(EventArg&& ea)
 		ea.asVector = nullptr;
 		break;
 	default:
-		printf("[ERROR] Unknown EventArg::type %d\n", type);
+		logger->Errorf("Unknown EventArg::type %d", type);
 	}
 	return *this;
 }

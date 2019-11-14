@@ -5,11 +5,14 @@
 #include <gl/glew.h>
 #include <unordered_map>
 
+#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/OpenGL/DescriptorSetBindingMap.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLConverterFuncs.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLResourceContext.h"
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Semaphore.h"
+
+static const auto logger = Logger::Create("OpenGLCommandBuffer");
 
 void OpenGLCommandBuffer::BeginRecording(InheritanceInfo *)
 {
@@ -69,7 +72,7 @@ void OpenGLCommandBuffer::CmdBindDescriptorSets(PipelineLayoutHandle * layout, u
 				});
                 break;
             default:
-                printf("[ERROR] Unknown descriptor type.\n");
+                logger->Errorf("Unknown descriptor type.");
                 break;
             }
         }
@@ -92,7 +95,7 @@ void OpenGLCommandBuffer::CmdBindIndexBuffer(BufferHandle *buffer, size_t offset
 		type = GL_UNSIGNED_INT;
 		break;
 	default:
-		printf("[ERROR] Unknown index buffer index type");
+		logger->Errorf("Unknown index buffer index type");
 	}
 
 	commandList.push_back(BindIndexBufferArgs{nativeBuffer->nativeHandle, offset, type});
@@ -276,7 +279,7 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
 			break;
 		}
 		default:
-			printf("[ERROR] Unknown render command type %zd\n", rc.index());
+			logger->Errorf("Unknown render command type %zd", rc.index());
 			break;
 		}
 	}

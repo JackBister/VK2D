@@ -1,10 +1,13 @@
 #ifndef USE_OGL_RENDERER
 #include "Core/Rendering/Backend/Vulkan/VulkanResourceContext.h"
 
+#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanContextStructs.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanConverterFuncs.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanCommandBufferAllocator.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanRenderer.h"
+
+static const auto logger = Logger::Create("VulkanResourceContext");
 
 CommandBufferAllocator * VulkanResourceContext::CreateCommandBufferAllocator()
 {
@@ -417,7 +420,7 @@ ImageViewHandle * VulkanResourceContext::CreateImageView(ResourceCreationContext
 		case ImageViewHandle::Type::CUBE_ARRAY:
 			return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
 		default:
-			printf("Unknown ImageViewType %d\n", type);
+			logger->Errorf("Unknown ImageViewType %d", type);
 			assert(false);
 			return VK_IMAGE_VIEW_TYPE_1D;
 		}

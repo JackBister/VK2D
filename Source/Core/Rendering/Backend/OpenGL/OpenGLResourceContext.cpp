@@ -4,9 +4,12 @@
 #include <cassert>
 #include <GL/glew.h>
 
+#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLCommandBufferAllocator.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLContextStructs.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLConverterFuncs.h"
+
+static const auto logger = Logger::Create("OpenGLResourceContext");
 
 void OpenGLResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data, size_t offset, size_t size)
 {
@@ -137,7 +140,7 @@ FramebufferHandle * OpenGLResourceContext::CreateFramebuffer(ResourceCreationCon
 		} else if (ci.pAttachments[i]->subresourceRange.aspectMask & ImageViewHandle::STENCIL_BIT) {
 			glNamedFramebufferTexture(ret->nativeHandle, GL_STENCIL_ATTACHMENT, tex->nativeHandle, 0);
 		} else {
-			printf("[ERROR] Unknown image aspect bit in %ud.", ci.pAttachments[i]->subresourceRange.aspectMask);
+			logger->Errorf("Unknown image aspect bit in %ud.", ci.pAttachments[i]->subresourceRange.aspectMask);
 		}
 	}
 	return ret;
@@ -180,7 +183,7 @@ PipelineHandle * OpenGLResourceContext::CreateGraphicsPipeline(ResourceCreationC
 		glAttachShader(ret->nativeHandle, ((OpenGLShaderModuleHandle *)stageInfo.module)->nativeHandle);
 		GLenum glErr = GL_NO_ERROR;
 		if ((glErr = glGetError()) != GL_NO_ERROR) {
-			printf("[ERROR] Attaching shader with name %s %d\n", stageInfo.name.c_str(), glErr);
+			logger->Errorf("Error when attaching shader with name %s %d", stageInfo.name.c_str(), glErr);
 		}
 	}
 
@@ -190,7 +193,7 @@ PipelineHandle * OpenGLResourceContext::CreateGraphicsPipeline(ResourceCreationC
         GLsizei log_length = 0;
         GLchar message[1024];
         glGetProgramInfoLog(ret->nativeHandle, 1024, &log_length, message);
-		printf("[ERROR] Linking GL program. %s\n", message);
+		logger->Errorf("Error when linking GL program. %s", message);
 	}
 
 	// This is sort of a hack to help map the combination of descriptorset + binding to just a binding
@@ -229,7 +232,7 @@ ShaderModuleHandle * OpenGLResourceContext::CreateShaderModule(ResourceCreationC
 		type = GL_FRAGMENT_SHADER;
 		break;
 	default:
-		printf("[ERROR] Unknown shader module type %d.\n", ToUnderlyingType(ci.type));
+		logger->Errorf("Unknown shader module type %d.", ToUnderlyingType(ci.type));
 	}
 	ret->nativeHandle = glCreateShader(type);
 	GLchar const * src = (GLchar *)ci.pCode;
@@ -247,7 +250,7 @@ ShaderModuleHandle * OpenGLResourceContext::CreateShaderModule(ResourceCreationC
 		GLsizei log_length = 0;
 		GLchar message[1024];
 		glGetShaderInfoLog(ret->nativeHandle, 1024, &log_length, message);
-		printf("Shader compile failed\n%s\n", message);
+		logger->Errorf("Shader compile failed: %s", message);
 		glDeleteShader(ret->nativeHandle);
 		allocator.deallocate((uint8_t *)ret, sizeof(OpenGLShaderModuleHandle));
 		return nullptr;
@@ -334,7 +337,7 @@ VertexInputStateHandle * OpenGLResourceContext::CreateVertexInputState(ResourceC
 			type = GL_UNSIGNED_INT;
 			break;
 		default:
-			printf("[ERROR] Unknown vertex input type %d\n", ToUnderlyingType(attributeDescription.type));
+			logger->Errorf("Unknown vertex input type %d", ToUnderlyingType(attributeDescription.type));
 		}
 
 		glVertexArrayAttribFormat(ret->nativeHandle, attributeDescription.location, attributeDescription.size, type, attributeDescription.normalized, attributeDescription.offset);

@@ -6,10 +6,13 @@
 #include "Core/entity.h"
 #include "Core/GameModule.h"
 #include "Core/Input.h"
+#include "Core/Logging/Logger.h"
 #define REFLECT_IMPL
 #include "Core/Reflect.h"
 #undef REFLECT_IMPL
 #include "Core/dtime.h"
+
+static const auto logger = Logger::Create("EditorSystem");
 
 void DrawEditorNode(EditorNode * e)
 {
@@ -59,7 +62,7 @@ void DrawEditorNode(EditorNode * e)
 		break;
 	}
 	default: {
-		printf("[WARNING] Unknown EditorNode type %zu\n", e->type);
+        logger->Warnf("Unknown EditorNode type=%zu", e->type);
 	}
 	}
 }

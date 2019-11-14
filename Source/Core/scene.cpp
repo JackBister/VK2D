@@ -10,9 +10,12 @@
 #include "Core/Components/CameraComponent.h"
 #include "Core/entity.h"
 #include "Core/Input.h"
+#include "Core/Logging/Logger.h"
 #include "Core/physicsworld.h"
 #include "Core/sprite.h"
 #include "Core/transform.h"
+
+static const auto logger = Logger::Create("Scene");
 
 Scene::Scene(std::string const& name, ResourceManager * resMan,	std::string const& fileName)
 	: resourceManager(resMan)
@@ -34,7 +37,7 @@ void Scene::LoadFile(std::string const& fileName)
 		fread(&buf[0], 1, length, f);
 		serializedScene = std::string(buf.begin(), buf.end());
 	} else {
-		printf("[ERROR] Scene::LoadFile failed to open file %s\n", fileName.c_str());
+        logger->Errorf("LoadFile failed to open fileName=%s", fileName.c_str());
 		return;
 	}
 	auto const j = nlohmann::json::parse(serializedScene);
