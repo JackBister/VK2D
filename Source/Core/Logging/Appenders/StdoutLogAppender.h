@@ -4,5 +4,6 @@
 
 class StdoutLogAppender : public LogAppender
 {
-    virtual void Append(LogMessage message) const final override;
+protected:
+    virtual void AppendImpl(LogMessage const & message) const final override;
 };

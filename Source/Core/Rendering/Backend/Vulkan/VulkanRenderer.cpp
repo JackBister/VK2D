@@ -9,6 +9,7 @@
 #include "Core/Rendering/Backend/Vulkan/VulkanResourceContext.h"
 
 static const auto logger = Logger::Create("VulkanRenderer");
+static const auto vulkanLogger = Logger::Create("Vulkan");
 
 static Format ToAbstractFormat(VkFormat format) {
 	switch (format) {
@@ -22,11 +23,11 @@ static Format ToAbstractFormat(VkFormat format) {
 static VkBool32 VKAPI_PTR DbgCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char * pLayerPrefix, const char * pMessage, void * pUserData)
 {
     if (flags & VkDebugReportFlagBitsEXT::VK_DEBUG_REPORT_ERROR_BIT_EXT) {
-        logger->Errorf("(%s): %s", pLayerPrefix, pMessage);
+        vulkanLogger->Errorf("(%s): %s", pLayerPrefix, pMessage);
     } else if (flags & VkDebugReportFlagBitsEXT::VK_DEBUG_REPORT_WARNING_BIT_EXT) {
-        logger->Warnf("(%s): %s", pLayerPrefix, pMessage);
+        vulkanLogger->Warnf("(%s): %s", pLayerPrefix, pMessage);
     } else {
-        logger->Infof("(%s): %s", pLayerPrefix, pMessage);
+        vulkanLogger->Infof("(%s): %s", pLayerPrefix, pMessage);
 	}
 	return false;
 }

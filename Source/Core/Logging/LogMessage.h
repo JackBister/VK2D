@@ -13,9 +13,9 @@ public:
     {
     }
 
-	inline std::string GetLoggerName() { return loggerName; }
-    inline LogLevel GetLevel() { return level; }
-    inline std::string GetMessage() { return message; }
+    inline std::string GetLoggerName() const { return loggerName; }
+    inline LogLevel GetLevel() const { return level; }
+    inline std::string GetMessage() const { return message; }
 
 private:
     std::string loggerName;

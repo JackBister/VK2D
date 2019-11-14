@@ -11,9 +11,11 @@ LoggerFactory * LoggerFactory::GetInstance()
 {
     static LoggerFactory * singleton = nullptr;
     if (singleton == nullptr) {
-		// TODO: Find a better place to configure this
-        singleton = new LoggerFactory(std::make_shared<StdoutLogAppender>());
-	}
+        // TODO: Find a better place to configure this
+        auto appender = std::make_shared<StdoutLogAppender>();
+        appender->SetMinimumLevel("Vulkan", LogLevel::WARN);
+        singleton = new LoggerFactory(appender);
+    }
     return singleton;
 }
 
