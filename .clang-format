@@ -1,0 +1,18 @@
+BasedOnStyle: LLVM
+
+Language: Cpp
+Standard: Cpp11
+
+AccessModifierOffset: -4
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: true
+BinPackArguments: false
+BreakBeforeBraces: Linux
+ColumnLimit: 120
+FixNamespaceComments: false
+IndentWidth: 4
+PointerAlignment: Middle
