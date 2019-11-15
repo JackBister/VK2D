@@ -15,7 +15,7 @@ public:
     void StartFrame();
     void RenderFrame(SubmittedFrame const & frame);
 
-	glm::ivec2 GetResolution();
+    glm::ivec2 GetResolution();
 
     void DebugOverrideBackbuffer(ImageViewHandle * image);
 
@@ -44,8 +44,7 @@ private:
     void PreRenderCameras(std::vector<SubmittedCamera> const & cameras);
 
     void PreRenderSprites(std::vector<SubmittedSprite> const & sprites);
-    void RenderSprites(SubmittedCamera const & camera,
-                       std::vector<SubmittedSprite> const & sprites);
+    void RenderSprites(SubmittedCamera const & camera, std::vector<SubmittedSprite> const & sprites);
 
     // FrameInfo related properties
     uint32_t currFrameInfoIdx = 0;

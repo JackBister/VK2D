@@ -31,24 +31,20 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
     });
     sem.Wait();
 
-    mainRenderpass =
-        resourceManager->GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass");
-    postprocessRenderpass =
-        resourceManager->GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass");
+    mainRenderpass = resourceManager->GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass");
+    postprocessRenderpass = resourceManager->GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass");
 
-    passthroughTransformPipelineLayout = resourceManager->GetResource<PipelineLayoutHandle>(
-        "_Primitives/PipelineLayouts/pt.pipelinelayout");
-    passthroughTransformPipeline = resourceManager->GetResource<PipelineHandle>(
-        "_Primitives/Pipelines/passthrough-transform.pipe");
+    passthroughTransformPipelineLayout =
+        resourceManager->GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/pt.pipelinelayout");
+    passthroughTransformPipeline =
+        resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/passthrough-transform.pipe");
 
-    postprocessSampler =
-        resourceManager->GetResource<SamplerHandle>("_Primitives/Samplers/postprocess.sampler");
-    postprocessDescriptorSetLayout = resourceManager->GetResource<DescriptorSetLayoutHandle>(
-        "_Primitives/DescriptorSetLayouts/postprocess.layout");
-    postprocessLayout = resourceManager->GetResource<PipelineLayoutHandle>(
-        "_Primitives/PipelineLayouts/postprocess.pipelinelayout");
-    postprocessPipeline =
-        resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/postprocess.pipe");
+    postprocessSampler = resourceManager->GetResource<SamplerHandle>("_Primitives/Samplers/postprocess.sampler");
+    postprocessDescriptorSetLayout =
+        resourceManager->GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/postprocess.layout");
+    postprocessLayout =
+        resourceManager->GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/postprocess.pipelinelayout");
+    postprocessPipeline = resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/postprocess.pipe");
 
     quadEbo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadEBO.buffer");
     quadVbo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
@@ -58,12 +54,9 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
     ctxCreateInfo.level = CommandBufferLevel::PRIMARY;
     for (size_t i = 0; i < frameInfo.size(); ++i) {
         frameInfo[i].framebuffer = framebuffers[i];
-        frameInfo[i].preRenderPassCommandBuffer =
-            frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
-        frameInfo[i].mainCommandBuffer =
-            frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
-        frameInfo[i].postProcessCommandBuffer =
-            frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
+        frameInfo[i].preRenderPassCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
+        frameInfo[i].mainCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
+        frameInfo[i].postProcessCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
     }
 
     CommandDefinition backbufferOverrideCommand(
@@ -71,7 +64,8 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
         "render_override_backbuffer <imageview resource name> - Overrides the renderer's output to "
         "output the given imageview instead of the normal backbuffer. Call with the argument "
         "'false' to go back to normal rendering.",
-        1, [this, resourceManager](auto args) {
+        1,
+        [this, resourceManager](auto args) {
             auto imageViewName = args[0];
             if (imageViewName == "false") {
                 this->DebugOverrideBackbuffer(nullptr);
@@ -128,14 +122,12 @@ void RenderSystem::DebugOverrideBackbuffer(ImageViewHandle * image)
             return;
         }
 
-        ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imgDescriptor = {
-            postprocessSampler, image};
+        ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imgDescriptor = {postprocessSampler, image};
 
         ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
             {DescriptorType::COMBINED_IMAGE_SAMPLER, 0, imgDescriptor}};
 
-        backbufferOverride =
-            ctx.CreateDescriptorSet({1, descriptors, postprocessDescriptorSetLayout});
+        backbufferOverride = ctx.CreateDescriptorSet({1, descriptors, postprocessDescriptorSetLayout});
     });
 
     // Execute a dummy command buffer to signal that rendering can continue
@@ -152,8 +144,7 @@ void RenderSystem::AcquireNextFrame()
     // We use the previous frame's framebufferReady semaphore because in theory we can't know what
     // frame we end up on after calling AcquireNext
     prevFrameInfoIdx = currFrameInfoIdx;
-    currFrameInfoIdx =
-        renderer->AcquireNextFrameIndex(frameInfo[prevFrameInfoIdx].framebufferReady, nullptr);
+    currFrameInfoIdx = renderer->AcquireNextFrameIndex(frameInfo[prevFrameInfoIdx].framebufferReady, nullptr);
     auto & currFrame = frameInfo[currFrameInfoIdx];
     currFrame.canStartFrame->Wait(std::numeric_limits<uint64_t>::max());
     currFrame.commandBufferAllocator->Reset();
@@ -168,8 +159,7 @@ void RenderSystem::PreRenderFrame(SubmittedFrame const & frame)
     PreRenderSprites(frame.sprites);
     uiRenderSystem.PreRenderUi(currFrameInfoIdx, currFrame.preRenderPassCommandBuffer);
     currFrame.preRenderPassCommandBuffer->EndRecording();
-    renderer->ExecuteCommandBuffer(currFrame.preRenderPassCommandBuffer, {},
-                                   {currFrame.preRenderPassFinished});
+    renderer->ExecuteCommandBuffer(currFrame.preRenderPassCommandBuffer, {}, {currFrame.preRenderPassFinished});
 }
 
 void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
@@ -181,20 +171,18 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
     auto res = renderer->GetResolution();
     CommandBuffer::RenderPassBeginInfo beginInfo = {
         mainRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 1, DEFAULT_CLEAR_VALUES};
-    currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo,
-                                                    CommandBuffer::SubpassContents::INLINE);
+    currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::INLINE);
     for (auto const & camera : frame.cameras) {
         RenderSprites(camera, frame.sprites);
     }
 
     currFrame.mainCommandBuffer->CmdEndRenderPass();
     currFrame.mainCommandBuffer->EndRecording();
-    renderer->ExecuteCommandBuffer(
-        currFrame.mainCommandBuffer,
-        // TODO: If main renderpass doesn't render immediately to backbuffer in the future,
-        // framebufferReady should be moved to postprocess submit
-        {frameInfo[prevFrameInfoIdx].framebufferReady, currFrame.preRenderPassFinished},
-        {currFrame.mainRenderPassFinished});
+    renderer->ExecuteCommandBuffer(currFrame.mainCommandBuffer,
+                                   // TODO: If main renderpass doesn't render immediately to backbuffer in the future,
+                                   // framebufferReady should be moved to postprocess submit
+                                   {frameInfo[prevFrameInfoIdx].framebufferReady, currFrame.preRenderPassFinished},
+                                   {currFrame.mainRenderPassFinished});
 }
 
 void RenderSystem::PostProcessFrame()
@@ -206,8 +194,7 @@ void RenderSystem::PostProcessFrame()
     currFrame.postProcessCommandBuffer->BeginRecording(nullptr);
     CommandBuffer::RenderPassBeginInfo beginInfo = {
         postprocessRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 0, nullptr};
-    currFrame.postProcessCommandBuffer->CmdBeginRenderPass(&beginInfo,
-                                                           CommandBuffer::SubpassContents::INLINE);
+    currFrame.postProcessCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::INLINE);
 
     if (backbufferOverride != nullptr) {
         CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
@@ -216,15 +203,13 @@ void RenderSystem::PostProcessFrame()
         CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
         currFrame.postProcessCommandBuffer->CmdSetScissor(0, 1, &scissor);
 
-        currFrame.postProcessCommandBuffer->CmdBindPipeline(
-            RenderPassHandle::PipelineBindPoint::GRAPHICS, postprocessPipeline);
+        currFrame.postProcessCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                            postprocessPipeline);
 
-        currFrame.postProcessCommandBuffer->CmdBindIndexBuffer(quadEbo, 0,
-                                                               CommandBuffer::IndexType::UINT32);
+        currFrame.postProcessCommandBuffer->CmdBindIndexBuffer(quadEbo, 0, CommandBuffer::IndexType::UINT32);
         currFrame.postProcessCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, 8 * sizeof(float));
 
-        currFrame.postProcessCommandBuffer->CmdBindDescriptorSets(postprocessLayout, 0,
-                                                                  {backbufferOverride});
+        currFrame.postProcessCommandBuffer->CmdBindDescriptorSets(postprocessLayout, 0, {backbufferOverride});
         currFrame.postProcessCommandBuffer->CmdDrawIndexed(6, 1, 0, 0);
     }
 
@@ -235,7 +220,8 @@ void RenderSystem::PostProcessFrame()
     currFrame.postProcessCommandBuffer->EndRecording();
     renderer->ExecuteCommandBuffer(currFrame.postProcessCommandBuffer,
                                    {currFrame.mainRenderPassFinished},
-                                   {currFrame.postprocessFinished}, currFrame.canStartFrame);
+                                   {currFrame.postprocessFinished},
+                                   currFrame.canStartFrame);
 }
 
 void RenderSystem::PreRenderCameras(std::vector<SubmittedCamera> const & cameras)
@@ -243,8 +229,8 @@ void RenderSystem::PreRenderCameras(std::vector<SubmittedCamera> const & cameras
     auto & currFrame = frameInfo[currFrameInfoIdx];
     for (auto const & camera : cameras) {
         auto pv = camera.projection * camera.view;
-        currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(camera.uniforms, 0, sizeof(glm::mat4),
-                                                              (uint32_t *)glm::value_ptr(pv));
+        currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
+            camera.uniforms, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(pv));
     }
 }
 
@@ -258,8 +244,7 @@ void RenderSystem::PreRenderSprites(std::vector<SubmittedSprite> const & sprites
     }
 }
 
-void RenderSystem::RenderSprites(SubmittedCamera const & camera,
-                                 std::vector<SubmittedSprite> const & sprites)
+void RenderSystem::RenderSprites(SubmittedCamera const & camera, std::vector<SubmittedSprite> const & sprites)
 {
     auto & currFrame = frameInfo[currFrameInfoIdx];
     auto res = renderer->GetResolution();
@@ -276,12 +261,11 @@ void RenderSystem::RenderSprites(SubmittedCamera const & camera,
     currFrame.mainCommandBuffer->CmdBindIndexBuffer(quadEbo, 0, CommandBuffer::IndexType::UINT32);
     currFrame.mainCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, 8 * sizeof(float));
 
-    currFrame.mainCommandBuffer->CmdBindDescriptorSets(passthroughTransformPipelineLayout, 0,
-                                                       {camera.descriptorSet});
+    currFrame.mainCommandBuffer->CmdBindDescriptorSets(passthroughTransformPipelineLayout, 0, {camera.descriptorSet});
 
     for (auto const & sprite : sprites) {
-        currFrame.mainCommandBuffer->CmdBindDescriptorSets(passthroughTransformPipelineLayout, 1,
-                                                           {sprite.descriptorSet});
+        currFrame.mainCommandBuffer->CmdBindDescriptorSets(
+            passthroughTransformPipelineLayout, 1, {sprite.descriptorSet});
         currFrame.mainCommandBuffer->CmdDrawIndexed(6, 1, 0, 0);
     }
 }
