@@ -20,12 +20,12 @@ public:
     ImageHandle * GetImage() const;
 
 private:
-	Image(std::string const & fileName, uint32_t width, uint32_t height, ImageHandle * img);
+	Image(std::string const & fileName, uint32_t width, uint32_t height, ImageHandle * img, ImageViewHandle * defaultView);
 
     std::string fileName;
 
     uint32_t width, height;
     ImageHandle * img;
 
-    ImageViewHandle * defaultView = nullptr;
+    ImageViewHandle * defaultView;
 };
