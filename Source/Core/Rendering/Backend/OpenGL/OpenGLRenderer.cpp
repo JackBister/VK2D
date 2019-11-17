@@ -8,6 +8,7 @@
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLCommandBuffer.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLResourceContext.h"
+#include "Core/SetThreadName.h"
 
 static const auto logger = Logger::Create("OpenGLRenderer");
 
@@ -45,6 +46,7 @@ Renderer::Renderer(char const * title, int const winX, int const winY, int const
 
 	SDL_GL_MakeCurrent(window, nullptr);
 	renderThread = std::thread(&Renderer::RenderThread, this, ctx);
+	SetThreadName(renderThread.get_id(), "OpenGL RenderThread");
 }
 
 void Renderer::CreateResources(std::function<void(ResourceCreationContext&)> fun)
