@@ -4,7 +4,7 @@
 class PaddleComponent : public Component
 {
 public:
-	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+	static Deserializable * s_Deserialize(std::string const& str);
 
 	PaddleComponent() { receiveTicks = true; };
 

@@ -2,12 +2,19 @@
 
 #include "Core/Rendering/Backend/Renderer.h"
 
-ResourceManager::ResourceManager(Renderer * renderer, Allocator & a)
-    : allocator(a), renderer(renderer)
+namespace ResourceManager
 {
-}
+std::unique_ptr<Logger> logger = Logger::Create("ResourceManager");
+Renderer * renderer;
+std::unordered_map<std::string, void *> resources;
 
-void ResourceManager::CreateResources(std::function<void(ResourceCreationContext &)> fun)
+void CreateResources(std::function<void(ResourceCreationContext &)> fun)
 {
     renderer->CreateResources(fun);
+}
+
+void Init(Renderer * inRenderer)
+{
+    renderer = inRenderer;
+}
 }

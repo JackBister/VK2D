@@ -89,7 +89,7 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 	collisionsLastFrame = collisionsThisFrame;
 }
 
-Deserializable * PhysicsWorld::s_Deserialize(ResourceManager * resourceManager, std::string const& str)
+Deserializable * PhysicsWorld::s_Deserialize(std::string const& str)
 {
 	PhysicsWorld * ret = new PhysicsWorld();
 	auto const j = nlohmann::json::parse(str);

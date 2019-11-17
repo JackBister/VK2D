@@ -21,7 +21,6 @@
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
 #include "Core/scene.h"
-#include "Core/sprite.h"
 #include "Core/transform.h"
 
 #if defined(_WIN64) && defined(_DEBUG)
@@ -70,15 +69,15 @@ int main(int argc, char * argv[])
     ImGui::CreateContext();
     SDL_Init(SDL_INIT_EVERYTHING);
     Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
-    ResourceManager resMan(&renderer);
-    RenderPrimitiveFactory(&renderer, &resMan).CreatePrimitives();
-    RenderSystem renderSystem(&renderer, &resMan);
+    ResourceManager::Init(&renderer);
+    RenderPrimitiveFactory(&renderer).CreatePrimitives();
+    RenderSystem renderSystem(&renderer);
 
 #ifdef _DEBUG
     SetThreadName(std::this_thread::get_id(), "Main Thread");
 #endif
 
-    GameModule::Init(&resMan, &renderSystem);
+    GameModule::Init(&renderSystem);
 
     GameModule::LoadScene(sceneFileName);
     GameModule::BeginPlay();

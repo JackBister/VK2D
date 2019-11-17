@@ -16,7 +16,7 @@ REFLECT_STRUCT_MEMBER(velocityDir)
 REFLECT_STRUCT_MEMBER(moveSpeed)
 REFLECT_STRUCT_END();
 
-Deserializable * BallComponent::s_Deserialize(ResourceManager *, std::string const& str)
+Deserializable * BallComponent::s_Deserialize(std::string const& str)
 {
 	auto ret = new BallComponent();
 	auto j = nlohmann::json::parse(str);

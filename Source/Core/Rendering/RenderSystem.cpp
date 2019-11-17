@@ -12,9 +12,9 @@ static const auto logger = Logger::Create("RenderSystem");
 static constexpr CommandBuffer::ClearValue DEFAULT_CLEAR_VALUES[] = {
     {CommandBuffer::ClearValue::Type::COLOR, {0.f, 0.f, 1.f, 1.f}}};
 
-RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManager)
-    : renderer(renderer), resourceManager(resourceManager), frameInfo(renderer->GetSwapCount()),
-      uiRenderSystem(renderer, resourceManager)
+RenderSystem::RenderSystem(Renderer * renderer)
+    : renderer(renderer), frameInfo(renderer->GetSwapCount()),
+      uiRenderSystem(renderer)
 {
     Semaphore sem;
     renderer->CreateResources([&](ResourceCreationContext & ctx) {
@@ -31,23 +31,23 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
     });
     sem.Wait();
 
-    mainRenderpass = resourceManager->GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass");
-    postprocessRenderpass = resourceManager->GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass");
+    mainRenderpass = ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass");
+    postprocessRenderpass = ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass");
 
     passthroughTransformPipelineLayout =
-        resourceManager->GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/pt.pipelinelayout");
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/pt.pipelinelayout");
     passthroughTransformPipeline =
-        resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/passthrough-transform.pipe");
+        ResourceManager::GetResource<PipelineHandle>("_Primitives/Pipelines/passthrough-transform.pipe");
 
-    postprocessSampler = resourceManager->GetResource<SamplerHandle>("_Primitives/Samplers/postprocess.sampler");
+    postprocessSampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/postprocess.sampler");
     postprocessDescriptorSetLayout =
-        resourceManager->GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/postprocess.layout");
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/postprocess.layout");
     postprocessLayout =
-        resourceManager->GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/postprocess.pipelinelayout");
-    postprocessPipeline = resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/postprocess.pipe");
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/postprocess.pipelinelayout");
+    postprocessPipeline = ResourceManager::GetResource<PipelineHandle>("_Primitives/Pipelines/postprocess.pipe");
 
-    quadEbo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadEBO.buffer");
-    quadVbo = resourceManager->GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
+    quadEbo = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/QuadEBO.buffer");
+    quadVbo = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
 
     auto framebuffers = renderer->CreateBackbuffers(mainRenderpass);
     CommandBufferAllocator::CommandBufferCreateInfo ctxCreateInfo = {};
@@ -65,13 +65,13 @@ RenderSystem::RenderSystem(Renderer * renderer, ResourceManager * resourceManage
         "output the given imageview instead of the normal backbuffer. Call with the argument "
         "'false' to go back to normal rendering.",
         1,
-        [this, resourceManager](auto args) {
+        [this](auto args) {
             auto imageViewName = args[0];
             if (imageViewName == "false") {
                 this->DebugOverrideBackbuffer(nullptr);
                 return;
             }
-            auto imageView = resourceManager->GetResource<ImageViewHandle>(imageViewName);
+            auto imageView = ResourceManager::GetResource<ImageViewHandle>(imageViewName);
             if (!imageView) {
                 logger->Errorf("Could not find resource '%s'", imageView);
                 return;

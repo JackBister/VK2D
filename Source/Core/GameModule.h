@@ -11,7 +11,6 @@ class CommandBuffer;
 class Entity;
 class PhysicsWorld;
 class ResourceCreationContext;
-class ResourceManager;
 class RenderSystem;
 struct SubmittedCamera;
 struct SubmittedSprite;
@@ -37,7 +36,7 @@ namespace GameModule {
 	Entity * GetMainCamera();
 	//TODO:
 	PhysicsWorld * GetPhysicsWorld();
-	void Init(ResourceManager * resMan, RenderSystem * renderSystem);
+	void Init(RenderSystem * renderSystem);
 	void LoadDLL(std::string const&);
 	void LoadScene(std::string const&);
 	void RemoveEntity(Entity *);

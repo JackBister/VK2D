@@ -15,7 +15,7 @@ REFLECT_STRUCT_MEMBER(isColliding)
 REFLECT_STRUCT_MEMBER(velocityY)
 REFLECT_STRUCT_END()
 
-Deserializable * PaddleComponent::s_Deserialize(ResourceManager *, std::string const& str)
+Deserializable * PaddleComponent::s_Deserialize(std::string const& str)
 {
 	auto ret = new PaddleComponent();
 	auto j = nlohmann::json::parse(str);

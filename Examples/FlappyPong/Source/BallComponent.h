@@ -5,7 +5,7 @@
 class BallComponent : public Component
 {
 public:
-	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+	static Deserializable * s_Deserialize(std::string const& str);
 
 	BallComponent() { receiveTicks = true; };
 

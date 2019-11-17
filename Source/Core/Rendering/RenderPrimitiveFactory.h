@@ -3,12 +3,11 @@
 
 class Renderer;
 class ResourceCreationContext;
-class ResourceManager;
 
 class RenderPrimitiveFactory
 {
 public:
-    RenderPrimitiveFactory(Renderer *, ResourceManager *);
+    RenderPrimitiveFactory(Renderer *);
 
     void CreatePrimitives();
 
@@ -34,6 +33,7 @@ private:
     void CreateQuadEbo(ResourceCreationContext &);
     void CreateQuadVbo(ResourceCreationContext &);
 
+    void CreateDefaultSampler(ResourceCreationContext &);
+
     Renderer * renderer;
-    ResourceManager * resourceManager;
 };

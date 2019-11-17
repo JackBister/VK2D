@@ -12,16 +12,12 @@
 #include "Core/Input.h"
 #include "Core/Logging/Logger.h"
 #include "Core/physicsworld.h"
-#include "Core/sprite.h"
 #include "Core/transform.h"
 
 static const auto logger = Logger::Create("Scene");
 
-Scene::Scene(std::string const& name, ResourceManager * resMan,	std::string const& fileName)
-	: resourceManager(resMan)
+Scene::Scene(std::string const& fileName)
 {
-	this->name = name;
-
 	LoadFile(fileName);
 }
 
@@ -65,7 +61,7 @@ void Scene::LoadFile(std::string const& fileName)
 	}
 
 	for (auto& je : j["entities"]) {
-		Entity * tmp = static_cast<Entity *>(Deserializable::DeserializeString(resourceManager, je.dump()));
+		Entity * tmp = static_cast<Entity *>(Deserializable::DeserializeString(je.dump()));
 		this->entities.push_back(tmp);
 		GameModule::AddEntity(tmp);
 	}

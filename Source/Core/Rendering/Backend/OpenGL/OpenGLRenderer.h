@@ -17,7 +17,7 @@
 class Renderer : public IRenderer
 {
 public:
-	Renderer(/*ResourceManager *, Queue<RenderCommand>::Reader&&,*/ char const * title, int winX, int winY, int w, int h, uint32_t flags);
+	Renderer(char const * title, int winX, int winY, int w, int h, uint32_t flags);
 	~Renderer();
 	
 	uint32_t AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandle * signalFence) final override;

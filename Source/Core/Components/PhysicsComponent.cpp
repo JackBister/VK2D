@@ -48,7 +48,7 @@ PhysicsComponent::~PhysicsComponent()
 	GameModule::GetPhysicsWorld()->world->removeRigidBody(rigidBody.get());
 }
 
-Deserializable * PhysicsComponent::s_Deserialize(ResourceManager * resourceManager, std::string const& str)
+Deserializable * PhysicsComponent::s_Deserialize(std::string const& str)
 {
 	PhysicsComponent * ret = new PhysicsComponent();
 	auto j = nlohmann::json::parse(str);

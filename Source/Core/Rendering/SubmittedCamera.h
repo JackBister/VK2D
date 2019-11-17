@@ -2,6 +2,9 @@
 
 #include <glm/glm.hpp>
 
+class BufferHandle;
+class DescriptorSet;
+
 struct SubmittedCamera
 {
 	glm::mat4 view;

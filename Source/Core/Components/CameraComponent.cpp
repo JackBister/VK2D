@@ -5,6 +5,8 @@
 
 #include "Core/entity.h"
 #include "Core/scene.h"
+#include "Core/Rendering/Backend/Abstract/RenderResources.h"
+#include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 #include "Core/Rendering/SubmittedCamera.h"
 
 COMPONENT_IMPL(CameraComponent, CameraComponent::s_Deserialize)
@@ -60,7 +62,7 @@ glm::mat4 const& CameraComponent::GetView()
 	return view;
 }
 
-Deserializable * CameraComponent::s_Deserialize(ResourceManager * resourceManager, std::string const& str)
+Deserializable * CameraComponent::s_Deserialize(std::string const& str)
 {
 	CameraComponent * ret = new CameraComponent();
 	auto const j = nlohmann::json::parse(str);
@@ -72,7 +74,7 @@ Deserializable * CameraComponent::s_Deserialize(ResourceManager * resourceManage
 	}
 
 
-	auto layout = resourceManager->GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraPt.layout");
+	auto layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraPt.layout");
 	GameModule::CreateResources([ret, layout](ResourceCreationContext& ctx) {
 		ret->uniforms = ctx.CreateBuffer({
 				sizeof(glm::mat4),

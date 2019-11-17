@@ -6,14 +6,14 @@
 #include "Core/Semaphore.h"
 #include "Core/dtime.h"
 
-UiRenderSystem::UiRenderSystem(Renderer * renderer, ResourceManager * resourceManager)
-    : renderer(renderer), resourceManager(resourceManager), frameData(renderer->GetSwapCount())
+UiRenderSystem::UiRenderSystem(Renderer * renderer)
+    : renderer(renderer), frameData(renderer->GetSwapCount())
 {
-    layout = resourceManager->GetResource<DescriptorSetLayoutHandle>(
+    layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>(
         "_Primitives/DescriptorSetLayouts/ui.layout");
-    pipelineLayout = resourceManager->GetResource<PipelineLayoutHandle>(
+    pipelineLayout = ResourceManager::GetResource<PipelineLayoutHandle>(
         "_Primitives/PipelineLayouts/ui.pipelinelayout");
-    gfxPipeline = resourceManager->GetResource<PipelineHandle>("_Primitives/Pipelines/ui.pipe");
+    gfxPipeline = ResourceManager::GetResource<PipelineHandle>("_Primitives/Pipelines/ui.pipe");
 
     auto & imguiIo = ImGui::GetIO();
     imguiIo.MouseDrawCursor = false;

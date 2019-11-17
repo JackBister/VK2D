@@ -3,153 +3,48 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 #include "Core/ResourceManager.h"
+#include "Core/Semaphore.h"
 
 Image::~Image()
 {
-	resMan->CreateResources([this](ResourceCreationContext& ctx) {
+	ResourceManager::CreateResources([this](ResourceCreationContext& ctx) {
 		ctx.DestroyImage(img);
-		ctx.DestroyImageView(view);
-		ctx.DestroySampler(sampler);
 	});
 }
 
-Image::Image(ResourceManager * resMan, std::string const& name) : resMan(resMan)
-{
-	this->name = name;
-	this->data = std::vector<uint8_t>(128 * 128 * 4, 0xFF);
-
-	resMan->CreateResources([this](ResourceCreationContext& ctx) {
-		ResourceCreationContext::ImageCreateInfo ic = {
-			Format::RGBA8,
-			ImageHandle::Type::TYPE_2D,
-			128, 128, 1,
-			1,
-			IMAGE_USAGE_FLAG_SAMPLED_BIT | IMAGE_USAGE_FLAG_TRANSFER_DST_BIT
-		};
-		auto tmp = ctx.CreateImage(ic);
-		ctx.ImageData(tmp, this->data);
-		this->img = tmp;
-
-		ResourceCreationContext::ImageViewCreateInfo ivc = {};
-		ivc.components.r = ComponentSwizzle::R;
-		ivc.components.g = ComponentSwizzle::G;
-		ivc.components.b = ComponentSwizzle::B;
-		ivc.components.a = ComponentSwizzle::A;
-		ivc.format = Format::RGBA8;
-		ivc.image = this->img;
-		ivc.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
-		ivc.subresourceRange.baseArrayLayer = 0;
-		ivc.subresourceRange.baseMipLevel = 0;
-		ivc.subresourceRange.layerCount = 1;
-		ivc.subresourceRange.levelCount = 1;
-		ivc.viewType = ImageViewHandle::Type::TYPE_2D;
-		this->view = ctx.CreateImageView(ivc);
-
-		ResourceCreationContext::SamplerCreateInfo sc = {};
-		sc.addressModeU = AddressMode::REPEAT;
-		sc.addressModeV = AddressMode::REPEAT;
-		sc.magFilter = Filter::LINEAR;
-		sc.magFilter = Filter::LINEAR;
-		this->sampler = ctx.CreateSampler(sc);
-	});
-}
-
-Image::Image(ImageCreateInfo const& info) : resMan(info.resMan)
-{
-	this->name = info.name;
-	this->width = info.width;
-	this->height = info.height;
-	if (info.data.index() == 0) {
-		this->data = std::get<std::vector<uint8_t>>(info.data);
-		info.resMan->CreateResources([this](ResourceCreationContext& ctx) {
-			ResourceCreationContext::ImageCreateInfo ic = {
-				Format::RGBA8,
-				ImageHandle::Type::TYPE_2D,
-				this->width, this->height, 1,
-				1,
-				IMAGE_USAGE_FLAG_SAMPLED_BIT | IMAGE_USAGE_FLAG_TRANSFER_DST_BIT
-			};
-			auto tmp = ctx.CreateImage(ic);
-			ctx.ImageData(tmp, this->data);
-			this->img = tmp;
-
-
-			ResourceCreationContext::ImageViewCreateInfo ivc = {};
-			ivc.components.r = ComponentSwizzle::R;
-			ivc.components.g = ComponentSwizzle::G;
-			ivc.components.b = ComponentSwizzle::B;
-			ivc.components.a = ComponentSwizzle::A;
-			ivc.format = Format::RGBA8;
-			ivc.image = this->img;
-			ivc.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
-			ivc.subresourceRange.baseArrayLayer = 0;
-			ivc.subresourceRange.baseMipLevel = 0;
-			ivc.subresourceRange.layerCount = 1;
-			ivc.subresourceRange.levelCount = 1;
-			ivc.viewType = ImageViewHandle::Type::TYPE_2D;
-			this->view = ctx.CreateImageView(ivc);
-
-			ResourceCreationContext::SamplerCreateInfo sc = {};
-			sc.addressModeU = AddressMode::REPEAT;
-			sc.addressModeV = AddressMode::REPEAT;
-			sc.magFilter = Filter::LINEAR;
-			sc.magFilter = Filter::LINEAR;
-			this->sampler = ctx.CreateSampler(sc);
-		});
-	} else {
-		this->img = std::get<ImageHandle *>(info.data);
+Image * Image::FromFile(std::string const& fileName, bool forceReload) {
+	if (!forceReload && ResourceManager::GetResource<Image>(fileName)) {
+		return ResourceManager::GetResource<Image>(fileName);
 	}
-}
 
-Image::Image(ResourceManager * resMan, std::string const& name, std::vector<uint8_t> const& input) : resMan(resMan)
-{
-	this->name = name;
-	int n;
-	uint8_t const * imageData = stbi_load_from_memory((stbi_uc const *)&input[0], (int)input.size(), (int *)&width, (int *)&height, (int *)&n, 4);
-	data = std::vector<uint8_t>(width * height * 4);
+	int width, height, n;
+	FILE * file = fopen(fileName.c_str(), "rb");
+	uint8_t const * imageData = stbi_load_from_file(file, &width, &height, &n, 4);
+	std::vector<uint8_t> data(width * height * 4);
 	memcpy(&data[0], imageData, width * height * 4);
-	Format format = Format::RGBA8;
-	resMan->CreateResources([this, resMan](ResourceCreationContext& ctx) {
+
+	Image * ret;
+	Semaphore sem;
+	ResourceManager::CreateResources([&ret, &sem, data, fileName, width, height](ResourceCreationContext& ctx) {
 		ResourceCreationContext::ImageCreateInfo ic = {
 			Format::RGBA8,
 			ImageHandle::Type::TYPE_2D,
-			this->width, this->height, 1,
+			width, height, 1,
 			1,
 			IMAGE_USAGE_FLAG_SAMPLED_BIT | IMAGE_USAGE_FLAG_TRANSFER_DST_BIT
 		};
-		auto tmp = ctx.CreateImage(ic);
-		ctx.ImageData(tmp, this->data);
-		this->img = tmp;
+		auto img = ctx.CreateImage(ic);
+		ctx.ImageData(img, data);
 
-		ResourceCreationContext::ImageViewCreateInfo ivc = {};
-		ivc.components.r = ComponentSwizzle::R;
-		ivc.components.g = ComponentSwizzle::G;
-		ivc.components.b = ComponentSwizzle::B;
-		ivc.components.a = ComponentSwizzle::A;
-		ivc.format = Format::RGBA8;
-		ivc.image = this->img;
-		ivc.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
-		ivc.subresourceRange.baseArrayLayer = 0;
-		ivc.subresourceRange.baseMipLevel = 0;
-		ivc.subresourceRange.layerCount = 1;
-		ivc.subresourceRange.levelCount = 1;
-		ivc.viewType = ImageViewHandle::Type::TYPE_2D;
-		this->view = ctx.CreateImageView(ivc);
-		resMan->AddResource(this->name + "/view.imageview", this->view);
-
-		ResourceCreationContext::SamplerCreateInfo sc = {};
-		sc.addressModeU = AddressMode::REPEAT;
-		sc.addressModeV = AddressMode::REPEAT;
-		sc.magFilter = Filter::LINEAR;
-		sc.magFilter = Filter::LINEAR;
-		this->sampler = ctx.CreateSampler(sc);
+		ret = new Image(fileName, width, height, img);
+		ResourceManager::AddResource(fileName, ret);
+		// TODO: This should actually be async and return a future
+		sem.Signal();
 	});
-}
-
-std::vector<uint8_t> const& Image::GetData() const
-{
-	return data;
+	sem.Wait();
+	return ret;
 }
 
 uint32_t Image::GetHeight() const
@@ -157,22 +52,42 @@ uint32_t Image::GetHeight() const
 	return height;
 }
 
-ImageHandle * Image::GetImage()
-{
-	return img;
-}
-
-ImageViewHandle * Image::GetImageView()
-{
-	return view;
-}
-
-SamplerHandle * Image::GetSampler()
-{
-	return sampler;
-}
-
 uint32_t Image::GetWidth() const
 {
 	return width;
 }
+
+ImageViewHandle * Image::GetDefaultView()
+{
+	if (defaultView != nullptr) {
+		return defaultView;
+	}
+
+	Semaphore sem;
+	ResourceManager::CreateResources([this, &sem](ResourceCreationContext& ctx) {
+		ResourceCreationContext::ImageViewCreateInfo ivc = {};
+		ivc.components.r = ComponentSwizzle::R;
+		ivc.components.g = ComponentSwizzle::G;
+		ivc.components.b = ComponentSwizzle::B;
+		ivc.components.a = ComponentSwizzle::A;
+		ivc.format = Format::RGBA8;
+		ivc.image = this->img;
+		ivc.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+		ivc.subresourceRange.baseArrayLayer = 0;
+		ivc.subresourceRange.baseMipLevel = 0;
+		ivc.subresourceRange.layerCount = 1;
+		ivc.subresourceRange.levelCount = 1;
+		ivc.viewType = ImageViewHandle::Type::TYPE_2D;
+		this->defaultView = ctx.CreateImageView(ivc);
+		sem.Signal();
+	});
+	sem.Wait();
+	return defaultView;
+}
+
+ImageHandle * Image::GetImage() const
+{
+	return img;
+}
+
+Image::Image(std::string const & fileName, uint32_t width, uint32_t height, ImageHandle * img) : fileName(fileName), width(width), height(height), img(img) {}

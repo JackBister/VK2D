@@ -1,13 +1,18 @@
 #pragma once
 
-#include "glm/glm.hpp"
+#include <atomic>
+
+#include <glm/glm.hpp>
 
 #include "Core/Components/component.h"
+
+class BufferHandle;
+class DescriptorSet;
 
 class CameraComponent : public Component
 {
 public:
-	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+	static Deserializable * s_Deserialize(std::string const& str);
 
 	CameraComponent() { receiveTicks = true; };
 

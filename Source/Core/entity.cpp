@@ -42,7 +42,7 @@ Component * Entity::GetComponent(std::string type) const
 	return nullptr;
 }
 
-Deserializable * Entity::s_Deserialize(ResourceManager * resourceManager, std::string const& str)
+Deserializable * Entity::s_Deserialize(std::string const& str)
 {
 	Entity * const ret = new Entity();
 	auto const j = nlohmann::json::parse(str);
@@ -50,7 +50,7 @@ Deserializable * Entity::s_Deserialize(ResourceManager * resourceManager, std::s
 	ret->transform = Transform::Deserialize(j["transform"].dump());
 	auto const t = j["components"];
 	for (auto const& js : j["components"]) {
-		Component * const c = static_cast<Component *>(Deserializable::DeserializeString(resourceManager, js.dump()));
+		Component * const c = static_cast<Component *>(Deserializable::DeserializeString(js.dump()));
 		c->entity = ret;
 		ret->components.emplace_back(std::move(c));
 	}

@@ -6,12 +6,11 @@
 #include <vector>
 
 class CommandBuffer;
-class ResourceManager;
 
 class UiRenderSystem
 {
 public:
-    UiRenderSystem(Renderer * renderer, ResourceManager *);
+    UiRenderSystem(Renderer * renderer);
 
     void StartFrame();
     void PreRenderUi(uint32_t frameIndex, CommandBuffer *);
@@ -40,5 +39,4 @@ private:
 
     // Other systems
     Renderer * renderer;
-    ResourceManager * resourceManager;
 };

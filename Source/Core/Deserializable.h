@@ -17,9 +17,9 @@ public:
 	/*
 		Deserializes a string of unknown type.
 	*/
-	static Deserializable * DeserializeString(ResourceManager * resourceManager, std::string const& str);
+	static Deserializable * DeserializeString(std::string const& str);
 
-	static std::unordered_map <std::string, std::function<Deserializable *(ResourceManager *, std::string const&)>>& Map();
+	static std::unordered_map <std::string, std::function<Deserializable *(std::string const&)>>& Map();
 
 	std::string type;
 };

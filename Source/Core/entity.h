@@ -13,7 +13,7 @@
 class Entity final : public Deserializable
 {
 public:
-	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+	static Deserializable * s_Deserialize(std::string const& str);
 
 	std::string Serialize() const override;
 	void FireEvent(HashedString name, EventArgs args = {});

@@ -222,8 +222,6 @@ struct ImageHandle
 	Format format;
 	Type type;
 	uint32_t width, height, depth;
-
-	uint32_t DEBUGUINT = 0;
 };
 
 struct ImageViewHandle

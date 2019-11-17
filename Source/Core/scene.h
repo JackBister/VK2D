@@ -11,17 +11,15 @@
 #include "Core/GameModule.h"
 #include "Core/Input.h"
 #include "Core/Queue.h"
-#include "Core/Resource.h"
 
 //TODO: Allocate all entities/components from same block for cache
 
 class Entity;
-class ResourceManager;
 
-class Scene : public Resource
+class Scene
 {
 public:
-	Scene(std::string const&, ResourceManager *, std::string const&);
+	Scene(std::string const&);
 
 	void LoadFile(std::string const&);
 	void SerializeToFile(std::string const& filename);
@@ -38,8 +36,7 @@ public:
 	Entity * GetEntityByName(std::string);
 
 private:
-	ResourceManager * resourceManager;
-
 	std::vector<std::string> dllFileNames;
+
 	std::vector<Entity *> entities;
 };

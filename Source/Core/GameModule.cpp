@@ -23,7 +23,6 @@ Entity * mainCameraEntity;
 CameraComponent * mainCameraComponent;
 PhysicsWorld * physicsWorld;
 RenderSystem * renderSystem;
-ResourceManager * resourceManager;
 std::vector<Scene> scenes;
 
 // TODO: Remove
@@ -44,13 +43,13 @@ void BeginPlay()
 
 void CreateResources(std::function<void(ResourceCreationContext &)> fun)
 {
-    resourceManager->CreateResources(fun);
+    ResourceManager::CreateResources(fun);
 }
 
 void DeserializePhysics(std::string const & str)
 {
     if (physicsWorld == nullptr) {
-        physicsWorld = (PhysicsWorld *)Deserializable::DeserializeString(resourceManager, str);
+        physicsWorld = (PhysicsWorld *)Deserializable::DeserializeString(str);
         return;
     }
     auto j = nlohmann::json::parse(str);
@@ -91,10 +90,9 @@ PhysicsWorld * GetPhysicsWorld()
     return physicsWorld;
 }
 
-void Init(ResourceManager * resMan, RenderSystem * inRenderSystem)
+void Init(RenderSystem * inRenderSystem)
 {
     // TODO: This is dumb
-    resourceManager = resMan;
     renderSystem = inRenderSystem;
 
 	Console::Init(renderSystem);
@@ -104,7 +102,7 @@ void Init(ResourceManager * resMan, RenderSystem * inRenderSystem)
 
 void LoadScene(std::string const & filename)
 {
-    scenes.push_back(Scene(filename, resourceManager, filename));
+    scenes.push_back(Scene(filename));
 }
 
 void RemoveEntity(Entity * entity)

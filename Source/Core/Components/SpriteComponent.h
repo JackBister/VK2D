@@ -1,12 +1,16 @@
 #pragma once
 
+#include <atomic>
+
 #include "Core/Components/Component.h"
-#include "Core/sprite.h"
+
+class BufferHandle;
+class DescriptorSet;
 
 class SpriteComponent final : public Component
 {
 public:
-	static Deserializable * s_Deserialize(ResourceManager *, std::string const& str);
+	static Deserializable * s_Deserialize(std::string const& str);
 
 	SpriteComponent() { receiveTicks = true; }
 	~SpriteComponent() override;
@@ -15,12 +19,10 @@ public:
 
 	void OnEvent(HashedString name, EventArgs args) override;
 
-	Sprite sprite;
-
 private:
 	DescriptorSet * descriptorSet;
 	std::atomic<bool> hasCreatedLocalResources{ false };
-	BufferHandle * uvs;
+	BufferHandle * uniforms;
 	
 	std::string file;
 };

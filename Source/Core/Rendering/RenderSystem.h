@@ -5,12 +5,11 @@
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Rendering/SubmittedFrame.h"
 #include "Core/Rendering/UiRenderSystem.h"
-#include "Core/ResourceManager.h"
 
 class RenderSystem
 {
 public:
-    RenderSystem(Renderer * renderer, ResourceManager * resourceManager);
+    RenderSystem(Renderer * renderer);
 
     void StartFrame();
     void RenderFrame(SubmittedFrame const & frame);
@@ -68,7 +67,6 @@ private:
 
     // Other systems
     Renderer * renderer;
-    ResourceManager * resourceManager;
     UiRenderSystem uiRenderSystem;
 
     // Options
