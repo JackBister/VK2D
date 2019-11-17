@@ -17,7 +17,7 @@
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/ResourceManager.h"
 #include "Core/Semaphore.h"
-#include "Core/SetThreadName.h"
+#include "Core/Util/SetThreadName.h"
 #include "Core/Util/DefaultFileSlurper.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"

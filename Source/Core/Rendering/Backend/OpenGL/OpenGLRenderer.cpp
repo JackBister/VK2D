@@ -8,7 +8,7 @@
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLCommandBuffer.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLResourceContext.h"
-#include "Core/SetThreadName.h"
+#include "Core/Util/SetThreadName.h"
 
 static const auto logger = Logger::Create("OpenGLRenderer");
 
