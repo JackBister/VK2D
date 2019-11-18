@@ -2,6 +2,10 @@
 
 #include "nlohmann/json.hpp"
 
+#include "Core/Logging/Logger.h"
+
+static const auto logger = Logger::Create("Transform");
+
 REFLECT_STRUCT_BEGIN(Transform)
 REFLECT_STRUCT_MEMBER(position)
 REFLECT_STRUCT_MEMBER(rotation)

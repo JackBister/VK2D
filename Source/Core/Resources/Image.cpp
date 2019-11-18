@@ -77,7 +77,9 @@ static std::vector<uint8_t> ReadImageFile(std::string fileName, int * width, int
 
 Image::~Image()
 {
-    ResourceManager::CreateResources([this](ResourceCreationContext & ctx) {
+    auto defaultView = this->defaultView;
+    auto img = this->img;
+    ResourceManager::DestroyResources([defaultView, img](ResourceCreationContext & ctx) {
         ctx.DestroyImageView(defaultView);
         ctx.DestroyImage(img);
     });
@@ -155,13 +157,13 @@ ImageHandle * Image::GetImage() const
 #if HOT_RELOAD_RESOURCES
 int Image::SubscribeToChanges(std::function<void(Image *)> cb)
 {
-    hotReloadCallbacks.insert_or_assign(hotReloadSubscriberId++, cb);
-    return hotReloadSubscriberId;
+    hotReloadCallbacks.insert_or_assign(hotReloadSubscriberId, cb);
+    return hotReloadSubscriberId++;
 }
 
 void Image::Unsubscribe(int subscriptionId)
 {
-    hotReloadCallbacks.erase(hotReloadSubscriberId);
+    hotReloadCallbacks.erase(subscriptionId);
 }
 #endif
 

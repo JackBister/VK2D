@@ -15,6 +15,7 @@ public:
     static Deserializable * s_Deserialize(std::string const & str);
 
     CameraComponent() { receiveTicks = true; };
+    ~CameraComponent() override;
 
     std::string Serialize() const override;
 

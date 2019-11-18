@@ -7,6 +7,7 @@
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/Components/component.h"
+#include "Core/GameModule.h"
 #include "Core/Input.h"
 #include "Core/Logging/Appenders/StdoutLogAppender.h"
 #include "Core/Logging/Logger.h"
@@ -21,7 +22,6 @@
 #include "Core/Util/SetThreadName.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
-#include "Core/scene.h"
 #include "Core/transform.h"
 
 static const auto logger = Logger::Create("main");
@@ -46,7 +46,6 @@ int main(int argc, char * argv[])
     GameModule::Init(&renderSystem);
 
     GameModule::LoadScene(sceneFileName);
-    GameModule::BeginPlay();
     while (true) {
         char const * sdlErr = SDL_GetError();
         if (*sdlErr != '\0') {

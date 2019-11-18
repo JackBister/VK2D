@@ -3,12 +3,13 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "nlohmann/json.hpp"
 
+#include "Core/GameModule.h"
 #include "Core/Rendering/Backend/Abstract/RenderResources.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 #include "Core/Rendering/SubmittedCamera.h"
 #include "Core/Resources/ResourceManager.h"
+#include "Core/dtime.h"
 #include "Core/entity.h"
-#include "Core/scene.h"
 
 COMPONENT_IMPL(CameraComponent, CameraComponent::s_Deserialize)
 
@@ -20,6 +21,15 @@ REFLECT_STRUCT_MEMBER(projection)
 REFLECT_STRUCT_MEMBER(view)
 REFLECT_STRUCT_MEMBER(viewSize)
 REFLECT_STRUCT_END()
+
+CameraComponent::~CameraComponent() {
+    auto descriptorSet = this->descriptorSet;
+    auto uniforms = this->uniforms;
+    ResourceManager::DestroyResources([descriptorSet, uniforms](ResourceCreationContext & ctx) {
+        ctx.DestroyDescriptorSet(descriptorSet);
+        ctx.DestroyBuffer(uniforms);
+    });
+}
 
 float CameraComponent::GetAspect()
 {

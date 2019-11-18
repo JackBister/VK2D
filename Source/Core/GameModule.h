@@ -39,6 +39,7 @@ namespace GameModule {
 	void Init(RenderSystem * renderSystem);
 	void LoadDLL(std::string const&);
 	void LoadScene(std::string const&);
+	void OnFrameStart(std::function<void()>);
 	void RemoveEntity(Entity *);
 	std::string SerializePhysics();
     void SubmitCamera(SubmittedCamera const & camera);

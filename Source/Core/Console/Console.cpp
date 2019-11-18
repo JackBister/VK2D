@@ -119,6 +119,8 @@ void OnGui()
                              ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion |
                                  ImGuiInputTextFlags_CallbackHistory,
                              &TextEditCallback);
+        ImGui::SetItemDefaultFocus();
+        ImGui::SetKeyboardFocusHere(-1);
         if (hasInputtedText) {
             std::string input(inputBuffer);
             memset(inputBuffer, 0, INPUT_BUFFER_SIZE);
@@ -134,7 +136,6 @@ void OnGui()
             }
         }
 
-        ImGui::SetItemDefaultFocus();
         if (hasInputtedText) {
             ImGui::SetKeyboardFocusHere(-1);
         }

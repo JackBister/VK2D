@@ -6,6 +6,7 @@
 #include "Core/Components/CameraComponent.h"
 #include "Core/Console/Console.h"
 #include "Core/Input.h"
+#include "Core/Logging/Logger.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/SubmittedCamera.h"
 #include "Core/Resources/Image.h"
@@ -14,7 +15,9 @@
 #include "Core/dtime.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
-#include "Core/scene.h"
+#include "Core/Resources/Scene.h"
+
+static const auto logger = Logger::Create("GameModule");
 
 namespace GameModule
 {
@@ -24,7 +27,9 @@ Entity * mainCameraEntity;
 CameraComponent * mainCameraComponent;
 PhysicsWorld * physicsWorld;
 RenderSystem * renderSystem;
-std::vector<Scene> scenes;
+std::vector<Scene *> scenes;
+
+std::vector<std::function<void()>> onFrameStart;
 
 // TODO: Remove
 std::vector<SubmittedCamera> submittedCameras;
@@ -33,13 +38,7 @@ std::vector<SubmittedSprite> submittedSprites;
 void AddEntity(Entity * e)
 {
     entities.push_back(e);
-}
-
-void BeginPlay()
-{
-    for (auto & s : scenes) {
-        s.BroadcastEvent("BeginPlay");
-    }
+    e->FireEvent("BeginPlay");
 }
 
 void CreateResources(std::function<void(ResourceCreationContext &)> fun)
@@ -67,10 +66,9 @@ Entity * GetEntityByIdx(size_t idx)
 
 Entity * GetEntityByName(std::string const & name)
 {
-    for (auto & s : scenes) {
-        auto ret = s.GetEntityByName(name);
-        if (ret != nullptr) {
-            return ret;
+    for (auto entity : entities) {
+        if (entity->name == name) {
+            return entity;
         }
     }
     return nullptr;
@@ -99,18 +97,44 @@ void Init(RenderSystem * inRenderSystem)
     Console::Init(renderSystem);
     Input::Init();
     Time::Start();
+
+    CommandDefinition loadSceneCommand(
+        "scene_load", "scene_load <filename> - Loads the scene defined in the given file.", 1, [](auto args) {
+            auto fileName = args[0];
+            LoadScene(fileName);
+        });
+    Console::RegisterCommand(loadSceneCommand);
+
+    CommandDefinition unloadSceneCommand(
+        "scene_unload", "scene_unload <filename> - Unloads the scene defined in the given file.", 1, [](auto args) {
+            auto fileName = args[0];
+            for (auto scene : scenes) {
+                if (scene->GetFileName() == fileName) {
+                    scene->Unload();
+                }
+            }
+            scenes.erase(std::remove_if(scenes.begin(),
+                                        scenes.end(),
+                                        [fileName](Scene * scene) { return scene->GetFileName() == fileName; }),
+                         scenes.end());
+        });
+    Console::RegisterCommand(unloadSceneCommand);
 }
 
-void LoadScene(std::string const & filename)
+void LoadScene(std::string const & fileName)
 {
-    scenes.push_back(Scene(filename));
+    scenes.push_back(Scene::FromFile(fileName));
+}
+
+void OnFrameStart(std::function<void()> fun)
+{
+    onFrameStart.push_back(fun);
 }
 
 void RemoveEntity(Entity * entity)
 {
     for (auto it = entities.begin(); it != entities.end(); ++it) {
         if (*it == entity) {
-            delete *it;
             entities.erase(it);
             return;
         }
@@ -177,12 +201,18 @@ void Tick()
     currFrameStage = FrameStage::FENCE_WAIT;
     renderSystem->StartFrame();
 
+    for (auto fun : onFrameStart) {
+        fun();
+    }
+
+    onFrameStart.clear();
+
     currFrameStage = FrameStage::PHYSICS;
     // TODO: substeps
     physicsWorld->world->stepSimulation(Time::GetDeltaTime());
     currFrameStage = FrameStage::TICK;
-    for (auto & s : scenes) {
-        s.BroadcastEvent("Tick", {{"deltaTime", Time::GetDeltaTime()}});
+    for (auto entity : entities) {
+        entity->FireEvent("Tick", {{"deltaTime", Time::GetDeltaTime()}});
     }
 
     EditorSystem::OnGui();

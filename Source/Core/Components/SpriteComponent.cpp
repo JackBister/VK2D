@@ -5,6 +5,7 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "nlohmann/json.hpp"
 
+#include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Abstract/RenderResources.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
@@ -12,7 +13,6 @@
 #include "Core/Resources/Image.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/entity.h"
-#include "Core/scene.h"
 
 static const auto logger = Logger::Create("SpriteComponent");
 
@@ -20,7 +20,9 @@ COMPONENT_IMPL(SpriteComponent, &SpriteComponent::s_Deserialize)
 
 SpriteComponent::~SpriteComponent()
 {
-    GameModule::CreateResources([this](ResourceCreationContext & ctx) {
+    auto descriptorSet = this->descriptorSet;
+    auto uniforms = this->uniforms;
+    ResourceManager::DestroyResources([descriptorSet, uniforms](ResourceCreationContext & ctx) {
         ctx.DestroyBuffer(uniforms);
         ctx.DestroyDescriptorSet(descriptorSet);
     });
@@ -36,7 +38,6 @@ Deserializable * SpriteComponent::s_Deserialize(std::string const & str)
     auto j = nlohmann::json::parse(str);
     ret->file = j["file"].get<std::string>();
     auto img = Image::FromFile(j["file"]);
-    // TODO: There is a deadlock here if GetDefaultView is called inside CreateResources on OpenGL
     auto view = img->GetDefaultView();
 
     ResourceManager::CreateResources([ret, img, view](ResourceCreationContext & ctx) {
