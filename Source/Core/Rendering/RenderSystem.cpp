@@ -4,6 +4,7 @@
 
 #include "Core/Console/Console.h"
 #include "Core/Logging/Logger.h"
+#include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
 #include "Core/entity.h"
 
@@ -88,10 +89,10 @@ void RenderSystem::StartFrame()
         }
         --sc.remainingFrames;
     }
-    scheduledDestroyers.erase(std::remove_if(
-        scheduledDestroyers.begin(), scheduledDestroyers.end(), [](auto sc) { return sc.remainingFrames < 0; }),
-		scheduledDestroyers.end());
-
+    scheduledDestroyers.erase(std::remove_if(scheduledDestroyers.begin(),
+                                             scheduledDestroyers.end(),
+                                             [](auto sc) { return sc.remainingFrames < 0; }),
+                              scheduledDestroyers.end());
 
     uiRenderSystem.StartFrame();
 }
@@ -115,7 +116,8 @@ void RenderSystem::CreateResources(std::function<void(ResourceCreationContext &)
 
 void RenderSystem::DestroyResources(std::function<void(ResourceCreationContext &)> fun)
 {
-	// We wait for one "cycle" of frames before destroying. This should ensure that there is no rendering operation in flight that is still using the resource.
+    // We wait for one "cycle" of frames before destroying. This should ensure that there is no rendering operation in
+    // flight that is still using the resource.
     scheduledDestroyers.push_back({(int)frameInfo.size(), fun});
 }
 

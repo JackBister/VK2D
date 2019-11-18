@@ -15,7 +15,7 @@
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Rendering/RenderPrimitiveFactory.h"
 #include "Core/Rendering/RenderSystem.h"
-#include "Core/ResourceManager.h"
+#include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
 #include "Core/Util/DefaultFileSlurper.h"
 #include "Core/Util/SetThreadName.h"

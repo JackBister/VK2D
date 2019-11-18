@@ -6,9 +6,10 @@
 #include "Core/Components/CameraComponent.h"
 #include "Core/Console/Console.h"
 #include "Core/Input.h"
-#include "Core/Rendering/Image.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/SubmittedCamera.h"
+#include "Core/Resources/Image.h"
+#include "Core/Resources/ResourceManager.h"
 #include "Core/UI/EditorSystem.h"
 #include "Core/dtime.h"
 #include "Core/entity.h"
@@ -95,7 +96,7 @@ void Init(RenderSystem * inRenderSystem)
     // TODO: This is dumb
     renderSystem = inRenderSystem;
 
-	Console::Init(renderSystem);
+    Console::Init(renderSystem);
     Input::Init();
     Time::Start();
 }
@@ -171,7 +172,7 @@ void Tick()
 
     if (Input::GetKeyDown(KC_F1)) {
         Console::ToggleVisible();
-	}
+    }
 
     currFrameStage = FrameStage::FENCE_WAIT;
     renderSystem->StartFrame();
@@ -188,12 +189,9 @@ void Tick()
     Console::OnGui();
 
     currFrameStage = FrameStage::RENDER;
-	renderSystem->RenderFrame({
-        submittedCameras,
-		submittedSprites
-		});
+    renderSystem->RenderFrame({submittedCameras, submittedSprites});
 
-	submittedCameras.clear();
-	submittedSprites.clear();
+    submittedCameras.clear();
+    submittedSprites.clear();
 }
 };

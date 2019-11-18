@@ -8,8 +8,9 @@
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Abstract/RenderResources.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
-#include "Core/Rendering/Image.h"
 #include "Core/Rendering/SubmittedSprite.h"
+#include "Core/Resources/Image.h"
+#include "Core/Resources/ResourceManager.h"
 #include "Core/entity.h"
 #include "Core/scene.h"
 

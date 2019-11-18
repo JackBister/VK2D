@@ -2,7 +2,7 @@
 
 #include "Core/Rendering/Backend/Abstract/RenderResources.h"
 #include "Core/Rendering/Backend/Renderer.h"
-#include "Core/ResourceManager.h"
+#include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
 
 #include "Core/Rendering/Shaders/passthrough-transform.frag.spv.h"
@@ -12,10 +12,7 @@
 #include "Core/Rendering/Shaders/ui.frag.spv.h"
 #include "Core/Rendering/Shaders/ui.vert.spv.h"
 
-RenderPrimitiveFactory::RenderPrimitiveFactory(Renderer * renderer)
-    : renderer(renderer)
-{
-}
+RenderPrimitiveFactory::RenderPrimitiveFactory(Renderer * renderer) : renderer(renderer) {}
 
 void RenderPrimitiveFactory::CreatePrimitives()
 {
@@ -317,7 +314,7 @@ void RenderPrimitiveFactory::CreateQuadVbo(ResourceCreationContext & ctx)
 
 void RenderPrimitiveFactory::CreateDefaultSampler(ResourceCreationContext & ctx)
 {
-    
+
     ResourceCreationContext::SamplerCreateInfo sc = {};
     sc.addressModeU = AddressMode::REPEAT;
     sc.addressModeV = AddressMode::REPEAT;

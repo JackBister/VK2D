@@ -1,11 +1,11 @@
-﻿#include "Core/Rendering/Image.h"
+﻿#include "Image.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
-#include "Core/ResourceManager.h"
+#include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
 
 #if HOT_RELOAD_RESOURCES

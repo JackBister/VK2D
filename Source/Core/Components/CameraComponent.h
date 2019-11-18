@@ -12,37 +12,37 @@ class DescriptorSet;
 class CameraComponent : public Component
 {
 public:
-	static Deserializable * s_Deserialize(std::string const& str);
+    static Deserializable * s_Deserialize(std::string const & str);
 
-	CameraComponent() { receiveTicks = true; };
+    CameraComponent() { receiveTicks = true; };
 
-	std::string Serialize() const override;
+    std::string Serialize() const override;
 
-	void OnEvent(HashedString name, EventArgs args = {}) override;
+    void OnEvent(HashedString name, EventArgs args = {}) override;
 
-	glm::mat4 const& GetProjection();
-    glm::mat4 const& GetView();
+    glm::mat4 const & GetProjection();
+    glm::mat4 const & GetView();
 
-	float GetAspect();
-	void SetAspect(float);
+    float GetAspect();
+    void SetAspect(float);
 
-	float GetViewSize();
-	void SetViewSize(float);
+    float GetViewSize();
+    void SetViewSize(float);
 
-	REFLECT()
-	REFLECT_INHERITANCE()
+    REFLECT()
+    REFLECT_INHERITANCE()
 private:
-	float aspect;
-	bool defaultsToMain = false;
-	bool isProjectionDirty = true;
-	bool isViewDirty = true;
+    float aspect;
+    bool defaultsToMain = false;
+    bool isProjectionDirty = true;
+    bool isViewDirty = true;
     glm::mat4 projection;
     glm::mat4 view;
-	float viewSize;
+    float viewSize;
 
     std::atomic<bool> hasCreatedLocalResources{false};
-	DescriptorSet * descriptorSet;
+    DescriptorSet * descriptorSet;
     BufferHandle * uniforms;
 
-	glm::vec2 deltaLastFrame = glm::vec2(0.0, 0.0);
+    glm::vec2 deltaLastFrame = glm::vec2(0.0, 0.0);
 };
