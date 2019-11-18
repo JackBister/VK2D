@@ -6,13 +6,11 @@
 #include "Core/Semaphore.h"
 #include "Core/dtime.h"
 
-UiRenderSystem::UiRenderSystem(Renderer * renderer)
-    : renderer(renderer), frameData(renderer->GetSwapCount())
+UiRenderSystem::UiRenderSystem(Renderer * renderer) : renderer(renderer), frameData(renderer->GetSwapCount())
 {
-    layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>(
-        "_Primitives/DescriptorSetLayouts/ui.layout");
-    pipelineLayout = ResourceManager::GetResource<PipelineLayoutHandle>(
-        "_Primitives/PipelineLayouts/ui.pipelinelayout");
+    layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/ui.layout");
+    pipelineLayout =
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/ui.pipelinelayout");
     gfxPipeline = ResourceManager::GetResource<PipelineHandle>("_Primitives/Pipelines/ui.pipe");
 
     auto & imguiIo = ImGui::GetIO();
@@ -35,8 +33,8 @@ UiRenderSystem::UiRenderSystem(Renderer * renderer)
         fontCreateInfo.width = fontWidth;
         fontCreateInfo.mipLevels = 1;
         fontCreateInfo.type = ImageHandle::Type::TYPE_2D;
-        fontCreateInfo.usage = ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT |
-                               ImageUsageFlagBits::IMAGE_USAGE_FLAG_TRANSFER_DST_BIT;
+        fontCreateInfo.usage =
+            ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT | ImageUsageFlagBits::IMAGE_USAGE_FLAG_TRANSFER_DST_BIT;
         fontAtlas = ctx.CreateImage(fontCreateInfo);
         ctx.ImageData(fontAtlas, fontPixelVector);
         auto & imguiIo = ImGui::GetIO();
@@ -130,9 +128,13 @@ void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuf
         size_t currVertexPos = 0;
         for (int i = 0; i < data->CmdListsCount; ++i) {
             auto cmdList = data->CmdLists[i];
-            ctx.BufferSubData(fd.indexBuffer, (uint8_t *)cmdList->IdxBuffer.Data, currIndexPos,
+            ctx.BufferSubData(fd.indexBuffer,
+                              (uint8_t *)cmdList->IdxBuffer.Data,
+                              currIndexPos,
                               cmdList->IdxBuffer.Size * sizeof(ImDrawIdx));
-            ctx.BufferSubData(fd.vertexBuffer, (uint8_t *)cmdList->VtxBuffer.Data, currVertexPos,
+            ctx.BufferSubData(fd.vertexBuffer,
+                              (uint8_t *)cmdList->VtxBuffer.Data,
+                              currVertexPos,
                               cmdList->VtxBuffer.Size * sizeof(ImDrawVert));
             currIndexPos += cmdList->IdxBuffer.Size * sizeof(ImDrawIdx);
             currVertexPos += cmdList->VtxBuffer.Size * sizeof(ImDrawVert);
