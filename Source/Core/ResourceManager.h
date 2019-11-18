@@ -6,7 +6,7 @@
 
 #include "Core/Logging/Logger.h"
 
-class Renderer;
+class RenderSystem;
 class ResourceCreationContext;
 
 namespace ResourceManager
@@ -15,7 +15,8 @@ extern std::unique_ptr<Logger> logger;
 extern std::unordered_map<std::string, void *> resources;
 
 void CreateResources(std::function<void(ResourceCreationContext &)> fun);
-void Init(Renderer * renderer);
+void DestroyResources(std::function<void(ResourceCreationContext &)> fun);
+void Init(RenderSystem * renderSystem);
 
 template <typename T>
 void AddResource(std::string const & name, T * resource)

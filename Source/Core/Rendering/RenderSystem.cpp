@@ -13,8 +13,7 @@ static constexpr CommandBuffer::ClearValue DEFAULT_CLEAR_VALUES[] = {
     {CommandBuffer::ClearValue::Type::COLOR, {0.f, 0.f, 1.f, 1.f}}};
 
 RenderSystem::RenderSystem(Renderer * renderer)
-    : renderer(renderer), frameInfo(renderer->GetSwapCount()),
-      uiRenderSystem(renderer)
+    : renderer(renderer), frameInfo(renderer->GetSwapCount()), uiRenderSystem(renderer)
 {
     Semaphore sem;
     renderer->CreateResources([&](ResourceCreationContext & ctx) {
@@ -83,6 +82,17 @@ RenderSystem::RenderSystem(Renderer * renderer)
 
 void RenderSystem::StartFrame()
 {
+    for (auto & sc : scheduledDestroyers) {
+        if (sc.remainingFrames == 0) {
+            renderer->CreateResources(sc.fun);
+        }
+        --sc.remainingFrames;
+    }
+    scheduledDestroyers.erase(std::remove_if(
+        scheduledDestroyers.begin(), scheduledDestroyers.end(), [](auto sc) { return sc.remainingFrames < 0; }),
+		scheduledDestroyers.end());
+
+
     uiRenderSystem.StartFrame();
 }
 
@@ -96,6 +106,17 @@ void RenderSystem::RenderFrame(SubmittedFrame const & frame)
 
     auto & currFrame = frameInfo[currFrameInfoIdx];
     renderer->SwapWindow(currFrameInfoIdx, currFrame.postprocessFinished);
+}
+
+void RenderSystem::CreateResources(std::function<void(ResourceCreationContext &)> fun)
+{
+    renderer->CreateResources(fun);
+}
+
+void RenderSystem::DestroyResources(std::function<void(ResourceCreationContext &)> fun)
+{
+	// We wait for one "cycle" of frames before destroying. This should ensure that there is no rendering operation in flight that is still using the resource.
+    scheduledDestroyers.push_back({(int)frameInfo.size(), fun});
 }
 
 glm::ivec2 RenderSystem::GetResolution()

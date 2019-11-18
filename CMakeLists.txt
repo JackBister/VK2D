@@ -34,6 +34,11 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -lstdc++fs")
 endif()
 
+option(HOT_RELOAD_RESOURCES "Hot reload resources on change" ON)
+if (HOT_RELOAD_RESOURCES)
+    target_compile_definitions(Main PUBLIC HOT_RELOAD_RESOURCES=1)
+endif()
+
 find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)

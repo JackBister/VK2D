@@ -1,10 +1,17 @@
 ﻿#pragma once
 
+#include <vector>
+
 #include <glm/glm.hpp>
 
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Rendering/SubmittedFrame.h"
 #include "Core/Rendering/UiRenderSystem.h"
+
+struct ScheduledDestroyer {
+    int remainingFrames;
+    std::function<void(ResourceCreationContext &)> fun;
+};
 
 class RenderSystem
 {
@@ -13,6 +20,9 @@ public:
 
     void StartFrame();
     void RenderFrame(SubmittedFrame const & frame);
+
+    void CreateResources(std::function<void(ResourceCreationContext &)> fun);
+    void DestroyResources(std::function<void(ResourceCreationContext &)> fun);
 
     glm::ivec2 GetResolution();
 
@@ -49,6 +59,8 @@ private:
     uint32_t currFrameInfoIdx = 0;
     uint32_t prevFrameInfoIdx = 0;
     std::vector<FrameInfo> frameInfo;
+
+    std::vector<ScheduledDestroyer> scheduledDestroyers;
 
     // Rendering resources
     RenderPassHandle * mainRenderpass;

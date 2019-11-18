@@ -1,20 +1,25 @@
 ﻿#include "Core/ResourceManager.h"
 
-#include "Core/Rendering/Backend/Renderer.h"
+#include "Core/Rendering/RenderSystem.h"
 
 namespace ResourceManager
 {
 std::unique_ptr<Logger> logger = Logger::Create("ResourceManager");
-Renderer * renderer;
+RenderSystem * renderSystem;
 std::unordered_map<std::string, void *> resources;
 
 void CreateResources(std::function<void(ResourceCreationContext &)> fun)
 {
-    renderer->CreateResources(fun);
+    renderSystem->CreateResources(fun);
 }
 
-void Init(Renderer * inRenderer)
+void DestroyResources(std::function<void(ResourceCreationContext &)> fun)
 {
-    renderer = inRenderer;
+    renderSystem->DestroyResources(fun);
+}
+
+void Init(RenderSystem * inRenderSystem)
+{
+    renderSystem = inRenderSystem;
 }
 }

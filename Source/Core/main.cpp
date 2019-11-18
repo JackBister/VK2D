@@ -17,8 +17,8 @@
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/ResourceManager.h"
 #include "Core/Semaphore.h"
-#include "Core/Util/SetThreadName.h"
 #include "Core/Util/DefaultFileSlurper.h"
+#include "Core/Util/SetThreadName.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
 #include "Core/scene.h"
@@ -37,9 +37,9 @@ int main(int argc, char * argv[])
     ImGui::CreateContext();
     SDL_Init(SDL_INIT_EVERYTHING);
     Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
-    ResourceManager::Init(&renderer);
     RenderPrimitiveFactory(&renderer).CreatePrimitives();
     RenderSystem renderSystem(&renderer);
+    ResourceManager::Init(&renderSystem);
 
     SetThreadName(std::this_thread::get_id(), "Main Thread");
 

@@ -1,6 +1,7 @@
 ﻿#include "WatchFile.h"
 
 #include <chrono>
+#include <thread>
 
 #include "Core/Logging/Logger.h"
 
@@ -33,6 +34,10 @@ void WatchFileCallback(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
         return;
     }
     arg->lastCall = now;
+    // TODO: This is pretty ugly but fopening the file immediately seems to get you stale data?
+    // What I really want is a debounce where only the last notification for one file triggers the callback but that's
+    // too annoying to implement right now
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     arg->callback();
     FindNextChangeNotification(arg->watchHandle);
 }

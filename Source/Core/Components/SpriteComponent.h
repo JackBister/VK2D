@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <atomic>
 
@@ -6,23 +6,29 @@
 
 class BufferHandle;
 class DescriptorSet;
+class Image;
 
 class SpriteComponent final : public Component
 {
 public:
-	static Deserializable * s_Deserialize(std::string const& str);
+    static Deserializable * s_Deserialize(std::string const & str);
 
-	SpriteComponent() { receiveTicks = true; }
-	~SpriteComponent() override;
+    SpriteComponent() { receiveTicks = true; }
+    ~SpriteComponent() override;
 
-	std::string Serialize() const override;
+    std::string Serialize() const override;
 
-	void OnEvent(HashedString name, EventArgs args) override;
+    void OnEvent(HashedString name, EventArgs args) override;
 
 private:
-	DescriptorSet * descriptorSet;
-	std::atomic<bool> hasCreatedLocalResources{ false };
-	BufferHandle * uniforms;
-	
-	std::string file;
+    DescriptorSet * descriptorSet;
+    std::atomic<bool> hasCreatedLocalResources{false};
+    BufferHandle * uniforms;
+
+    std::string file;
+
+#if HOT_RELOAD_RESOURCES
+    Image * image;
+    int hotReloadSubscriptionId;
+#endif
 };
