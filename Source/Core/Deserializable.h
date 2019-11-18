@@ -1,7 +1,6 @@
-#pragma once
+﻿#pragma once
 #include <unordered_map>
 
-#include "Core/Allocator.h"
 #include "Core/DllExport.h"
 #include "Core/HashedString.h"
 
