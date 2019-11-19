@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(Windows) Launch",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "../../build/Debug/Main.exe",
+            "args": [
+                "main.scene"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/Examples/FlappyPong",
+            "environment": [],
+            "externalConsole": true,
+            "preLaunchTask": "build"
+        }
+    ]
+}

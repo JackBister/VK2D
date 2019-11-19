@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/Source/**",
+                "${env:VCPKG_ROOT}/installed/x64-windows/include",
+                "${env:VCPKG_ROOT}/installed/x64-windows/include/bullet",
+                "${env:VULKAN_SDK}/Include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "HOT_RELOAD_RESOURCES"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "msvc-x64"
+        }
+    ],
+    "version": 4
+}
