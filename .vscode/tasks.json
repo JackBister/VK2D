@@ -36,6 +36,23 @@
             "problemMatcher": []
         },
         {
+            "label": "clean",
+            "type": "shell",
+            "windows": {
+                "command": "msbuild",
+                "args": [
+                    "ALL_BUILD.vcxproj",
+                    "-target:Clean"
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder}/build"
+                },
+                "problemMatcher": [
+                    "$msCompile"
+                ]
+            }
+        },
+        {
             "label": "msbuild",
             "type": "shell",
             "windows": {
