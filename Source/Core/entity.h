@@ -6,23 +6,23 @@
 
 #include "Core/Components/Component.h"
 #include "Core/Deserializable.h"
-#include "Core/eventarg.h"
 #include "Core/HashedString.h"
+#include "Core/eventarg.h"
 #include "Core/transform.h"
 
 class Entity final : public Deserializable
 {
 public:
-	static Deserializable * s_Deserialize(std::string const& str);
+    static Deserializable * s_Deserialize(SerializedObject const & obj);
 
-	std::string Serialize() const override;
-	void FireEvent(HashedString name, EventArgs args = {});
-	Component * GetComponent(std::string type) const;
+    SerializedObject Serialize() const override;
+    void FireEvent(HashedString name, EventArgs args = {});
+    Component * GetComponent(std::string type) const;
 
-	std::string name;
-	Transform transform;
+    std::string name;
+    Transform transform;
 
-	std::vector<std::unique_ptr<Component>> components;
+    std::vector<std::unique_ptr<Component>> components;
 
-	REFLECT();
+    REFLECT();
 };

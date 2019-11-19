@@ -8,37 +8,38 @@
 
 #include "Core/DllExport.h"
 #include "Core/Reflect.h"
+#include "Core/Serialization/SerializedValue.h"
 
 class EAPI Transform final
 {
 public:
-	static Transform Deserialize(std::string const&);
+    static Transform Deserialize(SerializedObject const &);
 
-	glm::mat4 const& GetLocalToParent();
-	glm::mat4 const& GetLocalToWorld();
-	Transform * GetParent() const;
-	glm::vec3 const& GetPosition() const;
-	glm::quat const& GetRotation() const;
-    glm::vec3 const& GetScale() const;
+    glm::mat4 const & GetLocalToParent();
+    glm::mat4 const & GetLocalToWorld();
+    Transform * GetParent() const;
+    glm::vec3 const & GetPosition() const;
+    glm::quat const & GetRotation() const;
+    glm::vec3 const & GetScale() const;
 
-	std::string Serialize() const;
+    SerializedObject Serialize() const;
 
-	void SetParent(Transform *);
-	void SetPosition(glm::vec3 const&);
-	void SetRotation(glm::quat const&);
-	void SetScale(glm::vec3 const&);
+    void SetParent(Transform *);
+    void SetPosition(glm::vec3 const &);
+    void SetRotation(glm::quat const &);
+    void SetScale(glm::vec3 const &);
 
-	REFLECT()
+    REFLECT()
 private:
-	Transform * parent = nullptr;
+    Transform * parent = nullptr;
 
-	glm::vec3 position = glm::vec3(0.f, 0.f, 0.f);
-	glm::quat rotation = glm::quat(0.f, 0.f, 0.f, 0.f);
-	glm::vec3 scale = glm::vec3(1.f, 1.f, 1.f);
+    glm::vec3 position = glm::vec3(0.f, 0.f, 0.f);
+    glm::quat rotation = glm::quat(0.f, 0.f, 0.f, 0.f);
+    glm::vec3 scale = glm::vec3(1.f, 1.f, 1.f);
 
-	bool isParentDirty = true;
-	bool isWorldDirty = true;
+    bool isParentDirty = true;
+    bool isWorldDirty = true;
 
-	glm::mat4 toParent;
-	glm::mat4 toWorld;
+    glm::mat4 toParent;
+    glm::mat4 toWorld;
 };

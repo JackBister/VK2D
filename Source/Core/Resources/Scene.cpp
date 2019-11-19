@@ -5,61 +5,76 @@
 #include <fstream>
 #include <sstream>
 
-#include "nlohmann/json.hpp"
-
 #include "Core/Components/CameraComponent.h"
 #include "Core/Input.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Resources/ResourceManager.h"
+#include "Core/Serialization/JsonSerializer.h"
+#include "Core/Util/WatchFile.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
 #include "Core/transform.h"
-#include "Core/Util/WatchFile.h"
 
 static const auto logger = Logger::Create("Scene");
 
 static void ReadFile(std::string const & fileName, std::vector<std::string> & dlls, std::vector<Entity *> & entities)
 {
     FILE * f = fopen(fileName.c_str(), "rb");
-    std::string serializedScene;
+    std::string serializedSceneString;
     if (f) {
         fseek(f, 0, SEEK_END);
         size_t length = ftell(f);
         fseek(f, 0, SEEK_SET);
         std::vector<char> buf(length + 1);
         fread(&buf[0], 1, length, f);
-        serializedScene = std::string(buf.begin(), buf.end());
+        serializedSceneString = std::string(buf.begin(), buf.end());
     } else {
         logger->Errorf("LoadFile failed to open fileName=%s", fileName.c_str());
         // TODO:
         return;
     }
-    auto const j = nlohmann::json::parse(serializedScene);
 
-    if (j.find("dlls") != j.end()) {
-        for (auto dll : j["dlls"]) {
-            dlls.push_back(dll);
-            GameModule::LoadDLL(dll);
+    auto serializedScene = JsonSerializer().Deserialize(serializedSceneString).value();
+
+    auto dllsOpt = serializedScene.GetArray("dlls");
+    if (dllsOpt.has_value()) {
+        for (auto dll : dllsOpt.value()) {
+            if (dll.index() != SerializedValue::STRING) {
+                logger->Errorf("Unexpected non-string in dlls array in scene file.");
+            }
+            auto dllStr = std::get<std::string>(dll);
+            dlls.push_back(dllStr);
+            GameModule::LoadDLL(dllStr);
         }
     }
 
-    if (j.find("input") != j.end()) {
-        auto input = j["input"];
-        if (input.find("keybinds") != input.end()) {
-            for (auto kb : input["keybinds"]) {
-                for (auto k : kb["keys"]) {
-                    Input::AddKeybind(kb["name"].get<std::string>(), strToKeycode[k]);
-                }
+    auto inputOpt = serializedScene.GetObject("input");
+    if (inputOpt.has_value()) {
+        auto input = inputOpt.value();
+        auto keybindsOpt = input.GetArray("keybinds");
+        for (auto kb : keybindsOpt.value()) {
+            if (kb.index() != SerializedValue::OBJECT) {
+                logger->Errorf("Unexpected non-object in keybinds array in scene file.");
+            }
+            auto keybind = std::get<SerializedObject>(kb);
+            auto keys = keybind.GetArray("keys");
+            for (auto k : keys.value()) {
+                Input::AddKeybind(keybind.GetString("name").value(), strToKeycode[std::get<std::string>(k)]);
             }
         }
     }
 
-    if (j.find("physics") != j.end()) {
-        GameModule::DeserializePhysics(j["physics"].dump());
+    auto physicsOpt = serializedScene.GetObject("physics");
+    if (physicsOpt.has_value()) {
+        GameModule::DeserializePhysics(physicsOpt.value());
     }
 
-    for (auto & je : j["entities"]) {
-        Entity * entity = static_cast<Entity *>(Deserializable::DeserializeString(je.dump()));
+    auto serializedEntities = serializedScene.GetArray("entities");
+    for (auto & e : serializedEntities.value()) {
+        if (e.index() != SerializedValue::OBJECT) {
+            logger->Errorf("Unexpected non-object in entities array in scene file.");
+        }
+        Entity * entity = static_cast<Entity *>(Deserializable::Deserialize(std::get<SerializedObject>(e)));
         entities.push_back(entity);
         GameModule::AddEntity(entity);
     }
@@ -80,7 +95,8 @@ Scene * Scene::FromFile(std::string const & fileName)
         GameModule::OnFrameStart([fileName]() {
             auto scene = ResourceManager::GetResource<Scene>(fileName);
             if (scene == nullptr) {
-                logger->Warnf("Scene file '%s' was changed but ResourceManager had no reference for it.", fileName.c_str());
+                logger->Warnf("Scene file '%s' was changed but ResourceManager had no reference for it.",
+                              fileName.c_str());
                 return;
             }
 
@@ -94,19 +110,26 @@ Scene * Scene::FromFile(std::string const & fileName)
 
 void Scene::SerializeToFile(std::string const & filename)
 {
-    nlohmann::json j;
-    j["physics"] = nlohmann::json::parse(GameModule::SerializePhysics());
+    // TODO: input
+    SerializedObject::Builder builder;
+    builder.WithObject("physics", GameModule::SerializePhysics());
 
-    std::vector<nlohmann::json> serializedEntities;
+    std::vector<SerializedValue> serializedDlls;
+    serializedDlls.reserve(dlls.size());
+    for (auto const & dll : dlls) {
+        serializedDlls.push_back(dll);
+    }
+    builder.WithArray("dlls", serializedDlls);
+
+    std::vector<SerializedValue> serializedEntities;
     serializedEntities.reserve(entities.size());
     for (auto const e : entities) {
-        serializedEntities.push_back(nlohmann::json::parse(e->Serialize()));
+        serializedEntities.push_back(e->Serialize());
     }
-
-    j["entities"] = serializedEntities;
+    builder.WithArray("entities", serializedEntities);
 
     std::ofstream out(filename);
-    out << j.dump();
+    out << JsonSerializer().Serialize(builder.Build());
 }
 
 void Scene::Unload()

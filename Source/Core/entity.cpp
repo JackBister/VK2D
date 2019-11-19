@@ -5,8 +5,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "nlohmann/json.hpp"
-
 #include "Core/Components/component.h"
 #include "Core/Logging/Logger.h"
 
@@ -44,34 +42,36 @@ Component * Entity::GetComponent(std::string type) const
     return nullptr;
 }
 
-Deserializable * Entity::s_Deserialize(std::string const & str)
+Deserializable * Entity::s_Deserialize(SerializedObject const & obj)
 {
     Entity * const ret = new Entity();
-    auto const j = nlohmann::json::parse(str);
-    ret->name = j["name"].get<std::string>();
-    ret->transform = Transform::Deserialize(j["transform"].dump());
-    auto const t = j["components"];
-    for (auto const & js : j["components"]) {
-        Component * const c = static_cast<Component *>(Deserializable::DeserializeString(js.dump()));
+    ret->name = obj.GetString("name").value();
+    ret->transform = Transform::Deserialize(obj.GetObject("transform").value());
+    auto serializedComponents = obj.GetArray("components");
+    for (auto const & component : serializedComponents.value()) {
+        if (component.index() != SerializedValue::OBJECT) {
+            logger->Errorf("Unexpected non-object in component array when deserializing entity '%s'", ret->name);
+        }
+        Component * const c =
+            static_cast<Component *>(Deserializable::Deserialize(std::get<SerializedObject>(component)));
         c->entity = ret;
         ret->components.emplace_back(std::move(c));
     }
     return ret;
 }
 
-std::string Entity::Serialize() const
+SerializedObject Entity::Serialize() const
 {
-    nlohmann::json j;
-    j["type"] = this->type;
-    j["name"] = name;
-    j["transform"] = nlohmann::json::parse(transform.Serialize());
+    SerializedObject::Builder builder;
+    builder.WithString("type", this->Reflection.name)
+        .WithString("name", name)
+        .WithObject("transform", transform.Serialize());
 
-    std::vector<nlohmann::json> serializedComponents;
+    std::vector<SerializedValue> serializedComponents;
     for (auto const & c : components) {
-        serializedComponents.push_back(nlohmann::json::parse(c->Serialize()));
+        serializedComponents.push_back(c->Serialize());
     }
 
-    j["components"] = serializedComponents;
-
-    return j.dump();
+    builder.WithArray("components", serializedComponents);
+    return builder.Build();
 }

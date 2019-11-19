@@ -3,22 +3,22 @@
 
 #include "Core/DllExport.h"
 #include "Core/HashedString.h"
+#include "Core/Serialization/SerializedValue.h"
 
 class EAPI Deserializable
 {
 public:
-    /*
-            Serializes an object into a format suitable for storing in a scene file (currently JSON)
-    */
-    virtual std::string Serialize() const = 0;
+    virtual SerializedObject Serialize() const = 0;
 
     /*
-            Deserializes a string of unknown type.
-    */
-    static Deserializable * DeserializeString(std::string const & str);
+     * Deserializes an object. The object must contain the key "type" with a string value which must be present as
+     * a key in Deserializable::Map
+     */
+    static Deserializable * Deserialize(SerializedObject const & obj);
 
-    static std::unordered_map<std::string, std::function<Deserializable *(std::string const &)>> & Map();
+    static std::unordered_map<std::string, std::function<Deserializable *(SerializedObject const &)>> & Map();
 
+    // TODO: Remove?
     std::string type;
 };
 

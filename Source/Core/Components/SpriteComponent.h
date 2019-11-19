@@ -11,15 +11,17 @@ class Image;
 class SpriteComponent final : public Component
 {
 public:
-    static Deserializable * s_Deserialize(std::string const & str);
+    static Deserializable * s_Deserialize(SerializedObject const & str);
 
     SpriteComponent() { receiveTicks = true; }
     ~SpriteComponent() override;
 
-    std::string Serialize() const override;
+    SerializedObject Serialize() const override;
 
     void OnEvent(HashedString name, EventArgs args) override;
 
+    REFLECT()
+    REFLECT_INHERITANCE()
 private:
     DescriptorSet * descriptorSet;
     std::atomic<bool> hasCreatedLocalResources{false};

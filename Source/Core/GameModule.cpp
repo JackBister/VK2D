@@ -1,6 +1,5 @@
 ﻿#include "GameModule.h"
 
-#include <nlohmann/json.hpp>
 #include <vector>
 
 #include "Core/Components/CameraComponent.h"
@@ -11,11 +10,11 @@
 #include "Core/Rendering/SubmittedCamera.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/ResourceManager.h"
+#include "Core/Resources/Scene.h"
 #include "Core/UI/EditorSystem.h"
 #include "Core/dtime.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
-#include "Core/Resources/Scene.h"
 
 static const auto logger = Logger::Create("GameModule");
 
@@ -46,14 +45,15 @@ void CreateResources(std::function<void(ResourceCreationContext &)> fun)
     ResourceManager::CreateResources(fun);
 }
 
-void DeserializePhysics(std::string const & str)
+void DeserializePhysics(SerializedObject const & obj)
 {
     if (physicsWorld == nullptr) {
-        physicsWorld = (PhysicsWorld *)Deserializable::DeserializeString(str);
+        physicsWorld = (PhysicsWorld *)Deserializable::Deserialize(obj);
         return;
     }
-    auto j = nlohmann::json::parse(str);
-    physicsWorld->SetGravity(glm::vec3(j["gravity"]["x"], j["gravity"]["y"], j["gravity"]["z"]));
+    auto grav = obj.GetObject("gravity").value();
+    physicsWorld->SetGravity(
+        glm::vec3(grav.GetNumber("x").value(), grav.GetNumber("y").value(), grav.GetNumber("z").value()));
 }
 
 Entity * GetEntityByIdx(size_t idx)
@@ -98,6 +98,24 @@ void Init(RenderSystem * inRenderSystem)
     Input::Init();
     Time::Start();
 
+    CommandDefinition dumpSceneCommand(
+        "scene_dump",
+        "scene_dump <from_file> <to_file> - Dumps the scene load from <from_file> into <to_file>",
+        2,
+        [](auto args) {
+            auto fromFile = args[0];
+            auto toFile = args[1];
+
+            for (auto scene : scenes) {
+                if (scene->GetFileName() == fromFile) {
+                    scene->SerializeToFile(toFile);
+                    return;
+                }
+            }
+            logger->Warnf("No scene with name '%s' found", fromFile.c_str());
+        });
+    Console::RegisterCommand(dumpSceneCommand);
+
     CommandDefinition loadSceneCommand(
         "scene_load", "scene_load <filename> - Loads the scene defined in the given file.", 1, [](auto args) {
             auto fileName = args[0];
@@ -111,6 +129,7 @@ void Init(RenderSystem * inRenderSystem)
             for (auto scene : scenes) {
                 if (scene->GetFileName() == fileName) {
                     scene->Unload();
+                    break;
                 }
             }
             scenes.erase(std::remove_if(scenes.begin(),
@@ -141,7 +160,7 @@ void RemoveEntity(Entity * entity)
     }
 }
 
-std::string SerializePhysics()
+SerializedObject SerializePhysics()
 {
     return physicsWorld->Serialize();
 }

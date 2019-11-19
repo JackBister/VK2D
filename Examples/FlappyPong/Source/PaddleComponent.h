@@ -4,19 +4,19 @@
 class PaddleComponent : public Component
 {
 public:
-	static Deserializable * s_Deserialize(std::string const& str);
+    static Deserializable * s_Deserialize(SerializedObject const & obj);
 
-	PaddleComponent() { receiveTicks = true; };
+    PaddleComponent() { receiveTicks = true; };
 
-	std::string Serialize() const override;
+    SerializedObject Serialize() const override;
 
-	void OnEvent(HashedString name, EventArgs args = {}) override;
+    void OnEvent(HashedString name, EventArgs args = {}) override;
 
-	REFLECT()
-	REFLECT_INHERITANCE()
+    REFLECT()
+    REFLECT_INHERITANCE()
 private:
-	float flapSpeed = 40.f;
-	float gravity = 50.f;
-	bool isColliding = false;
-	float velocityY = 0.f;
+    float flapSpeed = 40.f;
+    float gravity = 50.f;
+    bool isColliding = false;
+    float velocityY = 0.f;
 };

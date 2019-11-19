@@ -3,7 +3,6 @@
 #include <cstring>
 
 #include "glm/gtc/type_ptr.hpp"
-#include "nlohmann/json.hpp"
 
 #include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
@@ -17,6 +16,9 @@
 static const auto logger = Logger::Create("SpriteComponent");
 
 COMPONENT_IMPL(SpriteComponent, &SpriteComponent::s_Deserialize)
+
+REFLECT_STRUCT_BEGIN(SpriteComponent)
+REFLECT_STRUCT_END()
 
 SpriteComponent::~SpriteComponent()
 {
@@ -32,12 +34,11 @@ SpriteComponent::~SpriteComponent()
 #endif
 }
 
-Deserializable * SpriteComponent::s_Deserialize(std::string const & str)
+Deserializable * SpriteComponent::s_Deserialize(SerializedObject const & obj)
 {
     SpriteComponent * ret = new SpriteComponent();
-    auto j = nlohmann::json::parse(str);
-    ret->file = j["file"].get<std::string>();
-    auto img = Image::FromFile(j["file"]);
+    ret->file = obj.GetString("file").value();
+    auto img = Image::FromFile(ret->file);
     auto view = img->GetDefaultView();
 
     ResourceManager::CreateResources([ret, img, view](ResourceCreationContext & ctx) {
@@ -96,12 +97,9 @@ Deserializable * SpriteComponent::s_Deserialize(std::string const & str)
     return ret;
 }
 
-std::string SpriteComponent::Serialize() const
+SerializedObject SpriteComponent::Serialize() const
 {
-    nlohmann::json j;
-    j["type"] = this->type;
-    j["file"] = file;
-    return j.dump();
+    return SerializedObject::Builder().WithString("type", this->Reflection.name).WithString("file", file).Build();
 }
 
 void SpriteComponent::OnEvent(HashedString name, EventArgs args)

@@ -1,7 +1,5 @@
 #include "Core/transform.h"
 
-#include "nlohmann/json.hpp"
-
 #include "Core/Logging/Logger.h"
 
 static const auto logger = Logger::Create("Transform");
@@ -12,114 +10,121 @@ REFLECT_STRUCT_MEMBER(rotation)
 REFLECT_STRUCT_MEMBER(scale)
 REFLECT_STRUCT_END()
 
-glm::mat4 const& Transform::GetLocalToParent()
+glm::mat4 const & Transform::GetLocalToParent()
 {
-	glm::mat4 trans = glm::translate(glm::mat4(1.f), position);
-	glm::mat4 rotXYZ = glm::mat4_cast(rotation);
-	glm::mat4 transrot = trans * rotXYZ;
-	glm::mat4 scalem = glm::scale(glm::mat4(1.f), scale);
-	toParent = transrot * scalem;
-	isParentDirty = false;
-	return toParent;
+    glm::mat4 trans = glm::translate(glm::mat4(1.f), position);
+    glm::mat4 rotXYZ = glm::mat4_cast(rotation);
+    glm::mat4 transrot = trans * rotXYZ;
+    glm::mat4 scalem = glm::scale(glm::mat4(1.f), scale);
+    toParent = transrot * scalem;
+    isParentDirty = false;
+    return toParent;
 }
 
-glm::mat4 const& Transform::GetLocalToWorld()
+glm::mat4 const & Transform::GetLocalToWorld()
 {
-	if (isWorldDirty) {
-		if (parent == nullptr) {
-			toWorld = GetLocalToParent();
-		} else {
-			toWorld = parent->GetLocalToWorld() * GetLocalToParent();
-		}
-		isWorldDirty = false;
-	}
-	return toWorld;
+    if (isWorldDirty) {
+        if (parent == nullptr) {
+            toWorld = GetLocalToParent();
+        } else {
+            toWorld = parent->GetLocalToWorld() * GetLocalToParent();
+        }
+        isWorldDirty = false;
+    }
+    return toWorld;
 }
 
 Transform * Transform::GetParent() const
 {
-	return parent;
+    return parent;
 }
 
-glm::vec3 const& Transform::GetPosition() const
+glm::vec3 const & Transform::GetPosition() const
 {
-	return position;
+    return position;
 }
 
-glm::quat const& Transform::GetRotation() const
+glm::quat const & Transform::GetRotation() const
 {
-	return rotation;
+    return rotation;
 }
 
-glm::vec3 const& Transform::GetScale() const
+glm::vec3 const & Transform::GetScale() const
 {
-	return scale;
+    return scale;
 }
 
-std::string Transform::Serialize() const
+SerializedObject Transform::Serialize() const
 {
-	nlohmann::json j; 
-
-	j["position"]["x"] = position.x;
-	j["position"]["y"] = position.y;
-	j["position"]["z"] = position.z;
-
-	j["rotation"]["x"] = rotation.x;
-	j["rotation"]["y"] = rotation.y;
-	j["rotation"]["z"] = rotation.z;
-	j["rotation"]["w"] = rotation.w;
-
-	j["scale"]["x"] = scale.x;
-	j["scale"]["y"] = scale.y;
-	j["scale"]["z"] = scale.z;
-
-	return j.dump();
+    return SerializedObject::Builder()
+        .WithObject("position",
+                    SerializedObject::Builder()
+                        .WithNumber("x", position.x)
+                        .WithNumber("y", position.y)
+                        .WithNumber("z", position.z)
+                        .Build())
+        .WithObject("rotation",
+                    SerializedObject::Builder()
+                        .WithNumber("x", rotation.x)
+                        .WithNumber("y", rotation.y)
+                        .WithNumber("z", rotation.z)
+                        .WithNumber("w", rotation.w)
+                        .Build())
+        .WithObject("scale",
+                    SerializedObject::Builder()
+                        .WithNumber("x", scale.x)
+                        .WithNumber("y", scale.y)
+                        .WithNumber("z", scale.z)
+                        .Build())
+        .Build();
 }
 
 void Transform::SetParent(Transform * p)
 {
-	parent = p;
-	isParentDirty = true;
-	isWorldDirty = true;
+    parent = p;
+    isParentDirty = true;
+    isWorldDirty = true;
 }
 
-void Transform::SetPosition(glm::vec3 const& p)
+void Transform::SetPosition(glm::vec3 const & p)
 {
-	position = p;
-	isParentDirty = true;
-	isWorldDirty = true;
+    position = p;
+    isParentDirty = true;
+    isWorldDirty = true;
 }
 
-void Transform::SetRotation(glm::quat const& r)
+void Transform::SetRotation(glm::quat const & r)
 {
-	rotation = r;
-	isParentDirty = true;
-	isWorldDirty = true;
+    rotation = r;
+    isParentDirty = true;
+    isWorldDirty = true;
 }
 
-void Transform::SetScale(glm::vec3 const& s)
+void Transform::SetScale(glm::vec3 const & s)
 {
-	scale = s;
-	isParentDirty = true;
-	isWorldDirty = true;
+    scale = s;
+    isParentDirty = true;
+    isWorldDirty = true;
 }
 
-Transform Transform::Deserialize(std::string const& s)
+Transform Transform::Deserialize(SerializedObject const & obj)
 {
-	Transform ret;
-	auto j = nlohmann::json::parse(s);
-	ret.position.x = j["position"]["x"];
-	ret.position.y = j["position"]["y"];
-	ret.position.z = j["position"]["z"];
+    Transform ret;
+    auto position = obj.GetObject("position").value();
+    ret.position.x = position.GetNumber("x").value();
+    ret.position.y = position.GetNumber("y").value();
+    ret.position.z = position.GetNumber("z").value();
 
-	ret.rotation.x = j["rotation"]["x"];
-	ret.rotation.y = j["rotation"]["y"];
-	ret.rotation.z = j["rotation"]["z"];
-	ret.rotation.w = j["rotation"]["w"];
+    auto rotation = obj.GetObject("rotation").value();
+    ret.rotation.x = rotation.GetNumber("x").value();
+    ret.rotation.y = rotation.GetNumber("y").value();
+    ret.rotation.z = rotation.GetNumber("z").value();
+    ret.rotation.w = rotation.GetNumber("w").value();
 
-	ret.scale.x = j["scale"]["x"];
-	ret.scale.y = j["scale"]["y"];
-	ret.scale.z = j["scale"]["z"];
+    auto scale = obj.GetObject("scale").value();
+    ret.scale.x = scale.GetNumber("x").value();
+    ret.scale.y = scale.GetNumber("y").value();
+    ret.scale.z = scale.GetNumber("z").value();
 
-	return ret;
+    return ret;
 }

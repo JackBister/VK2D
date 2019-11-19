@@ -1,7 +1,5 @@
 #include "PaddleComponent.h"
 
-#include <nlohmann/json.hpp>
-
 #include "Core/Entity.h"
 #include "Core/GameModule.h"
 #include "Core/Input.h"
@@ -15,57 +13,48 @@ REFLECT_STRUCT_MEMBER(isColliding)
 REFLECT_STRUCT_MEMBER(velocityY)
 REFLECT_STRUCT_END()
 
-Deserializable * PaddleComponent::s_Deserialize(std::string const& str)
+Deserializable * PaddleComponent::s_Deserialize(SerializedObject const & obj)
 {
-	auto ret = new PaddleComponent();
-	auto j = nlohmann::json::parse(str);
-	if (j.find("flapSpeed") != j.end()) {
-		ret->flapSpeed = j["flapSpeed"];
-	} else {
-		ret->flapSpeed = 40.f;
-	}
-	if (j.find("gravity") != j.end()) {
-		ret->gravity = j["gravity"];
-	} else {
-		ret->gravity = 50.f;
-	}
-	return ret;
+    auto ret = new PaddleComponent();
+    ret->flapSpeed = obj.GetNumber("flapSpeed").value_or(40.f);
+    ret->gravity = obj.GetNumber("gravity").value_or(50.f);
+    return ret;
 }
 
-std::string PaddleComponent::Serialize() const
+SerializedObject PaddleComponent::Serialize() const
 {
-	nlohmann::json j;
-	j["type"] = this->type;
-	return j.dump();
+    return SerializedObject::Builder()
+        .WithString("type", this->Reflection.name)
+        .WithNumber("flapSpeed", this->flapSpeed)
+        .WithNumber("gravity", this->gravity)
+        .Build();
 }
 
 void PaddleComponent::OnEvent(HashedString name, EventArgs args)
 {
-	if (name == "Tick") {
-		auto position = entity->transform.GetPosition();
-		auto scale = entity->transform.GetScale();
-		if (Input::GetButtonDown("Flap")) {
-			if (velocityY < 0.f) {
-				velocityY = 0.f;
-			}
-			velocityY += flapSpeed;
-		}
-		if (position.y <= -60.f + scale.y && velocityY <= 0.f) {
-			return;
-		}
-		if (position.y >= 60.f - scale.y && velocityY >= 0.f) {
-			velocityY = 0.f;
-		}
-		if (!isColliding) {
-			position.y += velocityY * args["deltaTime"].asFloat;
-			velocityY = velocityY - gravity * args["deltaTime"].asFloat;
-		}
-		entity->transform.SetPosition(position);
-	} else if (name == "OnCollisionStart") {
-		isColliding = true;
-	} else if (name == "OnCollisionEnd") {
-		isColliding = false;
-	}
+    if (name == "Tick") {
+        auto position = entity->transform.GetPosition();
+        auto scale = entity->transform.GetScale();
+        if (Input::GetButtonDown("Flap")) {
+            if (velocityY < 0.f) {
+                velocityY = 0.f;
+            }
+            velocityY += flapSpeed;
+        }
+        if (position.y <= -60.f + scale.y && velocityY <= 0.f) {
+            return;
+        }
+        if (position.y >= 60.f - scale.y && velocityY >= 0.f) {
+            velocityY = 0.f;
+        }
+        if (!isColliding) {
+            position.y += velocityY * args["deltaTime"].asFloat;
+            velocityY = velocityY - gravity * args["deltaTime"].asFloat;
+        }
+        entity->transform.SetPosition(position);
+    } else if (name == "OnCollisionStart") {
+        isColliding = true;
+    } else if (name == "OnCollisionEnd") {
+        isColliding = false;
+    }
 }
-
-

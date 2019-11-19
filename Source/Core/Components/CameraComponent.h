@@ -12,12 +12,12 @@ class DescriptorSet;
 class CameraComponent : public Component
 {
 public:
-    static Deserializable * s_Deserialize(std::string const & str);
+    static Deserializable * s_Deserialize(SerializedObject const & str);
 
     CameraComponent() { receiveTicks = true; };
     ~CameraComponent() override;
 
-    std::string Serialize() const override;
+    SerializedObject Serialize() const override;
 
     void OnEvent(HashedString name, EventArgs args = {}) override;
 

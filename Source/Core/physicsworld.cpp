@@ -3,8 +3,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "nlohmann/json.hpp"
-
 #include "Core/Components/physicscomponent.h"
 #include "Core/Logging/Logger.h"
 #include "Core/entity.h"
@@ -95,35 +93,37 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
     collisionsLastFrame = collisionsThisFrame;
 }
 
-Deserializable * PhysicsWorld::s_Deserialize(std::string const & str)
+Deserializable * PhysicsWorld::s_Deserialize(SerializedObject const & obj)
 {
     PhysicsWorld * ret = new PhysicsWorld();
-    auto const j = nlohmann::json::parse(str);
     ret->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
-
     ret->dispatcher = std::make_unique<btCollisionDispatcher>(ret->collisionConfig.get());
-
     ret->broadphase = std::make_unique<btDbvtBroadphase>();
     ret->constraintSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
     ret->world = std::make_unique<btDiscreteDynamicsWorld>(
         ret->dispatcher.get(), ret->broadphase.get(), ret->constraintSolver.get(), ret->collisionConfig.get());
-
-    ret->world->setGravity(btVector3(j["gravity"]["x"], j["gravity"]["y"], j["gravity"]["z"]));
     ret->world->setInternalTickCallback(s_TickCallback);
     ret->world->setWorldUserInfo(ret);
+
+    auto grav = obj.GetObject("gravity").value();
+    ret->world->setGravity(
+        btVector3(grav.GetNumber("x").value(), grav.GetNumber("y").value(), grav.GetNumber("z").value()));
+
     return ret;
 }
 
-std::string PhysicsWorld::Serialize() const
+SerializedObject PhysicsWorld::Serialize() const
 {
-    nlohmann::json j;
-    j["type"] = this->type;
     auto grav = world->getGravity();
-    j["gravity"]["x"] = grav.getX();
-    j["gravity"]["y"] = grav.getY();
-    j["gravity"]["z"] = grav.getZ();
-
-    return j.dump();
+    return SerializedObject::Builder()
+        .WithString("type", this->type)
+        .WithObject("gravity",
+                    SerializedObject::Builder()
+                        .WithNumber("x", grav.getX())
+                        .WithNumber("y", grav.getY())
+                        .WithNumber("z", grav.getZ())
+                        .Build())
+        .Build();
 }
 
 void PhysicsWorld::SetGravity(glm::vec3 const & grav)

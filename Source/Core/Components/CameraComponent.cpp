@@ -1,7 +1,6 @@
 #include "Core/Components/CameraComponent.h"
 
 #include "glm/gtc/matrix_transform.hpp"
-#include "nlohmann/json.hpp"
 
 #include "Core/GameModule.h"
 #include "Core/Rendering/Backend/Abstract/RenderResources.h"
@@ -22,7 +21,8 @@ REFLECT_STRUCT_MEMBER(view)
 REFLECT_STRUCT_MEMBER(viewSize)
 REFLECT_STRUCT_END()
 
-CameraComponent::~CameraComponent() {
+CameraComponent::~CameraComponent()
+{
     auto descriptorSet = this->descriptorSet;
     auto uniforms = this->uniforms;
     ResourceManager::DestroyResources([descriptorSet, uniforms](ResourceCreationContext & ctx) {
@@ -73,15 +73,16 @@ glm::mat4 const & CameraComponent::GetView()
     return view;
 }
 
-Deserializable * CameraComponent::s_Deserialize(std::string const & str)
+Deserializable * CameraComponent::s_Deserialize(SerializedObject const & obj)
 {
     CameraComponent * ret = new CameraComponent();
-    auto const j = nlohmann::json::parse(str);
-    ret->aspect = j["aspect"];
-    ret->viewSize = j["viewSize"];
+    // TODO: Error handling
+    ret->aspect = obj.GetNumber("aspect").value();
+    ret->viewSize = obj.GetNumber("viewSize").value();
 
-    if (j.find("defaultsToMain") != j.end()) {
-        ret->defaultsToMain = j["defaultsToMain"];
+    auto defaultsToMainOpt = obj.GetBool("defaultsToMain");
+    if (defaultsToMainOpt.has_value()) {
+        ret->defaultsToMain = defaultsToMainOpt.value();
     }
 
     auto layout =
@@ -105,15 +106,14 @@ Deserializable * CameraComponent::s_Deserialize(std::string const & str)
     return ret;
 }
 
-std::string CameraComponent::Serialize() const
+SerializedObject CameraComponent::Serialize() const
 {
-    nlohmann::json j;
-    j["type"] = this->type;
-    j["aspect"] = aspect;
-    j["viewSize"] = viewSize;
-    j["defaultsToMain"] = defaultsToMain;
-
-    return j.dump();
+    return SerializedObject::Builder()
+        .WithString("type", this->Reflection.name)
+        .WithNumber("aspect", aspect)
+        .WithNumber("viewSize", viewSize)
+        .WithBool("defaultsToMain", defaultsToMain)
+        .Build();
 }
 
 void CameraComponent::OnEvent(HashedString name, EventArgs args)

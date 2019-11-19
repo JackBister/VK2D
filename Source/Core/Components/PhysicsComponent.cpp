@@ -1,7 +1,6 @@
 ﻿#include "Core/Components/PhysicsComponent.h"
 
 #include "BulletCollision/CollisionShapes/btBox2dShape.h"
-#include "nlohmann/json.hpp"
 
 #include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
@@ -11,6 +10,9 @@
 static const auto logger = Logger::Create("PhysicsComponent");
 
 COMPONENT_IMPL(PhysicsComponent, &PhysicsComponent::s_Deserialize)
+
+REFLECT_STRUCT_BEGIN(PhysicsComponent)
+REFLECT_STRUCT_END()
 
 BroadphaseNativeTypes DeserializeShapeType(std::string s)
 {
@@ -48,71 +50,73 @@ PhysicsComponent::~PhysicsComponent()
     GameModule::GetPhysicsWorld()->world->removeRigidBody(rigidBody.get());
 }
 
-Deserializable * PhysicsComponent::s_Deserialize(std::string const & str)
+Deserializable * PhysicsComponent::s_Deserialize(SerializedObject const & obj)
 {
     PhysicsComponent * ret = new PhysicsComponent();
-    auto j = nlohmann::json::parse(str);
-    ret->mass = j["mass"];
-    ret->shapeType = DeserializeShapeType(j["shapeType"]);
+    ret->mass = obj.GetNumber("mass").value();
+    ret->shapeType = DeserializeShapeType(obj.GetString("shapeType").value());
+
+    auto shapeInfo = obj.GetObject("shapeInfo").value();
     switch (ret->shapeType) {
     case BOX_2D_SHAPE_PROXYTYPE: {
-        // 1.f might as well be 0.f or any number really.
-        btVector3 shape_info(j["shapeInfo"]["x"], j["shapeInfo"]["y"], 1.f);
+        btVector3 shape_info(shapeInfo.GetNumber("x").value(), shapeInfo.GetNumber("y").value(), 1.f);
         ret->shape = std::make_unique<btBox2dShape>(shape_info);
         break;
     }
     case BOX_SHAPE_PROXYTYPE: {
-        btVector3 shape_info(j["shapeInfo"]["x"], j["shapeInfo"]["y"], j["shapeInfo"]["z"]);
+        btVector3 shape_info(
+            shapeInfo.GetNumber("x").value(), shapeInfo.GetNumber("y").value(), shapeInfo.GetNumber("z").value());
         ret->shape = std::make_unique<btBoxShape>(shape_info);
         break;
     }
     case INVALID_SHAPE_PROXYTYPE:
         // TODO: Error handling. I mean, the engine's going to crash sooner or later anyway but this isn't very clean.
-        logger->Errorf("Invalid shapeType %s.", j["shapeType"].get<std::string>().c_str());
+        logger->Errorf("Invalid shapeType %s.", obj.GetString("shapeType").value().c_str());
         return nullptr;
     default:
-        logger->Errorf("Unhandled shapeType %s.", j["shapeType"].get<std::string>().c_str());
+        logger->Errorf("Unhandled shapeType %s.", obj.GetString("shapeType").value().c_str());
         return nullptr;
     }
-    if (j.find("isKinematic") != j.end()) {
-        ret->isKinematic = j["isKinematic"];
+    auto isKinematicOpt = obj.GetBool("isKinematic");
+    if (isKinematicOpt.has_value()) {
+        ret->isKinematic = isKinematicOpt.value();
     }
     return ret;
 }
 
-std::string PhysicsComponent::Serialize() const
+SerializedObject PhysicsComponent::Serialize() const
 {
-    nlohmann::json j;
-    j["type"] = this->type;
-    j["mass"] = mass;
-    j["shapeType"] = SerializeShapeType(shapeType);
+    SerializedObject::Builder builder;
+    builder.WithString("type", this->Reflection.name)
+        .WithNumber("mass", mass)
+        .WithString("shapeType", SerializeShapeType(shapeType));
 
+    SerializedObject::Builder shapeInfoBuilder;
     switch (shapeType) {
     case BOX_2D_SHAPE_PROXYTYPE: {
         auto shapeInfo = ((btBox2dShape *)shape.get())->getHalfExtentsWithoutMargin();
-        j["shapeInfo"]["x"] = shapeInfo.getX();
-        j["shapeInfo"]["y"] = shapeInfo.getY();
-        j["shapeInfo"]["z"] = 1.f;
+        shapeInfoBuilder.WithNumber("x", shapeInfo.getX()).WithNumber("y", shapeInfo.getY()).WithNumber("z", 1.f);
         break;
     }
     case BOX_SHAPE_PROXYTYPE: {
         auto shapeInfo = ((btBoxShape *)shape.get())->getHalfExtentsWithoutMargin();
-        j["shapeInfo"]["x"] = shapeInfo.getX();
-        j["shapeInfo"]["y"] = shapeInfo.getY();
-        j["shapeInfo"]["z"] = shapeInfo.getZ();
+        shapeInfoBuilder.WithNumber("x", shapeInfo.getX())
+            .WithNumber("y", shapeInfo.getY())
+            .WithNumber("z", shapeInfo.getZ());
         break;
     }
     case INVALID_SHAPE_PROXYTYPE:
-        logger->Errorf("Invalid shapeType %s.", j["shapeType"].get<std::string>().c_str());
+        logger->Errorf("Invalid shapeType %s.", SerializeShapeType(shapeType).c_str());
         break;
     default:
-        logger->Errorf("Unhandled shapeType %s.", j["shapeType"].get<std::string>().c_str());
+        logger->Errorf("Unhandled shapeType %s.", SerializeShapeType(shapeType).c_str());
         break;
     }
 
-    j["isKinematic"] = isKinematic;
+    builder.WithObject("shapeInfo", shapeInfoBuilder.Build());
+    builder.WithBool("isKinematic", isKinematic);
 
-    return j.dump();
+    return builder.Build();
 }
 
 void PhysicsComponent::OnEvent(HashedString name, EventArgs args)

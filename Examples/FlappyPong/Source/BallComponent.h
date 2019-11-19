@@ -5,17 +5,17 @@
 class BallComponent : public Component
 {
 public:
-	static Deserializable * s_Deserialize(std::string const& str);
+    static Deserializable * s_Deserialize(SerializedObject const & obj);
 
-	BallComponent() { receiveTicks = true; };
+    BallComponent() { receiveTicks = true; };
 
-	std::string Serialize() const override;
+    SerializedObject Serialize() const override;
 
-	void OnEvent(HashedString name, EventArgs args = {}) override;
+    void OnEvent(HashedString name, EventArgs args = {}) override;
 
-	REFLECT()
-	REFLECT_INHERITANCE()
+    REFLECT()
+    REFLECT_INHERITANCE()
 private:
     glm::vec2 velocityDir;
-	float moveSpeed;
+    float moveSpeed;
 };
