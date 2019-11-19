@@ -87,7 +87,7 @@ Deserializable * CameraComponent::s_Deserialize(SerializedObject const & obj)
 
     auto layout =
         ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraPt.layout");
-    GameModule::CreateResources([ret, layout](ResourceCreationContext & ctx) {
+    ResourceManager::CreateResources([ret, layout](ResourceCreationContext & ctx) {
         ret->uniforms = ctx.CreateBuffer({sizeof(glm::mat4),
                                           BufferUsageFlags::UNIFORM_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
                                           DEVICE_LOCAL_BIT});

@@ -11,7 +11,6 @@ class CameraComponent;
 class CommandBuffer;
 class Entity;
 class PhysicsWorld;
-class ResourceCreationContext;
 class RenderSystem;
 struct SubmittedCamera;
 struct SubmittedSprite;
@@ -29,7 +28,6 @@ enum class FrameStage {
 
 void AddEntity(Entity *);
 void BeginPlay();
-void CreateResources(std::function<void(ResourceCreationContext &)> fun);
 void DeserializePhysics(SerializedObject const &);
 Entity * GetEntityByIdx(size_t idx);
 Entity * GetEntityByName(std::string const &);

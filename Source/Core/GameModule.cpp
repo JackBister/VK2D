@@ -40,11 +40,6 @@ void AddEntity(Entity * e)
     e->FireEvent("BeginPlay");
 }
 
-void CreateResources(std::function<void(ResourceCreationContext &)> fun)
-{
-    ResourceManager::CreateResources(fun);
-}
-
 void DeserializePhysics(SerializedObject const & obj)
 {
     if (physicsWorld == nullptr) {
