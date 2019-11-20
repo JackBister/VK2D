@@ -220,8 +220,7 @@ void OpenGLResourceContext::DestroyPipeline(PipelineHandle * handle)
 
 ShaderModuleHandle * OpenGLResourceContext::CreateShaderModule(ResourceCreationContext::ShaderModuleCreateInfo const& ci)
 {
-	assert(ci.codeSize != 0);
-	assert(ci.pCode != nullptr);
+    assert(ci.code.size() > 0);
 	auto ret = (OpenGLShaderModuleHandle *)allocator.allocate(sizeof(OpenGLShaderModuleHandle));
 	GLenum type = GL_VERTEX_SHADER;
 	switch (ci.type) {
@@ -235,10 +234,10 @@ ShaderModuleHandle * OpenGLResourceContext::CreateShaderModule(ResourceCreationC
 		logger->Errorf("Unknown shader module type %d.", ToUnderlyingType(ci.type));
 	}
 	ret->nativeHandle = glCreateShader(type);
-	GLchar const * src = (GLchar *)ci.pCode;
+        GLchar const * src = (GLchar *)&ci.code[0];
 	//glShaderSource(ret->nativeHandle, 1, &src, nullptr);
 	//glCompileShader(ret->nativeHandle);
-	glShaderBinary(1, &ret->nativeHandle, GL_SHADER_BINARY_FORMAT_SPIR_V, src, (GLsizei)ci.codeSize);
+	glShaderBinary(1, &ret->nativeHandle, GL_SHADER_BINARY_FORMAT_SPIR_V, src, (GLsizei)ci.code.size() * 4);
 
 	uint32_t specializationConstantIndexes[] = {0};
 	uint32_t specializationConstantValues[] = {1};

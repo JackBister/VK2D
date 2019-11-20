@@ -6,11 +6,14 @@
 #include <vector>
 
 class CommandBuffer;
+class ShaderProgram;
 
 class UiRenderSystem
 {
 public:
     UiRenderSystem(Renderer * renderer);
+
+    void Init();
 
     void StartFrame();
     void PreRenderUi(uint32_t frameIndex, CommandBuffer *);
@@ -31,11 +34,8 @@ private:
     // Rendering resources
     DescriptorSet * descriptorSet;
     DescriptorSetLayoutHandle * layout;
-    ImageHandle * fontAtlas;
-    ImageViewHandle * fontAtlasView;
-    PipelineHandle * gfxPipeline;
+    ShaderProgram * uiProgram;
     PipelineLayoutHandle * pipelineLayout;
-    SamplerHandle * fontSampler;
 
     // Other systems
     Renderer * renderer;

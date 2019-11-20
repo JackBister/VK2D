@@ -7,27 +7,32 @@
 
 #include "Core/Util/FileSlurper.h"
 
-class SpirvCompilationResult {
+class SpirvCompilationResult
+{
 public:
-	SpirvCompilationResult(std::vector<uint8_t> compiledCode, std::optional<std::string> errorMessage, bool isSuccessful)
-		: compiledCode(compiledCode), errorMessage(errorMessage), success(isSuccessful) {}
+    SpirvCompilationResult(std::vector<uint32_t> compiledCode, std::optional<std::string> errorMessage,
+                           bool isSuccessful)
+        : compiledCode(compiledCode), errorMessage(errorMessage), success(isSuccessful)
+    {
+    }
 
-	std::vector<uint8_t> getCompiledCode() { return compiledCode; }
-	std::optional<std::string> getErrorMessage() { return errorMessage; }
-	bool isSuccessful() { return success; }
-private:
-	std::vector<uint8_t> compiledCode;
-	std::optional<std::string> errorMessage;
-	bool success;
-};
-
-class GlslToSpirvShaderCompiler {
-public:
-	explicit GlslToSpirvShaderCompiler(std::shared_ptr<FileSlurper> fileSlurper) : fileSlurper(fileSlurper) {}
-
-	SpirvCompilationResult CompileGlslFile(std::string const& fileName);
+    std::vector<uint32_t> GetCompiledCode() { return compiledCode; }
+    std::optional<std::string> GetErrorMessage() { return errorMessage; }
+    bool IsSuccessful() { return success; }
 
 private:
-	std::shared_ptr<FileSlurper> fileSlurper;
+    std::vector<uint32_t> compiledCode;
+    std::optional<std::string> errorMessage;
+    bool success;
 };
 
+class GlslToSpirvShaderCompiler
+{
+public:
+    explicit GlslToSpirvShaderCompiler(std::shared_ptr<FileSlurper> fileSlurper) : fileSlurper(fileSlurper) {}
+
+    SpirvCompilationResult CompileGlslFile(std::string const & fileName);
+
+private:
+    std::shared_ptr<FileSlurper> fileSlurper;
+};

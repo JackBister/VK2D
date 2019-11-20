@@ -5,6 +5,7 @@
 #include "Core/Console/Console.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Resources/ResourceManager.h"
+#include "Core/Resources/ShaderProgram.h"
 #include "Core/Semaphore.h"
 #include "Core/entity.h"
 
@@ -31,34 +32,6 @@ RenderSystem::RenderSystem(Renderer * renderer)
     });
     sem.Wait();
 
-    mainRenderpass = ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass");
-    postprocessRenderpass = ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass");
-
-    passthroughTransformPipelineLayout =
-        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/pt.pipelinelayout");
-    passthroughTransformPipeline =
-        ResourceManager::GetResource<PipelineHandle>("_Primitives/Pipelines/passthrough-transform.pipe");
-
-    postprocessSampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/postprocess.sampler");
-    postprocessDescriptorSetLayout =
-        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/postprocess.layout");
-    postprocessLayout =
-        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/postprocess.pipelinelayout");
-    postprocessPipeline = ResourceManager::GetResource<PipelineHandle>("_Primitives/Pipelines/postprocess.pipe");
-
-    quadEbo = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/QuadEBO.buffer");
-    quadVbo = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
-
-    auto framebuffers = renderer->CreateBackbuffers(mainRenderpass);
-    CommandBufferAllocator::CommandBufferCreateInfo ctxCreateInfo = {};
-    ctxCreateInfo.level = CommandBufferLevel::PRIMARY;
-    for (size_t i = 0; i < frameInfo.size(); ++i) {
-        frameInfo[i].framebuffer = framebuffers[i];
-        frameInfo[i].preRenderPassCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
-        frameInfo[i].mainCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
-        frameInfo[i].postProcessCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
-    }
-
     CommandDefinition backbufferOverrideCommand(
         "render_override_backbuffer",
         "render_override_backbuffer <imageview resource name> - Overrides the renderer's output to "
@@ -79,6 +52,39 @@ RenderSystem::RenderSystem(Renderer * renderer)
             this->DebugOverrideBackbuffer(imageView);
         });
     Console::RegisterCommand(backbufferOverrideCommand);
+}
+
+void RenderSystem::Init()
+{
+    mainRenderpass = ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass");
+    postprocessRenderpass = ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass");
+
+    passthroughTransformPipelineLayout =
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/pt.pipelinelayout");
+    passthroughTransformProgram =
+        ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/passthrough-transform.program");
+
+    postprocessSampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/postprocess.sampler");
+    postprocessDescriptorSetLayout =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/postprocess.layout");
+    postprocessLayout =
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/postprocess.pipelinelayout");
+    postprocessProgram = ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/postprocess.program");
+
+    quadEbo = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/QuadEBO.buffer");
+    quadVbo = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
+
+    auto framebuffers = renderer->CreateBackbuffers(mainRenderpass);
+    CommandBufferAllocator::CommandBufferCreateInfo ctxCreateInfo = {};
+    ctxCreateInfo.level = CommandBufferLevel::PRIMARY;
+    for (size_t i = 0; i < frameInfo.size(); ++i) {
+        frameInfo[i].framebuffer = framebuffers[i];
+        frameInfo[i].preRenderPassCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
+        frameInfo[i].mainCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
+        frameInfo[i].postProcessCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
+    }
+
+    uiRenderSystem.Init();
 }
 
 void RenderSystem::StartFrame()
@@ -227,7 +233,7 @@ void RenderSystem::PostProcessFrame()
         currFrame.postProcessCommandBuffer->CmdSetScissor(0, 1, &scissor);
 
         currFrame.postProcessCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
-                                                            postprocessPipeline);
+                                                            postprocessProgram->GetPipeline());
 
         currFrame.postProcessCommandBuffer->CmdBindIndexBuffer(quadEbo, 0, CommandBuffer::IndexType::UINT32);
         currFrame.postProcessCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, 8 * sizeof(float));
@@ -279,7 +285,7 @@ void RenderSystem::RenderSprites(SubmittedCamera const & camera, std::vector<Sub
     currFrame.mainCommandBuffer->CmdSetScissor(0, 1, &scissor);
 
     currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
-                                                 passthroughTransformPipeline);
+                                                 passthroughTransformProgram->GetPipeline());
 
     currFrame.mainCommandBuffer->CmdBindIndexBuffer(quadEbo, 0, CommandBuffer::IndexType::UINT32);
     currFrame.mainCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, 8 * sizeof(float));

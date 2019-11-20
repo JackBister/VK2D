@@ -3,83 +3,25 @@
 #include <imgui.h>
 
 #include "Core/Resources/ResourceManager.h"
+#include "Core/Resources/ShaderProgram.h"
 #include "Core/Semaphore.h"
 #include "Core/dtime.h"
 
 UiRenderSystem::UiRenderSystem(Renderer * renderer) : renderer(renderer), frameData(renderer->GetSwapCount())
 {
-    layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/ui.layout");
-    pipelineLayout =
-        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/ui.pipelinelayout");
-    gfxPipeline = ResourceManager::GetResource<PipelineHandle>("_Primitives/Pipelines/ui.pipe");
-
     auto & imguiIo = ImGui::GetIO();
     imguiIo.MouseDrawCursor = false;
     auto res = renderer->GetResolution();
     imguiIo.DisplaySize = ImVec2(res.x, res.y);
-    uint8_t * fontPixels;
-    int fontWidth, fontHeight, bytesPerPixel;
-    imguiIo.Fonts->AddFontDefault();
-    imguiIo.Fonts->GetTexDataAsRGBA32(&fontPixels, &fontWidth, &fontHeight, &bytesPerPixel);
-    std::vector<uint8_t> fontPixelVector(fontWidth * fontHeight * bytesPerPixel);
-    memcpy(&fontPixelVector[0], fontPixels, fontWidth * fontHeight * bytesPerPixel);
+}
 
-    Semaphore sem;
-    renderer->CreateResources([this, &sem, fontHeight, fontWidth, fontPixelVector](ResourceCreationContext & ctx) {
-        ResourceCreationContext::ImageCreateInfo fontCreateInfo;
-        fontCreateInfo.depth = 1;
-        fontCreateInfo.format = Format::RGBA8;
-        fontCreateInfo.height = fontHeight;
-        fontCreateInfo.width = fontWidth;
-        fontCreateInfo.mipLevels = 1;
-        fontCreateInfo.type = ImageHandle::Type::TYPE_2D;
-        fontCreateInfo.usage =
-            ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT | ImageUsageFlagBits::IMAGE_USAGE_FLAG_TRANSFER_DST_BIT;
-        fontAtlas = ctx.CreateImage(fontCreateInfo);
-        ctx.ImageData(fontAtlas, fontPixelVector);
-        auto & imguiIo = ImGui::GetIO();
-        imguiIo.Fonts->TexID = fontAtlas;
-
-        {
-            ResourceCreationContext::ImageViewCreateInfo ci;
-            ci.components = ImageViewHandle::ComponentMapping::IDENTITY;
-            ci.format = Format::RGBA8;
-            ci.image = fontAtlas;
-            ci.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
-            ci.subresourceRange.baseArrayLayer = 0;
-            ci.subresourceRange.baseMipLevel = 0;
-            ci.subresourceRange.layerCount = 1;
-            ci.subresourceRange.levelCount = 1;
-            ci.viewType = ImageViewHandle::Type::TYPE_2D;
-            fontAtlasView = ctx.CreateImageView(ci);
-        }
-
-        {
-            ResourceCreationContext::SamplerCreateInfo ci;
-            ci.addressModeU = AddressMode::REPEAT;
-            ci.addressModeV = AddressMode::REPEAT;
-            ci.magFilter = Filter::LINEAR;
-            ci.minFilter = Filter::LINEAR;
-            fontSampler = ctx.CreateSampler(ci);
-        }
-
-        {
-            ResourceCreationContext::DescriptorSetCreateInfo ci;
-            ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imageDescriptor;
-            imageDescriptor.imageView = fontAtlasView;
-            imageDescriptor.sampler = fontSampler;
-            ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptor;
-            descriptor.binding = 0;
-            descriptor.descriptor = imageDescriptor;
-            descriptor.type = DescriptorType::COMBINED_IMAGE_SAMPLER;
-            ci.descriptorCount = 1;
-            ci.descriptors = &descriptor;
-            ci.layout = layout;
-            descriptorSet = ctx.CreateDescriptorSet(ci);
-            sem.Signal();
-        }
-        sem.Wait();
-    });
+void UiRenderSystem::Init()
+{
+    descriptorSet = ResourceManager::GetResource<DescriptorSet>("_Primitives/DescriptorSets/UiFontAtlas.descriptorSet");
+    layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/ui.layout");
+    pipelineLayout =
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/ui.pipelinelayout");
+    uiProgram = ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/ui.program");
 }
 
 void UiRenderSystem::StartFrame()
@@ -153,7 +95,7 @@ void UiRenderSystem::RenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer
         return;
     }
 
-    commandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS, gfxPipeline);
+    commandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS, uiProgram->GetPipeline());
     commandBuffer->CmdBindDescriptorSets(pipelineLayout, 0, {descriptorSet});
     commandBuffer->CmdBindIndexBuffer(fd.indexBuffer, 0, CommandBuffer::IndexType::UINT16);
     commandBuffer->CmdBindVertexBuffer(fd.vertexBuffer, 0, 0, sizeof(ImDrawVert));

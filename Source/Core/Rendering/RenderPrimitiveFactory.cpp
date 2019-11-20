@@ -1,5 +1,7 @@
 #include "RenderPrimitiveFactory.h"
 
+#include <imgui.h>
+
 #include "Core/Rendering/Backend/Abstract/RenderResources.h"
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Resources/ResourceManager.h"
@@ -39,6 +41,8 @@ void RenderPrimitiveFactory::CreatePrimitives()
         CreateQuadVbo(ctx);
 
         CreateDefaultSampler(ctx);
+
+        CreateFontImage(ctx);
 
         finishedCreating.Signal();
     });
@@ -101,9 +105,11 @@ RenderPassHandle * RenderPrimitiveFactory::CreatePostprocessRenderpass(ResourceC
 
 ShaderModuleHandle * RenderPrimitiveFactory::CreatePassthroughTransformVertShader(ResourceCreationContext & ctx)
 {
-    auto ptvShader = ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER,
-                                             shaders_passthrough_transform_vert_spv_len,
-                                             shaders_passthrough_transform_vert_spv});
+    std::vector<uint32_t> code(
+        (uint32_t *)shaders_passthrough_transform_vert_spv,
+        (uint32_t *)(shaders_passthrough_transform_vert_spv + shaders_passthrough_transform_vert_spv_len));
+    auto ptvShader =
+        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER, code});
 
     ResourceManager::AddResource("_Primitives/Shaders/passthrough-transform.vert", ptvShader);
     return ptvShader;
@@ -111,9 +117,11 @@ ShaderModuleHandle * RenderPrimitiveFactory::CreatePassthroughTransformVertShade
 
 ShaderModuleHandle * RenderPrimitiveFactory::CreatePassthroughTransformFragShader(ResourceCreationContext & ctx)
 {
-    auto pfShader = ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER,
-                                            shaders_passthrough_transform_frag_spv_len,
-                                            shaders_passthrough_transform_frag_spv});
+    std::vector<uint32_t> code(
+        (uint32_t *)shaders_passthrough_transform_frag_spv,
+        (uint32_t *)(shaders_passthrough_transform_frag_spv + shaders_passthrough_transform_frag_spv_len));
+    auto pfShader =
+        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER, code});
 
     ResourceManager::AddResource("_Primitives/Shaders/passthrough-transform.frag", pfShader);
     return pfShader;
@@ -166,9 +174,10 @@ void RenderPrimitiveFactory::CreatePassthroughTransformGraphicsPipeline(Resource
 
 ShaderModuleHandle * RenderPrimitiveFactory::CreateUiVertShader(ResourceCreationContext & ctx)
 {
-    auto uivShader = ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER,
-                                             shaders_ui_vert_spv_len,
-                                             shaders_ui_vert_spv});
+    std::vector<uint32_t> code((uint32_t *)shaders_ui_vert_spv,
+                               (uint32_t *)(shaders_ui_vert_spv + shaders_ui_vert_spv_len));
+    auto uivShader =
+        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER, code});
 
     ResourceManager::AddResource("_Primitives/Shaders/ui.vert", uivShader);
     return uivShader;
@@ -176,9 +185,10 @@ ShaderModuleHandle * RenderPrimitiveFactory::CreateUiVertShader(ResourceCreation
 
 ShaderModuleHandle * RenderPrimitiveFactory::CreateUiFragShader(ResourceCreationContext & ctx)
 {
-    auto uifShader = ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER,
-                                             shaders_ui_frag_spv_len,
-                                             shaders_ui_frag_spv});
+    std::vector<uint32_t> code((uint32_t *)shaders_ui_frag_spv,
+                               (uint32_t *)(shaders_ui_frag_spv + shaders_ui_frag_spv_len));
+    auto uifShader =
+        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER, code});
 
     ResourceManager::AddResource("_Primitives/Shaders/ui.frag", uifShader);
     return uifShader;
@@ -224,10 +234,10 @@ void RenderPrimitiveFactory::CreateUiGraphicsPipeline(ResourceCreationContext & 
 
 ShaderModuleHandle * RenderPrimitiveFactory::CreatePassthroughNoTransformVertShader(ResourceCreationContext & ctx)
 {
+    std::vector<uint32_t> code((uint32_t *)shaders_passthrough_vert_spv,
+                               (uint32_t *)(shaders_passthrough_vert_spv + shaders_passthrough_vert_spv_len));
     auto passthroughNoTransformVertShader =
-        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER,
-                                shaders_passthrough_vert_spv_len,
-                                shaders_passthrough_vert_spv});
+        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER, code});
 
     ResourceManager::AddResource("_Primitives/Shaders/passthrough.vert", passthroughNoTransformVertShader);
     return passthroughNoTransformVertShader;
@@ -235,10 +245,10 @@ ShaderModuleHandle * RenderPrimitiveFactory::CreatePassthroughNoTransformVertSha
 
 ShaderModuleHandle * RenderPrimitiveFactory::CreatePassthroughNoTransformFragShader(ResourceCreationContext & ctx)
 {
+    std::vector<uint32_t> code((uint32_t *)shaders_passthrough_frag_spv,
+                               (uint32_t *)(shaders_passthrough_frag_spv + shaders_passthrough_frag_spv_len));
     auto passthroughNoTransformFragShader =
-        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER,
-                                shaders_passthrough_frag_spv_len,
-                                shaders_passthrough_frag_spv});
+        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER, code});
 
     ResourceManager::AddResource("_Primitives/Shaders/passthrough.frag", passthroughNoTransformFragShader);
     return passthroughNoTransformFragShader;
@@ -322,4 +332,63 @@ void RenderPrimitiveFactory::CreateDefaultSampler(ResourceCreationContext & ctx)
     sc.magFilter = Filter::LINEAR;
     auto sampler = ctx.CreateSampler(sc);
     ResourceManager::AddResource("_Primitives/Samplers/Default.sampler", sampler);
+}
+
+void RenderPrimitiveFactory::CreateFontImage(ResourceCreationContext & ctx)
+{
+    auto & imguiIo = ImGui::GetIO();
+    imguiIo.MouseDrawCursor = false;
+    auto res = renderer->GetResolution();
+    imguiIo.DisplaySize = ImVec2(res.x, res.y);
+    uint8_t * fontPixels;
+    int fontWidth, fontHeight, bytesPerPixel;
+    imguiIo.Fonts->AddFontDefault();
+    imguiIo.Fonts->GetTexDataAsRGBA32(&fontPixels, &fontWidth, &fontHeight, &bytesPerPixel);
+    std::vector<uint8_t> fontPixelVector(fontWidth * fontHeight * bytesPerPixel);
+    memcpy(&fontPixelVector[0], fontPixels, fontWidth * fontHeight * bytesPerPixel);
+
+    ResourceCreationContext::ImageCreateInfo fontCreateInfo;
+    fontCreateInfo.depth = 1;
+    fontCreateInfo.format = Format::RGBA8;
+    fontCreateInfo.height = fontHeight;
+    fontCreateInfo.width = fontWidth;
+    fontCreateInfo.mipLevels = 1;
+    fontCreateInfo.type = ImageHandle::Type::TYPE_2D;
+    fontCreateInfo.usage =
+        ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT | ImageUsageFlagBits::IMAGE_USAGE_FLAG_TRANSFER_DST_BIT;
+    auto fontAtlas = ctx.CreateImage(fontCreateInfo);
+    ctx.ImageData(fontAtlas, fontPixelVector);
+    ResourceManager::AddResource("_Primitives/Images/FontAtlas.img", fontAtlas);
+
+    imguiIo.Fonts->TexID = fontAtlas;
+
+    ResourceCreationContext::ImageViewCreateInfo viewCreateInfo;
+    viewCreateInfo.components = ImageViewHandle::ComponentMapping::IDENTITY;
+    viewCreateInfo.format = Format::RGBA8;
+    viewCreateInfo.image = fontAtlas;
+    viewCreateInfo.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+    viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    viewCreateInfo.subresourceRange.baseMipLevel = 0;
+    viewCreateInfo.subresourceRange.layerCount = 1;
+    viewCreateInfo.subresourceRange.levelCount = 1;
+    viewCreateInfo.viewType = ImageViewHandle::Type::TYPE_2D;
+    auto fontAtlasView = ctx.CreateImageView(viewCreateInfo);
+    ResourceManager::AddResource("_Primitives/Images/FontAtlas.img/defaultView", fontAtlasView);
+
+    auto layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/ui.layout");
+    auto sampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/Default.sampler");
+
+    ResourceCreationContext::DescriptorSetCreateInfo descriptorSetCreateInfo;
+    ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imageDescriptor;
+    imageDescriptor.imageView = fontAtlasView;
+    imageDescriptor.sampler = sampler;
+    ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptor;
+    descriptor.binding = 0;
+    descriptor.descriptor = imageDescriptor;
+    descriptor.type = DescriptorType::COMBINED_IMAGE_SAMPLER;
+    descriptorSetCreateInfo.descriptorCount = 1;
+    descriptorSetCreateInfo.descriptors = &descriptor;
+    descriptorSetCreateInfo.layout = layout;
+    auto descriptorSet = ctx.CreateDescriptorSet(descriptorSetCreateInfo);
+    ResourceManager::AddResource("_Primitives/DescriptorSets/UiFontAtlas.descriptorSet", descriptorSet);
 }

@@ -14,4 +14,3 @@ void main() {
 	vec4 col = texture(tex, Texcoord) * vec4(Color, 1.0);
 	outColor = col;
 }
-

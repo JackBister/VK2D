@@ -35,5 +35,7 @@ private:
 
     void CreateDefaultSampler(ResourceCreationContext &);
 
+    void CreateFontImage(ResourceCreationContext &);
+
     Renderer * renderer;
 };

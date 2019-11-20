@@ -8,6 +8,8 @@
 #include "Core/Rendering/SubmittedFrame.h"
 #include "Core/Rendering/UiRenderSystem.h"
 
+class ShaderProgram;
+
 struct ScheduledDestroyer {
     int remainingFrames;
     std::function<void(ResourceCreationContext &)> fun;
@@ -17,6 +19,8 @@ class RenderSystem
 {
 public:
     RenderSystem(Renderer * renderer);
+
+    void Init();
 
     void StartFrame();
     void RenderFrame(SubmittedFrame const & frame);
@@ -67,12 +71,12 @@ private:
     RenderPassHandle * postprocessRenderpass;
 
     PipelineLayoutHandle * passthroughTransformPipelineLayout;
-    PipelineHandle * passthroughTransformPipeline;
+    ShaderProgram * passthroughTransformProgram;
 
     SamplerHandle * postprocessSampler;
     DescriptorSetLayoutHandle * postprocessDescriptorSetLayout;
     PipelineLayoutHandle * postprocessLayout;
-    PipelineHandle * postprocessPipeline;
+    ShaderProgram * postprocessProgram;
 
     BufferHandle * quadEbo;
     BufferHandle * quadVbo;
