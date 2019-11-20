@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <string>
@@ -21,17 +22,19 @@ void Init(RenderSystem * renderSystem);
 template <typename T>
 void AddResource(std::string const & name, T * resource)
 {
-    logger->Infof("Adding resource '%s' = %p", name.c_str(), resource);
-    resources.insert_or_assign(name, resource);
+    auto newName = std::filesystem::path(name).make_preferred().string();
+    logger->Infof("Adding resource '%s' = %p", newName.c_str(), resource);
+    resources.insert_or_assign(newName, resource);
 }
 
 template <typename T>
 T * GetResource(std::string const & name)
 {
-    if (resources.find(name) == resources.end()) {
-        logger->Infof("Resource '%s' not found", name.c_str());
+    auto newName = std::filesystem::path(name).make_preferred().string();
+    if (resources.find(newName) == resources.end()) {
+        logger->Infof("Resource '%s' not found", newName.c_str());
         return nullptr;
     }
-    return (T *)resources.at(name);
+    return (T *)resources.at(newName);
 }
 }
