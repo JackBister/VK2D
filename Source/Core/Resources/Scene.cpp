@@ -47,7 +47,7 @@ static void ReadFile(std::string const & fileName, std::vector<std::string> & dl
             }
             auto dllStr = std::get<std::string>(dll);
             dlls.push_back(dllStr);
-            GameModule::LoadDLL(dllStr);
+            GameModule::LoadDLL((context.workingDirectory / dllStr).string());
         }
     }
 
