@@ -4,7 +4,8 @@
 class PaddleComponent : public Component
 {
 public:
-    static Deserializable * s_Deserialize(SerializedObject const & obj);
+    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
+                                          SerializedObject const & obj);
 
     PaddleComponent() { receiveTicks = true; };
 

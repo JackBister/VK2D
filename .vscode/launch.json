@@ -5,12 +5,12 @@
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "../../build/Debug/Main.exe",
+            "program": "build/Debug/Main.exe",
             "args": [
-                "main.scene"
+                "Examples/FlappyPong/main.scene"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/Examples/FlappyPong",
+            "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true,
             "preLaunchTask": "build"

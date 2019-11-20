@@ -13,7 +13,8 @@
 class Entity final : public Deserializable
 {
 public:
-    static Deserializable * s_Deserialize(SerializedObject const & obj);
+    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
+                                          SerializedObject const & obj);
 
     SerializedObject Serialize() const override;
     void FireEvent(HashedString name, EventArgs args = {});

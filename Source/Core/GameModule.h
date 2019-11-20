@@ -9,6 +9,7 @@
 
 class CameraComponent;
 class CommandBuffer;
+class DeserializationContext;
 class Entity;
 class PhysicsWorld;
 class RenderSystem;
@@ -28,7 +29,7 @@ enum class FrameStage {
 
 void AddEntity(Entity *);
 void BeginPlay();
-void DeserializePhysics(SerializedObject const &);
+void DeserializePhysics(DeserializationContext * deserializationContext, SerializedObject const &);
 Entity * GetEntityByIdx(size_t idx);
 Entity * GetEntityByName(std::string const &);
 size_t GetEntityCount();

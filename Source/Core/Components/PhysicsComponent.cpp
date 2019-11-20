@@ -50,7 +50,8 @@ PhysicsComponent::~PhysicsComponent()
     GameModule::GetPhysicsWorld()->world->removeRigidBody(rigidBody.get());
 }
 
-Deserializable * PhysicsComponent::s_Deserialize(SerializedObject const & obj)
+Deserializable * PhysicsComponent::s_Deserialize(DeserializationContext * deserializationContext,
+                                                 SerializedObject const & obj)
 {
     PhysicsComponent * ret = new PhysicsComponent();
     ret->mass = obj.GetNumber("mass").value();

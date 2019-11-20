@@ -11,7 +11,8 @@ class Image;
 class SpriteComponent final : public Component
 {
 public:
-    static Deserializable * s_Deserialize(SerializedObject const & str);
+    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
+                                          SerializedObject const & str);
 
     SpriteComponent() { receiveTicks = true; }
     ~SpriteComponent() override;

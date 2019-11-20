@@ -42,7 +42,7 @@ Component * Entity::GetComponent(std::string type) const
     return nullptr;
 }
 
-Deserializable * Entity::s_Deserialize(SerializedObject const & obj)
+Deserializable * Entity::s_Deserialize(DeserializationContext * deserializationContext, SerializedObject const & obj)
 {
     Entity * const ret = new Entity();
     ret->name = obj.GetString("name").value();
@@ -52,8 +52,8 @@ Deserializable * Entity::s_Deserialize(SerializedObject const & obj)
         if (component.index() != SerializedValue::OBJECT) {
             logger->Errorf("Unexpected non-object in component array when deserializing entity '%s'", ret->name);
         }
-        Component * const c =
-            static_cast<Component *>(Deserializable::Deserialize(std::get<SerializedObject>(component)));
+        Component * const c = static_cast<Component *>(
+            Deserializable::Deserialize(deserializationContext, std::get<SerializedObject>(component)));
         c->entity = ret;
         ret->components.emplace_back(std::move(c));
     }

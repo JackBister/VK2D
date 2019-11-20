@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <cinttypes>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
@@ -36,6 +37,8 @@ static void ReadFile(std::string const & fileName, std::vector<std::string> & dl
 
     auto serializedScene = JsonSerializer().Deserialize(serializedSceneString).value();
 
+    DeserializationContext context = {std::filesystem::path(fileName).parent_path()};
+
     auto dllsOpt = serializedScene.GetArray("dlls");
     if (dllsOpt.has_value()) {
         for (auto dll : dllsOpt.value()) {
@@ -66,7 +69,7 @@ static void ReadFile(std::string const & fileName, std::vector<std::string> & dl
 
     auto physicsOpt = serializedScene.GetObject("physics");
     if (physicsOpt.has_value()) {
-        GameModule::DeserializePhysics(physicsOpt.value());
+        GameModule::DeserializePhysics(&context, physicsOpt.value());
     }
 
     auto serializedEntities = serializedScene.GetArray("entities");
@@ -74,7 +77,7 @@ static void ReadFile(std::string const & fileName, std::vector<std::string> & dl
         if (e.index() != SerializedValue::OBJECT) {
             logger->Errorf("Unexpected non-object in entities array in scene file.");
         }
-        Entity * entity = static_cast<Entity *>(Deserializable::Deserialize(std::get<SerializedObject>(e)));
+        Entity * entity = static_cast<Entity *>(Deserializable::Deserialize(&context, std::get<SerializedObject>(e)));
         entities.push_back(entity);
         GameModule::AddEntity(entity);
     }

@@ -73,7 +73,8 @@ glm::mat4 const & CameraComponent::GetView()
     return view;
 }
 
-Deserializable * CameraComponent::s_Deserialize(SerializedObject const & obj)
+Deserializable * CameraComponent::s_Deserialize(DeserializationContext * deserializationContext,
+                                                SerializedObject const & obj)
 {
     CameraComponent * ret = new CameraComponent();
     // TODO: Error handling

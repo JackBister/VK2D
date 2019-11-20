@@ -15,7 +15,8 @@ REFLECT_STRUCT_MEMBER(velocityDir)
 REFLECT_STRUCT_MEMBER(moveSpeed)
 REFLECT_STRUCT_END();
 
-Deserializable * BallComponent::s_Deserialize(SerializedObject const & obj)
+Deserializable * BallComponent::s_Deserialize(DeserializationContext * deserializationContext,
+                                              SerializedObject const & obj)
 {
     auto ret = new BallComponent();
     ret->moveSpeed = obj.GetNumber("moveSpeed").value_or(50.f);

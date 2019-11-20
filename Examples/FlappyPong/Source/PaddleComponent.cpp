@@ -13,7 +13,8 @@ REFLECT_STRUCT_MEMBER(isColliding)
 REFLECT_STRUCT_MEMBER(velocityY)
 REFLECT_STRUCT_END()
 
-Deserializable * PaddleComponent::s_Deserialize(SerializedObject const & obj)
+Deserializable * PaddleComponent::s_Deserialize(DeserializationContext * deserializationContext,
+                                                SerializedObject const & obj)
 {
     auto ret = new PaddleComponent();
     ret->flapSpeed = obj.GetNumber("flapSpeed").value_or(40.f);

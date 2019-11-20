@@ -93,7 +93,8 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
     collisionsLastFrame = collisionsThisFrame;
 }
 
-Deserializable * PhysicsWorld::s_Deserialize(SerializedObject const & obj)
+Deserializable * PhysicsWorld::s_Deserialize(DeserializationContext * deserializationContext,
+                                             SerializedObject const & obj)
 {
     PhysicsWorld * ret = new PhysicsWorld();
     ret->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();

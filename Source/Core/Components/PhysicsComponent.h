@@ -8,7 +8,8 @@
 class PhysicsComponent : public Component, public btMotionState
 {
 public:
-    static Deserializable * s_Deserialize(SerializedObject const & obj);
+    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
+                                          SerializedObject const & obj);
 
     PhysicsComponent() { receiveTicks = false; }
     ~PhysicsComponent() override;

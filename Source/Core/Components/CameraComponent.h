@@ -12,7 +12,8 @@ class DescriptorSet;
 class CameraComponent : public Component
 {
 public:
-    static Deserializable * s_Deserialize(SerializedObject const & str);
+    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
+                                          SerializedObject const & str);
 
     CameraComponent() { receiveTicks = true; };
     ~CameraComponent() override;

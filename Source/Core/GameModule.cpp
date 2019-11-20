@@ -40,10 +40,10 @@ void AddEntity(Entity * e)
     e->FireEvent("BeginPlay");
 }
 
-void DeserializePhysics(SerializedObject const & obj)
+void DeserializePhysics(DeserializationContext * deserializationContext, SerializedObject const & obj)
 {
     if (physicsWorld == nullptr) {
-        physicsWorld = (PhysicsWorld *)Deserializable::Deserialize(obj);
+        physicsWorld = (PhysicsWorld *)Deserializable::Deserialize(deserializationContext, obj);
         return;
     }
     auto grav = obj.GetObject("gravity").value();

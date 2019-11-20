@@ -34,11 +34,15 @@ SpriteComponent::~SpriteComponent()
 #endif
 }
 
-Deserializable * SpriteComponent::s_Deserialize(SerializedObject const & obj)
+Deserializable * SpriteComponent::s_Deserialize(DeserializationContext * deserializationContext,
+                                                SerializedObject const & obj)
 {
     SpriteComponent * ret = new SpriteComponent();
     ret->file = obj.GetString("file").value();
-    auto img = Image::FromFile(ret->file);
+
+    auto path = deserializationContext->workingDirectory / ret->file;
+
+    auto img = Image::FromFile(path.string());
     auto view = img->GetDefaultView();
 
     ResourceManager::CreateResources([ret, img, view](ResourceCreationContext & ctx) {
