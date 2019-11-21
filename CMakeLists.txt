@@ -7,21 +7,10 @@ endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-file(GLOB_RECURSE ShaderSources shaders/*.vert shaders/*.frag)
-foreach(ShaderSource ${ShaderSources})
-    get_filename_component(FileName ${ShaderSource} NAME)
-    set(ShaderOutputPath Source/Core/Rendering/Shaders/${FileName}.spv.h)
-    list(APPEND CompiledShaders ${ShaderOutputPath})
-    add_custom_command(OUTPUT ${ShaderOutputPath} COMMAND glslc -o ${ShaderSource}.spv ${ShaderSource} && xxd -i shaders/${FileName}.spv > ${ShaderOutputPath} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-endforeach()
-
-add_custom_target(compile_shaders ALL DEPENDS ${CompiledShaders})
-
 project(vk2d C CXX)
 
 file(GLOB_RECURSE SOURCES Source/*.c Source/*.cpp Source/*.h)
 add_executable(Main ${SOURCES})
-add_dependencies(Main compile_shaders)
 
 set_property(TARGET Main PROPERTY CXX_STANDARD 17)
 set_property(TARGET Main PROPERTY ENABLE_EXPORTS 1)
@@ -32,6 +21,20 @@ if (MSVC)
 else()
     # I don't trust CMake to properly set std=c++17
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -lstdc++fs")
+endif()
+
+option(BAKE_SHADERS "Bake shaders" OFF)
+if (BAKE_SHADERS)
+    file(GLOB_RECURSE ShaderSources shaders/*.vert shaders/*.frag)
+    foreach(ShaderSource ${ShaderSources})
+        get_filename_component(FileName ${ShaderSource} NAME)
+        set(ShaderOutputPath Source/Core/Rendering/Shaders/${FileName}.spv.h)
+        list(APPEND CompiledShaders ${ShaderOutputPath})
+        add_custom_command(OUTPUT ${ShaderOutputPath} COMMAND glslc -o ${ShaderSource}.spv ${ShaderSource} && xxd -i shaders/${FileName}.spv > ${ShaderOutputPath} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    endforeach()
+    add_custom_target(compile_shaders ALL DEPENDS ${CompiledShaders})
+    add_dependencies(Main compile_shaders)
+    target_compile_definitions(Main PUBLIC BAKE_SHADERS=1)
 endif()
 
 option(HOT_RELOAD_RESOURCES "Hot reload resources on change" ON)

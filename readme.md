@@ -13,12 +13,8 @@ The following libraries are currently used by the engine:
 * [moodycamel::ConcurrentQueue](https://github.com/cameron314/concurrentqueue)
 * [nlohmann::json](https://github.com/nlohmann/json)
 * [SDL](https://www.libsdl.org/index.php)
+* [shaderc](https://github.com/google/shaderc)
 * [stb](https://github.com/nothings/stb)
-
-During a pre-build step, GLSL shaders are compiled to SPIR-V and transformed into headers included directly by the engine. For this compilation step, the following are used:
-
-* [glslc](https://github.com/google/shaderc/tree/master/glslc)
-* xxd - unfortunately I have not been able to get a WSL version of this to work on Windows with Visual Studio, so it needs to be one compiled for Windows if you're building in VS.
 
 When it comes to graphics APIs, the engine currently targets:
 
@@ -28,7 +24,7 @@ When it comes to graphics APIs, the engine currently targets:
 ## Installing the required libraries on Windows
 On Windows, I have been using [vcpkg](https://github.com/Microsoft/vcpkg) to install all the required libraries. The following command line should give you everything you need:
 ```
-vcpkg install --triplet=x64-windows bullet3 concurrentqueue glew glm imgui nlohmann-json sdl2 sdl2[vulkan] stb
+vcpkg install --triplet=x64-windows bullet3 concurrentqueue glew glm imgui nlohmann-json sdl2 sdl2[vulkan] shaderc stb
 ```
 
 One thing to note if using vcpkg is that currently the SDL package specifically disables Vulkan support, so you need to manually edit the ports file.

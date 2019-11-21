@@ -97,6 +97,21 @@ PipelineHandle * ShaderProgram::CreatePipeline(std::vector<ShaderStage> stages,
     return ctx.CreateGraphicsPipeline(pipelineCreateInfo);
 }
 
+ShaderProgram::ShaderProgram(std::string const & name, PipelineHandle * pipeline,
+                             std::vector<ShaderStageCreateInfo> stageCreateInfo)
+    : name(name), pipeline(pipeline)
+{
+    for (auto const & ci : stageCreateInfo) {
+        ShaderStage stage;
+        stage.compiledSuccessfully = true;
+        stage.fileName = ci.fileName;
+        stage.shaderModule = ci.shaderModule;
+        stage.stage = GetShaderStage(ci.fileName);
+        stages.push_back(stage);
+    }
+    ResourceManager::AddResource(name, this);
+}
+
 ShaderProgram * ShaderProgram::Create(std::string const & name, std::vector<std::string> fileNames,
                                       VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
                                       RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace,

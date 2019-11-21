@@ -9,6 +9,14 @@
 class ShaderProgram
 {
 public:
+    struct ShaderStageCreateInfo {
+        std::string fileName;
+        ShaderModuleHandle * shaderModule;
+    };
+
+    ShaderProgram(std::string const & name, PipelineHandle * pipeline,
+                  std::vector<ShaderStageCreateInfo> stageCreateInfo);
+
     static ShaderProgram * Create(std::string const & name, std::vector<std::string> fileNames,
                                   VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
                                   RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace,
