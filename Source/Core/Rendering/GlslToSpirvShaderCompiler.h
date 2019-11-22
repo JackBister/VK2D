@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 
+#include "Core/Config/Config.h"
 #include "Core/Util/FileSlurper.h"
 
 class SpirvCompilationResult
@@ -34,5 +35,7 @@ public:
     SpirvCompilationResult CompileGlslFile(std::string const & fileName);
 
 private:
+    static const DynamicStringProperty compilationOptimizationLevel;
+
     std::shared_ptr<FileSlurper> fileSlurper;
 };

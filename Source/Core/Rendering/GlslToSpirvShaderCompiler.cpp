@@ -4,6 +4,27 @@
 #include <filesystem>
 #include <shaderc/shaderc.hpp>
 
+#include "Core/Logging/Logger.h"
+
+static const auto logger = Logger::Create("GlslToSpirvShaderCompiler");
+
+const DynamicStringProperty GlslToSpirvShaderCompiler::compilationOptimizationLevel =
+    Config::AddString("glsl.optimizationLevel", "performance");
+
+shaderc_optimization_level GetOptimizationLevel(std::string const & str)
+{
+    if (str == "zero") {
+        return shaderc_optimization_level_zero;
+    } else if (str == "size") {
+        return shaderc_optimization_level_size;
+    } else if (str == "performance") {
+        return shaderc_optimization_level_performance;
+    } else {
+        logger->Errorf("Unknown glsl.optimizationLevel '%s', defaulting to performance", str.c_str());
+        return shaderc_optimization_level_performance;
+    }
+}
+
 shaderc_shader_kind GetShaderType(std::string const & fileExtension)
 {
     if (fileExtension == ".vert") {
@@ -58,6 +79,7 @@ SpirvCompilationResult GlslToSpirvShaderCompiler::CompileGlslFile(std::string co
     shaderc::Compiler compiler;
     shaderc::CompileOptions options;
 
+    options.SetOptimizationLevel(GetOptimizationLevel(compilationOptimizationLevel.Get()));
     options.SetIncluder(std::make_unique<DefaultIncluder>(fileSlurper));
 
     auto result =

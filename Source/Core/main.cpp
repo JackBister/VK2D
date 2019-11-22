@@ -7,6 +7,7 @@
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/Components/component.h"
+#include "Core/Config/Config.h"
 #include "Core/GameModule.h"
 #include "Core/Input.h"
 #include "Core/Logging/Appenders/StdoutLogAppender.h"
@@ -37,6 +38,7 @@ int main(int argc, char * argv[])
     std::string sceneFileName(argv[1]);
     ImGui::CreateContext();
     SDL_Init(SDL_INIT_EVERYTHING);
+    Config::Init();
     Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
     RenderPrimitiveFactory(&renderer).CreatePrimitives();
     RenderSystem renderSystem(&renderer);
