@@ -24,8 +24,7 @@ VkSamplerAddressMode ToVulkanAddressMode(AddressMode mode)
     }
 }
 
-VkAttachmentReference
-ToVulkanAttachmentReference(RenderPassHandle::AttachmentReference const reference)
+VkAttachmentReference ToVulkanAttachmentReference(RenderPassHandle::AttachmentReference const reference)
 {
     return VkAttachmentReference{reference.attachment, ToVulkanImageLayout(reference.layout)};
 }

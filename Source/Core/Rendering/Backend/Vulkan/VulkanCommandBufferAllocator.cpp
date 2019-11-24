@@ -5,31 +5,32 @@
 
 #include "Core/Rendering/Backend/Vulkan/VulkanCommandBuffer.h"
 
-CommandBuffer * VulkanCommandBufferAllocator::CreateBuffer(CommandBufferCreateInfo const& createInfo)
+CommandBuffer * VulkanCommandBufferAllocator::CreateBuffer(CommandBufferCreateInfo const & createInfo)
 {
-	VkCommandBufferAllocateInfo allocateInfo = {};
-	allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocateInfo.commandBufferCount = 1;
-	allocateInfo.commandPool = commandPool;
-	allocateInfo.level = createInfo.level == CommandBufferLevel::PRIMARY ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+    VkCommandBufferAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocateInfo.commandBufferCount = 1;
+    allocateInfo.commandPool = commandPool;
+    allocateInfo.level = createInfo.level == CommandBufferLevel::PRIMARY ? VK_COMMAND_BUFFER_LEVEL_PRIMARY
+                                                                         : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 
-	VkCommandBuffer ret;
-	vkAllocateCommandBuffers(device, &allocateInfo, &ret);
-	auto retx = new VulkanCommandBuffer(ret, new std::allocator<uint8_t>());
-	return retx;
+    VkCommandBuffer ret;
+    vkAllocateCommandBuffers(device, &allocateInfo, &ret);
+    auto retx = new VulkanCommandBuffer(ret, new std::allocator<uint8_t>());
+    return retx;
 }
 
 void VulkanCommandBufferAllocator::DestroyContext(CommandBuffer * ctx)
 {
-	assert(ctx != nullptr);
-	auto nativeHandle = (VulkanCommandBuffer *)ctx;
-	vkFreeCommandBuffers(device, commandPool, 1, &nativeHandle->buffer);
-	delete nativeHandle;
+    assert(ctx != nullptr);
+    auto nativeHandle = (VulkanCommandBuffer *)ctx;
+    vkFreeCommandBuffers(device, commandPool, 1, &nativeHandle->buffer);
+    delete nativeHandle;
 }
 
 void VulkanCommandBufferAllocator::Reset()
 {
-	vkResetCommandPool(device, commandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+    vkResetCommandPool(device, commandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
 }
 
 #endif

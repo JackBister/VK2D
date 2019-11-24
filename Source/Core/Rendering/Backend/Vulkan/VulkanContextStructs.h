@@ -4,81 +4,68 @@
 #include "Core/Rendering/Backend/Abstract/RenderResources.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 
-struct VulkanBufferHandle : BufferHandle
-{
-	//TODO: Both necessary? Maybe memory needs its own super-type?
-	VkBuffer buffer;
-	VkDeviceMemory memory;
+struct VulkanBufferHandle : BufferHandle {
+    // TODO: Both necessary? Maybe memory needs its own super-type?
+    VkBuffer buffer;
+    VkDeviceMemory memory;
 };
 
-struct VulkanDescriptorSet : DescriptorSet
-{
-	VkDescriptorSetLayout layout;
-	VkDescriptorSet set;
+struct VulkanDescriptorSet : DescriptorSet {
+    VkDescriptorSetLayout layout;
+    VkDescriptorSet set;
 };
 
-struct VulkanDescriptorSetLayoutHandle : DescriptorSetLayoutHandle
-{
-	VkDescriptorSetLayout layout;
+struct VulkanDescriptorSetLayoutHandle : DescriptorSetLayoutHandle {
+    VkDescriptorSetLayout layout;
 };
 
-struct VulkanFenceHandle : FenceHandle
-{
-	bool Wait(uint64_t timeOut) final override;
+struct VulkanFenceHandle : FenceHandle {
+    bool Wait(uint64_t timeOut) final override;
 
-	VkDevice device;
-	VkFence fence;
+    VkDevice device;
+    VkFence fence;
 };
 
-struct VulkanFramebufferHandle : FramebufferHandle
-{
-	VkFramebuffer framebuffer;
+struct VulkanFramebufferHandle : FramebufferHandle {
+    VkFramebuffer framebuffer;
 };
 
-struct VulkanImageHandle : ImageHandle
-{
-	VkImage image;
-	VkDeviceMemory memory = VK_NULL_HANDLE;
+struct VulkanImageHandle : ImageHandle {
+    VkImage image;
+    VkDeviceMemory memory = VK_NULL_HANDLE;
 };
 
-struct VulkanImageViewHandle : ImageViewHandle
-{
-	VkImageView imageView;
+struct VulkanImageViewHandle : ImageViewHandle {
+    VkImageView imageView;
 };
 
-struct VulkanRenderPassHandle : RenderPassHandle
-{
-	VkRenderPass renderPass;
+struct VulkanRenderPassHandle : RenderPassHandle {
+    VkRenderPass renderPass;
 };
 
-struct VulkanPipelineLayoutHandle : PipelineLayoutHandle
-{
+struct VulkanPipelineLayoutHandle : PipelineLayoutHandle {
     VkPipelineLayout pipelineLayout;
 };
 
-struct VulkanPipelineHandle : PipelineHandle
-{
-	VkPipeline pipeline;
+struct VulkanPipelineHandle : PipelineHandle {
+    VkPipeline pipeline;
 };
 
-struct VulkanSamplerHandle : SamplerHandle
-{
-	VkSampler sampler;
+struct VulkanSamplerHandle : SamplerHandle {
+    VkSampler sampler;
 };
 
-struct VulkanShaderModuleHandle : ShaderModuleHandle
-{
-	VkShaderModule shader;
+struct VulkanShaderModuleHandle : ShaderModuleHandle {
+    VkShaderModule shader;
 };
 
-struct VulkanSemaphoreHandle : SemaphoreHandle
-{
-	VkSemaphore semaphore;
+struct VulkanSemaphoreHandle : SemaphoreHandle {
+    VkSemaphore semaphore;
 };
 
-struct VulkanVertexInputStateHandle : VertexInputStateHandle
-{
-	//Saved until the handle is used in the create pipeline call - bad?
-	//Should probably be moved into the pipelinecreateinfo as intended, and the OGL renderer will have to adapt instead.
-	ResourceCreationContext::VertexInputStateCreateInfo createInfo;
+struct VulkanVertexInputStateHandle : VertexInputStateHandle {
+    // Saved until the handle is used in the create pipeline call - bad?
+    // Should probably be moved into the pipelinecreateinfo as intended, and the OGL renderer will have to adapt
+    // instead.
+    ResourceCreationContext::VertexInputStateCreateInfo createInfo;
 };
