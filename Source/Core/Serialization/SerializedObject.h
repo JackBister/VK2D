@@ -14,7 +14,7 @@ typedef std::vector<std::pair<std::string, SerializedValue>> ValueMap;
 class EAPI SerializedObject
 {
 public:
-    static class EAPI Builder
+    class EAPI Builder
     {
     public:
         Builder & WithBool(std::string const & key, bool value);
