@@ -39,7 +39,10 @@ int main(int argc, char * argv[])
     ImGui::CreateContext();
     SDL_Init(SDL_INIT_EVERYTHING);
     Config::Init();
-    Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, 0);
+    RendererConfig cfg;
+    cfg.windowResolution.x = 800;
+    cfg.windowResolution.y = 600;
+    Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, cfg);
     RenderPrimitiveFactory(&renderer).CreatePrimitives();
     RenderSystem renderSystem(&renderer);
     ResourceManager::Init(&renderSystem);

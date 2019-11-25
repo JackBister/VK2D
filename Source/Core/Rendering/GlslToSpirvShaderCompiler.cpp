@@ -9,7 +9,7 @@
 static const auto logger = Logger::Create("GlslToSpirvShaderCompiler");
 
 const DynamicStringProperty GlslToSpirvShaderCompiler::compilationOptimizationLevel =
-    Config::AddString("glsl.optimizationLevel", "performance");
+    Config::AddString("glsl.optimizationLevel", "zero");
 
 shaderc_optimization_level GetOptimizationLevel(std::string const & str)
 {
@@ -85,6 +85,7 @@ SpirvCompilationResult GlslToSpirvShaderCompiler::CompileGlslFile(std::string co
     auto result =
         compiler.CompileGlslToSpv(fileContent.data(), fileContent.size() - 1, shaderType, fileName.c_str(), options);
 
+    assert(result.GetNumErrors() == 0);
     if (result.GetNumErrors() > 0) {
         return SpirvCompilationResult(std::vector<uint32_t>(), result.GetErrorMessage(), false);
     }

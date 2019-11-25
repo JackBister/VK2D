@@ -252,7 +252,7 @@ void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
 
 glm::ivec2 Renderer::GetResolution() const
 {
-    return dimensions;
+    return config.windowResolution;
 }
 
 uint32_t Renderer::GetSwapCount() const
@@ -260,9 +260,9 @@ uint32_t Renderer::GetSwapCount() const
     return (uint32_t)swapchain.images.size();
 }
 
-Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_t flags)
-    : aspectRatio(static_cast<float>(w) / static_cast<float>(h)), dimensions(w, h),
-      window(SDL_CreateWindow(title, winX, winY, w, h, flags | SDL_WINDOW_VULKAN))
+Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, RendererConfig config)
+    : config(config), window(SDL_CreateWindow(title, winX, winY, config.windowResolution.x, config.windowResolution.y,
+                                              flags | SDL_WINDOW_VULKAN))
 {
     stbi_set_flip_vertically_on_load(true);
     std::vector<const char *> instanceExtensions;
@@ -474,111 +474,28 @@ Renderer::Renderer(char const * title, int winX, int winY, int w, int h, uint32_
     }
 
     // Get required info and create swap chain
-    VkSurfaceCapabilitiesKHR surfaceCapabilities;
-    if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(basics.physicalDevice, surface, &surfaceCapabilities) != VK_SUCCESS) {
-        logger->Severef("Unable to get device surface capabilities.");
-        assert(false);
-        exit(1);
-    }
+    InitSurfaceCapabilities();
 
-    uint32_t formatsCount;
-    if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.physicalDevice, surface, &formatsCount, nullptr) != VK_SUCCESS ||
-        formatsCount == 0) {
-        logger->Severef("Unable to get device surface formats.");
-        assert(false);
-        exit(1);
-    }
+    uint32_t desiredNumberOfImages = GetDesiredNumberOfImages(capabilities.capabilities);
 
-    auto surfaceFormats = std::vector<VkSurfaceFormatKHR>(formatsCount);
-    if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.physicalDevice, surface, &formatsCount, &surfaceFormats[0]) !=
-            VK_SUCCESS ||
-        formatsCount == 0) {
-        logger->Severef("Unable to get device surface formats.");
-        assert(false);
-        exit(1);
-    }
+    VkSurfaceFormatKHR desiredFormat = GetDesiredSurfaceFormat(capabilities.formats);
 
-    uint32_t presentModesCount;
-    if (vkGetPhysicalDeviceSurfacePresentModesKHR(basics.physicalDevice, surface, &presentModesCount, nullptr) !=
-            VK_SUCCESS ||
-        presentModesCount == 0) {
-        logger->Severef("Unable to get device present modes.");
-        assert(false);
-        exit(1);
-    }
-
-    auto presentModes = std::vector<VkPresentModeKHR>(presentModesCount);
-    if (vkGetPhysicalDeviceSurfacePresentModesKHR(
-            basics.physicalDevice, surface, &presentModesCount, &presentModes[0]) != VK_SUCCESS ||
-        presentModesCount == 0) {
-        logger->Severef("Unable to get device present modes.");
-        assert(false);
-        exit(1);
-    }
-
-    // Use one more image than minimum in the swap chain if possible
-    uint32_t desiredNumberOfImages = surfaceCapabilities.minImageCount + 1;
-    if (surfaceCapabilities.maxImageCount > 0 && desiredNumberOfImages > surfaceCapabilities.maxImageCount) {
-        desiredNumberOfImages = surfaceCapabilities.maxImageCount;
-    }
-
-    VkSurfaceFormatKHR desiredFormat;
-    if (surfaceFormats.size() == 1 && surfaceFormats[0].format == VK_FORMAT_UNDEFINED) {
-        desiredFormat = {VK_FORMAT_R8G8B8A8_UNORM, VK_COLORSPACE_SRGB_NONLINEAR_KHR};
-    } else {
-        desiredFormat = surfaceFormats[0];
-        for (auto & format : surfaceFormats) {
-            if (format.format == VK_FORMAT_R8G8B8A8_UNORM) {
-                desiredFormat = format;
-                break;
-            }
-        }
-    }
-
-    VkExtent2D desiredExtent = surfaceCapabilities.currentExtent;
-    if (surfaceCapabilities.currentExtent.width == -1) {
-        desiredExtent = {static_cast<uint32_t>(w), static_cast<uint32_t>(h)};
-        if (desiredExtent.width < surfaceCapabilities.minImageExtent.width) {
-            desiredExtent.width = surfaceCapabilities.minImageExtent.width;
-        }
-        if (desiredExtent.height < surfaceCapabilities.minImageExtent.height) {
-            desiredExtent.height = surfaceCapabilities.minImageExtent.height;
-        }
-        if (desiredExtent.width > surfaceCapabilities.maxImageExtent.width) {
-            desiredExtent.width = surfaceCapabilities.maxImageExtent.width;
-        }
-        if (desiredExtent.height > surfaceCapabilities.maxImageExtent.height) {
-            desiredExtent.height = surfaceCapabilities.maxImageExtent.height;
-        }
-    }
+    VkExtent2D desiredExtent = GetDesiredExtent(capabilities.capabilities, config);
 
     // TRANSFER_DST_BIT required for clearing op
-    if (!(surfaceCapabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
+    if (!(capabilities.capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
         logger->Severef("VK_IMAGE_USAGE_TRANSFER_DST_BIT not supported by surface.");
         assert(false);
         exit(1);
     }
     VkImageUsageFlags desiredUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-    VkSurfaceTransformFlagBitsKHR desiredTransform = surfaceCapabilities.currentTransform;
-    if (surfaceCapabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
+    VkSurfaceTransformFlagBitsKHR desiredTransform = capabilities.capabilities.currentTransform;
+    if (capabilities.capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
         desiredTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
     }
 
-    VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_END_RANGE_KHR;
-    // TODO: Options
-    for (auto & presentMode : presentModes) {
-        if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-            desiredPresentMode = presentMode;
-            break;
-        }
-        if (presentMode == VK_PRESENT_MODE_FIFO_KHR) {
-            desiredPresentMode = presentMode;
-        }
-        if (presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR && desiredPresentMode != VK_PRESENT_MODE_FIFO_KHR) {
-            desiredPresentMode = presentMode;
-        }
-    }
+    VkPresentModeKHR desiredPresentMode = GetDesiredPresentMode(capabilities.presentModes);
 
     if (desiredPresentMode == VK_PRESENT_MODE_END_RANGE_KHR) {
         logger->Severef("Required present modes not supported.");
@@ -723,6 +640,117 @@ VkCommandBuffer Renderer::CreateCommandBuffer(VkCommandBufferLevel level)
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr, graphicsPool, level, 1};
     vkAllocateCommandBuffers(basics.device, &allocateInfo, &ret);
     return ret;
+}
+VkExtent2D Renderer::GetDesiredExtent(VkSurfaceCapabilitiesKHR surfaceCapabilities, RendererConfig cfg)
+{
+    VkExtent2D desiredExtent = surfaceCapabilities.currentExtent;
+    if (surfaceCapabilities.currentExtent.width == -1) {
+        desiredExtent = {static_cast<uint32_t>(cfg.windowResolution.x), static_cast<uint32_t>(cfg.windowResolution.y)};
+        if (desiredExtent.width < surfaceCapabilities.minImageExtent.width) {
+            desiredExtent.width = surfaceCapabilities.minImageExtent.width;
+        }
+        if (desiredExtent.height < surfaceCapabilities.minImageExtent.height) {
+            desiredExtent.height = surfaceCapabilities.minImageExtent.height;
+        }
+        if (desiredExtent.width > surfaceCapabilities.maxImageExtent.width) {
+            desiredExtent.width = surfaceCapabilities.maxImageExtent.width;
+        }
+        if (desiredExtent.height > surfaceCapabilities.maxImageExtent.height) {
+            desiredExtent.height = surfaceCapabilities.maxImageExtent.height;
+        }
+    }
+    return desiredExtent;
+}
+
+VkPresentModeKHR Renderer::GetDesiredPresentMode(std::vector<VkPresentModeKHR> presentModes)
+{
+    VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_END_RANGE_KHR;
+    // TODO: Options
+    for (auto & presentMode : presentModes) {
+        if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+            desiredPresentMode = presentMode;
+            break;
+        }
+        if (presentMode == VK_PRESENT_MODE_FIFO_KHR) {
+            desiredPresentMode = presentMode;
+        }
+        if (presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR && desiredPresentMode != VK_PRESENT_MODE_FIFO_KHR) {
+            desiredPresentMode = presentMode;
+        }
+    }
+    return desiredPresentMode;
+}
+
+VkSurfaceFormatKHR Renderer::GetDesiredSurfaceFormat(std::vector<VkSurfaceFormatKHR> surfaceFormats)
+{
+    VkSurfaceFormatKHR desiredFormat;
+    if (surfaceFormats.size() == 1 && surfaceFormats[0].format == VK_FORMAT_UNDEFINED) {
+        desiredFormat = {VK_FORMAT_R8G8B8A8_UNORM, VK_COLORSPACE_SRGB_NONLINEAR_KHR};
+    } else {
+        desiredFormat = surfaceFormats[0];
+        for (auto & format : surfaceFormats) {
+            if (format.format == VK_FORMAT_R8G8B8A8_UNORM) {
+                desiredFormat = format;
+                break;
+            }
+        }
+    }
+    return desiredFormat;
+}
+
+uint32_t Renderer::GetDesiredNumberOfImages(VkSurfaceCapabilitiesKHR surfaceCapabilities)
+{
+    // Use one more image than minimum in the swap chain if possible
+    uint32_t desiredNumberOfImages = surfaceCapabilities.minImageCount + 1;
+    if (surfaceCapabilities.maxImageCount > 0 && desiredNumberOfImages > surfaceCapabilities.maxImageCount) {
+        desiredNumberOfImages = surfaceCapabilities.maxImageCount;
+    }
+    return desiredNumberOfImages;
+}
+
+void Renderer::InitSurfaceCapabilities()
+{
+    if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(basics.physicalDevice, surface, &capabilities.capabilities) !=
+        VK_SUCCESS) {
+        logger->Severef("Unable to get device surface capabilities.");
+        assert(false);
+        exit(1);
+    }
+
+    uint32_t formatsCount;
+    if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.physicalDevice, surface, &formatsCount, nullptr) != VK_SUCCESS ||
+        formatsCount == 0) {
+        logger->Severef("Unable to get device surface formats.");
+        assert(false);
+        exit(1);
+    }
+
+    capabilities.formats = std::vector<VkSurfaceFormatKHR>(formatsCount);
+    if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.physicalDevice, surface, &formatsCount, &capabilities.formats[0]) !=
+            VK_SUCCESS ||
+        formatsCount == 0) {
+        logger->Severef("Unable to get device surface formats.");
+        assert(false);
+        exit(1);
+    }
+
+    uint32_t presentModesCount;
+    if (vkGetPhysicalDeviceSurfacePresentModesKHR(basics.physicalDevice, surface, &presentModesCount, nullptr) !=
+            VK_SUCCESS ||
+        presentModesCount == 0) {
+        logger->Severef("Unable to get device present modes.");
+        assert(false);
+        exit(1);
+    }
+
+    capabilities.presentModes = std::vector<VkPresentModeKHR>(presentModesCount);
+    if (vkGetPhysicalDeviceSurfacePresentModesKHR(
+            basics.physicalDevice, surface, &presentModesCount, &capabilities.presentModes[0]) != VK_SUCCESS ||
+        presentModesCount == 0) {
+        logger->Severef("Unable to get device present modes.");
+        assert(false);
+        exit(1);
+    }
 }
 
 void Renderer::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format,

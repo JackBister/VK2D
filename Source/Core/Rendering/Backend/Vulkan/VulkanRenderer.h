@@ -21,7 +21,7 @@ class Renderer : IRenderer
     friend class VulkanResourceContext;
 
 public:
-    Renderer(char const * title, int winX, int winY, int w, int h, uint32_t flags);
+    Renderer(char const * title, int winX, int winY, uint32_t flags, RendererConfig config);
     ~Renderer();
 
     uint32_t AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandle * signalFence) final override;
@@ -39,6 +39,11 @@ public:
     int abortCode = 0;
 
 private:
+    struct SurfaceCapabilities {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
     struct VulkanBasics {
         VkDevice device;
         VkInstance instance;
@@ -60,13 +65,18 @@ private:
     void CopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer buffer, VkImage image, uint32_t width,
                            uint32_t height);
     VkCommandBuffer CreateCommandBuffer(VkCommandBufferLevel level);
+    VkExtent2D GetDesiredExtent(VkSurfaceCapabilitiesKHR, RendererConfig);
+    VkPresentModeKHR GetDesiredPresentMode(std::vector<VkPresentModeKHR>);
+    VkSurfaceFormatKHR GetDesiredSurfaceFormat(std::vector<VkSurfaceFormatKHR>);
+    uint32_t GetDesiredNumberOfImages(VkSurfaceCapabilitiesKHR);
+    void InitSurfaceCapabilities();
     void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout,
                                VkImageLayout newLayout);
 
-    float aspectRatio;
-    glm::ivec2 dimensions;
+    RendererConfig config;
 
     VulkanBasics basics;
+    SurfaceCapabilities capabilities;
 
     VkDescriptorPool descriptorPool;
 
