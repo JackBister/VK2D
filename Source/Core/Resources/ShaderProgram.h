@@ -15,7 +15,9 @@ public:
     };
 
     ShaderProgram(std::string const & name, PipelineHandle * pipeline,
-                  std::vector<ShaderStageCreateInfo> stageCreateInfo);
+                  std::vector<ShaderStageCreateInfo> stageCreateInfo, VertexInputStateHandle * vertexInputState,
+                  PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass, CullMode cullMode,
+                  FrontFace frontFace, uint32_t subpass);
 
     static ShaderProgram * Create(std::string const & name, std::vector<std::string> fileNames,
                                   VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
@@ -23,6 +25,8 @@ public:
                                   uint32_t subpass);
 
     inline PipelineHandle * GetPipeline() { return pipeline; }
+
+    void SetRenderpass(RenderPassHandle *);
 
 private:
     struct ShaderStage {
@@ -32,7 +36,9 @@ private:
         ShaderModuleHandle * shaderModule;
     };
 
-    ShaderProgram(std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStage> & stages);
+    ShaderProgram(std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStage> & stages,
+                  VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
+                  RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace, uint32_t subpass);
 
     static std::vector<ShaderStage> ReadShaderStages(std::vector<std::string> const & fileNames,
                                                      ResourceCreationContext & ctx);
@@ -43,5 +49,13 @@ private:
 
     std::string name;
     PipelineHandle * pipeline;
+
     std::vector<ShaderStage> stages;
+
+    VertexInputStateHandle * vertexInputState;
+    PipelineLayoutHandle * pipelineLayout;
+    RenderPassHandle * renderPass;
+    uint32_t subpass;
+    CullMode cullMode;
+    FrontFace frontFace;
 };

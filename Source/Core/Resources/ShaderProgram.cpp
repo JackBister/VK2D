@@ -98,8 +98,11 @@ PipelineHandle * ShaderProgram::CreatePipeline(std::vector<ShaderStage> stages,
 }
 
 ShaderProgram::ShaderProgram(std::string const & name, PipelineHandle * pipeline,
-                             std::vector<ShaderStageCreateInfo> stageCreateInfo)
-    : name(name), pipeline(pipeline)
+                             std::vector<ShaderStageCreateInfo> stageCreateInfo,
+                             VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
+                             RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace, uint32_t subpass)
+    : name(name), pipeline(pipeline), vertexInputState(vertexInputState), pipelineLayout(pipelineLayout),
+      renderPass(renderPass), cullMode(cullMode), frontFace(frontFace), subpass(subpass)
 {
     for (auto const & ci : stageCreateInfo) {
         ShaderStage stage;
@@ -142,7 +145,8 @@ ShaderProgram * ShaderProgram::Create(std::string const & name, std::vector<std:
             auto pipeline =
                 CreatePipeline(stages, vertexInputState, pipelineLayout, renderPass, cullMode, frontFace, subpass, ctx);
 
-            ret = new ShaderProgram(name, pipeline, stages);
+            ret = new ShaderProgram(
+                name, pipeline, stages, vertexInputState, pipelineLayout, renderPass, cullMode, frontFace, subpass);
             sem.Signal();
         });
     sem.Wait();
@@ -150,68 +154,86 @@ ShaderProgram * ShaderProgram::Create(std::string const & name, std::vector<std:
 
 #if HOT_RELOAD_RESOURCES
     for (auto fileName : fileNames) {
-        WatchFile(
-            fileName, [name, fileName, cullMode, frontFace, pipelineLayout, renderPass, subpass, vertexInputState]() {
-                logger->Infof("fileName='%s' changed, will reload program '%s'", fileName.c_str(), name.c_str());
-                auto program = ResourceManager::GetResource<ShaderProgram>(name);
-                if (!program) {
-                    logger->Warnf("fileName='%s' changed, but ResourceManager had no reference to program '%s'",
-                                  fileName.c_str(),
-                                  name.c_str());
-                    return;
+        WatchFile(fileName, [name, fileName]() {
+            logger->Infof("fileName='%s' changed, will reload program '%s'", fileName.c_str(), name.c_str());
+            auto program = ResourceManager::GetResource<ShaderProgram>(name);
+            if (!program) {
+                logger->Warnf("fileName='%s' changed, but ResourceManager had no reference to program '%s'",
+                              fileName.c_str(),
+                              name.c_str());
+                return;
+            }
+            ResourceManager::CreateResources([program](ResourceCreationContext & ctx) {
+                std::vector<std::string> fileNames(program->stages.size());
+                for (size_t i = 0; i < fileNames.size(); ++i) {
+                    fileNames[i] = program->stages[i].fileName;
                 }
-                ResourceManager::CreateResources(
-                    [program, cullMode, frontFace, pipelineLayout, renderPass, subpass, vertexInputState](
-                        ResourceCreationContext & ctx) {
-                        std::vector<std::string> fileNames(program->stages.size());
-                        for (size_t i = 0; i < fileNames.size(); ++i) {
-                            fileNames[i] = program->stages[i].fileName;
-                        }
-                        auto oldStages = program->stages;
-                        auto newStages = ReadShaderStages(fileNames, ctx);
-                        for (size_t i = 0; i < newStages.size(); ++i) {
-                            if (!newStages[i].compiledSuccessfully) {
-                                logger->Errorf(
-                                    "Shader stage %zu (%s) failed to compile for shader program '%s', will not reload.",
-                                    i + 1,
-                                    newStages[i].fileName.c_str(),
-                                    program->name.c_str());
-                                ResourceManager::DestroyResources([newStages](ResourceCreationContext & ctx) {
-                                    for (auto const & stage : newStages) {
-                                        if (stage.compiledSuccessfully) {
-                                            ctx.DestroyShaderModule(stage.shaderModule);
-                                        }
-                                    }
-                                });
-
-                                return;
-                            }
-                        }
-                        auto oldPipeline = program->pipeline;
-                        program->stages = newStages;
-                        program->pipeline = CreatePipeline(program->stages,
-                                                           vertexInputState,
-                                                           pipelineLayout,
-                                                           renderPass,
-                                                           cullMode,
-                                                           frontFace,
-                                                           subpass,
-                                                           ctx);
-                        ResourceManager::DestroyResources([oldStages, oldPipeline](ResourceCreationContext & ctx) {
-                            ctx.DestroyPipeline(oldPipeline);
-                            for (auto const & stage : oldStages) {
-                                ctx.DestroyShaderModule(stage.shaderModule);
+                auto oldStages = program->stages;
+                auto newStages = ReadShaderStages(fileNames, ctx);
+                for (size_t i = 0; i < newStages.size(); ++i) {
+                    if (!newStages[i].compiledSuccessfully) {
+                        logger->Errorf(
+                            "Shader stage %zu (%s) failed to compile for shader program '%s', will not reload.",
+                            i + 1,
+                            newStages[i].fileName.c_str(),
+                            program->name.c_str());
+                        ResourceManager::DestroyResources([newStages](ResourceCreationContext & ctx) {
+                            for (auto const & stage : newStages) {
+                                if (stage.compiledSuccessfully) {
+                                    ctx.DestroyShaderModule(stage.shaderModule);
+                                }
                             }
                         });
-                    });
+
+                        return;
+                    }
+                }
+                auto oldPipeline = program->pipeline;
+                program->stages = newStages;
+                program->pipeline = CreatePipeline(program->stages,
+                                                   program->vertexInputState,
+                                                   program->pipelineLayout,
+                                                   program->renderPass,
+                                                   program->cullMode,
+                                                   program->frontFace,
+                                                   program->subpass,
+                                                   ctx);
+                ResourceManager::DestroyResources([oldStages, oldPipeline](ResourceCreationContext & ctx) {
+                    ctx.DestroyPipeline(oldPipeline);
+                    for (auto const & stage : oldStages) {
+                        ctx.DestroyShaderModule(stage.shaderModule);
+                    }
+                });
             });
+        });
     }
 #endif
 
     return ret;
 }
 
-ShaderProgram::ShaderProgram(std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStage> & stages)
-    : name(name), pipeline(pipeline), stages(stages)
+void ShaderProgram::SetRenderpass(RenderPassHandle * newPass)
+{
+    ResourceManager::CreateResources([this, newPass](ResourceCreationContext & ctx) {
+        auto oldPipeline = this->pipeline;
+        this->renderPass = newPass;
+        this->pipeline = CreatePipeline(this->stages,
+                                        this->vertexInputState,
+                                        this->pipelineLayout,
+                                        this->renderPass,
+                                        this->cullMode,
+                                        this->frontFace,
+                                        this->subpass,
+                                        ctx);
+        ResourceManager::DestroyResources(
+            [oldPipeline](ResourceCreationContext & ctx) { ctx.DestroyPipeline(oldPipeline); });
+    });
+}
+
+ShaderProgram::ShaderProgram(std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStage> & stages,
+                             VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
+                             RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace, uint32_t subpass)
+    : name(name), pipeline(pipeline), stages(stages), vertexInputState(vertexInputState),
+      pipelineLayout(pipelineLayout), renderPass(renderPass), cullMode(cullMode), frontFace(frontFace), subpass(subpass)
 {
 }

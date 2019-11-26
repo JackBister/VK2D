@@ -49,6 +49,8 @@ private:
         CommandBufferAllocator * commandBufferAllocator;
     };
 
+    void InitSwapchainResources();
+
     void AcquireNextFrame();
     void PreRenderFrame(SubmittedFrame const & frame);
     void MainRenderFrame(SubmittedFrame const & frame);
