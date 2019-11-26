@@ -32,6 +32,7 @@ private:
     std::vector<FrameInfo> frameData;
 
     // Rendering resources
+    BufferHandle * resolutionUniformBuffer;
     DescriptorSet * descriptorSet;
     DescriptorSetLayoutHandle * layout;
     ShaderProgram * uiProgram;

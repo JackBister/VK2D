@@ -751,6 +751,7 @@ void VulkanResourceContext::DestroySemaphore(SemaphoreHandle * sem)
 {
     assert(sem != nullptr);
     vkDestroySemaphore(renderer->basics.device, ((VulkanSemaphoreHandle *)sem)->semaphore, nullptr);
+    allocator.deallocate((uint8_t *)sem, sizeof(VulkanSemaphoreHandle));
 }
 
 DescriptorSetLayoutHandle * VulkanResourceContext::CreateDescriptorSetLayout(DescriptorSetLayoutCreateInfo const & info)

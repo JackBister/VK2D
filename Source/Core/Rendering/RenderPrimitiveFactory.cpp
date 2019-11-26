@@ -140,6 +140,7 @@ PipelineLayoutHandle * RenderPrimitiveFactory::CreatePassthroughTransformPipelin
 
     return ptPipelineLayout;
 }
+
 VertexInputStateHandle *
 RenderPrimitiveFactory::CreatePassthroughTransformVertexInputState(ResourceCreationContext & ctx)
 {
@@ -161,10 +162,10 @@ RenderPrimitiveFactory::CreatePassthroughTransformVertexInputState(ResourceCreat
 
 PipelineLayoutHandle * RenderPrimitiveFactory::CreateUiPipelineLayout(ResourceCreationContext & ctx)
 {
-    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding uiBindings[1] = {
-        {0, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
-
-    auto uiPipelineDescriptorSetLayout = ctx.CreateDescriptorSetLayout({1, uiBindings});
+    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding fragBindings[] = {
+        {0, DescriptorType::UNIFORM_BUFFER, ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT},
+        {1, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
+    auto uiPipelineDescriptorSetLayout = ctx.CreateDescriptorSetLayout({2, fragBindings});
     ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/ui.layout", uiPipelineDescriptorSetLayout);
 
     auto uiLayout = ctx.CreatePipelineLayout({{uiPipelineDescriptorSetLayout}});
@@ -427,18 +428,4 @@ void RenderPrimitiveFactory::CreateFontImage(ResourceCreationContext & ctx)
 
     auto layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/ui.layout");
     auto sampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/Default.sampler");
-
-    ResourceCreationContext::DescriptorSetCreateInfo descriptorSetCreateInfo;
-    ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imageDescriptor;
-    imageDescriptor.imageView = fontAtlasView;
-    imageDescriptor.sampler = sampler;
-    ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptor;
-    descriptor.binding = 0;
-    descriptor.descriptor = imageDescriptor;
-    descriptor.type = DescriptorType::COMBINED_IMAGE_SAMPLER;
-    descriptorSetCreateInfo.descriptorCount = 1;
-    descriptorSetCreateInfo.descriptors = &descriptor;
-    descriptorSetCreateInfo.layout = layout;
-    auto descriptorSet = ctx.CreateDescriptorSet(descriptorSetCreateInfo);
-    ResourceManager::AddResource("_Primitives/DescriptorSets/UiFontAtlas.descriptorSet", descriptorSet);
 }

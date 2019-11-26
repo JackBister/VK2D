@@ -30,7 +30,20 @@ void RenderSystem::StartFrame()
 
 void RenderSystem::RenderFrame(SubmittedFrame const & frame)
 {
-    AcquireNextFrame();
+    if (queuedConfigUpdate.has_value()) {
+        logger->Infof("UpdateConfig");
+        renderer->UpdateConfig(queuedConfigUpdate.value());
+        queuedConfigUpdate.reset();
+    }
+    auto nextFrame = AcquireNextFrame();
+    while (nextFrame == UINT32_MAX) {
+        for (auto & fi : frameInfo) {
+            fi.canStartFrame->Wait(std::numeric_limits<uint64_t>::max());
+        }
+        renderer->RecreateSwapchain();
+        InitSwapchainResources();
+        nextFrame = AcquireNextFrame();
+    }
 
     PreRenderFrame(frame);
     MainRenderFrame(frame);
@@ -93,15 +106,20 @@ void RenderSystem::DebugOverrideBackbuffer(ImageViewHandle * image)
     }
 }
 
-void RenderSystem::AcquireNextFrame()
+uint32_t RenderSystem::AcquireNextFrame()
 {
+    auto nextFrameInfoIdx = renderer->AcquireNextFrameIndex(frameInfo[currFrameInfoIdx].framebufferReady, nullptr);
+    if (nextFrameInfoIdx == UINT32_MAX) {
+        return nextFrameInfoIdx;
+    }
     // We use the previous frame's framebufferReady semaphore because in theory we can't know what
     // frame we end up on after calling AcquireNext
     prevFrameInfoIdx = currFrameInfoIdx;
-    currFrameInfoIdx = renderer->AcquireNextFrameIndex(frameInfo[prevFrameInfoIdx].framebufferReady, nullptr);
+    currFrameInfoIdx = nextFrameInfoIdx;
     auto & currFrame = frameInfo[currFrameInfoIdx];
     currFrame.canStartFrame->Wait(std::numeric_limits<uint64_t>::max());
     currFrame.commandBufferAllocator->Reset();
+    return currFrameInfoIdx;
 }
 
 void RenderSystem::PreRenderFrame(SubmittedFrame const & frame)

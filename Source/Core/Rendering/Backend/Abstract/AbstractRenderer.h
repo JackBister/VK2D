@@ -21,4 +21,8 @@ public:
                                       std::vector<SemaphoreHandle *> signalSem,
                                       FenceHandle * signalFence = nullptr) = 0;
     virtual void SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem) = 0;
+
+    virtual void RecreateSwapchain() = 0;
+
+    virtual void UpdateConfig(RendererConfig) = 0;
 };

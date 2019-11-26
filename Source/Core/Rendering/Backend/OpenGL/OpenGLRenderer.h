@@ -32,6 +32,10 @@ public:
                               FenceHandle * signalFence = nullptr) final override;
     void SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem) final override;
 
+    void RecreateSwapchain() final override;
+
+    void UpdateConfig(RendererConfig) final override;
+
     int abortCode = 0;
 
 private:

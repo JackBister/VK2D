@@ -164,4 +164,17 @@ void Renderer::DrainQueue()
         logger->Errorf("RenderQueue pop error %u. RenderCommand %zu.", err, command.params.index());
     }
 }
+
+void Renderer::RecreateSwapchain()
+{
+    // You shouldn't ever end up here since AcquireNextImageIdx always returns successfully on OpenGL
+    logger->Warnf("RecreateSwapchain called in OpenGL mode! How did you end up here?");
+    assert(false);
+}
+
+void Renderer::UpdateConfig(RendererConfig config) {
+    this->config = config;
+    SDL_SetWindowSize(window, config.windowResolution.x, config.windowResolution.y);
+}
+
 #endif

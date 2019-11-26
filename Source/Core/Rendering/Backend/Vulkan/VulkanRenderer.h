@@ -36,6 +36,10 @@ public:
                               FenceHandle * signalFence = nullptr) final override;
     void SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem) final override;
 
+    void RecreateSwapchain() final override;
+
+    void UpdateConfig(RendererConfig) final override;
+
     int abortCode = 0;
 
 private:
@@ -50,7 +54,7 @@ private:
         VkPhysicalDevice physicalDevice;
     };
     struct VulkanSwapchain {
-        VkSwapchainKHR swapchain;
+        VkSwapchainKHR swapchain = VK_NULL_HANDLE;
         VkFormat format;
         VkExtent2D extent;
 

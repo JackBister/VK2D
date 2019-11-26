@@ -178,12 +178,21 @@ uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalReady, FenceHan
         signalReady != nullptr ? ((VulkanSemaphoreHandle *)signalReady)->semaphore : VK_NULL_HANDLE,
         signalFence != nullptr ? ((VulkanFenceHandle *)signalFence)->fence : VK_NULL_HANDLE,
         &imageIndex);
+    if (res == VK_ERROR_OUT_OF_DATE_KHR) {
+        return UINT32_MAX;
+    }
     assert(res == VK_SUCCESS);
     return imageIndex;
 }
 
 std::vector<FramebufferHandle *> Renderer::CreateBackbuffers(RenderPassHandle * renderPass)
 {
+    for (auto fb : swapchain.framebuffers) {
+        vkDestroyFramebuffer(basics.device, fb, nullptr);
+    }
+    swapchain.framebuffers.clear();
+    swapchain.framebuffers.resize(swapchain.images.size());
+    swapchain.backbuffers.clear();
     swapchain.backbuffers.resize(swapchain.images.size());
     std::vector<FramebufferHandle *> ret(swapchain.backbuffers.size());
     for (size_t i = 0; i < swapchain.images.size(); ++i) {
@@ -252,7 +261,8 @@ void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
 
 glm::ivec2 Renderer::GetResolution() const
 {
-    return config.windowResolution;
+    // TODO: May not work when window resolution and render resolution are decoupled?
+    return glm::ivec2(swapchain.extent.width, swapchain.extent.height);
 }
 
 uint32_t Renderer::GetSwapCount() const
@@ -474,103 +484,8 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
     }
 
     // Get required info and create swap chain
-    InitSurfaceCapabilities();
+    RecreateSwapchain();
 
-    uint32_t desiredNumberOfImages = GetDesiredNumberOfImages(capabilities.capabilities);
-
-    VkSurfaceFormatKHR desiredFormat = GetDesiredSurfaceFormat(capabilities.formats);
-
-    VkExtent2D desiredExtent = GetDesiredExtent(capabilities.capabilities, config);
-
-    // TRANSFER_DST_BIT required for clearing op
-    if (!(capabilities.capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
-        logger->Severef("VK_IMAGE_USAGE_TRANSFER_DST_BIT not supported by surface.");
-        assert(false);
-        exit(1);
-    }
-    VkImageUsageFlags desiredUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-
-    VkSurfaceTransformFlagBitsKHR desiredTransform = capabilities.capabilities.currentTransform;
-    if (capabilities.capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
-        desiredTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    }
-
-    VkPresentModeKHR desiredPresentMode = GetDesiredPresentMode(capabilities.presentModes);
-
-    if (desiredPresentMode == VK_PRESENT_MODE_END_RANGE_KHR) {
-        logger->Severef("Required present modes not supported.");
-        assert(false);
-        exit(1);
-    }
-
-    // TODO: old swap chain
-    VkSwapchainCreateInfoKHR swapchainCreateInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-                                                    nullptr,
-                                                    0,
-                                                    surface,
-                                                    desiredNumberOfImages,
-                                                    desiredFormat.format,
-                                                    desiredFormat.colorSpace,
-                                                    desiredExtent,
-                                                    1,
-                                                    desiredUsage,
-                                                    VK_SHARING_MODE_EXCLUSIVE,
-                                                    0,
-                                                    nullptr,
-                                                    desiredTransform,
-                                                    VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-                                                    desiredPresentMode,
-                                                    true,
-                                                    VK_NULL_HANDLE};
-
-    if (vkCreateSwapchainKHR(basics.device, &swapchainCreateInfo, nullptr, &swapchain.swapchain) != VK_SUCCESS) {
-        logger->Severef("Couldn't create swap chain.");
-        assert(false);
-        exit(1);
-    }
-    swapchain.extent = desiredExtent;
-    swapchain.format = desiredFormat.format;
-
-    uint32_t swapchainImageCount = 0;
-    res = vkGetSwapchainImagesKHR(basics.device, swapchain.swapchain, &swapchainImageCount, nullptr);
-    if (res != VK_SUCCESS || swapchainImageCount == 0) {
-        logger->Severef("Couldn't get swap chain image count.");
-        assert(false);
-        exit(1);
-    }
-
-    swapchain.images.resize(swapchainImageCount);
-    res = vkGetSwapchainImagesKHR(basics.device, swapchain.swapchain, &swapchainImageCount, &swapchain.images[0]);
-    if (res != VK_SUCCESS || swapchainImageCount == 0) {
-        logger->Severef("Couldn't get swap chain images.");
-        assert(false);
-        exit(1);
-    }
-
-    swapchain.imageViews.resize(swapchain.images.size());
-    swapchain.framebuffers.resize(swapchain.images.size());
-    for (uint32_t i = 0; i < swapchain.images.size(); ++i) {
-        VkImageViewCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        createInfo.image = swapchain.images[i];
-        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        createInfo.format = swapchain.format;
-        createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        createInfo.subresourceRange.baseMipLevel = 0;
-        createInfo.subresourceRange.levelCount = 1;
-        createInfo.subresourceRange.baseArrayLayer = 0;
-        createInfo.subresourceRange.layerCount = 1;
-        res = vkCreateImageView(basics.device, &createInfo, nullptr, &swapchain.imageViews[i]);
-        if (res != VK_SUCCESS) {
-            logger->Severef("Couldn't create swap chain image views.");
-            assert(false);
-            exit(1);
-        }
-    }
     {
         std::vector<VkDescriptorPoolSize> poolSizes(
             {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 50}, {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 50}});
@@ -664,6 +579,8 @@ VkExtent2D Renderer::GetDesiredExtent(VkSurfaceCapabilitiesKHR surfaceCapabiliti
 
 VkPresentModeKHR Renderer::GetDesiredPresentMode(std::vector<VkPresentModeKHR> presentModes)
 {
+    return VK_PRESENT_MODE_FIFO_KHR;
+    /*
     VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_END_RANGE_KHR;
     // TODO: Options
     for (auto & presentMode : presentModes) {
@@ -679,6 +596,7 @@ VkPresentModeKHR Renderer::GetDesiredPresentMode(std::vector<VkPresentModeKHR> p
         }
     }
     return desiredPresentMode;
+    */
 }
 
 VkSurfaceFormatKHR Renderer::GetDesiredSurfaceFormat(std::vector<VkSurfaceFormatKHR> surfaceFormats)
@@ -798,6 +716,121 @@ void Renderer::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage imag
     }
 
     vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+}
+
+void Renderer::RecreateSwapchain()
+{
+    logger->Infof("Renderer::RecreateSwapchain");
+    InitSurfaceCapabilities();
+    uint32_t desiredNumberOfImages = GetDesiredNumberOfImages(capabilities.capabilities);
+    VkSurfaceFormatKHR desiredFormat = GetDesiredSurfaceFormat(capabilities.formats);
+    VkExtent2D desiredExtent = GetDesiredExtent(capabilities.capabilities, config);
+
+    // TRANSFER_DST_BIT required for clearing op
+    if (!(capabilities.capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
+        logger->Severef("VK_IMAGE_USAGE_TRANSFER_DST_BIT not supported by surface.");
+        assert(false);
+        exit(1);
+    }
+    VkImageUsageFlags desiredUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+    VkSurfaceTransformFlagBitsKHR desiredTransform = capabilities.capabilities.currentTransform;
+    if (capabilities.capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
+        desiredTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    }
+
+    VkPresentModeKHR desiredPresentMode = GetDesiredPresentMode(capabilities.presentModes);
+
+    if (desiredPresentMode == VK_PRESENT_MODE_END_RANGE_KHR) {
+        logger->Severef("Required present modes not supported.");
+        assert(false);
+        exit(1);
+    }
+
+    // TODO: old swap chain
+    auto oldSwapchain = swapchain.swapchain;
+    VkSwapchainCreateInfoKHR swapchainCreateInfo = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+                                                    nullptr,
+                                                    0,
+                                                    surface,
+                                                    desiredNumberOfImages,
+                                                    desiredFormat.format,
+                                                    desiredFormat.colorSpace,
+                                                    desiredExtent,
+                                                    1,
+                                                    desiredUsage,
+                                                    VK_SHARING_MODE_EXCLUSIVE,
+                                                    0,
+                                                    nullptr,
+                                                    desiredTransform,
+                                                    VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+                                                    desiredPresentMode,
+                                                    true,
+                                                    oldSwapchain};
+
+    if (vkCreateSwapchainKHR(basics.device, &swapchainCreateInfo, nullptr, &swapchain.swapchain) != VK_SUCCESS) {
+        logger->Severef("Couldn't create swap chain.");
+        assert(false);
+        exit(1);
+    }
+    swapchain.extent = desiredExtent;
+    swapchain.format = desiredFormat.format;
+
+    if (oldSwapchain != VK_NULL_HANDLE) {
+        vkDestroySwapchainKHR(basics.device, oldSwapchain, nullptr);
+    }
+
+    uint32_t swapchainImageCount = 0;
+    auto res = vkGetSwapchainImagesKHR(basics.device, swapchain.swapchain, &swapchainImageCount, nullptr);
+    if (res != VK_SUCCESS || swapchainImageCount == 0) {
+        logger->Severef("Couldn't get swap chain image count.");
+        assert(false);
+        exit(1);
+    }
+
+    swapchain.images.clear();
+    swapchain.images.resize(swapchainImageCount);
+    res = vkGetSwapchainImagesKHR(basics.device, swapchain.swapchain, &swapchainImageCount, &swapchain.images[0]);
+    if (res != VK_SUCCESS || swapchainImageCount == 0) {
+        logger->Severef("Couldn't get swap chain images.");
+        assert(false);
+        exit(1);
+    }
+
+    for (auto iv : swapchain.imageViews) {
+        vkDestroyImageView(basics.device, iv, nullptr);
+    }
+
+    swapchain.imageViews.clear();
+    swapchain.imageViews.resize(swapchain.images.size());
+    for (uint32_t i = 0; i < swapchain.images.size(); ++i) {
+        VkImageViewCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        createInfo.image = swapchain.images[i];
+        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        createInfo.format = swapchain.format;
+        createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        createInfo.subresourceRange.baseMipLevel = 0;
+        createInfo.subresourceRange.levelCount = 1;
+        createInfo.subresourceRange.baseArrayLayer = 0;
+        createInfo.subresourceRange.layerCount = 1;
+        res = vkCreateImageView(basics.device, &createInfo, nullptr, &swapchain.imageViews[i]);
+        if (res != VK_SUCCESS) {
+            logger->Severef("Couldn't create swap chain image views.");
+            assert(false);
+            exit(1);
+        }
+    }
+}
+
+void Renderer::UpdateConfig(RendererConfig config)
+{
+    this->config = config;
+    SDL_SetWindowSize(window, config.windowResolution.x, config.windowResolution.y);
 }
 
 #endif

@@ -17,11 +17,41 @@ UiRenderSystem::UiRenderSystem(Renderer * renderer) : renderer(renderer), frameD
 
 void UiRenderSystem::Init()
 {
-    descriptorSet = ResourceManager::GetResource<DescriptorSet>("_Primitives/DescriptorSets/UiFontAtlas.descriptorSet");
     layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/ui.layout");
     pipelineLayout =
         ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/ui.pipelinelayout");
     uiProgram = ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/ui.program");
+
+    ResourceManager::CreateResources([this](ResourceCreationContext & ctx) {
+        ResourceCreationContext::BufferCreateInfo bufferCreateInfo;
+        bufferCreateInfo.memoryProperties = MemoryPropertyFlagBits::DEVICE_LOCAL_BIT;
+        bufferCreateInfo.size = sizeof(glm::vec2);
+        bufferCreateInfo.usage = BufferUsageFlags::UNIFORM_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT;
+        this->resolutionUniformBuffer = ctx.CreateBuffer(bufferCreateInfo);
+
+        auto fontAtlasView =
+            ResourceManager::GetResource<ImageViewHandle>("_Primitives/Images/FontAtlas.img/defaultView");
+        auto sampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/Default.sampler");
+
+        ResourceCreationContext::DescriptorSetCreateInfo descriptorSetCreateInfo;
+
+        ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor bufferDescriptor;
+        bufferDescriptor.buffer = this->resolutionUniformBuffer;
+        bufferDescriptor.offset = 0;
+        bufferDescriptor.range = sizeof(glm::vec2);
+
+        ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imageDescriptor;
+        imageDescriptor.imageView = fontAtlasView;
+        imageDescriptor.sampler = sampler;
+        ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
+            {DescriptorType::UNIFORM_BUFFER, 0, bufferDescriptor},
+            {DescriptorType::COMBINED_IMAGE_SAMPLER, 1, imageDescriptor}};
+        descriptorSetCreateInfo.descriptorCount = 2;
+        descriptorSetCreateInfo.descriptors = descriptors;
+        descriptorSetCreateInfo.layout = layout;
+        this->descriptorSet = ctx.CreateDescriptorSet(descriptorSetCreateInfo);
+        ResourceManager::AddResource("_Primitives/DescriptorSets/ui.descriptorSet", this->descriptorSet);
+    });
 }
 
 void UiRenderSystem::StartFrame()
@@ -34,6 +64,9 @@ void UiRenderSystem::StartFrame()
 
 void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer)
 {
+    glm::vec2 res = renderer->GetResolution();
+    auto & imguiIo = ImGui::GetIO();
+    imguiIo.DisplaySize = ImVec2(res.x, res.y);
     ImGui::Render();
     auto data = ImGui::GetDrawData();
     auto & fd = frameData[frameIndex];
@@ -84,6 +117,8 @@ void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuf
         resourceCreationFinished.Signal();
     });
     resourceCreationFinished.Wait();
+
+    commandBuffer->CmdUpdateBuffer(resolutionUniformBuffer, 0, sizeof(glm::vec2), (uint32_t *)&res);
 }
 
 void UiRenderSystem::RenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer)

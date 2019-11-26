@@ -4,6 +4,7 @@
 
 #include <glm/glm.hpp>
 
+#include "Core/Rendering/Backend/Abstract/RendererConfig.h"
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Rendering/SubmittedFrame.h"
 #include "Core/Rendering/UiRenderSystem.h"
@@ -51,7 +52,7 @@ private:
 
     void InitSwapchainResources();
 
-    void AcquireNextFrame();
+    uint32_t AcquireNextFrame();
     void PreRenderFrame(SubmittedFrame const & frame);
     void MainRenderFrame(SubmittedFrame const & frame);
     void PostProcessFrame();
@@ -75,6 +76,8 @@ private:
     PipelineLayoutHandle * passthroughTransformPipelineLayout;
     ShaderProgram * passthroughTransformProgram;
 
+    ShaderProgram * uiProgram;
+
     SamplerHandle * postprocessSampler;
     DescriptorSetLayoutHandle * postprocessDescriptorSetLayout;
     PipelineLayoutHandle * postprocessLayout;
@@ -89,4 +92,5 @@ private:
 
     // Options
     DescriptorSet * backbufferOverride = nullptr;
+    std::optional<RendererConfig> queuedConfigUpdate;
 };
