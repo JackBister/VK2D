@@ -3,6 +3,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "Core/GameModule.h"
+#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Abstract/RenderResources.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 #include "Core/Rendering/SubmittedCamera.h"
@@ -10,15 +11,15 @@
 #include "Core/dtime.h"
 #include "Core/entity.h"
 
+static const auto logger = Logger::Create("CameraComponent");
+
 COMPONENT_IMPL(CameraComponent, CameraComponent::s_Deserialize)
 
 REFLECT_STRUCT_BEGIN(CameraComponent)
-REFLECT_STRUCT_MEMBER(aspect)
 REFLECT_STRUCT_MEMBER(isProjectionDirty)
 REFLECT_STRUCT_MEMBER(isViewDirty)
 REFLECT_STRUCT_MEMBER(projection)
 REFLECT_STRUCT_MEMBER(view)
-REFLECT_STRUCT_MEMBER(viewSize)
 REFLECT_STRUCT_END()
 
 CameraComponent::~CameraComponent()
@@ -31,36 +32,17 @@ CameraComponent::~CameraComponent()
     });
 }
 
-float CameraComponent::GetAspect()
-{
-    return aspect;
-}
-
-void CameraComponent::SetAspect(float f)
-{
-    if (f != aspect) {
-        isProjectionDirty = true;
-    }
-    aspect = f;
-}
-
-float CameraComponent::GetViewSize()
-{
-    return viewSize;
-}
-
-void CameraComponent::SetViewSize(float f)
-{
-    if (f != viewSize) {
-        isProjectionDirty = true;
-    }
-    viewSize = f;
-}
-
 glm::mat4 const & CameraComponent::GetProjection()
 {
     if (isProjectionDirty) {
-        projection = glm::ortho(-viewSize / aspect, viewSize / aspect, -viewSize, viewSize);
+        if (cameraData.index() == CameraType::ORTHO) {
+            auto cam = std::get<OrthoCamera>(cameraData);
+            projection = glm::ortho(-cam.viewSize / cam.aspect, cam.viewSize / cam.aspect, -cam.viewSize, cam.viewSize);
+        } else {
+            auto cam = std::get<PerspectiveCamera>(cameraData);
+            projection = glm::perspective(cam.fov, cam.aspect, cam.zNear, cam.zFar);
+        }
+        isProjectionDirty = false;
     }
     return projection;
 }
@@ -77,9 +59,31 @@ Deserializable * CameraComponent::s_Deserialize(DeserializationContext * deseria
                                                 SerializedObject const & obj)
 {
     CameraComponent * ret = new CameraComponent();
-    // TODO: Error handling
-    ret->aspect = obj.GetNumber("aspect").value();
-    ret->viewSize = obj.GetNumber("viewSize").value();
+
+    auto orthoOpt = obj.GetObject("ortho");
+    auto perspectiveOpt = obj.GetObject("perspective");
+    if (orthoOpt.has_value()) {
+        auto ortho = orthoOpt.value();
+        OrthoCamera cam;
+        cam.aspect = ortho.GetNumber("aspect").value();
+        cam.viewSize = ortho.GetNumber("viewSize").value();
+        ret->cameraData = cam;
+    } else if (perspectiveOpt.has_value()) {
+        auto perspective = perspectiveOpt.value();
+        PerspectiveCamera cam;
+        cam.aspect = perspective.GetNumber("aspect").value();
+        cam.fov = perspective.GetNumber("fov").value();
+        cam.zFar = perspective.GetNumber("zFar").value();
+        cam.zNear = perspective.GetNumber("zNear").value();
+        ret->cameraData = cam;
+    } else {
+        logger->Errorf("CameraComponent must be initialized with either an 'ortho' parameter or a 'perspective' "
+                       "parameter. Will create a default ortho camera.");
+        OrthoCamera cam;
+        cam.aspect = 0.75;
+        cam.viewSize = 60;
+        ret->cameraData = cam;
+    }
 
     auto defaultsToMainOpt = obj.GetBool("defaultsToMain");
     if (defaultsToMainOpt.has_value()) {
@@ -109,12 +113,33 @@ Deserializable * CameraComponent::s_Deserialize(DeserializationContext * deseria
 
 SerializedObject CameraComponent::Serialize() const
 {
-    return SerializedObject::Builder()
-        .WithString("type", this->Reflection.name)
-        .WithNumber("aspect", aspect)
-        .WithNumber("viewSize", viewSize)
-        .WithBool("defaultsToMain", defaultsToMain)
-        .Build();
+    SerializedObject::Builder builder;
+    builder.WithString("type", this->Reflection.name).WithBool("defaultsToMain", defaultsToMain);
+
+    if (cameraData.index() == CameraType::ORTHO) {
+        auto ortho = std::get<OrthoCamera>(cameraData);
+        builder.WithObject("ortho",
+                           SerializedObject::Builder()
+                               .WithNumber("aspect", ortho.aspect)
+                               .WithNumber("viewSize", ortho.viewSize)
+                               .Build());
+    } else if (cameraData.index() == CameraType::PERSPECTIVE) {
+        auto perspective = std::get<PerspectiveCamera>(cameraData);
+        builder.WithObject("perspective",
+                           SerializedObject::Builder()
+                               .WithNumber("aspect", perspective.aspect)
+                               .WithNumber("fov", perspective.fov)
+                               .WithNumber("zFar", perspective.zFar)
+                               .WithNumber("zNear", perspective.zNear)
+                               .Build());
+    } else {
+        logger->Errorf(
+            "Unknown cameraData.index() %zu, will not be able to serialize CameraComponent on Entity='%s' fully.",
+            cameraData.index(),
+            entity->name.c_str());
+    }
+
+    return builder.Build();
 }
 
 void CameraComponent::OnEvent(HashedString name, EventArgs args)
@@ -123,19 +148,7 @@ void CameraComponent::OnEvent(HashedString name, EventArgs args)
         GameModule::TakeCameraFocus(entity);
     } else if (name == "TakeCameraFocus") {
         GameModule::TakeCameraFocus(entity);
-    } else if (name == "CameraEditorDrag") {
-        deltaLastFrame = *(glm::vec2 *)args["delta"].asPointer;
-    } else if (name == "SetPosition") {
-        glm::vec3 newPos = *(glm::vec3 *)args["pos"].asPointer;
-        entity->transform.SetPosition(newPos);
     } else if (name == "Tick") {
-        auto pos = entity->transform.GetPosition();
-        auto unscaledDt = Time::GetUnscaledDeltaTime();
-        pos.x += deltaLastFrame.x * unscaledDt;
-        pos.y += deltaLastFrame.y * unscaledDt;
-        entity->transform.SetPosition(pos);
-        deltaLastFrame = glm::vec2(0.f, 0.f);
-
         if (hasCreatedLocalResources) {
             SubmittedCamera submittedCamera;
             submittedCamera.descriptorSet = descriptorSet;

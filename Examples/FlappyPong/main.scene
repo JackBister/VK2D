@@ -11,7 +11,7 @@
 					"KC_MOUSE_LEFT",
 					"KC_UP"
 				]
-			}	
+			}
 		]
 	},
 	"physics": {
@@ -47,9 +47,11 @@
 			"components": [
 				{
 					"type": "CameraComponent",
-					"aspect": 0.75,
-					"viewSize": 60,
-					"defaultsToMain": true
+					"defaultsToMain": true,
+					"ortho": {
+						"aspect": 0.75,
+						"viewSize": 60
+					}
 				}
 			]
 		},
@@ -183,4 +185,3 @@
 		}
 	]
 }
-

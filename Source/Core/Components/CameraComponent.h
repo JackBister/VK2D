@@ -1,6 +1,8 @@
 #pragma once
 
 #include <atomic>
+#include <optional>
+#include <variant>
 
 #include <glm/glm.hpp>
 
@@ -8,6 +10,18 @@
 
 class BufferHandle;
 class DescriptorSet;
+
+struct OrthoCamera {
+    float viewSize;
+    float aspect;
+};
+
+struct PerspectiveCamera {
+    float aspect;
+    float fov;
+    float zFar;
+    float zNear;
+};
 
 class CameraComponent : public Component
 {
@@ -25,26 +39,26 @@ public:
     glm::mat4 const & GetProjection();
     glm::mat4 const & GetView();
 
-    float GetAspect();
-    void SetAspect(float);
+    std::optional<OrthoCamera> GetOrtho();
+    void SetOrtho(OrthoCamera);
 
-    float GetViewSize();
-    void SetViewSize(float);
+    std::optional<PerspectiveCamera> GetPerspective();
+    void SetPerspective(PerspectiveCamera);
 
     REFLECT()
     REFLECT_INHERITANCE()
 private:
-    float aspect;
+    enum CameraType { ORTHO = 0, PERSPECTIVE = 1 };
+
+    std::variant<OrthoCamera, PerspectiveCamera> cameraData;
+
     bool defaultsToMain = false;
     bool isProjectionDirty = true;
     bool isViewDirty = true;
     glm::mat4 projection;
     glm::mat4 view;
-    float viewSize;
 
     std::atomic<bool> hasCreatedLocalResources{false};
     DescriptorSet * descriptorSet;
     BufferHandle * uniforms;
-
-    glm::vec2 deltaLastFrame = glm::vec2(0.0, 0.0);
 };
