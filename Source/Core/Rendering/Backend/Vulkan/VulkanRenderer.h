@@ -38,6 +38,7 @@ public:
 
     void RecreateSwapchain() final override;
 
+    RendererConfig GetConfig() final override;
     void UpdateConfig(RendererConfig) final override;
 
     int abortCode = 0;
@@ -78,6 +79,8 @@ private:
                                VkImageLayout newLayout);
 
     RendererConfig config;
+    // TODO: This isn't very elegant
+    bool isSwapchainInvalid = false;
 
     VulkanBasics basics;
     SurfaceCapabilities capabilities;

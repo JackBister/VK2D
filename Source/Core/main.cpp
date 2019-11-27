@@ -42,6 +42,7 @@ int main(int argc, char * argv[])
     RendererConfig cfg;
     cfg.windowResolution.x = 800;
     cfg.windowResolution.y = 600;
+    cfg.presentMode = PresentMode::FIFO;
     Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, cfg);
     RenderPrimitiveFactory(&renderer).CreatePrimitives();
     RenderSystem renderSystem(&renderer);

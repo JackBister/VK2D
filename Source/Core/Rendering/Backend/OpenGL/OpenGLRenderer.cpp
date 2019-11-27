@@ -27,7 +27,7 @@ Renderer::Renderer(char const * title, int const winX, int const winY, uint32_t 
     window = SDL_CreateWindow(
         title, winX, winY, config.windowResolution.x, config.windowResolution.y, flags | SDL_WINDOW_OPENGL);
     auto ctx = SDL_GL_CreateContext(window);
-    SDL_GL_SetSwapInterval(1);
+    UpdatePresentMode();
 
     glewExperimental = GL_TRUE;
     GLenum err = glewInit();
@@ -104,6 +104,17 @@ void Renderer::RenderThread(SDL_GLContext ctx)
     }
 }
 
+void Renderer::UpdatePresentMode()
+{
+    if (config.presentMode == PresentMode::IMMEDIATE) {
+        SDL_GL_SetSwapInterval(0);
+    } else if (config.presentMode == PresentMode::FIFO) {
+        SDL_GL_SetSwapInterval(1);
+    } else if (config.presentMode == PresentMode::MAILBOX) {
+        logger->Warnf("Mailbox present mode is not supported on OpenGL");
+    }
+}
+
 void Renderer::DrainQueue()
 {
     using namespace std::literals::chrono_literals;
@@ -172,9 +183,18 @@ void Renderer::RecreateSwapchain()
     assert(false);
 }
 
-void Renderer::UpdateConfig(RendererConfig config) {
+RendererConfig Renderer::GetConfig()
+{
+    return this->config;
+}
+
+void Renderer::UpdateConfig(RendererConfig config)
+{
     this->config = config;
     SDL_SetWindowSize(window, config.windowResolution.x, config.windowResolution.y);
+	// Hacky way to run the update on the rendering thread, maybe there should be an arbitrary functions RenderCommand
+    renderQueueWrite.Push(RenderCommand(
+        RenderCommand::CreateResourceParams([this](ResourceCreationContext & ctx) { UpdatePresentMode(); })));
 }
 
 #endif

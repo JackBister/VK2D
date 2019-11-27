@@ -178,7 +178,7 @@ uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalReady, FenceHan
         signalReady != nullptr ? ((VulkanSemaphoreHandle *)signalReady)->semaphore : VK_NULL_HANDLE,
         signalFence != nullptr ? ((VulkanFenceHandle *)signalFence)->fence : VK_NULL_HANDLE,
         &imageIndex);
-    if (res == VK_ERROR_OUT_OF_DATE_KHR) {
+    if (res == VK_ERROR_OUT_OF_DATE_KHR || this->isSwapchainInvalid) {
         return UINT32_MAX;
     }
     assert(res == VK_SUCCESS);
@@ -579,24 +579,18 @@ VkExtent2D Renderer::GetDesiredExtent(VkSurfaceCapabilitiesKHR surfaceCapabiliti
 
 VkPresentModeKHR Renderer::GetDesiredPresentMode(std::vector<VkPresentModeKHR> presentModes)
 {
-    return VK_PRESENT_MODE_FIFO_KHR;
-    /*
-    VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_END_RANGE_KHR;
-    // TODO: Options
-    for (auto & presentMode : presentModes) {
-        if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-            desiredPresentMode = presentMode;
-            break;
-        }
-        if (presentMode == VK_PRESENT_MODE_FIFO_KHR) {
-            desiredPresentMode = presentMode;
-        }
-        if (presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR && desiredPresentMode != VK_PRESENT_MODE_FIFO_KHR) {
-            desiredPresentMode = presentMode;
-        }
+    VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+    if (config.presentMode == PresentMode::IMMEDIATE) {
+        desiredPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    } else if (config.presentMode == PresentMode::FIFO) {
+        desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+    } else if (config.presentMode == PresentMode::MAILBOX) {
+        desiredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+    }
+    if (std::find(presentModes.begin(), presentModes.end(), desiredPresentMode) == presentModes.end()) {
+        return VK_PRESENT_MODE_FIFO_KHR;
     }
     return desiredPresentMode;
-    */
 }
 
 VkSurfaceFormatKHR Renderer::GetDesiredSurfaceFormat(std::vector<VkSurfaceFormatKHR> surfaceFormats)
@@ -721,6 +715,7 @@ void Renderer::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage imag
 void Renderer::RecreateSwapchain()
 {
     logger->Infof("Renderer::RecreateSwapchain");
+    isSwapchainInvalid = false;
     InitSurfaceCapabilities();
     uint32_t desiredNumberOfImages = GetDesiredNumberOfImages(capabilities.capabilities);
     VkSurfaceFormatKHR desiredFormat = GetDesiredSurfaceFormat(capabilities.formats);
@@ -827,10 +822,16 @@ void Renderer::RecreateSwapchain()
     }
 }
 
+RendererConfig Renderer::GetConfig()
+{
+    return this->config;
+}
+
 void Renderer::UpdateConfig(RendererConfig config)
 {
     this->config = config;
     SDL_SetWindowSize(window, config.windowResolution.x, config.windowResolution.y);
+    this->isSwapchainInvalid = true;
 }
 
 #endif

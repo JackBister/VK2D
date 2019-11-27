@@ -34,6 +34,7 @@ public:
 
     void RecreateSwapchain() final override;
 
+	RendererConfig GetConfig() final override;
     void UpdateConfig(RendererConfig) final override;
 
     int abortCode = 0;
@@ -41,6 +42,7 @@ public:
 private:
     void DrainQueue();
     void RenderThread(SDL_GLContext ctx);
+    void UpdatePresentMode();
 
     bool isAborting = false;
     uint32_t frameCount = 1;

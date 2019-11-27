@@ -30,16 +30,6 @@ RenderSystem::RenderSystem(Renderer * renderer) : renderer(renderer), uiRenderSy
         });
     Console::RegisterCommand(backbufferOverrideCommand);
 
-    CommandDefinition refreshRenderpassCommand(
-        "test_refresh_renderpass",
-        "test_refresh_renderpass - calls SetRenderpass on all ShaderPrograms to ensure it works.",
-        0,
-        [this](auto args) {
-            passthroughTransformProgram->SetRenderpass(mainRenderpass);
-            postprocessProgram->SetRenderpass(postprocessRenderpass);
-        });
-    Console::RegisterCommand(refreshRenderpassCommand);
-
     CommandDefinition resizeCommand("set_window_resolution",
                                     "set_window_resolution <width> <height> - set the resolution of the window",
                                     2,
@@ -56,12 +46,33 @@ RenderSystem::RenderSystem(Renderer * renderer) : renderer(renderer), uiRenderSy
                                         if (heightInt == 0 && height != "0") {
                                             logger->Errorf("height %s is not a number", height.c_str());
                                         }
-                                        RendererConfig cfg;
-                                        cfg.windowResolution.x = widthInt;
-                                        cfg.windowResolution.y = heightInt;
-                                        this->queuedConfigUpdate = cfg;
+                                        auto config = this->renderer->GetConfig();
+                                        config.windowResolution.x = widthInt;
+                                        config.windowResolution.y = heightInt;
+                                        this->queuedConfigUpdate = config;
                                     });
     Console::RegisterCommand(resizeCommand);
+
+    CommandDefinition presentModeCommand(
+        "set_present_mode",
+        "set_present_mode <immediate|fifo|mailbox> - set the renderer's presentation mode",
+        1,
+        [this](auto args) {
+            auto config = this->renderer->GetConfig();
+            auto modeString = args[0];
+            if (modeString == "immediate") {
+                config.presentMode = PresentMode::IMMEDIATE;
+            } else if (modeString == "fifo") {
+                config.presentMode = PresentMode::FIFO;
+            } else if (modeString == "mailbox") {
+                config.presentMode = PresentMode::MAILBOX;
+            } else {
+                logger->Errorf("Unknown present mode '%s'", modeString.c_str());
+                return;
+            }
+            this->queuedConfigUpdate = config;
+        });
+    Console::RegisterCommand(presentModeCommand);
 }
 
 void RenderSystem::Init()

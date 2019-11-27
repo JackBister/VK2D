@@ -72,6 +72,11 @@ public:
     virtual void RecreateSwapchain() = 0;
 
     /**
+     * Gets the current rendering configuration.
+     */
+    virtual RendererConfig GetConfig() = 0;
+
+    /**
      * Update the rendering configuration.
      */
     virtual void UpdateConfig(RendererConfig) = 0;
