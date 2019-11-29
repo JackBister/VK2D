@@ -368,8 +368,8 @@ void RenderPrimitiveFactory::CreateDefaultSampler(ResourceCreationContext & ctx)
     ResourceCreationContext::SamplerCreateInfo sc = {};
     sc.addressModeU = AddressMode::REPEAT;
     sc.addressModeV = AddressMode::REPEAT;
-    sc.magFilter = Filter::LINEAR;
-    sc.magFilter = Filter::LINEAR;
+    sc.magFilter = Filter::NEAREST;
+    sc.magFilter = Filter::NEAREST;
     auto sampler = ctx.CreateSampler(sc);
     ResourceManager::AddResource("_Primitives/Samplers/Default.sampler", sampler);
 }
