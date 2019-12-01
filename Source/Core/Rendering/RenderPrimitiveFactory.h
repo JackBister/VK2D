@@ -10,6 +10,8 @@ public:
     RenderPrimitiveFactory(Renderer *);
 
     void CreatePrimitives();
+    // This is stupid
+    void LateCreatePrimitives();
 
 private:
     RenderPassHandle * CreateMainRenderpass(ResourceCreationContext &);
@@ -17,6 +19,9 @@ private:
 
     PipelineLayoutHandle * CreatePassthroughTransformPipelineLayout(ResourceCreationContext &);
     VertexInputStateHandle * CreatePassthroughTransformVertexInputState(ResourceCreationContext &);
+
+    void CreateMeshPipelineLayout(ResourceCreationContext &);
+    void CreateMeshVertexInputState(ResourceCreationContext &);
 
     PipelineLayoutHandle * CreateUiPipelineLayout(ResourceCreationContext &);
     VertexInputStateHandle * CreateUiVertexInputState(ResourceCreationContext &);
@@ -44,13 +49,19 @@ private:
                                            ShaderModuleHandle * frag);
 #endif
 
-    void CreateQuadEbo(ResourceCreationContext &);
-    void CreateQuadVbo(ResourceCreationContext &);
-
     void CreateDefaultSampler(ResourceCreationContext &);
     void CreatePostprocessSampler(ResourceCreationContext &);
 
     void CreateFontImage(ResourceCreationContext &);
+
+    void CreateDefaultMaterial(ResourceCreationContext &);
+
+    void CreateQuadEbo(ResourceCreationContext &);
+    void CreateQuadVbo(ResourceCreationContext &);
+    void CreateQuadMesh();
+
+    void CreateBoxVbo(ResourceCreationContext &);
+    void CreateBoxMesh();
 
     Renderer * renderer;
 };

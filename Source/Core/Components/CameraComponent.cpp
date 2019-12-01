@@ -40,7 +40,7 @@ glm::mat4 const & CameraComponent::GetProjection()
             projection = glm::ortho(-cam.viewSize / cam.aspect, cam.viewSize / cam.aspect, -cam.viewSize, cam.viewSize);
         } else {
             auto cam = std::get<PerspectiveCamera>(cameraData);
-            projection = glm::perspective(cam.fov, cam.aspect, cam.zNear, cam.zFar);
+            projection = glm::perspective(glm::radians(cam.fov), cam.aspect, cam.zNear, cam.zFar);
         }
         isProjectionDirty = false;
     }

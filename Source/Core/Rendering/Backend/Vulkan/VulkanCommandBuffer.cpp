@@ -162,6 +162,12 @@ void VulkanCommandBuffer::CmdBindVertexBuffer(BufferHandle * buffer, uint32_t bi
     vkCmdBindVertexBuffers(this->buffer, binding, 1, &((VulkanBufferHandle *)buffer)->buffer, &offset);
 }
 
+void VulkanCommandBuffer::CmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
+                                  uint32_t firstInstance)
+{
+    vkCmdDraw(this->buffer, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
 void VulkanCommandBuffer::CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                                          int32_t vertexOffset)
 {

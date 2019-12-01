@@ -59,6 +59,9 @@ private:
 
     void PreRenderCameras(std::vector<SubmittedCamera> const & cameras);
 
+    void PreRenderMeshes(std::vector<SubmittedMesh> const & meshes);
+    void RenderMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes);
+
     void PreRenderSprites(std::vector<SubmittedSprite> const & sprites);
     void RenderSprites(SubmittedCamera const & camera, std::vector<SubmittedSprite> const & sprites);
 
@@ -75,6 +78,9 @@ private:
 
     PipelineLayoutHandle * passthroughTransformPipelineLayout;
     ShaderProgram * passthroughTransformProgram;
+
+    PipelineLayoutHandle * meshPipelineLayout;
+    ShaderProgram * meshProgram;
 
     ShaderProgram * uiProgram;
 

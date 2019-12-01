@@ -7,6 +7,7 @@ public:
 
 private:
     static void CreatePassthroughTransformShaderProgram();
+    static void CreateMeshShaderProgram();
     static void CreateUiShaderProgram();
     static void CreatePostprocessShaderProgram();
 };

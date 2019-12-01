@@ -85,6 +85,10 @@ void RenderSystem::Init()
     passthroughTransformProgram =
         ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/passthrough-transform.program");
 
+    meshPipelineLayout =
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/mesh.pipelinelayout");
+    meshProgram = ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/mesh.program");
+
     postprocessSampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/postprocess.sampler");
     postprocessDescriptorSetLayout =
         ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/postprocess.layout");

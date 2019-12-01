@@ -14,6 +14,7 @@ class Entity;
 class PhysicsWorld;
 class RenderSystem;
 struct SubmittedCamera;
+struct SubmittedMesh;
 struct SubmittedSprite;
 
 namespace GameModule
@@ -43,6 +44,7 @@ void OnFrameStart(std::function<void()>);
 void RemoveEntity(Entity *);
 SerializedObject SerializePhysics();
 void SubmitCamera(SubmittedCamera const & camera);
+void SubmitMesh(SubmittedMesh const & mesh);
 void SubmitSprite(SubmittedSprite const & sprite);
 void TakeCameraFocus(Entity *);
 void Tick();

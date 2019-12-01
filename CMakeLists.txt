@@ -74,6 +74,8 @@ target_link_libraries(
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/Source FILES ${SOURCES})
 
+add_definitions(-DGLM_FORCE_DEPTH_ZERO_TO_ONE=1)
+
 if (USE_OGL_RENDERER)
     add_definitions(-DUSE_OGL_RENDERER=1)
     include(FindOpenGL)

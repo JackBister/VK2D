@@ -14,6 +14,8 @@
 class Image
 {
 public:
+    Image(std::string const & fileName, uint32_t width, uint32_t height, ImageHandle * img,
+          ImageViewHandle * defaultView);
     ~Image();
 
     static Image * FromFile(std::string const &, bool forceReload = false);
@@ -30,9 +32,6 @@ public:
 #endif
 
 private:
-    Image(std::string const & fileName, uint32_t width, uint32_t height, ImageHandle * img,
-          ImageViewHandle * defaultView);
-
     std::string fileName;
 
     uint32_t width, height;

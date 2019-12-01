@@ -75,6 +75,12 @@ static std::vector<uint8_t> ReadImageFile(std::string fileName, int * width, int
     return data;
 }
 
+Image::Image(std::string const & fileName, uint32_t width, uint32_t height, ImageHandle * img,
+             ImageViewHandle * defaultView)
+    : fileName(fileName), width(width), height(height), img(img), defaultView(defaultView)
+{
+}
+
 Image::~Image()
 {
     auto defaultView = this->defaultView;
@@ -166,9 +172,3 @@ void Image::Unsubscribe(int subscriptionId)
     hotReloadCallbacks.erase(subscriptionId);
 }
 #endif
-
-Image::Image(std::string const & fileName, uint32_t width, uint32_t height, ImageHandle * img,
-             ImageViewHandle * defaultView)
-    : fileName(fileName), width(width), height(height), img(img), defaultView(defaultView)
-{
-}

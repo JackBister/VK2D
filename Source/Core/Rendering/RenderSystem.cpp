@@ -128,6 +128,7 @@ void RenderSystem::PreRenderFrame(SubmittedFrame const & frame)
     currFrame.preRenderPassCommandBuffer->Reset();
     currFrame.preRenderPassCommandBuffer->BeginRecording(nullptr);
     PreRenderCameras(frame.cameras);
+    PreRenderMeshes(frame.meshes);
     PreRenderSprites(frame.sprites);
     uiRenderSystem.PreRenderUi(currFrameInfoIdx, currFrame.preRenderPassCommandBuffer);
     currFrame.preRenderPassCommandBuffer->EndRecording();
@@ -145,6 +146,7 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
         mainRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 1, DEFAULT_CLEAR_VALUES};
     currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::INLINE);
     for (auto const & camera : frame.cameras) {
+        RenderMeshes(camera, frame.meshes);
         RenderSprites(camera, frame.sprites);
     }
 
@@ -203,6 +205,50 @@ void RenderSystem::PreRenderCameras(std::vector<SubmittedCamera> const & cameras
         auto pv = camera.projection * camera.view;
         currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
             camera.uniforms, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(pv));
+    }
+}
+
+void RenderSystem::PreRenderMeshes(std::vector<SubmittedMesh> const & meshes)
+{
+    auto & currFrame = frameInfo[currFrameInfoIdx];
+
+    for (auto const & mesh : meshes) {
+        currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
+            mesh.uniforms, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(mesh.localToWorld));
+    }
+}
+
+void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes)
+{
+    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto res = renderer->GetResolution();
+
+    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    currFrame.mainCommandBuffer->CmdSetViewport(0, 1, &viewport);
+
+    CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
+    currFrame.mainCommandBuffer->CmdSetScissor(0, 1, &scissor);
+
+    currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                 meshProgram->GetPipeline());
+
+    currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 0, {camera.descriptorSet});
+
+    for (auto const & mesh : meshes) {
+        currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 1, {mesh.descriptorSet});
+
+        for (auto const & submesh : mesh.submeshes) {
+            currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 2, {submesh.materialDescriptor});
+            if (submesh.indexBuffer) {
+                currFrame.mainCommandBuffer->CmdBindIndexBuffer(
+                    submesh.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
+                currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                currFrame.mainCommandBuffer->CmdDrawIndexed(submesh.numIndexes, 1, 0, 0);
+            } else {
+                currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                currFrame.mainCommandBuffer->CmdDraw(submesh.numVertices, 1, 0, 0);
+            }
+        }
     }
 }
 

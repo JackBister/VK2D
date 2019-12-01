@@ -6,6 +6,7 @@
 void ShaderProgramFactory::CreateResources()
 {
     CreatePassthroughTransformShaderProgram();
+    CreateMeshShaderProgram();
     CreateUiShaderProgram();
     CreatePostprocessShaderProgram();
 }
@@ -36,6 +37,20 @@ void ShaderProgramFactory::CreatePassthroughTransformShaderProgram()
         0);
 #endif
 }
+
+void ShaderProgramFactory::CreateMeshShaderProgram()
+{
+    ShaderProgram::Create(
+        "_Primitives/ShaderPrograms/mesh.program",
+        {"shaders/mesh.vert", "shaders/mesh.frag"},
+        ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/mesh.state"),
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/mesh.pipelinelayout"),
+        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass"),
+        CullMode::BACK,
+        FrontFace::COUNTER_CLOCKWISE,
+        0);
+}
+
 void ShaderProgramFactory::CreateUiShaderProgram()
 {
 #if BAKE_SHADERS

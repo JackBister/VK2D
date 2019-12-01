@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Core/Rendering/SubmittedCamera.h"
-#include "Core/Rendering/SubmittedSprite.h"
+#include "SubmittedCamera.h"
+#include "SubmittedMesh.h"
+#include "SubmittedSprite.h"
 
-struct SubmittedFrame
-{
-	std::vector<SubmittedCamera> cameras;
-	std::vector<SubmittedSprite> sprites;
+struct SubmittedFrame {
+    std::vector<SubmittedCamera> cameras;
+    std::vector<SubmittedMesh> meshes;
+    std::vector<SubmittedSprite> sprites;
 };
