@@ -127,10 +127,10 @@ void OnGui()
             } else if (ImGui::IsMouseDragging(1)) {
                 auto dragDelta = ImGui::GetMouseDragDelta(1);
                 ImGui::ResetMouseDragDelta(1);
-                cameraRot = glm::quat(
-                    glm::rotate(cameraRot, dragDelta.x * Time::GetUnscaledDeltaTime(), glm::vec3(0.f, -1.f, 0.f)));
-                cameraRot = glm::quat(
-                    glm::rotate(cameraRot, dragDelta.y * Time::GetUnscaledDeltaTime(), glm::vec3(-1.f, 0.f, 0.f)));
+                auto cameraEuler = glm::eulerAngles(cameraRot);
+                cameraEuler.x -= dragDelta.y * Time::GetUnscaledDeltaTime();
+                cameraEuler.y -= dragDelta.x * Time::GetUnscaledDeltaTime();
+                cameraRot = glm::quat(cameraEuler);
             }
 
             if (Input::GetKey(KC_w)) {
