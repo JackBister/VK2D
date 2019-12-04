@@ -168,6 +168,9 @@ void RenderSystem::InitSwapchainResources()
         ResourceManager::AddResource("_Primitives/Renderpasses/postprocess.pass", this->postprocessRenderpass);
 
         for (auto & fi : frameInfo) {
+            if (fi.framebuffer) {
+                ctx.DestroyFramebuffer(fi.framebuffer);
+            }
             if (fi.commandBufferAllocator) {
                 ctx.DestroyCommandBufferAllocator(fi.commandBufferAllocator);
             }
@@ -188,9 +191,12 @@ void RenderSystem::InitSwapchainResources()
             }
         }
 
+        auto backbuffers = renderer->GetBackbuffers();
+        CommandBufferAllocator::CommandBufferCreateInfo ctxCreateInfo = {};
+        ctxCreateInfo.level = CommandBufferLevel::PRIMARY;
+
         frameInfo.clear();
         frameInfo.resize(renderer->GetSwapCount());
-
         for (size_t i = 0; i < frameInfo.size(); ++i) {
             frameInfo[i].commandBufferAllocator = ctx.CreateCommandBufferAllocator();
             frameInfo[i].canStartFrame = ctx.CreateFence(true);
@@ -198,7 +204,14 @@ void RenderSystem::InitSwapchainResources()
             frameInfo[i].preRenderPassFinished = ctx.CreateSemaphore();
             frameInfo[i].mainRenderPassFinished = ctx.CreateSemaphore();
             frameInfo[i].postprocessFinished = ctx.CreateSemaphore();
+
+            frameInfo[i].backbuffer = backbuffers[i];
+            frameInfo[i].preRenderPassCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
+            frameInfo[i].mainCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
+            frameInfo[i].postProcessCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
         }
+
+        InitFramebuffers(ctx);
         sem.Signal();
     });
     sem.Wait();
@@ -206,14 +219,19 @@ void RenderSystem::InitSwapchainResources()
     passthroughTransformProgram->SetRenderpass(mainRenderpass);
     postprocessProgram->SetRenderpass(postprocessRenderpass);
     uiProgram->SetRenderpass(mainRenderpass);
+}
 
-    auto framebuffers = renderer->CreateBackbuffers(mainRenderpass);
-    CommandBufferAllocator::CommandBufferCreateInfo ctxCreateInfo = {};
-    ctxCreateInfo.level = CommandBufferLevel::PRIMARY;
+void RenderSystem::InitFramebuffers(ResourceCreationContext & ctx)
+{
+    auto res = renderer->GetResolution();
     for (size_t i = 0; i < frameInfo.size(); ++i) {
-        frameInfo[i].framebuffer = framebuffers[i];
-        frameInfo[i].preRenderPassCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
-        frameInfo[i].mainCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
-        frameInfo[i].postProcessCommandBuffer = frameInfo[i].commandBufferAllocator->CreateBuffer(ctxCreateInfo);
+        ResourceCreationContext::FramebufferCreateInfo ci;
+        ci.attachments = {frameInfo[i].backbuffer};
+        ci.width = res.x;
+        ci.height = res.y;
+        ci.layers = 1;
+        ci.renderPass = this->mainRenderpass;
+
+        frameInfo[i].framebuffer = ctx.CreateFramebuffer(ci);
     }
 }

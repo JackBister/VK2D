@@ -21,7 +21,7 @@ public:
     ~Renderer();
 
     uint32_t AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandle * signalFence) final override;
-    std::vector<FramebufferHandle *> CreateBackbuffers(RenderPassHandle * renderPass) final override;
+    std::vector<ImageViewHandle *> GetBackbuffers() final override;
     Format GetBackbufferFormat() const final override;
     glm::ivec2 GetResolution() const final override;
     uint32_t GetSwapCount() const final override;
@@ -34,7 +34,7 @@ public:
 
     void RecreateSwapchain() final override;
 
-	RendererConfig GetConfig() final override;
+    RendererConfig GetConfig() final override;
     void UpdateConfig(RendererConfig) final override;
 
     int abortCode = 0;
@@ -58,7 +58,10 @@ private:
 
     std::chrono::milliseconds totalSwapTime = std::chrono::milliseconds(0);
 
-    OpenGLFramebufferHandle backbuffer;
+    bool backbufferIsStale = false;
+    GLuint backbufferFramebuffer;
+    OpenGLImageHandle backbufferImage;
+    OpenGLImageViewHandle backbufferView;
 
     SDL_Window * window;
 };

@@ -445,7 +445,6 @@ ImageViewHandle * VulkanResourceContext::CreateImageView(ResourceCreationContext
     auto ret = (VulkanImageViewHandle *)allocator.allocate(sizeof(VulkanImageViewHandle));
     auto const res = vkCreateImageView(renderer->basics.device, &info, nullptr, &ret->imageView);
     assert(res == VK_SUCCESS);
-    ret->image = ci.image;
 
     return ret;
 }
@@ -460,16 +459,15 @@ void VulkanResourceContext::DestroyImageView(ImageViewHandle * view)
 
 FramebufferHandle * VulkanResourceContext::CreateFramebuffer(ResourceCreationContext::FramebufferCreateInfo const & ci)
 {
-    std::vector<VkImageView> imageViews(ci.attachmentCount);
-    std::transform(ci.pAttachments,
-                   &ci.pAttachments[ci.attachmentCount],
-                   imageViews.begin(),
-                   [](ImageViewHandle const * reference) { return ((VulkanImageViewHandle *)reference)->imageView; });
+    std::vector<VkImageView> imageViews(ci.attachments.size());
+    for (size_t i = 0; i < ci.attachments.size(); ++i) {
+        imageViews[i] = ((VulkanImageViewHandle *)ci.attachments[i])->imageView;
+    }
     VkFramebufferCreateInfo const info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
                                        nullptr,
                                        0,
                                        ((VulkanRenderPassHandle *)ci.renderPass)->renderPass,
-                                       ci.attachmentCount,
+                                       imageViews.size(),
                                        &imageViews[0],
                                        ci.width,
                                        ci.height,

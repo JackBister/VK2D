@@ -36,6 +36,7 @@ public:
 private:
     struct FrameInfo {
         FramebufferHandle * framebuffer;
+        ImageViewHandle * backbuffer;
 
         CommandBuffer * preRenderPassCommandBuffer;
         CommandBuffer * mainCommandBuffer;
@@ -50,6 +51,7 @@ private:
         CommandBufferAllocator * commandBufferAllocator;
     };
 
+    void InitFramebuffers(ResourceCreationContext &);
     void InitSwapchainResources();
 
     uint32_t AcquireNextFrame();

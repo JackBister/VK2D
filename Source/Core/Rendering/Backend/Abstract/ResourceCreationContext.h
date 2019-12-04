@@ -83,8 +83,7 @@ public:
 
     struct FramebufferCreateInfo {
         RenderPassHandle * renderPass;
-        uint32_t attachmentCount;
-        ImageViewHandle const ** pAttachments;
+        std::vector<ImageViewHandle *> attachments;
         uint32_t width, height, layers;
     };
     virtual FramebufferHandle * CreateFramebuffer(FramebufferCreateInfo const &) = 0;

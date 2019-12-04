@@ -39,6 +39,8 @@ Renderer::Renderer(char const * title, int const winX, int const winY, uint32_t 
     stbi_set_flip_vertically_on_load(true);
 
     glReadBuffer(GL_BACK);
+    glGenFramebuffers(1, &backbufferFramebuffer);
+    RecreateSwapchain();
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -73,12 +75,15 @@ uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandl
     if (signalFence != nullptr) {
         ((OpenGLFenceHandle *)signalFence)->sem.Signal();
     }
+    if (backbufferIsStale) {
+        return UINT32_MAX;
+    }
     return 0;
 }
 
-std::vector<FramebufferHandle *> Renderer::CreateBackbuffers(RenderPassHandle * renderPass)
+std::vector<ImageViewHandle *> Renderer::GetBackbuffers()
 {
-    return std::vector<FramebufferHandle *>{&backbuffer};
+    return std::vector<ImageViewHandle *>{&backbufferView};
 }
 
 Format Renderer::GetBackbufferFormat() const
@@ -151,6 +156,18 @@ void Renderer::DrainQueue()
         if (nativeWait != nullptr) {
             nativeWait->sem.Wait();
         }
+        glBlitNamedFramebuffer(backbufferFramebuffer,
+                               0,
+                               0,
+                               0,
+                               config.windowResolution.x,
+                               config.windowResolution.y,
+                               0,
+                               0,
+                               config.windowResolution.x,
+                               config.windowResolution.y,
+                               GL_COLOR_BUFFER_BIT,
+                               GL_LINEAR);
         // With Aero enabled in Windows 7, this doesn't busy wait.
         // With Aero disabled, it does, causing 100% use on the GPU thread. Crazy.
         SDL_GL_SwapWindow(window);
@@ -178,9 +195,41 @@ void Renderer::DrainQueue()
 
 void Renderer::RecreateSwapchain()
 {
-    // You shouldn't ever end up here since AcquireNextImageIdx always returns successfully on OpenGL
-    logger->Warnf("RecreateSwapchain called in OpenGL mode! How did you end up here?");
-    assert(false);
+    backbufferIsStale = false;
+
+    if (backbufferImage.nativeHandle != 0) {
+        glDeleteTextures(1, &backbufferImage.nativeHandle);
+    }
+
+    glGenTextures(1, &backbufferImage.nativeHandle);
+    glBindTexture(GL_TEXTURE_2D, backbufferImage.nativeHandle);
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 GL_RGBA,
+                 config.windowResolution.x,
+                 config.windowResolution.y,
+                 0,
+                 GL_RGBA,
+                 GL_UNSIGNED_BYTE,
+                 nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    backbufferImage.depth = 1;
+    backbufferImage.format = Format::RGBA8;
+    backbufferImage.type = ImageHandle::Type::TYPE_2D;
+    backbufferImage.width = config.windowResolution.x;
+    backbufferImage.height = config.windowResolution.y;
+
+    backbufferView.image = &backbufferImage;
+    backbufferView.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+    backbufferView.subresourceRange.baseArrayLayer = 0;
+    backbufferView.subresourceRange.baseMipLevel = 0;
+    backbufferView.subresourceRange.layerCount = 1;
+    backbufferView.subresourceRange.levelCount = 1;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, backbufferFramebuffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, backbufferImage.nativeHandle, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 RendererConfig Renderer::GetConfig()
@@ -190,9 +239,10 @@ RendererConfig Renderer::GetConfig()
 
 void Renderer::UpdateConfig(RendererConfig config)
 {
+    backbufferIsStale = true;
     this->config = config;
     SDL_SetWindowSize(window, config.windowResolution.x, config.windowResolution.y);
-	// Hacky way to run the update on the rendering thread, maybe there should be an arbitrary functions RenderCommand
+    // Hacky way to run the update on the rendering thread, maybe there should be an arbitrary functions RenderCommand
     renderQueueWrite.Push(RenderCommand(
         RenderCommand::CreateResourceParams([this](ResourceCreationContext & ctx) { UpdatePresentMode(); })));
 }

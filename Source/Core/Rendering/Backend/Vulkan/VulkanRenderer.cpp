@@ -184,45 +184,12 @@ uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalReady, FenceHan
     assert(res == VK_SUCCESS);
     return imageIndex;
 }
-
-std::vector<FramebufferHandle *> Renderer::CreateBackbuffers(RenderPassHandle * renderPass)
+std::vector<ImageViewHandle *> Renderer::GetBackbuffers()
 {
-    for (auto fb : swapchain.framebuffers) {
-        vkDestroyFramebuffer(basics.device, fb, nullptr);
-    }
-    swapchain.framebuffers.clear();
-    swapchain.framebuffers.resize(swapchain.images.size());
-    swapchain.backbuffers.clear();
-    swapchain.backbuffers.resize(swapchain.images.size());
-    std::vector<FramebufferHandle *> ret(swapchain.backbuffers.size());
-    for (size_t i = 0; i < swapchain.images.size(); ++i) {
-        VkFramebufferCreateInfo framebufferInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                                                nullptr,
-                                                0,
-                                                ((VulkanRenderPassHandle *)renderPass)->renderPass,
-                                                1,
-                                                &swapchain.imageViews[i],
-                                                swapchain.extent.width,
-                                                swapchain.extent.height,
-                                                1};
-        auto res = vkCreateFramebuffer(basics.device, &framebufferInfo, nullptr, &swapchain.framebuffers[i]);
-        if (res != VK_SUCCESS) {
-            logger->Severef("Couldn't create swap chain framebuffers.");
-            assert(false);
-            exit(1);
-        }
-
-        VulkanFramebufferHandle handle = {};
-        // TODO:
-        handle.attachmentCount = 0;
-        handle.format = ToAbstractFormat(swapchain.format);
-        handle.framebuffer = swapchain.framebuffers[i];
-        handle.height = swapchain.extent.height;
-        handle.width = swapchain.extent.width;
-        handle.layers = 1;
-        handle.pAttachments = nullptr;
-        swapchain.backbuffers[i] = handle;
-        ret[i] = &swapchain.backbuffers[i];
+    std::vector<ImageViewHandle *> ret(swapchain.imageViews.size());
+    for (size_t i = 0; i < swapchain.imageViews.size(); ++i) {
+        ret[i] = new VulkanImageViewHandle();
+        ((VulkanImageViewHandle *)ret[i])->imageView = swapchain.imageViews[i];
     }
     return ret;
 }

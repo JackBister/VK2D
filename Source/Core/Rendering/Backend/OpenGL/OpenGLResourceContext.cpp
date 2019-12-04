@@ -110,37 +110,39 @@ void OpenGLResourceContext::DestroyImageView(ImageViewHandle * handle)
 
 FramebufferHandle * OpenGLResourceContext::CreateFramebuffer(ResourceCreationContext::FramebufferCreateInfo const& ci)
 {
-	assert(ci.attachmentCount != 0);
-	assert(ci.pAttachments != nullptr);
+	assert(ci.attachments.size() != 0);
 	assert(ci.width != 0);
 	assert(ci.height != 0);
 	auto ret = (OpenGLFramebufferHandle *)allocator.allocate(sizeof(OpenGLFramebufferHandle));
-	ret->attachmentCount = ci.attachmentCount;
-	ret->pAttachments = ci.pAttachments;
+	ret = new (ret) OpenGLFramebufferHandle();
+	ret->attachments.resize(ci.attachments.size());
+	for (size_t i = 0; i < ci.attachments.size(); ++i) {
+		ret->attachments[i] = (OpenGLImageViewHandle *)ci.attachments[i];
+	}
 	ret->width = ci.width;
 	ret->height = ci.height;
 	ret->layers = ci.layers;
 	glCreateFramebuffers(1, &ret->nativeHandle);
 	//Arithmetic on enums = ugly, but option is 16-way switch case.
 	GLenum colorAttachment = GL_COLOR_ATTACHMENT0;
-	for (uint32_t i = 0; i < ci.attachmentCount; ++i) {
-		assert(ci.pAttachments[i]);
-		auto tex = ((OpenGLImageHandle *)ci.pAttachments[i]->image);
-		if (ci.pAttachments[i]->subresourceRange.aspectMask & ImageViewHandle::COLOR_BIT) {
+	for (uint32_t i = 0; i < ci.attachments.size(); ++i) {
+		assert(ret->attachments[i]);
+		auto tex = ((OpenGLImageHandle *)ret->attachments[i]->image);
+		if (ret->attachments[i]->subresourceRange.aspectMask & ImageViewHandle::COLOR_BIT) {
 			assert(colorAttachment <= GL_COLOR_ATTACHMENT12);
 			glNamedFramebufferTexture(ret->nativeHandle, colorAttachment, tex->nativeHandle, 0);
 			colorAttachment++;
-		} else if (ci.pAttachments[i]->subresourceRange.aspectMask & ImageViewHandle::DEPTH_BIT) {
+		} else if (ret->attachments[i]->subresourceRange.aspectMask & ImageViewHandle::DEPTH_BIT) {
 			//An attachment can be depth-stencil, which combines the two bits.
-			if (ci.pAttachments[i]->subresourceRange.aspectMask & ImageViewHandle::STENCIL_BIT) {
+			if (ret->attachments[i]->subresourceRange.aspectMask & ImageViewHandle::STENCIL_BIT) {
 				glNamedFramebufferTexture(ret->nativeHandle, GL_DEPTH_STENCIL_ATTACHMENT, tex->nativeHandle, 0);
 			} else {
 				glNamedFramebufferTexture(ret->nativeHandle, GL_DEPTH_ATTACHMENT, tex->nativeHandle, 0);
 			}
-		} else if (ci.pAttachments[i]->subresourceRange.aspectMask & ImageViewHandle::STENCIL_BIT) {
+		} else if (ret->attachments[i]->subresourceRange.aspectMask & ImageViewHandle::STENCIL_BIT) {
 			glNamedFramebufferTexture(ret->nativeHandle, GL_STENCIL_ATTACHMENT, tex->nativeHandle, 0);
 		} else {
-			logger->Errorf("Unknown image aspect bit in %ud.", ci.pAttachments[i]->subresourceRange.aspectMask);
+			logger->Errorf("Unknown image aspect bit in %ud.", ret->attachments[i]->subresourceRange.aspectMask);
 		}
 	}
 	return ret;

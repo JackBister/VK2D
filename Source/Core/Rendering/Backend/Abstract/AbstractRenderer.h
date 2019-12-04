@@ -35,10 +35,11 @@ public:
      */
     virtual void CreateResources(std::function<void(ResourceCreationContext &)> fun) = 0;
     /**
-     * Creates the backbuffers in the swap chain. The backbuffers must be compatible with the given renderpass.
-     * The returned vector must have the same size as the return value of GetSwapCount().
+     * Gets the backbuffers in the swapchain. The returned ImageViews should be suitable for using as color output
+     * attachments in a renderpass/framebuffer. This should be called after calling RecreateSwapchain. The returned
+     * vector must have the same size as the return value of GetSwapCount().
      */
-    virtual std::vector<FramebufferHandle *> CreateBackbuffers(RenderPassHandle * renderPass) = 0;
+    virtual std::vector<ImageViewHandle *> GetBackbuffers() = 0;
 
     /**
      * Takes ownership of the next frame in the swapchain. Once acquired the consumer can render freely into the
