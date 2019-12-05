@@ -17,6 +17,42 @@
             "problemMatcher": []
         },
         {
+            "label": "remove_build_folder",
+            "type": "shell",
+            "windows": {
+                "command": "Remove-Item",
+                "args": [
+                    "-Recurse",
+                    "-Force",
+                    "build"
+                ]
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "cmake_ogl",
+            "dependsOn": "build_folder",
+            "type": "shell",
+            "windows": {
+                "command": "cmake",
+                "args": [
+                    "-DUSE_OGL_RENDERER=1",
+                    "-G",
+                    "Visual Studio 16 2019",
+                    "-A",
+                    "x64",
+                    ".."
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder}/build"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "cmake",
             "dependsOn": "build_folder",
             "type": "shell",
