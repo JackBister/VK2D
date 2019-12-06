@@ -65,11 +65,11 @@ std::vector<ShaderProgram::ShaderStage> ShaderProgram::ReadShaderStages(std::vec
     return stages;
 }
 
-PipelineHandle * ShaderProgram::CreatePipeline(std::vector<ShaderStage> stages,
-                                               VertexInputStateHandle * vertexInputState,
-                                               PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
-                                               CullMode cullMode, FrontFace frontFace, uint32_t subpass,
-                                               ResourceCreationContext & ctx)
+PipelineHandle * ShaderProgram::CreatePipeline(
+    std::vector<ShaderStage> stages, VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
+    RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace, uint32_t subpass,
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil,
+    ResourceCreationContext & ctx)
 {
 
     std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineShaderStageCreateInfo> stagesCreateInfo(
@@ -87,6 +87,7 @@ PipelineHandle * ShaderProgram::CreatePipeline(std::vector<ShaderStage> stages,
     rasterizationInfo.frontFace = frontFace;
 
     ResourceCreationContext::GraphicsPipelineCreateInfo pipelineCreateInfo;
+    pipelineCreateInfo.depthStencil = &depthStencil;
     pipelineCreateInfo.pipelineLayout = pipelineLayout;
     pipelineCreateInfo.rasterizationState = &rasterizationInfo;
     pipelineCreateInfo.renderPass = renderPass;
@@ -97,12 +98,13 @@ PipelineHandle * ShaderProgram::CreatePipeline(std::vector<ShaderStage> stages,
     return ctx.CreateGraphicsPipeline(pipelineCreateInfo);
 }
 
-ShaderProgram::ShaderProgram(std::string const & name, PipelineHandle * pipeline,
-                             std::vector<ShaderStageCreateInfo> stageCreateInfo,
-                             VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
-                             RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace, uint32_t subpass)
+ShaderProgram::ShaderProgram(
+    std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStageCreateInfo> stageCreateInfo,
+    VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
+    CullMode cullMode, FrontFace frontFace, uint32_t subpass,
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil)
     : name(name), pipeline(pipeline), vertexInputState(vertexInputState), pipelineLayout(pipelineLayout),
-      renderPass(renderPass), cullMode(cullMode), frontFace(frontFace), subpass(subpass)
+      renderPass(renderPass), cullMode(cullMode), frontFace(frontFace), subpass(subpass), depthStencil(depthStencil)
 {
     for (auto const & ci : stageCreateInfo) {
         ShaderStage stage;
@@ -115,40 +117,57 @@ ShaderProgram::ShaderProgram(std::string const & name, PipelineHandle * pipeline
     ResourceManager::AddResource(name, this);
 }
 
-ShaderProgram * ShaderProgram::Create(std::string const & name, std::vector<std::string> fileNames,
-                                      VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
-                                      RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace,
-                                      uint32_t subpass)
+ShaderProgram * ShaderProgram::Create(
+    std::string const & name, std::vector<std::string> fileNames, VertexInputStateHandle * vertexInputState,
+    PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace,
+    uint32_t subpass,
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil)
 {
     assert(fileNames.size() > 0);
 
     ShaderProgram * ret;
     Semaphore sem;
-    ResourceManager::CreateResources(
-        [&ret, &sem, name, fileNames, cullMode, frontFace, pipelineLayout, renderPass, subpass, vertexInputState](
-            ResourceCreationContext & ctx) {
-            GlslToSpirvShaderCompiler glslCompiler(std::make_shared<DefaultFileSlurper>());
+    ResourceManager::CreateResources([&ret,
+                                      &sem,
+                                      depthStencil,
+                                      name,
+                                      fileNames,
+                                      cullMode,
+                                      frontFace,
+                                      pipelineLayout,
+                                      renderPass,
+                                      subpass,
+                                      vertexInputState](ResourceCreationContext & ctx) {
+        GlslToSpirvShaderCompiler glslCompiler(std::make_shared<DefaultFileSlurper>());
 
-            auto stages = ReadShaderStages(fileNames, ctx);
-            for (size_t i = 0; i < stages.size(); ++i) {
-                auto const & stage = stages[i];
-                if (!stage.compiledSuccessfully) {
-                    logger->Errorf("Shader stage %zu (%s) failed to compile for shader program '%s', will return null.",
-                                   i,
-                                   stage.fileName,
-                                   name);
-                    ret = nullptr;
-                    sem.Signal();
-                    return;
-                }
+        auto stages = ReadShaderStages(fileNames, ctx);
+        for (size_t i = 0; i < stages.size(); ++i) {
+            auto const & stage = stages[i];
+            if (!stage.compiledSuccessfully) {
+                logger->Errorf("Shader stage %zu (%s) failed to compile for shader program '%s', will return null.",
+                               i,
+                               stage.fileName,
+                               name);
+                ret = nullptr;
+                sem.Signal();
+                return;
             }
-            auto pipeline =
-                CreatePipeline(stages, vertexInputState, pipelineLayout, renderPass, cullMode, frontFace, subpass, ctx);
+        }
+        auto pipeline = CreatePipeline(
+            stages, vertexInputState, pipelineLayout, renderPass, cullMode, frontFace, subpass, depthStencil, ctx);
 
-            ret = new ShaderProgram(
-                name, pipeline, stages, vertexInputState, pipelineLayout, renderPass, cullMode, frontFace, subpass);
-            sem.Signal();
-        });
+        ret = new ShaderProgram(name,
+                                pipeline,
+                                stages,
+                                vertexInputState,
+                                pipelineLayout,
+                                renderPass,
+                                cullMode,
+                                frontFace,
+                                subpass,
+                                depthStencil);
+        sem.Signal();
+    });
     sem.Wait();
     ResourceManager::AddResource(name, ret);
 
@@ -197,6 +216,7 @@ ShaderProgram * ShaderProgram::Create(std::string const & name, std::vector<std:
                                                    program->cullMode,
                                                    program->frontFace,
                                                    program->subpass,
+                                                   program->depthStencil,
                                                    ctx);
                 ResourceManager::DestroyResources([oldStages, oldPipeline](ResourceCreationContext & ctx) {
                     ctx.DestroyPipeline(oldPipeline);
@@ -224,16 +244,20 @@ void ShaderProgram::SetRenderpass(RenderPassHandle * newPass)
                                         this->cullMode,
                                         this->frontFace,
                                         this->subpass,
+                                        this->depthStencil,
                                         ctx);
         ResourceManager::DestroyResources(
             [oldPipeline](ResourceCreationContext & ctx) { ctx.DestroyPipeline(oldPipeline); });
     });
 }
 
-ShaderProgram::ShaderProgram(std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStage> & stages,
-                             VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
-                             RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace, uint32_t subpass)
+ShaderProgram::ShaderProgram(
+    std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStage> & stages,
+    VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
+    CullMode cullMode, FrontFace frontFace, uint32_t subpass,
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil)
     : name(name), pipeline(pipeline), stages(stages), vertexInputState(vertexInputState),
-      pipelineLayout(pipelineLayout), renderPass(renderPass), cullMode(cullMode), frontFace(frontFace), subpass(subpass)
+      pipelineLayout(pipelineLayout), renderPass(renderPass), cullMode(cullMode), frontFace(frontFace),
+      subpass(subpass), depthStencil(depthStencil)
 {
 }

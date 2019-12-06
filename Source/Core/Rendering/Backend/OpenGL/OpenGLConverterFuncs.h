@@ -14,6 +14,7 @@ typename std::underlying_type<T>::type ToUnderlyingType(T in)
 }
 
 GLint ToGLAddressMode(AddressMode addressMode);
+GLenum ToGLCompareOp(CompareOp compareOp);
 GLenum ToGLCullMode(CullMode cullMode);
 GLint ToGLFilter(Filter filter);
 GLint ToGLFormat(Format format);

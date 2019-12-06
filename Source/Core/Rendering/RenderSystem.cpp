@@ -141,6 +141,8 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
     currFrame.mainCommandBuffer->Reset();
     currFrame.mainCommandBuffer->BeginRecording(nullptr);
 
+    Prepass(frame);
+
     auto res = renderer->GetResolution();
     CommandBuffer::RenderPassBeginInfo beginInfo = {
         mainRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 1, DEFAULT_CLEAR_VALUES};
@@ -167,7 +169,7 @@ void RenderSystem::PostProcessFrame()
     currFrame.postProcessCommandBuffer->Reset();
     currFrame.postProcessCommandBuffer->BeginRecording(nullptr);
     CommandBuffer::RenderPassBeginInfo beginInfo = {
-        postprocessRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 0, nullptr};
+        postprocessRenderpass, currFrame.postprocessFramebuffer, {{0, 0}, {res.x, res.y}}, 0, nullptr};
     currFrame.postProcessCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::INLINE);
 
     if (backbufferOverride != nullptr) {
@@ -196,6 +198,51 @@ void RenderSystem::PostProcessFrame()
                                    {currFrame.mainRenderPassFinished},
                                    {currFrame.postprocessFinished},
                                    currFrame.canStartFrame);
+}
+
+void RenderSystem::Prepass(SubmittedFrame const & frame)
+{
+    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto res = renderer->GetResolution();
+
+    CommandBuffer::ClearValue depthClear;
+    depthClear.type = CommandBuffer::ClearValue::Type::DEPTH_STENCIL;
+    depthClear.depthStencil.depth = 1.f;
+    depthClear.depthStencil.stencil = 0;
+    CommandBuffer::RenderPassBeginInfo beginInfo = {
+        prepass, currFrame.prepassFramebuffer, {{0, 0}, {res.x, res.y}}, 1, &depthClear};
+    currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::INLINE);
+
+    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    currFrame.mainCommandBuffer->CmdSetViewport(0, 1, &viewport);
+
+    CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
+    currFrame.mainCommandBuffer->CmdSetScissor(0, 1, &scissor);
+
+    currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                 prepassProgram->GetPipeline());
+
+    for (auto const & camera : frame.cameras) {
+        currFrame.mainCommandBuffer->CmdBindDescriptorSets(prepassPipelineLayout, 0, {camera.descriptorSet});
+
+        for (auto const & mesh : frame.meshes) {
+            currFrame.mainCommandBuffer->CmdBindDescriptorSets(prepassPipelineLayout, 1, {mesh.descriptorSet});
+
+            for (auto const & submesh : mesh.submeshes) {
+                if (submesh.indexBuffer) {
+                    currFrame.mainCommandBuffer->CmdBindIndexBuffer(
+                        submesh.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
+                    currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                    currFrame.mainCommandBuffer->CmdDrawIndexed(submesh.numIndexes, 1, 0, 0);
+                } else {
+                    currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                    currFrame.mainCommandBuffer->CmdDraw(submesh.numVertices, 1, 0, 0);
+                }
+            }
+        }
+    }
+
+    currFrame.mainCommandBuffer->CmdEndRenderPass();
 }
 
 void RenderSystem::PreRenderCameras(std::vector<SubmittedCamera> const & cameras)

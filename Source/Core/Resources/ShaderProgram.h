@@ -14,15 +14,17 @@ public:
         ShaderModuleHandle * shaderModule;
     };
 
-    ShaderProgram(std::string const & name, PipelineHandle * pipeline,
-                  std::vector<ShaderStageCreateInfo> stageCreateInfo, VertexInputStateHandle * vertexInputState,
-                  PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass, CullMode cullMode,
-                  FrontFace frontFace, uint32_t subpass);
+    ShaderProgram(
+        std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStageCreateInfo> stageCreateInfo,
+        VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
+        CullMode cullMode, FrontFace frontFace, uint32_t subpass,
+        ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil);
 
-    static ShaderProgram * Create(std::string const & name, std::vector<std::string> fileNames,
-                                  VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
-                                  RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace,
-                                  uint32_t subpass);
+    static ShaderProgram *
+    Create(std::string const & name, std::vector<std::string> fileNames, VertexInputStateHandle * vertexInputState,
+           PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace,
+           uint32_t subpass,
+           ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil);
 
     inline PipelineHandle * GetPipeline() { return pipeline; }
 
@@ -36,22 +38,26 @@ private:
         ShaderModuleHandle * shaderModule;
     };
 
-    ShaderProgram(std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStage> & stages,
-                  VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
-                  RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace, uint32_t subpass);
+    ShaderProgram(
+        std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStage> & stages,
+        VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
+        CullMode cullMode, FrontFace frontFace, uint32_t subpass,
+        ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil);
 
     static std::vector<ShaderStage> ReadShaderStages(std::vector<std::string> const & fileNames,
                                                      ResourceCreationContext & ctx);
-    static PipelineHandle * CreatePipeline(std::vector<ShaderStage>, VertexInputStateHandle * vertexInputState,
-                                           PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
-                                           CullMode cullMode, FrontFace frontFace, uint32_t subpass,
-                                           ResourceCreationContext & ctx);
+    static PipelineHandle * CreatePipeline(
+        std::vector<ShaderStage>, VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
+        RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace, uint32_t subpass,
+        ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil,
+        ResourceCreationContext & ctx);
 
     std::string name;
     PipelineHandle * pipeline;
 
     std::vector<ShaderStage> stages;
 
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
     VertexInputStateHandle * vertexInputState;
     PipelineLayoutHandle * pipelineLayout;
     RenderPassHandle * renderPass;

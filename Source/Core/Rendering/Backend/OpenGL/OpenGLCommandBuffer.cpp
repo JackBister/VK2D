@@ -93,6 +93,18 @@ void OpenGLCommandBuffer::CmdBindIndexBuffer(BufferHandle * buffer, size_t offse
     commandList.push_back(BindIndexBufferArgs{nativeBuffer->nativeHandle, offset, type});
 }
 
+void OpenGLCommandBuffer::CmdBindPipeline(RenderPassHandle::PipelineBindPoint bp, PipelineHandle * handle)
+{
+    auto nativeHandle = (OpenGLPipelineHandle *)handle;
+    commandList.push_back(BindPipelineArgs{nativeHandle->nativeHandle,
+                                           ((OpenGLVertexInputStateHandle *)handle->vertexInputState)->nativeHandle,
+                                           ToGLCullMode(nativeHandle->rasterizationState.cullMode),
+                                           ToGLFrontFace(nativeHandle->rasterizationState.frontFace),
+                                           nativeHandle->depthStencil.depthTestEnable,
+                                           nativeHandle->depthStencil.depthWriteEnable,
+                                           ToGLCompareOp(nativeHandle->depthStencil.depthCompareOp)});
+}
+
 void OpenGLCommandBuffer::CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride)
 {
     auto nativeBuffer = (OpenGLBufferHandle *)buffer;
@@ -169,13 +181,11 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
             for (uint32_t i = 0; i < args.clearValueCount; ++i) {
                 if (args.pClearValues[i].type == CommandBuffer::ClearValue::Type::COLOR) {
                     auto & color = args.pClearValues[i].color.float32;
-                    glClearColor(color[0], color[1], color[2], color[3]);
-                    glClear(GL_COLOR_BUFFER_BIT);
+                    glClearBufferfv(GL_COLOR, 0, color);
                 } else if (args.pClearValues[i].type == CommandBuffer::ClearValue::Type::DEPTH_STENCIL) {
                     auto & depthStencil = args.pClearValues[i].depthStencil;
-                    glClearDepthf(depthStencil.depth);
-                    glClearStencil(depthStencil.stencil);
-                    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+                    glDepthMask(true);
+                    glClearBufferfi(GL_DEPTH_STENCIL, 0, depthStencil.depth, depthStencil.stencil);
                 }
             }
             allocator->deallocate((uint8_t *)args.pClearValues, args.clearValueCount * sizeof(ClearValue const));
@@ -215,6 +225,13 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
             glFrontFace(args.frontFace);
             glUseProgram(args.program);
             glBindVertexArray(args.vao);
+            glDepthMask(args.depthWriteEnable);
+            if (args.depthTestEnable) {
+                glEnable(GL_DEPTH_TEST);
+            } else {
+                glDisable(GL_DEPTH_TEST);
+            }
+            glDepthFunc(args.depthFunc);
             break;
         }
         case RenderCommandType::BIND_VERTEX_BUFFER: {
@@ -225,7 +242,8 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
         }
         case RenderCommandType::DRAW: {
             auto args = std::get<DrawArgs>(rc);
-            glDrawArraysInstancedBaseInstance(GL_TRIANGLES, args.firstVertex, args.vertexCount, args.instanceCount, args.firstInstance);
+            glDrawArraysInstancedBaseInstance(
+                GL_TRIANGLES, args.firstVertex, args.vertexCount, args.instanceCount, args.firstInstance);
             break;
         }
         case RenderCommandType::DRAW_INDEXED: {
@@ -280,6 +298,10 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
             logger->Errorf("Unknown render command type %zd", rc.index());
             break;
         }
+        auto err = glGetError();
+        if (err) {
+            logger->Errorf("commandList error %u, commandType %zu", err, rc.index());
+        }
     }
     commandList.clear();
     for (auto s : signalSem) {
@@ -296,15 +318,6 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
 void OpenGLCommandBuffer::Reset()
 {
     commandList.clear();
-}
-
-void OpenGLCommandBuffer::CmdBindPipeline(RenderPassHandle::PipelineBindPoint bp, PipelineHandle * handle)
-{
-    auto nativeHandle = (OpenGLPipelineHandle *)handle;
-    commandList.push_back(BindPipelineArgs{nativeHandle->nativeHandle,
-                                           ((OpenGLVertexInputStateHandle *)handle->vertexInputState)->nativeHandle,
-                                           ToGLCullMode(nativeHandle->rasterizationState.cullMode),
-                                           ToGLFrontFace(nativeHandle->rasterizationState.frontFace)});
 }
 
 bool OpenGLFenceHandle::Wait(uint64_t timeOut)

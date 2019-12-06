@@ -25,6 +25,31 @@ GLint ToGLAddressMode(AddressMode addressMode)
     }
 }
 
+GLenum ToGLCompareOp(CompareOp compareOp)
+{
+    switch (compareOp) {
+    case CompareOp::NEVER:
+        return GL_NEVER;
+    case CompareOp::LESS:
+        return GL_LESS;
+    case CompareOp::EQUAL:
+        return GL_EQUAL;
+    case CompareOp::LESS_OR_EQUAL:
+        return GL_LEQUAL;
+    case CompareOp::GREATER:
+        return GL_GREATER;
+    case CompareOp::NOT_EQUAL:
+        return GL_NOTEQUAL;
+    case CompareOp::GREATER_OR_EQUAL:
+        return GL_GEQUAL;
+    case CompareOp::ALWAYS:
+        return GL_ALWAYS;
+    default:
+        logger->Warnf("Unknown compareOp %d", compareOp);
+        return GL_LESS;
+    }
+}
+
 GLenum ToGLCullMode(CullMode cullMode)
 {
     switch (cullMode) {
@@ -67,6 +92,8 @@ GLint ToGLFormat(Format format)
         return GL_RGB;
     case Format::RGBA8:
         return GL_RGBA;
+    case Format::D32_SFLOAT:
+        return GL_DEPTH_COMPONENT32F;
     default:
         logger->Errorf("Unrecognized image format: %d", ToUnderlyingType(format));
         assert(false);
@@ -98,6 +125,8 @@ GLint ToGLInternalFormat(Format format)
         return GL_RGB8;
     case Format::RGBA8:
         return GL_RGBA8;
+    case Format::D32_SFLOAT:
+        return GL_DEPTH_COMPONENT32F;
     default:
         logger->Errorf("Unrecognized image format: %d", ToUnderlyingType(format));
         assert(false);

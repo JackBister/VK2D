@@ -30,13 +30,15 @@ struct OpenGLFenceHandle : FenceHandle {
 struct OpenGLFramebufferHandle : FramebufferHandle {
     GLuint nativeHandle = 0;
 
-	std::vector<OpenGLImageViewHandle *> attachments;
+    std::vector<OpenGLImageViewHandle *> attachments;
     Format format;
     uint32_t width, height, layers;
 };
 
 struct OpenGLImageHandle : ImageHandle {
     GLuint nativeHandle = 0;
+
+    uint32_t mipLevels;
 };
 
 struct OpenGLImageViewHandle : ImageViewHandle {
@@ -45,6 +47,7 @@ struct OpenGLImageViewHandle : ImageViewHandle {
 };
 
 struct OpenGLRenderPassHandle : RenderPassHandle {
+    ResourceCreationContext::RenderPassCreateInfo createInfo;
 };
 
 struct OpenGLPipelineLayoutHandle : PipelineLayoutHandle {
@@ -53,6 +56,7 @@ struct OpenGLPipelineLayoutHandle : PipelineLayoutHandle {
 
 struct OpenGLPipelineHandle : PipelineHandle {
     GLuint nativeHandle;
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineRasterizationStateCreateInfo rasterizationState;
 };
 

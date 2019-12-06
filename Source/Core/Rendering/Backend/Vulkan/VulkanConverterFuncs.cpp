@@ -33,6 +33,30 @@ uint32_t ToVulkanBufferUsageFlagBits(BufferUsageFlags flags)
 {
     return (uint32_t)flags;
 }
+VkCompareOp ToVulkanCompareOp(CompareOp compareOp)
+{
+    switch (compareOp) {
+    case CompareOp::NEVER:
+        return VK_COMPARE_OP_NEVER;
+    case CompareOp::LESS:
+        return VK_COMPARE_OP_LESS;
+    case CompareOp::EQUAL:
+        return VK_COMPARE_OP_EQUAL;
+    case CompareOp::LESS_OR_EQUAL:
+        return VK_COMPARE_OP_LESS_OR_EQUAL;
+    case CompareOp::GREATER:
+        return VK_COMPARE_OP_GREATER;
+    case CompareOp::NOT_EQUAL:
+        return VK_COMPARE_OP_NOT_EQUAL;
+    case CompareOp::GREATER_OR_EQUAL:
+        return VK_COMPARE_OP_GREATER_OR_EQUAL;
+    case CompareOp::ALWAYS:
+        return VK_COMPARE_OP_ALWAYS;
+    default:
+        logger->Warnf("Unknown compareOp %d", compareOp);
+        return VK_COMPARE_OP_LESS;
+    }
+}
 
 VkComponentMapping ToVulkanComponentMapping(ImageViewHandle::ComponentMapping mapping)
 {
@@ -120,6 +144,8 @@ VkFormat ToVulkanFormat(Format const & format)
         return VkFormat::VK_FORMAT_R8G8B8_UNORM;
     case Format::RGBA8:
         return VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
+    case Format::D32_SFLOAT:
+        return VkFormat::VK_FORMAT_D32_SFLOAT;
     default:
         return VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
     }

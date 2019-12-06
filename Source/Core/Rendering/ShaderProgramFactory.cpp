@@ -13,6 +13,10 @@ void ShaderProgramFactory::CreateResources()
 
 void ShaderProgramFactory::CreatePassthroughTransformShaderProgram()
 {
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    depthStencil.depthCompareOp = CompareOp::ALWAYS;
+    depthStencil.depthTestEnable = false;
+    depthStencil.depthWriteEnable = false;
 #if BAKE_SHADERS
     std::vector<ShaderProgram::ShaderStageCreateInfo> stages = {
         {"shaders/passthrough-transform.vert",
@@ -34,12 +38,18 @@ void ShaderProgramFactory::CreatePassthroughTransformShaderProgram()
         ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass"),
         CullMode::BACK,
         FrontFace::CLOCKWISE,
-        0);
+        0,
+        depthStencil);
 #endif
 }
 
 void ShaderProgramFactory::CreateMeshShaderProgram()
 {
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    depthStencil.depthCompareOp = CompareOp::EQUAL;
+    depthStencil.depthTestEnable = true;
+    depthStencil.depthWriteEnable = false;
+
     ShaderProgram::Create(
         "_Primitives/ShaderPrograms/mesh.program",
         {"shaders/mesh.vert", "shaders/mesh.frag"},
@@ -48,11 +58,16 @@ void ShaderProgramFactory::CreateMeshShaderProgram()
         ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass"),
         CullMode::BACK,
         FrontFace::COUNTER_CLOCKWISE,
-        0);
+        0,
+        depthStencil);
 }
 
 void ShaderProgramFactory::CreateUiShaderProgram()
 {
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    depthStencil.depthCompareOp = CompareOp::ALWAYS;
+    depthStencil.depthTestEnable = false;
+    depthStencil.depthWriteEnable = false;
 #if BAKE_SHADERS
     std::vector<ShaderProgram::ShaderStageCreateInfo> stages = {
         {"shaders/ui.vert", ResourceManager::GetResource<ShaderModuleHandle>("shaders/ui.vert")},
@@ -67,15 +82,19 @@ void ShaderProgramFactory::CreateUiShaderProgram()
         {"shaders/ui.vert", "shaders/ui.frag"},
         ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/ui.state"),
         ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/ui.pipelinelayout"),
-        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass"),
+        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
         CullMode::NONE,
         FrontFace::COUNTER_CLOCKWISE,
-        0);
+        0,
+        depthStencil);
 #endif
 }
 void ShaderProgramFactory::CreatePostprocessShaderProgram()
 {
-
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    depthStencil.depthCompareOp = CompareOp::ALWAYS;
+    depthStencil.depthTestEnable = false;
+    depthStencil.depthWriteEnable = false;
 #if BAKE_SHADERS
     std::vector<ShaderProgram::ShaderStageCreateInfo> stages = {
         {"shaders/passthrough.vert", ResourceManager::GetResource<ShaderModuleHandle>("shaders/passthrough.vert")},
@@ -94,6 +113,7 @@ void ShaderProgramFactory::CreatePostprocessShaderProgram()
         ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
         CullMode::BACK,
         FrontFace::CLOCKWISE,
-        0);
+        0,
+        depthStencil);
 #endif
 }

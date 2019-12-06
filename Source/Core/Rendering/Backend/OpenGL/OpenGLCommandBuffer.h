@@ -96,6 +96,9 @@ private:
         GLuint vao;
         GLenum cullMode;
         GLenum frontFace;
+        bool depthTestEnable;
+        bool depthWriteEnable;
+        GLenum depthFunc;
     };
     struct BindVertexBufferArgs {
         GLuint buffer;

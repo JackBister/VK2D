@@ -10,6 +10,7 @@
 VkSamplerAddressMode ToVulkanAddressMode(AddressMode mode);
 VkAttachmentReference ToVulkanAttachmentReference(RenderPassHandle::AttachmentReference const reference);
 uint32_t ToVulkanBufferUsageFlagBits(BufferUsageFlags flags);
+VkCompareOp ToVulkanCompareOp(CompareOp compareOp);
 VkComponentMapping ToVulkanComponentMapping(ImageViewHandle::ComponentMapping mapping);
 VkComponentSwizzle ToVulkanComponentSwizzle(ComponentSwizzle swizzle);
 VkCullModeFlagBits ToVulkanCullMode(CullMode cullMode);

@@ -80,6 +80,9 @@ void RenderSystem::Init()
     mainRenderpass = ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass");
     postprocessRenderpass = ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass");
 
+    prepassPipelineLayout =
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/prepass.pipelinelayout");
+
     passthroughTransformPipelineLayout =
         ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/pt.pipelinelayout");
     passthroughTransformProgram =
@@ -111,56 +114,78 @@ void RenderSystem::InitSwapchainResources()
     logger->Infof("InitSwapchainResources");
     Semaphore sem;
     renderer->CreateResources([&](ResourceCreationContext & ctx) {
+        std::vector<RenderPassHandle::AttachmentDescription> prepassDepthAttachments = {
+            {0,
+             Format::D32_SFLOAT,
+             RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
+             RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+             RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+             ImageLayout::UNDEFINED,
+             ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL}};
+        RenderPassHandle::AttachmentReference prepassReference = {0, ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+        RenderPassHandle::SubpassDescription prepassSubpass = {
+            RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {}, {}, prepassReference, {}};
+        ResourceCreationContext::RenderPassCreateInfo prepassInfo = {prepassDepthAttachments, {prepassSubpass}, {}};
+        if (this->prepass) {
+            ctx.DestroyRenderPass(this->prepass);
+        }
+        this->prepass = ctx.CreateRenderPass(prepassInfo);
+
         // TODO: This is ugly. The RenderPrimitiveFactory creates initial versions of the render passes which are then
         // immediately replaced here. RenderPrimitiveFactory was always ugly but having all this resource creation code
         // inline in RenderSystem is also ugly. Need to find a compromise.
-        RenderPassHandle::AttachmentDescription attachment = {
-            0,
-            renderer->GetBackbufferFormat(),
-            RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
-            RenderPassHandle::AttachmentDescription::StoreOp::STORE,
-            RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
-            RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
-            ImageLayout::UNDEFINED,
-            ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+        std::vector<RenderPassHandle::AttachmentDescription> attachments = {
+            {0,
+             renderer->GetBackbufferFormat(),
+             RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
+             RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+             RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+             ImageLayout::UNDEFINED,
+             ImageLayout::COLOR_ATTACHMENT_OPTIMAL},
+            {
+                0,
+                Format::D32_SFLOAT,
+                RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+                RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+                RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+                RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+                ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            }};
 
-        RenderPassHandle::AttachmentReference reference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+        RenderPassHandle::AttachmentReference colorReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+        RenderPassHandle::AttachmentReference depthReference = {1, ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL};
 
-        RenderPassHandle::SubpassDescription subpass = {
-            RenderPassHandle::PipelineBindPoint::GRAPHICS, 0, nullptr, 1, &reference, nullptr, nullptr, 0, nullptr};
+        RenderPassHandle::SubpassDescription mainpassSubpass = {
+            RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {colorReference}, {}, depthReference, {}};
 
-        ResourceCreationContext::RenderPassCreateInfo passInfo = {1, &attachment, 1, &subpass, 0, nullptr};
+        ResourceCreationContext::RenderPassCreateInfo passInfo = {attachments, {mainpassSubpass}, {}};
         if (this->mainRenderpass) {
             ctx.DestroyRenderPass(this->mainRenderpass);
         }
         this->mainRenderpass = ctx.CreateRenderPass(passInfo);
         ResourceManager::AddResource("_Primitives/Renderpasses/main.pass", this->mainRenderpass);
 
-        RenderPassHandle::AttachmentDescription postprocessAttachment = {
-            0,
-            renderer->GetBackbufferFormat(),
-            // TODO: Can probably be DONT_CARE once we're doing actual post processing
-            RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
-            RenderPassHandle::AttachmentDescription::StoreOp::STORE,
-            RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
-            RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
-            ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-            ImageLayout::PRESENT_SRC_KHR};
+        std::vector<RenderPassHandle::AttachmentDescription> postprocessAttachments = {
+            {0,
+             renderer->GetBackbufferFormat(),
+             // TODO: Can probably be DONT_CARE once we're doing actual post processing
+             RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+             RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+             RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+             ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+             ImageLayout::PRESENT_SRC_KHR}};
 
         RenderPassHandle::AttachmentReference postprocessReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
 
-        RenderPassHandle::SubpassDescription postprocessSubpass = {RenderPassHandle::PipelineBindPoint::GRAPHICS,
-                                                                   0,
-                                                                   nullptr,
-                                                                   1,
-                                                                   &postprocessReference,
-                                                                   nullptr,
-                                                                   nullptr,
-                                                                   0,
-                                                                   nullptr};
+        RenderPassHandle::SubpassDescription postprocessSubpass = {
+            RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {postprocessReference}, {}, {}, {}};
 
         ResourceCreationContext::RenderPassCreateInfo postprocessPassInfo = {
-            1, &postprocessAttachment, 1, &postprocessSubpass, 0, nullptr};
+            postprocessAttachments, {postprocessSubpass}, {}};
         if (this->postprocessRenderpass) {
             ctx.DestroyRenderPass(this->postprocessRenderpass);
         }
@@ -168,8 +193,20 @@ void RenderSystem::InitSwapchainResources()
         ResourceManager::AddResource("_Primitives/Renderpasses/postprocess.pass", this->postprocessRenderpass);
 
         for (auto & fi : frameInfo) {
+            if (fi.prepassFramebuffer) {
+                ctx.DestroyFramebuffer(fi.prepassFramebuffer);
+            }
+            if (fi.prepassDepthImageView) {
+                ctx.DestroyImageView(fi.prepassDepthImageView);
+            }
+            if (fi.prepassDepthImage) {
+                ctx.DestroyImage(fi.prepassDepthImage);
+            }
             if (fi.framebuffer) {
                 ctx.DestroyFramebuffer(fi.framebuffer);
+            }
+            if (fi.postprocessFramebuffer) {
+                ctx.DestroyFramebuffer(fi.postprocessFramebuffer);
             }
             if (fi.commandBufferAllocator) {
                 ctx.DestroyCommandBufferAllocator(fi.commandBufferAllocator);
@@ -216,22 +253,83 @@ void RenderSystem::InitSwapchainResources()
     });
     sem.Wait();
 
+    if (!prepassProgram) {
+        ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+        depthStencil.depthCompareOp = CompareOp::LESS;
+        depthStencil.depthTestEnable = true;
+        depthStencil.depthWriteEnable = true;
+        prepassProgram = ShaderProgram::Create(
+            "_Primitives/ShaderPrograms/prepass.program",
+            {"shaders/prepass.vert", "shaders/prepass.frag"},
+            ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/mesh.state"),
+            ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/prepass.pipelinelayout"),
+            prepass,
+            CullMode::BACK,
+            FrontFace::COUNTER_CLOCKWISE,
+            0,
+            depthStencil);
+    } else {
+        prepassProgram->SetRenderpass(prepass);
+    }
+
     passthroughTransformProgram->SetRenderpass(mainRenderpass);
     postprocessProgram->SetRenderpass(postprocessRenderpass);
-    uiProgram->SetRenderpass(mainRenderpass);
+    uiProgram->SetRenderpass(postprocessRenderpass);
 }
 
 void RenderSystem::InitFramebuffers(ResourceCreationContext & ctx)
 {
     auto res = renderer->GetResolution();
     for (size_t i = 0; i < frameInfo.size(); ++i) {
-        ResourceCreationContext::FramebufferCreateInfo ci;
-        ci.attachments = {frameInfo[i].backbuffer};
-        ci.width = res.x;
-        ci.height = res.y;
-        ci.layers = 1;
-        ci.renderPass = this->mainRenderpass;
+        ResourceCreationContext::ImageCreateInfo prepassDepthImageCi;
+        prepassDepthImageCi.depth = 1;
+        prepassDepthImageCi.width = res.x;
+        prepassDepthImageCi.height = res.y;
+        prepassDepthImageCi.format = Format::D32_SFLOAT;
+        prepassDepthImageCi.mipLevels = 1;
+        prepassDepthImageCi.type = ImageHandle::Type::TYPE_2D;
+        prepassDepthImageCi.usage = ImageUsageFlagBits::IMAGE_USAGE_FLAG_DEPTH_STENCIL_ATTACHMENT_BIT |
+                                    ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT;
+        frameInfo[i].prepassDepthImage = ctx.CreateImage(prepassDepthImageCi);
+        ctx.AllocateImage(frameInfo[i].prepassDepthImage);
 
-        frameInfo[i].framebuffer = ctx.CreateFramebuffer(ci);
+        ResourceCreationContext::ImageViewCreateInfo prepassDepthImageViewCi;
+        prepassDepthImageViewCi.components = ImageViewHandle::ComponentMapping::IDENTITY;
+        prepassDepthImageViewCi.format = Format::D32_SFLOAT;
+        prepassDepthImageViewCi.image = frameInfo[i].prepassDepthImage;
+        prepassDepthImageViewCi.viewType = ImageViewHandle::Type::TYPE_2D;
+        prepassDepthImageViewCi.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::DEPTH_BIT;
+        prepassDepthImageViewCi.subresourceRange.baseArrayLayer = 0;
+        prepassDepthImageViewCi.subresourceRange.baseMipLevel = 0;
+        prepassDepthImageViewCi.subresourceRange.layerCount = 1;
+        prepassDepthImageViewCi.subresourceRange.levelCount = 1;
+        frameInfo[i].prepassDepthImageView = ctx.CreateImageView(prepassDepthImageViewCi);
+        ResourceManager::AddResource(std::string("/_RenderSystem/frameInfo/") + std::to_string(i) +
+                                         "/prepass/depth.imageview",
+                                     frameInfo[i].prepassDepthImageView);
+
+        ResourceCreationContext::FramebufferCreateInfo prepassFramebufferCi;
+        prepassFramebufferCi.attachments = {frameInfo[i].prepassDepthImageView};
+        prepassFramebufferCi.width = res.x;
+        prepassFramebufferCi.height = res.y;
+        prepassFramebufferCi.layers = 1;
+        prepassFramebufferCi.renderPass = this->prepass;
+        frameInfo[i].prepassFramebuffer = ctx.CreateFramebuffer(prepassFramebufferCi);
+
+        ResourceCreationContext::FramebufferCreateInfo mainFramebufferCi;
+        mainFramebufferCi.attachments = {frameInfo[i].backbuffer, frameInfo[i].prepassDepthImageView};
+        mainFramebufferCi.width = res.x;
+        mainFramebufferCi.height = res.y;
+        mainFramebufferCi.layers = 1;
+        mainFramebufferCi.renderPass = this->mainRenderpass;
+        frameInfo[i].framebuffer = ctx.CreateFramebuffer(mainFramebufferCi);
+
+        ResourceCreationContext::FramebufferCreateInfo postprocessFramebufferCi;
+        postprocessFramebufferCi.attachments = {frameInfo[i].backbuffer};
+        postprocessFramebufferCi.width = res.x;
+        postprocessFramebufferCi.height = res.y;
+        postprocessFramebufferCi.layers = 1;
+        postprocessFramebufferCi.renderPass = this->postprocessRenderpass;
+        frameInfo[i].postprocessFramebuffer = ctx.CreateFramebuffer(postprocessFramebufferCi);
     }
 }

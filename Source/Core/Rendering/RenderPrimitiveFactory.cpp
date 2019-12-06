@@ -39,6 +39,8 @@ void RenderPrimitiveFactory::CreatePrimitives()
 
         auto postprocessPipelineLayout = CreatePostprocessPipelineLayout(ctx);
 
+        CreatePrepassPipelineLayout(ctx);
+
 #if BAKE_SHADERS
         auto passthroughTransformVertShader = CreatePassthroughTransformVertShader(ctx);
         auto passthroughTransformFragShader = CreatePassthroughTransformFragShader(ctx);
@@ -63,6 +65,7 @@ void RenderPrimitiveFactory::CreatePrimitives()
 #endif
 
         CreateDefaultSampler(ctx);
+        CreatePostprocessSampler(ctx);
 
         CreateFontImage(ctx);
 
@@ -87,21 +90,33 @@ void RenderPrimitiveFactory::LateCreatePrimitives()
 
 RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreationContext & ctx)
 {
-    RenderPassHandle::AttachmentDescription attachment = {0,
-                                                          renderer->GetBackbufferFormat(),
-                                                          RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
-                                                          RenderPassHandle::AttachmentDescription::StoreOp::STORE,
-                                                          RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
-                                                          RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
-                                                          ImageLayout::UNDEFINED,
-                                                          ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+    std::vector<RenderPassHandle::AttachmentDescription> attachments = {
+        {0,
+         renderer->GetBackbufferFormat(),
+         RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
+         RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+         RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+         RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+         ImageLayout::UNDEFINED,
+         ImageLayout::COLOR_ATTACHMENT_OPTIMAL},
+        {
+            0,
+            Format::D32_SFLOAT,
+            RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+            RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+            RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+            RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+            ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+            ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        }};
 
-    RenderPassHandle::AttachmentReference reference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+    RenderPassHandle::AttachmentReference colorReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+    RenderPassHandle::AttachmentReference depthReference = {1, ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL};
 
-    RenderPassHandle::SubpassDescription subpass = {
-        RenderPassHandle::PipelineBindPoint::GRAPHICS, 0, nullptr, 1, &reference, nullptr, nullptr, 0, nullptr};
+    RenderPassHandle::SubpassDescription mainpassSubpass = {
+        RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {colorReference}, {}, depthReference, {}};
 
-    ResourceCreationContext::RenderPassCreateInfo passInfo = {1, &attachment, 1, &subpass, 0, nullptr};
+    ResourceCreationContext::RenderPassCreateInfo passInfo = {attachments, {mainpassSubpass}, {}};
     auto mainRenderpass = ctx.CreateRenderPass(passInfo);
     ResourceManager::AddResource("_Primitives/Renderpasses/main.pass", mainRenderpass);
     return mainRenderpass;
@@ -109,34 +124,38 @@ RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreation
 
 RenderPassHandle * RenderPrimitiveFactory::CreatePostprocessRenderpass(ResourceCreationContext & ctx)
 {
-    RenderPassHandle::AttachmentDescription postprocessAttachment = {
-        0,
-        renderer->GetBackbufferFormat(),
-        // TODO: Can probably be DONT_CARE once we're doing actual post processing
-        RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
-        RenderPassHandle::AttachmentDescription::StoreOp::STORE,
-        RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
-        RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
-        ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-        ImageLayout::PRESENT_SRC_KHR};
+    std::vector<RenderPassHandle::AttachmentDescription> postprocessAttachments = {
+        {0,
+         renderer->GetBackbufferFormat(),
+         // TODO: Can probably be DONT_CARE once we're doing actual post processing
+         RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+         RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+         RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+         RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+         ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+         ImageLayout::PRESENT_SRC_KHR}};
 
     RenderPassHandle::AttachmentReference postprocessReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
 
-    RenderPassHandle::SubpassDescription postprocessSubpass = {RenderPassHandle::PipelineBindPoint::GRAPHICS,
-                                                               0,
-                                                               nullptr,
-                                                               1,
-                                                               &postprocessReference,
-                                                               nullptr,
-                                                               nullptr,
-                                                               0,
-                                                               nullptr};
+    RenderPassHandle::SubpassDescription postprocessSubpass = {
+        RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {postprocessReference}, {}, {}, {}};
 
     ResourceCreationContext::RenderPassCreateInfo postprocessPassInfo = {
-        1, &postprocessAttachment, 1, &postprocessSubpass, 0, nullptr};
+        postprocessAttachments, {postprocessSubpass}, {}};
     auto postprocessRenderpass = ctx.CreateRenderPass(postprocessPassInfo);
     ResourceManager::AddResource("_Primitives/Renderpasses/postprocess.pass", postprocessRenderpass);
     return postprocessRenderpass;
+}
+
+void RenderPrimitiveFactory::CreatePrepassPipelineLayout(ResourceCreationContext & ctx)
+{
+    auto cameraMesh =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraMesh.layout");
+    auto modelMesh =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/modelMesh.layout");
+
+    auto prepassPipelineLayout = ctx.CreatePipelineLayout({{cameraMesh, modelMesh}});
+    ResourceManager::AddResource("_Primitives/PipelineLayouts/prepass.pipelinelayout", prepassPipelineLayout);
 }
 
 PipelineLayoutHandle * RenderPrimitiveFactory::CreatePassthroughTransformPipelineLayout(ResourceCreationContext & ctx)
@@ -397,7 +416,7 @@ void RenderPrimitiveFactory::CreateDefaultSampler(ResourceCreationContext & ctx)
     ResourceManager::AddResource("_Primitives/Samplers/Default.sampler", sampler);
 }
 
-void CreatePostprocessSampler(ResourceCreationContext & ctx)
+void RenderPrimitiveFactory::CreatePostprocessSampler(ResourceCreationContext & ctx)
 {
     ResourceCreationContext::SamplerCreateInfo postprocessSamplerCreateInfo;
     postprocessSamplerCreateInfo.addressModeU = AddressMode::CLAMP_TO_EDGE;

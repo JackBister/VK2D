@@ -204,6 +204,38 @@ void VulkanResourceContext::DestroyImage(ImageHandle * img)
     allocator.deallocate((uint8_t *)nativeHandle, sizeof(VulkanImageHandle));
 }
 
+void VulkanResourceContext::AllocateImage(ImageHandle * img)
+{
+    assert(img != nullptr);
+
+    auto const nativeImg = (VulkanImageHandle *)img;
+
+    VkMemoryRequirements const memoryRequirements = [this](VkImage img) {
+        VkMemoryRequirements ret{0};
+        vkGetImageMemoryRequirements(renderer->basics.device, img, &ret);
+        return ret;
+    }(nativeImg->image);
+
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(renderer->basics.physicalDevice, &memoryProperties);
+
+    auto memoryIndex = renderer->FindMemoryType(memoryRequirements.memoryTypeBits, 0);
+
+    VkMemoryAllocateInfo const info{
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, nullptr, memoryRequirements.size, memoryIndex};
+
+    VkDeviceMemory const memory = [this](VkMemoryAllocateInfo const & info) {
+        VkDeviceMemory ret{0};
+        auto const res = vkAllocateMemory(renderer->basics.device, &info, nullptr, &ret);
+        assert(res == VK_SUCCESS);
+        return ret;
+    }(info);
+
+    nativeImg->memory = memory;
+    auto res = vkBindImageMemory(renderer->basics.device, nativeImg->image, memory, 0);
+    assert(res == VK_SUCCESS);
+}
+
 void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> const & data)
 {
     assert(img != nullptr);
@@ -306,92 +338,69 @@ void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> co
 
 RenderPassHandle * VulkanResourceContext::CreateRenderPass(ResourceCreationContext::RenderPassCreateInfo const & ci)
 {
-    // TODO?
-    std::vector<VkAttachmentDescription> attachments;
-    if (ci.attachmentCount > 0) {
-        attachments = std::vector<VkAttachmentDescription>(ci.attachmentCount);
-        std::transform(ci.pAttachments,
-                       &ci.pAttachments[ci.attachmentCount],
-                       attachments.begin(),
-                       [](RenderPassHandle::AttachmentDescription description) {
-                           return VkAttachmentDescription{description.flags,
-                                                          ToVulkanFormat(description.format),
-                                                          VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
-                                                          ToVulkanLoadOp(description.loadOp),
-                                                          ToVulkanStoreOp(description.storeOp),
-                                                          ToVulkanLoadOp(description.stencilLoadOp),
-                                                          ToVulkanStoreOp(description.stencilStoreOp),
-                                                          ToVulkanImageLayout(description.initialLayout),
-                                                          ToVulkanImageLayout(description.finalLayout)};
-                       });
+    std::vector<VkAttachmentDescription> attachments(ci.attachments.size());
+    for (size_t i = 0; i < ci.attachments.size(); ++i) {
+        auto description = ci.attachments[i];
+        attachments[i] = {description.flags,
+                          ToVulkanFormat(description.format),
+                          VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
+                          ToVulkanLoadOp(description.loadOp),
+                          ToVulkanStoreOp(description.storeOp),
+                          ToVulkanLoadOp(description.stencilLoadOp),
+                          ToVulkanStoreOp(description.stencilStoreOp),
+                          ToVulkanImageLayout(description.initialLayout),
+                          ToVulkanImageLayout(description.finalLayout)};
     }
     std::vector<VkAttachmentReference> colorAttachments;
     std::vector<VkAttachmentReference> depthStencilAttachments;
     std::vector<VkAttachmentReference> inputAttachments;
 
-    std::vector<VkSubpassDescription> subpassDescriptions;
-    if (ci.subpassCount > 0) {
-        subpassDescriptions = std::vector<VkSubpassDescription>(ci.subpassCount);
-        std::transform(
-            ci.pSubpasses,
-            &ci.pSubpasses[ci.subpassCount],
-            subpassDescriptions.begin(),
-            [&colorAttachments, &depthStencilAttachments, &inputAttachments](
-                RenderPassHandle::SubpassDescription description) {
-                auto firstColorAttachment = colorAttachments.size();
-                for (uint32_t i = 0; i < description.colorAttachmentCount; ++i) {
-                    colorAttachments.push_back(ToVulkanAttachmentReference(description.pColorAttachments[i]));
-                }
-                auto firstDepthStencilAttachment = depthStencilAttachments.size();
-                if (description.pDepthStencilAttachment != nullptr) {
-                    depthStencilAttachments.push_back(
-                        ToVulkanAttachmentReference(*description.pDepthStencilAttachment));
-                }
-                auto firstInputAttachment = inputAttachments.size();
-                for (uint32_t i = 0; i < description.inputAttachmentCount; ++i) {
-                    inputAttachments.push_back(ToVulkanAttachmentReference(description.pInputAttachments[i]));
-                }
-                return VkSubpassDescription{0,
-                                            ToVulkanPipelineBindPoint(description.pipelineBindPoint),
-                                            description.inputAttachmentCount,
-                                            inputAttachments.size() > 0 ? &inputAttachments[0] : nullptr,
-                                            description.colorAttachmentCount,
-                                            &colorAttachments[firstColorAttachment],
-                                            // TODO
-                                            nullptr,
-                                            depthStencilAttachments.size() > 0
-                                                ? &depthStencilAttachments[firstDepthStencilAttachment]
-                                                : nullptr,
-                                            description.preserveAttachmentCount,
-                                            description.pPreserveAttachments};
-            });
+    std::vector<VkSubpassDescription> subpassDescriptions(ci.subpasses.size());
+    for (size_t i = 0; i < ci.subpasses.size(); ++i) {
+        auto description = ci.subpasses[i];
+        for (uint32_t i = 0; i < description.colorAttachments.size(); ++i) {
+            colorAttachments.push_back(ToVulkanAttachmentReference(description.colorAttachments[i]));
+        }
+        if (description.depthStencilAttachment.has_value()) {
+            depthStencilAttachments.push_back(ToVulkanAttachmentReference(description.depthStencilAttachment.value()));
+        }
+        for (uint32_t i = 0; i < description.inputAttachments.size(); ++i) {
+            inputAttachments.push_back(ToVulkanAttachmentReference(description.inputAttachments[i]));
+        }
+        subpassDescriptions[i] = {0,
+                                  ToVulkanPipelineBindPoint(description.pipelineBindPoint),
+                                  (uint32_t)inputAttachments.size(),
+                                  inputAttachments.size() > 0 ? &inputAttachments[0] : nullptr,
+                                  (uint32_t)colorAttachments.size(),
+                                  colorAttachments.size() > 0 ? &colorAttachments[0] : nullptr,
+                                  // TODO
+                                  nullptr,
+                                  depthStencilAttachments.size() > 0 ? &depthStencilAttachments[0] : nullptr,
+                                  (uint32_t)description.preserveAttachments.size(),
+                                  description.preserveAttachments.size() > 0 ? &description.preserveAttachments[0]
+                                                                             : nullptr};
     }
 
-    std::vector<VkSubpassDependency> subpassDependencies;
-    if (ci.dependencyCount > 0) {
-        subpassDependencies = std::vector<VkSubpassDependency>(ci.dependencyCount);
-        std::transform(ci.pDependencies,
-                       &ci.pDependencies[ci.dependencyCount],
-                       subpassDependencies.begin(),
-                       [](RenderPassHandle::SubpassDependency dependency) {
-                           return VkSubpassDependency{dependency.srcSubpass,
-                                                      dependency.dstSubpass,
-                                                      dependency.srcStageMask,
-                                                      dependency.dstStageMask,
-                                                      dependency.srcAccessMask,
-                                                      dependency.dstAccessMask,
-                                                      dependency.dependencyFlags};
-                       });
+    std::vector<VkSubpassDependency> subpassDependencies(ci.subpassDependency.size());
+    for (size_t i = 0; i < ci.subpassDependency.size(); ++i) {
+        auto dependency = ci.subpassDependency[i];
+        subpassDependencies[i] = {dependency.srcSubpass,
+                                  dependency.dstSubpass,
+                                  dependency.srcStageMask,
+                                  dependency.dstStageMask,
+                                  dependency.srcAccessMask,
+                                  dependency.dstAccessMask,
+                                  dependency.dependencyFlags};
     }
 
     VkRenderPassCreateInfo const info{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
                                       nullptr,
                                       0,
-                                      ci.attachmentCount,
+                                      attachments.size(),
                                       attachments.size() > 0 ? &attachments[0] : nullptr,
-                                      ci.subpassCount,
+                                      subpassDescriptions.size(),
                                       subpassDescriptions.size() > 0 ? &subpassDescriptions[0] : nullptr,
-                                      ci.dependencyCount,
+                                      subpassDependencies.size(),
                                       subpassDependencies.size() > 0 ? &subpassDependencies[0] : nullptr};
 
     auto const ret = (VulkanRenderPassHandle *)allocator.allocate(sizeof(VulkanRenderPassHandle));
@@ -648,6 +657,21 @@ VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsP
                                                             sizeof(dynamicStates) / sizeof(VkDynamicState),
                                                             dynamicStates};
 
+    VkPipelineDepthStencilStateCreateInfo depthStateCreateInfo;
+    depthStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStateCreateInfo.pNext = nullptr;
+    depthStateCreateInfo.depthTestEnable = ci.depthStencil->depthTestEnable;
+    depthStateCreateInfo.depthWriteEnable = ci.depthStencil->depthWriteEnable;
+    depthStateCreateInfo.depthCompareOp = ToVulkanCompareOp(ci.depthStencil->depthCompareOp);
+
+    depthStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+    depthStateCreateInfo.minDepthBounds = 0.f;
+    depthStateCreateInfo.maxDepthBounds = 1.f;
+    depthStateCreateInfo.stencilTestEnable = VK_FALSE;
+    depthStateCreateInfo.front = {};
+    depthStateCreateInfo.back = {};
+    depthStateCreateInfo.flags = 0;
+
     auto layout = ((VulkanPipelineLayoutHandle *)ci.pipelineLayout)->pipelineLayout;
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
@@ -661,6 +685,7 @@ VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsP
     pipelineInfo.pMultisampleState = &multisampleState;
     pipelineInfo.pColorBlendState = &colorBlendState;
     pipelineInfo.pDynamicState = &dynamicStateCreateInfo;
+    pipelineInfo.pDepthStencilState = &depthStateCreateInfo;
     pipelineInfo.layout = layout;
     pipelineInfo.renderPass = ((VulkanRenderPassHandle *)ci.renderPass)->renderPass;
     pipelineInfo.subpass = ci.subpass;

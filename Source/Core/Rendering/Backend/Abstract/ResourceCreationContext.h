@@ -101,6 +101,7 @@ public:
     };
     virtual ImageHandle * CreateImage(ImageCreateInfo const &) = 0;
     virtual void DestroyImage(ImageHandle *) = 0;
+    virtual void AllocateImage(ImageHandle *) = 0;
     /*
             OpenGL: glTexSubImage
             Vulkan: vkMapMemory + memcpy + vkUnmapMemory
@@ -118,6 +119,12 @@ public:
     virtual void DestroyImageView(ImageViewHandle *) = 0;
 
     struct GraphicsPipelineCreateInfo {
+        struct PipelineDepthStencilStateCreateInfo {
+            bool depthTestEnable;
+            bool depthWriteEnable;
+            CompareOp depthCompareOp;
+        };
+
         struct PipelineShaderStageCreateInfo {
             uint32_t stage;
             ShaderModuleHandle * module;
@@ -132,6 +139,7 @@ public:
         uint32_t stageCount;
         PipelineShaderStageCreateInfo * pStages;
         VertexInputStateHandle * vertexInputState;
+        PipelineDepthStencilStateCreateInfo * depthStencil;
         PipelineRasterizationStateCreateInfo * rasterizationState;
         PipelineLayoutHandle * pipelineLayout;
         RenderPassHandle * renderPass;
@@ -147,12 +155,9 @@ public:
     virtual void DestroyPipelineLayout(PipelineLayoutHandle *) = 0;
 
     struct RenderPassCreateInfo {
-        uint32_t attachmentCount;
-        RenderPassHandle::AttachmentDescription const * pAttachments;
-        uint32_t subpassCount;
-        RenderPassHandle::SubpassDescription const * pSubpasses;
-        uint32_t dependencyCount;
-        RenderPassHandle::SubpassDependency const * pDependencies;
+        std::vector<RenderPassHandle::AttachmentDescription> attachments;
+        std::vector<RenderPassHandle::SubpassDescription> subpasses;
+        std::vector<RenderPassHandle::SubpassDependency> subpassDependency;
     };
     virtual RenderPassHandle * CreateRenderPass(RenderPassCreateInfo const &) = 0;
     virtual void DestroyRenderPass(RenderPassHandle *) = 0;

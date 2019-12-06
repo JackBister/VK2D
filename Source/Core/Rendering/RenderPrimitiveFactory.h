@@ -17,6 +17,8 @@ private:
     RenderPassHandle * CreateMainRenderpass(ResourceCreationContext &);
     RenderPassHandle * CreatePostprocessRenderpass(ResourceCreationContext &);
 
+    void CreatePrepassPipelineLayout(ResourceCreationContext &);
+
     PipelineLayoutHandle * CreatePassthroughTransformPipelineLayout(ResourceCreationContext &);
     VertexInputStateHandle * CreatePassthroughTransformVertexInputState(ResourceCreationContext &);
 

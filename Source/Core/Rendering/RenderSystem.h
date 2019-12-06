@@ -35,8 +35,14 @@ public:
 
 private:
     struct FrameInfo {
-        FramebufferHandle * framebuffer;
+        ImageHandle * prepassDepthImage;
+        ImageViewHandle * prepassDepthImageView;
+        FramebufferHandle * prepassFramebuffer;
+
         ImageViewHandle * backbuffer;
+        FramebufferHandle * framebuffer;
+
+        FramebufferHandle * postprocessFramebuffer;
 
         CommandBuffer * preRenderPassCommandBuffer;
         CommandBuffer * mainCommandBuffer;
@@ -59,6 +65,8 @@ private:
     void MainRenderFrame(SubmittedFrame const & frame);
     void PostProcessFrame();
 
+    void Prepass(SubmittedFrame const & frame);
+
     void PreRenderCameras(std::vector<SubmittedCamera> const & cameras);
 
     void PreRenderMeshes(std::vector<SubmittedMesh> const & meshes);
@@ -75,8 +83,12 @@ private:
     std::vector<ScheduledDestroyer> scheduledDestroyers;
 
     // Rendering resources
+    RenderPassHandle * prepass = nullptr;
     RenderPassHandle * mainRenderpass;
     RenderPassHandle * postprocessRenderpass;
+
+    PipelineLayoutHandle * prepassPipelineLayout = nullptr;
+    ShaderProgram * prepassProgram = nullptr;
 
     PipelineLayoutHandle * passthroughTransformPipelineLayout;
     ShaderProgram * passthroughTransformProgram;

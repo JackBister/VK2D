@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
+#include <vector>
 
 struct ImageViewHandle;
 struct VertexInputStateHandle;
@@ -29,6 +31,17 @@ enum CommandBufferUsageFlagBits {
     ONE_TIME_SUBMIT_BIT = 0x00000001,
     RENDER_PASS_CONTINUE_BIT = 0x00000002,
     SIMULTANEOUS_USE_BIT = 0x00000004,
+};
+
+enum class CompareOp {
+    NEVER,
+    LESS,
+    EQUAL,
+    LESS_OR_EQUAL,
+    GREATER,
+    NOT_EQUAL,
+    GREATER_OR_EQUAL,
+    ALWAYS,
 };
 
 enum class ComponentSwizzle { IDENTITY, ZERO, ONE, R, G, B, A };
@@ -63,7 +76,9 @@ enum class Format {
     R8,
     RG8,
     RGB8,
-    RGBA8
+    RGBA8,
+
+    D32_SFLOAT,
 };
 
 enum class FrontFace {
@@ -217,14 +232,11 @@ struct RenderPassHandle {
 
     struct SubpassDescription {
         PipelineBindPoint pipelineBindPoint;
-        uint32_t inputAttachmentCount;
-        AttachmentReference const * pInputAttachments;
-        uint32_t colorAttachmentCount;
-        AttachmentReference const * pColorAttachments;
-        AttachmentReference const * pResolveAttachments;
-        AttachmentReference const * pDepthStencilAttachment;
-        uint32_t preserveAttachmentCount;
-        uint32_t const * pPreserveAttachments;
+        std::vector<AttachmentReference> inputAttachments;
+        std::vector<AttachmentReference> colorAttachments;
+        std::vector<AttachmentReference> resolveAttachments;
+        std::optional<AttachmentReference> depthStencilAttachment;
+        std::vector<uint32_t> preserveAttachments;
     };
 
     struct SubpassDependency {
