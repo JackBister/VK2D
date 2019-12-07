@@ -10,15 +10,6 @@
 #include "Core/Resources/StaticMesh.h"
 #include "Core/Semaphore.h"
 
-#if BAKE_SHADERS
-#include "Core/Rendering/Shaders/passthrough-transform.frag.spv.h"
-#include "Core/Rendering/Shaders/passthrough-transform.vert.spv.h"
-#include "Core/Rendering/Shaders/passthrough.frag.spv.h"
-#include "Core/Rendering/Shaders/passthrough.vert.spv.h"
-#include "Core/Rendering/Shaders/ui.frag.spv.h"
-#include "Core/Rendering/Shaders/ui.vert.spv.h"
-#endif
-
 RenderPrimitiveFactory::RenderPrimitiveFactory(Renderer * renderer) : renderer(renderer) {}
 
 void RenderPrimitiveFactory::CreatePrimitives()
@@ -40,30 +31,6 @@ void RenderPrimitiveFactory::CreatePrimitives()
         auto postprocessPipelineLayout = CreatePostprocessPipelineLayout(ctx);
 
         CreatePrepassPipelineLayout(ctx);
-
-#if BAKE_SHADERS
-        auto passthroughTransformVertShader = CreatePassthroughTransformVertShader(ctx);
-        auto passthroughTransformFragShader = CreatePassthroughTransformFragShader(ctx);
-        CreatePassthroughTransformGraphicsPipeline(ctx,
-                                                   mainRenderpass,
-                                                   passthroughTransformPipelineLayout,
-                                                   passthroughTransformVertexInputState,
-                                                   passthroughTransformVertShader,
-                                                   passthroughTransformFragShader);
-
-        auto uiVertShader = CreateUiVertShader(ctx);
-        auto uiFragShader = CreateUiFragShader(ctx);
-        CreateUiGraphicsPipeline(ctx, mainRenderpass, uiPipelineLayout, uiVertexInputState, uiVertShader, uiFragShader);
-
-        auto passthroughNoTransformVertShader = CreatePassthroughNoTransformVertShader(ctx);
-        auto passthroughNoTransformFragShader = CreatePassthroughNoTransformFragShader(ctx);
-        CreatePostprocessGraphicsPipeline(ctx,
-                                          postprocessRenderpass,
-                                          postprocessPipelineLayout,
-                                          passthroughNoTransformVertShader,
-                                          passthroughNoTransformFragShader);
-#endif
-
         CreateDefaultSampler(ctx);
         CreatePostprocessSampler(ctx);
 
@@ -276,134 +243,6 @@ PipelineLayoutHandle * RenderPrimitiveFactory::CreatePostprocessPipelineLayout(R
     ResourceManager::AddResource("_Primitives/PipelineLayouts/postprocess.pipelinelayout", postprocessLayout);
     return postprocessLayout;
 }
-
-#if BAKE_SHADERS
-ShaderModuleHandle * RenderPrimitiveFactory::CreatePassthroughTransformVertShader(ResourceCreationContext & ctx)
-{
-    std::vector<uint32_t> code(
-        (uint32_t *)shaders_passthrough_transform_vert_spv,
-        (uint32_t *)(shaders_passthrough_transform_vert_spv + shaders_passthrough_transform_vert_spv_len));
-    auto ptvShader =
-        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER, code});
-
-    ResourceManager::AddResource("shaders/passthrough-transform.vert", ptvShader);
-    return ptvShader;
-}
-
-ShaderModuleHandle * RenderPrimitiveFactory::CreatePassthroughTransformFragShader(ResourceCreationContext & ctx)
-{
-    std::vector<uint32_t> code(
-        (uint32_t *)shaders_passthrough_transform_frag_spv,
-        (uint32_t *)(shaders_passthrough_transform_frag_spv + shaders_passthrough_transform_frag_spv_len));
-    auto pfShader =
-        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER, code});
-
-    ResourceManager::AddResource("shaders/passthrough-transform.frag", pfShader);
-    return pfShader;
-}
-
-void RenderPrimitiveFactory::CreatePassthroughTransformGraphicsPipeline(
-    ResourceCreationContext & ctx, RenderPassHandle * renderpass, PipelineLayoutHandle * layout,
-    VertexInputStateHandle * vertexInputState, ShaderModuleHandle * vert, ShaderModuleHandle * frag)
-{
-
-    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineShaderStageCreateInfo stages[2] = {
-        {ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT, vert, "Passthrough-Transform Vertex Shader"},
-        {ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT, frag, "Passthrough-Transform Fragment Shader"}};
-
-    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineRasterizationStateCreateInfo ptRasterization{
-        CullMode::BACK, FrontFace::CLOCKWISE};
-
-    auto passthroughTransformPipeline =
-        ctx.CreateGraphicsPipeline({2, stages, vertexInputState, &ptRasterization, layout, renderpass, 0});
-
-    ResourceManager::AddResource("_Primitives/Pipelines/passthrough-transform.pipe", passthroughTransformPipeline);
-}
-
-ShaderModuleHandle * RenderPrimitiveFactory::CreateUiVertShader(ResourceCreationContext & ctx)
-{
-    std::vector<uint32_t> code((uint32_t *)shaders_ui_vert_spv,
-                               (uint32_t *)(shaders_ui_vert_spv + shaders_ui_vert_spv_len));
-    auto uivShader =
-        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER, code});
-
-    ResourceManager::AddResource("shaders/ui.vert", uivShader);
-    return uivShader;
-}
-
-ShaderModuleHandle * RenderPrimitiveFactory::CreateUiFragShader(ResourceCreationContext & ctx)
-{
-    std::vector<uint32_t> code((uint32_t *)shaders_ui_frag_spv,
-                               (uint32_t *)(shaders_ui_frag_spv + shaders_ui_frag_spv_len));
-    auto uifShader =
-        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER, code});
-
-    ResourceManager::AddResource("shaders/ui.frag", uifShader);
-    return uifShader;
-}
-
-void RenderPrimitiveFactory::CreateUiGraphicsPipeline(ResourceCreationContext & ctx, RenderPassHandle * renderpass,
-                                                      PipelineLayoutHandle * layout,
-                                                      VertexInputStateHandle * vertexInputState,
-                                                      ShaderModuleHandle * vert, ShaderModuleHandle * frag)
-{
-
-    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineShaderStageCreateInfo uiStages[2] = {
-        {ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT, vert, "UI Vertex Shader"},
-        {ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT, frag, "UI Fragment Shader"}};
-
-    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineRasterizationStateCreateInfo uiRasterization{
-        CullMode::NONE, FrontFace::COUNTER_CLOCKWISE};
-
-    auto uiPipeline =
-        ctx.CreateGraphicsPipeline({2, uiStages, vertexInputState, &uiRasterization, layout, renderpass, 0});
-    ResourceManager::AddResource("_Primitives/Pipelines/ui.pipe", uiPipeline);
-}
-
-ShaderModuleHandle * RenderPrimitiveFactory::CreatePassthroughNoTransformVertShader(ResourceCreationContext & ctx)
-{
-    std::vector<uint32_t> code((uint32_t *)shaders_passthrough_vert_spv,
-                               (uint32_t *)(shaders_passthrough_vert_spv + shaders_passthrough_vert_spv_len));
-    auto passthroughNoTransformVertShader =
-        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER, code});
-
-    ResourceManager::AddResource("shaders/passthrough.vert", passthroughNoTransformVertShader);
-    return passthroughNoTransformVertShader;
-}
-
-ShaderModuleHandle * RenderPrimitiveFactory::CreatePassthroughNoTransformFragShader(ResourceCreationContext & ctx)
-{
-    std::vector<uint32_t> code((uint32_t *)shaders_passthrough_frag_spv,
-                               (uint32_t *)(shaders_passthrough_frag_spv + shaders_passthrough_frag_spv_len));
-    auto passthroughNoTransformFragShader =
-        ctx.CreateShaderModule({ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER, code});
-
-    ResourceManager::AddResource("shaders/passthrough.frag", passthroughNoTransformFragShader);
-    return passthroughNoTransformFragShader;
-}
-
-void RenderPrimitiveFactory::CreatePostprocessGraphicsPipeline(ResourceCreationContext & ctx,
-                                                               RenderPassHandle * renderpass,
-                                                               PipelineLayoutHandle * layout, ShaderModuleHandle * vert,
-                                                               ShaderModuleHandle * frag)
-{
-    // Create postprocess pipeline
-
-    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineShaderStageCreateInfo postprocessStages[2] = {
-        {ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT, vert, "Passthrough-No Transform Vertex Shader"},
-        {ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT, frag, "Passthrough-No Transform Fragment Shader"}};
-
-    auto ptInputState = ResourceManager::GetResource<VertexInputStateHandle>(
-        "_Primitives/VertexInputStates/passthrough-transform.state");
-
-    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineRasterizationStateCreateInfo ptRasterization{
-        CullMode::BACK, FrontFace::CLOCKWISE};
-
-    auto postprocessPipeline =
-        ctx.CreateGraphicsPipeline({2, postprocessStages, ptInputState, &ptRasterization, layout, renderpass, 0});
-    ResourceManager::AddResource("_Primitives/Pipelines/postprocess.pipe", postprocessPipeline);
-}
-#endif
 
 void RenderPrimitiveFactory::CreateDefaultSampler(ResourceCreationContext & ctx)
 {

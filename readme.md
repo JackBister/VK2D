@@ -26,5 +26,3 @@ On Windows, I have been using [vcpkg](https://github.com/Microsoft/vcpkg) to ins
 ```
 vcpkg install --triplet=x64-windows bullet3 concurrentqueue glew glm imgui nlohmann-json sdl2 sdl2[vulkan] shaderc stb
 ```
-
-One thing to note if using vcpkg is that currently the SDL package specifically disables Vulkan support, so you need to manually edit the ports file.
