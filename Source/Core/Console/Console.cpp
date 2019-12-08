@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include <imgui.h>
+#include <optick/optick.h>
 
 #include "Core/Logging/LogAppender.h"
 #include "Core/Logging/Logger.h"
@@ -73,6 +74,7 @@ void Init(RenderSystem * inRenderSystem)
 
 void OnGui()
 {
+    OPTICK_EVENT();
     if (isConsoleOpen) {
         auto res = renderSystem->GetResolution();
         ImGui::SetNextWindowSize(ImVec2(res.x, res.y / 3));

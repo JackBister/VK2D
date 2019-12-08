@@ -23,9 +23,40 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -lstdc++fs")
 endif()
 
+option(ENABLE_PROFILER "Enable Optick profiler" ON)
+if (ENABLE_PROFILER)
+    find_path(OPTICK_INCLUDE_DIR optick/optick.h)
+    find_library(OPTICK_LIBRARY OptickCore)
+    add_definitions(-DUSE_OPTICK=1)
+    target_include_directories(Main SYSTEM PUBLIC ${OPTICK_INCLUDE_DIR})
+    target_link_libraries(
+        Main
+        ${OPTICK_LIBRARY}
+    )
+endif()
+
 option(HOT_RELOAD_RESOURCES "Hot reload resources on change" ON)
 if (HOT_RELOAD_RESOURCES)
     target_compile_definitions(Main PUBLIC HOT_RELOAD_RESOURCES=1)
+endif()
+
+option(USE_OGL_RENDERER "Use OpenGL renderer" OFF)
+if (USE_OGL_RENDERER)
+    add_definitions(-DUSE_OGL_RENDERER=1)
+    include(FindOpenGL)
+    find_package(GLEW REQUIRED)
+    target_link_libraries(
+        Main
+        ${GLEW_LIBRARY}
+        ${OPENGL_LIBRARIES}
+    )
+else()
+    include(FindVulkan)
+    target_include_directories(Main SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
+    target_link_libraries(
+        Main
+        ${Vulkan_LIBRARIES}
+    )
 endif()
 
 find_package(glm CONFIG REQUIRED)
@@ -62,23 +93,6 @@ source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/Source FILES ${SOURCES})
 
 add_definitions(-DGLM_FORCE_DEPTH_ZERO_TO_ONE=1)
 
-if (USE_OGL_RENDERER)
-    add_definitions(-DUSE_OGL_RENDERER=1)
-    include(FindOpenGL)
-    find_package(GLEW REQUIRED)
-    target_link_libraries(
-        Main
-        ${GLEW_LIBRARY}
-        ${OPENGL_LIBRARIES}
-    )
-else()
-    include(FindVulkan)
-    target_include_directories(Main SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
-    target_link_libraries(
-        Main
-        ${Vulkan_LIBRARIES}
-    )
-endif()
 
 file(GLOB_RECURSE FLAPPYPONG_SOURCES Examples/FlappyPong/Source/*.c Examples/FlappyPong/Source/*.cpp Examples/FlappyPong/Source/*.h)
 add_library(FlappyPong SHARED ${FLAPPYPONG_SOURCES})

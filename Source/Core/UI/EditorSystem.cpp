@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <imgui.h>
+#include <optick/optick.h>
 
 #include "Core/GameModule.h"
 #include "Core/Input.h"
@@ -87,6 +88,7 @@ struct {
 
 void OnGui()
 {
+    OPTICK_EVENT();
     auto io = ImGui::GetIO();
     if (Input::GetKeyDown(KC_F7)) {
         isEditorOpen = !isEditorOpen;

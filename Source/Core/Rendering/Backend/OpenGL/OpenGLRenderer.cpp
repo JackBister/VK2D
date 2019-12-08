@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
+#include <optick/optick.h>
 #include <stb_image.h>
 
 #include "Core/Logging/Logger.h"
@@ -47,6 +48,7 @@ Renderer::Renderer(char const * title, int const winX, int const winY, uint32_t 
 
     SDL_GL_MakeCurrent(window, nullptr);
     renderThread = std::thread(&Renderer::RenderThread, this, ctx);
+
     SetThreadName(renderThread.get_id(), "OpenGL RenderThread");
 }
 
@@ -69,6 +71,7 @@ void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
 
 uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandle * signalFence)
 {
+    OPTICK_EVENT();
     if (signalSem != nullptr) {
         ((OpenGLSemaphoreHandle *)signalSem)->sem.Signal();
     }
@@ -103,6 +106,7 @@ uint32_t Renderer::GetSwapCount() const
 
 void Renderer::RenderThread(SDL_GLContext ctx)
 {
+    OPTICK_THREAD("OpenGL RenderThread");
     SDL_GL_MakeCurrent(window, ctx);
     while (!isAborting) {
         DrainQueue();
@@ -122,66 +126,21 @@ void Renderer::UpdatePresentMode()
 
 void Renderer::DrainQueue()
 {
-    using namespace std::literals::chrono_literals;
     RenderCommand command = renderQueueRead.Wait();
     switch (command.params.index()) {
     case RenderCommand::Type::ABORT:
-        isAborting = true;
-        abortCode = std::get<RenderCommand::AbortParams>(command.params).errorCode;
+        CmdAbort(command);
         break;
     case RenderCommand::Type::CREATE_RESOURCE: {
-        auto fun = std::get<RenderCommand::CreateResourceParams>(command.params).fun;
-        OpenGLResourceContext ctx;
-        glFlush();
-        glFinish();
-        fun(ctx);
-        glFlush();
-        glFinish();
+        CmdCreateResources(command);
         break;
     }
     case RenderCommand::Type::EXECUTE_COMMAND_CONTEXT: {
-        auto params = std::get<RenderCommand::ExecuteCommandContextParams>(command.params);
-        params.ctx->Execute(this, params.waitSem, params.signalSem, params.signalFence);
+        CmdExecute(command);
         break;
     }
     case RenderCommand::Type::SWAP_WINDOW: {
-        auto params = std::get<RenderCommand::SwapWindowParams>(command.params);
-        auto nativeWait = (OpenGLSemaphoreHandle *)params.waitSem;
-        auto preSwap = std::chrono::high_resolution_clock::now();
-        auto res = preSwap - lastTime;
-        auto avgSwapTime = totalSwapTime / frameCount;
-        if (res + avgSwapTime < 8.333334ms) {
-            std::this_thread::sleep_for((totalSwapTime / frameCount) - 0.5ms);
-        }
-        if (nativeWait != nullptr) {
-            nativeWait->sem.Wait();
-        }
-        glBlitNamedFramebuffer(backbufferFramebuffer,
-                               0,
-                               0,
-                               0,
-                               config.windowResolution.x,
-                               config.windowResolution.y,
-                               0,
-                               0,
-                               config.windowResolution.x,
-                               config.windowResolution.y,
-                               GL_COLOR_BUFFER_BIT,
-                               GL_LINEAR);
-        // With Aero enabled in Windows 7, this doesn't busy wait.
-        // With Aero disabled, it does, causing 100% use on the GPU thread. Crazy.
-        SDL_GL_SwapWindow(window);
-        // TODO: These are both necessary to reduce CPU usage
-        // My understanding is that without these SwapWindow returns instantly and spins up its own thread(?) that
-        // spinlocks, borking our totalSwapTime.
-        glFlush();
-        glFinish();
-        auto postSwap = std::chrono::high_resolution_clock::now();
-        frameTime = static_cast<float>((postSwap - lastTime).count());
-        lastTime = postSwap;
-
-        frameCount++;
-        totalSwapTime += std::chrono::duration_cast<std::chrono::milliseconds>(postSwap - preSwap);
+        CmdSwapWindow(command);
         break;
     }
     default:
@@ -245,6 +204,74 @@ void Renderer::UpdateConfig(RendererConfig config)
     // Hacky way to run the update on the rendering thread, maybe there should be an arbitrary functions RenderCommand
     renderQueueWrite.Push(RenderCommand(
         RenderCommand::CreateResourceParams([this](ResourceCreationContext & ctx) { UpdatePresentMode(); })));
+}
+
+void Renderer::CmdAbort(RenderCommand const & command)
+{
+    isAborting = true;
+    abortCode = std::get<RenderCommand::AbortParams>(command.params).errorCode;
+}
+
+void Renderer::CmdCreateResources(RenderCommand const & command)
+{
+    OPTICK_EVENT();
+    auto fun = std::get<RenderCommand::CreateResourceParams>(command.params).fun;
+    OpenGLResourceContext ctx;
+    glFlush();
+    glFinish();
+    fun(ctx);
+    glFlush();
+    glFinish();
+}
+
+void Renderer::CmdExecute(RenderCommand const & command)
+{
+    OPTICK_EVENT();
+    auto params = std::get<RenderCommand::ExecuteCommandContextParams>(command.params);
+    params.ctx->Execute(this, params.waitSem, params.signalSem, params.signalFence);
+}
+
+void Renderer::CmdSwapWindow(RenderCommand const & command)
+{
+    using namespace std::literals::chrono_literals;
+    OPTICK_EVENT();
+    auto params = std::get<RenderCommand::SwapWindowParams>(command.params);
+    auto nativeWait = (OpenGLSemaphoreHandle *)params.waitSem;
+    auto preSwap = std::chrono::high_resolution_clock::now();
+    auto res = preSwap - lastTime;
+    auto avgSwapTime = totalSwapTime / frameCount;
+    if (res + avgSwapTime < 8.333334ms) {
+        std::this_thread::sleep_for((totalSwapTime / frameCount) - 0.5ms);
+    }
+    if (nativeWait != nullptr) {
+        nativeWait->sem.Wait();
+    }
+    glBlitNamedFramebuffer(backbufferFramebuffer,
+                           0,
+                           0,
+                           0,
+                           config.windowResolution.x,
+                           config.windowResolution.y,
+                           0,
+                           0,
+                           config.windowResolution.x,
+                           config.windowResolution.y,
+                           GL_COLOR_BUFFER_BIT,
+                           GL_LINEAR);
+    // With Aero enabled in Windows 7, this doesn't busy wait.
+    // With Aero disabled, it does, causing 100% use on the GPU thread. Crazy.
+    SDL_GL_SwapWindow(window);
+    // TODO: These are both necessary to reduce CPU usage
+    // My understanding is that without these SwapWindow returns instantly and spins up its own thread(?) that
+    // spinlocks, borking our totalSwapTime.
+    glFlush();
+    glFinish();
+    auto postSwap = std::chrono::high_resolution_clock::now();
+    frameTime = static_cast<float>((postSwap - lastTime).count());
+    lastTime = postSwap;
+
+    frameCount++;
+    totalSwapTime += std::chrono::duration_cast<std::chrono::milliseconds>(postSwap - preSwap);
 }
 
 #endif

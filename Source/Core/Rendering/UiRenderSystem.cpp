@@ -1,6 +1,7 @@
 #include "Core/Rendering/UiRenderSystem.h"
 
 #include <imgui.h>
+#include <optick/optick.h>
 
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/ShaderProgram.h"
@@ -56,6 +57,7 @@ void UiRenderSystem::Init()
 
 void UiRenderSystem::StartFrame()
 {
+    OPTICK_EVENT();
     auto deltaTime = Time::GetDeltaTime();
     auto & io = ImGui::GetIO();
     io.DeltaTime = Time::GetUnscaledDeltaTime();
@@ -64,6 +66,7 @@ void UiRenderSystem::StartFrame()
 
 void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer)
 {
+    OPTICK_EVENT();
     glm::vec2 res = renderer->GetResolution();
     auto & imguiIo = ImGui::GetIO();
     imguiIo.DisplaySize = ImVec2(res.x, res.y);
@@ -123,6 +126,7 @@ void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuf
 
 void UiRenderSystem::RenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer)
 {
+    OPTICK_EVENT();
     auto data = ImGui::GetDrawData();
     auto & fd = frameData[frameIndex];
 

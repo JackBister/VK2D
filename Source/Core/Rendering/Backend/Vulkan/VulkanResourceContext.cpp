@@ -1,6 +1,8 @@
 #ifndef USE_OGL_RENDERER
 #include "Core/Rendering/Backend/Vulkan/VulkanResourceContext.h"
 
+#include <optick/optick.h>
+
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanCommandBufferAllocator.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanContextStructs.h"
@@ -32,6 +34,7 @@ void VulkanResourceContext::DestroyCommandBufferAllocator(CommandBufferAllocator
 
 void VulkanResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data, size_t offset, size_t size)
 {
+    OPTICK_EVENT();
     auto const nativeHandle = (VulkanBufferHandle *)buffer;
 
     VkBufferCreateInfo stagingInfo = {};
@@ -238,6 +241,7 @@ void VulkanResourceContext::AllocateImage(ImageHandle * img)
 
 void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> const & data)
 {
+    OPTICK_EVENT();
     assert(img != nullptr);
 
     auto const nativeImg = (VulkanImageHandle *)img;
@@ -841,6 +845,7 @@ void VulkanResourceContext::DestroyVertexInputState(VertexInputStateHandle * sta
 
 DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateInfo const & info)
 {
+    OPTICK_EVENT();
     assert(info.layout != nullptr);
     VkDescriptorSetLayout layout = ((VulkanDescriptorSetLayoutHandle *)info.layout)->layout;
 

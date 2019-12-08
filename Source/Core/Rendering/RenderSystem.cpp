@@ -1,6 +1,7 @@
 ﻿#include "Core/Rendering/RenderSystem.h"
 
 #include <glm/gtc/type_ptr.hpp>
+#include <optick/optick.h>
 
 #include "Core/Logging/Logger.h"
 #include "Core/Resources/ShaderProgram.h"
@@ -14,6 +15,7 @@ static constexpr CommandBuffer::ClearValue DEFAULT_CLEAR_VALUES[] = {
 
 void RenderSystem::StartFrame()
 {
+    OPTICK_EVENT();
     for (auto & sc : scheduledDestroyers) {
         if (sc.remainingFrames == 0) {
             renderer->CreateResources(sc.fun);
@@ -30,6 +32,7 @@ void RenderSystem::StartFrame()
 
 void RenderSystem::RenderFrame(SubmittedFrame const & frame)
 {
+    OPTICK_EVENT();
     if (queuedConfigUpdate.has_value()) {
         logger->Infof("UpdateConfig");
         renderer->UpdateConfig(queuedConfigUpdate.value());
@@ -49,17 +52,18 @@ void RenderSystem::RenderFrame(SubmittedFrame const & frame)
     MainRenderFrame(frame);
     PostProcessFrame();
 
-    auto & currFrame = frameInfo[currFrameInfoIdx];
-    renderer->SwapWindow(currFrameInfoIdx, currFrame.postprocessFinished);
+    SubmitSwap();
 }
 
 void RenderSystem::CreateResources(std::function<void(ResourceCreationContext &)> fun)
 {
+    OPTICK_EVENT();
     renderer->CreateResources(fun);
 }
 
 void RenderSystem::DestroyResources(std::function<void(ResourceCreationContext &)> fun)
 {
+    OPTICK_EVENT();
     // We wait for one "cycle" of frames before destroying. This should ensure that there is no rendering operation in
     // flight that is still using the resource.
     scheduledDestroyers.push_back({(int)frameInfo.size(), fun});
@@ -108,6 +112,7 @@ void RenderSystem::DebugOverrideBackbuffer(ImageViewHandle * image)
 
 uint32_t RenderSystem::AcquireNextFrame()
 {
+    OPTICK_EVENT();
     auto nextFrameInfoIdx = renderer->AcquireNextFrameIndex(frameInfo[currFrameInfoIdx].framebufferReady, nullptr);
     if (nextFrameInfoIdx == UINT32_MAX) {
         return nextFrameInfoIdx;
@@ -124,6 +129,7 @@ uint32_t RenderSystem::AcquireNextFrame()
 
 void RenderSystem::PreRenderFrame(SubmittedFrame const & frame)
 {
+    OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
     currFrame.preRenderPassCommandBuffer->Reset();
     currFrame.preRenderPassCommandBuffer->BeginRecording(nullptr);
@@ -137,6 +143,7 @@ void RenderSystem::PreRenderFrame(SubmittedFrame const & frame)
 
 void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
 {
+    OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
     currFrame.mainCommandBuffer->Reset();
     currFrame.mainCommandBuffer->BeginRecording(nullptr);
@@ -163,6 +170,7 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
 
 void RenderSystem::PostProcessFrame()
 {
+    OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
     auto res = renderer->GetResolution();
 
@@ -200,8 +208,16 @@ void RenderSystem::PostProcessFrame()
                                    currFrame.canStartFrame);
 }
 
+void RenderSystem::SubmitSwap()
+{
+    OPTICK_EVENT();
+    auto & currFrame = frameInfo[currFrameInfoIdx];
+    renderer->SwapWindow(currFrameInfoIdx, currFrame.postprocessFinished);
+}
+
 void RenderSystem::Prepass(SubmittedFrame const & frame)
 {
+    OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
     auto res = renderer->GetResolution();
 
@@ -247,6 +263,7 @@ void RenderSystem::Prepass(SubmittedFrame const & frame)
 
 void RenderSystem::PreRenderCameras(std::vector<SubmittedCamera> const & cameras)
 {
+    OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
     for (auto const & camera : cameras) {
         auto pv = camera.projection * camera.view;
@@ -257,6 +274,7 @@ void RenderSystem::PreRenderCameras(std::vector<SubmittedCamera> const & cameras
 
 void RenderSystem::PreRenderMeshes(std::vector<SubmittedMesh> const & meshes)
 {
+    OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
 
     for (auto const & mesh : meshes) {
@@ -267,6 +285,7 @@ void RenderSystem::PreRenderMeshes(std::vector<SubmittedMesh> const & meshes)
 
 void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes)
 {
+    OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
     auto res = renderer->GetResolution();
 
@@ -301,6 +320,7 @@ void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<Subm
 
 void RenderSystem::PreRenderSprites(std::vector<SubmittedSprite> const & sprites)
 {
+    OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
 
     for (auto const & sprite : sprites) {
@@ -311,6 +331,7 @@ void RenderSystem::PreRenderSprites(std::vector<SubmittedSprite> const & sprites
 
 void RenderSystem::RenderSprites(SubmittedCamera const & camera, std::vector<SubmittedSprite> const & sprites)
 {
+    OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
     auto res = renderer->GetResolution();
 

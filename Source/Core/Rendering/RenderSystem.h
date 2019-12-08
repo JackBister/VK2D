@@ -64,6 +64,7 @@ private:
     void PreRenderFrame(SubmittedFrame const & frame);
     void MainRenderFrame(SubmittedFrame const & frame);
     void PostProcessFrame();
+    void SubmitSwap();
 
     void Prepass(SubmittedFrame const & frame);
 

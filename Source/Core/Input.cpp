@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <glm/glm.hpp>
 #include <imgui.h>
+#include <optick/optick.h>
 #include <set>
 #include <unordered_map>
 
@@ -23,6 +24,7 @@ glm::ivec2 mousePosition;
 
 void Frame()
 {
+    OPTICK_EVENT();
     for (auto const & kbp : downKeys) {
         // If key was down last frame, it's held this frame
         // TODO: Maybe there needs to be a delay of 1 or 2 frames (or at higher FPS people will always be holding)

@@ -44,6 +44,11 @@ private:
     void RenderThread(SDL_GLContext ctx);
     void UpdatePresentMode();
 
+    void CmdAbort(RenderCommand const &);
+    void CmdCreateResources(RenderCommand const &);
+    void CmdExecute(RenderCommand const &);
+    void CmdSwapWindow(RenderCommand const &);
+
     bool isAborting = false;
     uint32_t frameCount = 1;
     float frameTime;

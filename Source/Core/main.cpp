@@ -4,6 +4,7 @@
 #include <SDL2/SDL.h>
 #include <glm/glm.hpp>
 #include <imgui.h>
+#include <optick/optick.h>
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/Components/component.h"
@@ -53,11 +54,13 @@ int main(int argc, char * argv[])
     renderSystem.Init();
 
     SetThreadName(std::this_thread::get_id(), "Main Thread");
+    OPTICK_THREAD("Main Thread");
 
     GameModule::Init(&renderSystem);
 
     GameModule::LoadScene(sceneFileName);
     while (true) {
+        OPTICK_FRAME("MainThread");
         char const * sdlErr = SDL_GetError();
         if (*sdlErr != '\0') {
             logger->Errorf("SDL_GetError returned an error when ticking: %s", sdlErr);

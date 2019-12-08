@@ -2,6 +2,7 @@
 #include "Core/Rendering/Backend/Vulkan/VulkanRenderer.h"
 
 #include <SDL2/SDL_vulkan.h>
+#include <optick/optick.h>
 #include <stb_image.h>
 #include <vulkan/vulkan.h>
 
@@ -201,6 +202,7 @@ Format Renderer::GetBackbufferFormat() const
 
 void Renderer::CreateResources(std::function<void(ResourceCreationContext &)> fun)
 {
+    OPTICK_EVENT();
     VulkanResourceContext ctx(this);
     fun(ctx);
 }
@@ -208,11 +210,13 @@ void Renderer::CreateResources(std::function<void(ResourceCreationContext &)> fu
 void Renderer::ExecuteCommandBuffer(CommandBuffer * ctx, std::vector<SemaphoreHandle *> waitSem,
                                     std::vector<SemaphoreHandle *> signalSem, FenceHandle * signalFence)
 {
+    OPTICK_EVENT();
     ctx->Execute(this, waitSem, signalSem, signalFence);
 }
 
 void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
 {
+    OPTICK_EVENT();
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     if (waitSem != nullptr) {

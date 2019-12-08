@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <optick/optick.h>
+
 #include "Core/Components/CameraComponent.h"
 #include "Core/Console/Console.h"
 #include "Core/Input.h"
@@ -186,6 +188,7 @@ void TakeCameraFocus(Entity * camera)
 
 void Tick()
 {
+    OPTICK_EVENT();
     currFrameStage = FrameStage::INPUT;
     Input::Frame();
     currFrameStage = FrameStage::TIME;

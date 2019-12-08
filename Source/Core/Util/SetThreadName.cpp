@@ -1,5 +1,7 @@
 ﻿#include "SetThreadName.h"
 
+#include <optick/optick.h>
+
 #if defined(_WIN64)
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
