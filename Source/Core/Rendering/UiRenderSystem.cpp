@@ -78,49 +78,52 @@ void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuf
     if (totalIndexSize == 0 || totalVertexSize == 0) {
         return;
     }
-    Semaphore resourceCreationFinished;
-    renderer->CreateResources([&](ResourceCreationContext & ctx) {
-        if (fd.vertexBuffer == nullptr || fd.vertexBufferSize < totalVertexSize) {
-            if (fd.vertexBuffer != nullptr) {
-                ctx.DestroyBuffer(fd.vertexBuffer);
+    if (fd.vertexBuffer == nullptr || fd.vertexBufferSize < totalVertexSize || fd.indexBuffer == nullptr ||
+        fd.indexBufferSize < totalIndexSize) {
+        Semaphore resourceCreationFinished;
+        renderer->CreateResources([&](ResourceCreationContext & ctx) {
+            if (fd.vertexBuffer == nullptr || fd.vertexBufferSize < totalVertexSize) {
+                if (fd.vertexBuffer != nullptr) {
+                    ctx.DestroyBuffer(fd.vertexBuffer);
+                }
+                fd.vertexBufferSize = totalVertexSize;
+                ResourceCreationContext::BufferCreateInfo ci;
+                ci.memoryProperties = MemoryPropertyFlagBits::DEVICE_LOCAL_BIT;
+                ci.size = totalVertexSize;
+                ci.usage = BufferUsageFlags::VERTEX_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT;
+                fd.vertexBuffer = ctx.CreateBuffer(ci);
             }
-            fd.vertexBufferSize = totalVertexSize;
-            ResourceCreationContext::BufferCreateInfo ci;
-            ci.memoryProperties = MemoryPropertyFlagBits::DEVICE_LOCAL_BIT;
-            ci.size = totalVertexSize;
-            ci.usage = BufferUsageFlags::VERTEX_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT;
-            fd.vertexBuffer = ctx.CreateBuffer(ci);
-        }
-        if (fd.indexBuffer == nullptr || fd.indexBufferSize < totalIndexSize) {
-            if (fd.indexBuffer != nullptr) {
-                ctx.DestroyBuffer(fd.indexBuffer);
+            if (fd.indexBuffer == nullptr || fd.indexBufferSize < totalIndexSize) {
+                if (fd.indexBuffer != nullptr) {
+                    ctx.DestroyBuffer(fd.indexBuffer);
+                }
+                fd.indexBufferSize = totalIndexSize;
+                ResourceCreationContext::BufferCreateInfo ci;
+                ci.memoryProperties = MemoryPropertyFlagBits::DEVICE_LOCAL_BIT;
+                ci.size = totalIndexSize;
+                ci.usage = BufferUsageFlags::INDEX_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT;
+                fd.indexBuffer = ctx.CreateBuffer(ci);
             }
-            fd.indexBufferSize = totalIndexSize;
-            ResourceCreationContext::BufferCreateInfo ci;
-            ci.memoryProperties = MemoryPropertyFlagBits::DEVICE_LOCAL_BIT;
-            ci.size = totalIndexSize;
-            ci.usage = BufferUsageFlags::INDEX_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT;
-            fd.indexBuffer = ctx.CreateBuffer(ci);
-        }
-        size_t currIndexPos = 0;
-        size_t currVertexPos = 0;
-        for (int i = 0; i < data->CmdListsCount; ++i) {
-            auto cmdList = data->CmdLists[i];
-            ctx.BufferSubData(fd.indexBuffer,
-                              (uint8_t *)cmdList->IdxBuffer.Data,
-                              currIndexPos,
-                              cmdList->IdxBuffer.Size * sizeof(ImDrawIdx));
-            ctx.BufferSubData(fd.vertexBuffer,
-                              (uint8_t *)cmdList->VtxBuffer.Data,
-                              currVertexPos,
-                              cmdList->VtxBuffer.Size * sizeof(ImDrawVert));
-            currIndexPos += cmdList->IdxBuffer.Size * sizeof(ImDrawIdx);
-            currVertexPos += cmdList->VtxBuffer.Size * sizeof(ImDrawVert);
-        }
-        resourceCreationFinished.Signal();
-    });
-    resourceCreationFinished.Wait();
+            resourceCreationFinished.Signal();
+        });
+        resourceCreationFinished.Wait();
+    }
 
+    size_t currIndexPos = 0;
+    size_t currVertexPos = 0;
+    for (int i = 0; i < data->CmdListsCount; ++i) {
+        auto cmdList = data->CmdLists[i];
+        commandBuffer->CmdUpdateBuffer(fd.indexBuffer,
+                                       currIndexPos,
+                                       cmdList->IdxBuffer.Size * sizeof(ImDrawIdx),
+                                       (uint32_t *)cmdList->IdxBuffer.Data);
+        commandBuffer->CmdUpdateBuffer(fd.vertexBuffer,
+                                       currVertexPos,
+                                       cmdList->VtxBuffer.Size * sizeof(ImDrawVert),
+                                       (uint32_t *)cmdList->VtxBuffer.Data);
+        currIndexPos += cmdList->IdxBuffer.Size * sizeof(ImDrawIdx);
+        currVertexPos += cmdList->VtxBuffer.Size * sizeof(ImDrawVert);
+    }
     commandBuffer->CmdUpdateBuffer(resolutionUniformBuffer, 0, sizeof(glm::vec2), (uint32_t *)&res);
 }
 
