@@ -48,5 +48,6 @@ void SubmitMesh(SubmittedMesh const & mesh);
 void SubmitSprite(SubmittedSprite const & sprite);
 void TakeCameraFocus(Entity *);
 void Tick();
+void TickEntities();
 void UnloadDLL(std::string const &);
 };

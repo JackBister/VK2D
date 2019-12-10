@@ -234,9 +234,7 @@ void Tick()
     // TODO: substeps
     physicsWorld->world->stepSimulation(Time::GetDeltaTime());
     currFrameStage = FrameStage::TICK;
-    for (auto entity : entities) {
-        entity->FireEvent("Tick", {{"deltaTime", Time::GetDeltaTime()}});
-    }
+    TickEntities();
 
     EditorSystem::OnGui();
     Console::OnGui();
@@ -247,5 +245,13 @@ void Tick()
     submittedCameras.clear();
     submittedMeshes.clear();
     submittedSprites.clear();
+}
+
+void TickEntities()
+{
+    OPTICK_EVENT();
+    for (auto entity : entities) {
+        entity->FireEvent("Tick", {{"deltaTime", Time::GetDeltaTime()}});
+    }
 }
 };
