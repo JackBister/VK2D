@@ -2,7 +2,7 @@
 
 #include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
-#include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
+#include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/SubmittedMesh.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/entity.h"
@@ -13,6 +13,11 @@ COMPONENT_IMPL(StaticMeshComponent, &StaticMeshComponent::s_Deserialize);
 
 REFLECT_STRUCT_BEGIN(StaticMeshComponent)
 REFLECT_STRUCT_END()
+
+StaticMeshComponent::~StaticMeshComponent()
+{
+    RenderSystem::GetInstance()->DestroyStaticMeshInstance(staticMeshInstance);
+}
 
 Deserializable * StaticMeshComponent::s_Deserialize(DeserializationContext * deserializationContext,
                                                     SerializedObject const & obj)
@@ -25,23 +30,7 @@ Deserializable * StaticMeshComponent::s_Deserialize(DeserializationContext * des
         logger->Errorf("existingMesh %s not found", path.string().c_str());
     }
     auto ret = new StaticMeshComponent(file, existingMesh);
-    ResourceManager::CreateResources([ret](ResourceCreationContext & ctx) {
-        auto layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>(
-            "_Primitives/DescriptorSetLayouts/modelMesh.layout");
-        ret->uniforms = ctx.CreateBuffer({sizeof(glm::mat4),
-                                          BufferUsageFlags::UNIFORM_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
-                                          DEVICE_LOCAL_BIT});
-
-        ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uniformDescriptor = {
-            ret->uniforms, 0, sizeof(glm::mat4)};
-
-        ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
-            {DescriptorType::UNIFORM_BUFFER, 0, uniformDescriptor}};
-
-        ret->descriptorSet = ctx.CreateDescriptorSet({1, descriptors, layout});
-
-        ret->hasCreatedLocalResources = true;
-    });
+    ret->staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance();
     return ret;
 }
 
@@ -54,12 +43,13 @@ SerializedObject StaticMeshComponent::Serialize() const
 
 void StaticMeshComponent::OnEvent(HashedString name, EventArgs args)
 {
-    if (name == "Tick" && hasCreatedLocalResources) {
+    if (name == "PreRender") {
+        auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
+        builder->WithStaticMeshInstanceUpdate({entity->transform.GetLocalToWorld(), staticMeshInstance});
+    } else if (name == "Tick") {
         auto submeshes = mesh->GetSubmeshes();
         SubmittedMesh submit;
-        submit.localToWorld = entity->transform.GetLocalToWorld();
-        submit.descriptorSet = descriptorSet;
-        submit.uniforms = uniforms;
+        submit.staticMeshInstance = staticMeshInstance;
         for (size_t i = 0; i < submeshes.size(); ++i) {
             SubmittedSubmesh submittedSubmesh;
             auto materialDescriptor = submeshes[i].GetMaterial()->GetDescriptorSet();

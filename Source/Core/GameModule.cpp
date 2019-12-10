@@ -8,6 +8,7 @@
 #include "Core/Console/Console.h"
 #include "Core/Input.h"
 #include "Core/Logging/Logger.h"
+#include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/SubmittedCamera.h"
 #include "Core/Resources/Image.h"
@@ -148,6 +149,16 @@ void OnFrameStart(std::function<void()> fun)
     onFrameStart.push_back(fun);
 }
 
+void PreRender()
+{
+    OPTICK_EVENT();
+    PreRenderCommands::Builder builder;
+    for (auto entity : entities) {
+        entity->FireEvent("PreRender", {{"commandBuilder", &builder}});
+    }
+    renderSystem->PreRenderFrame(builder.Build());
+}
+
 void RemoveEntity(Entity * entity)
 {
     for (auto it = entities.begin(); it != entities.end(); ++it) {
@@ -238,6 +249,8 @@ void Tick()
 
     EditorSystem::OnGui();
     Console::OnGui();
+
+    PreRender();
 
     currFrameStage = FrameStage::RENDER;
     renderSystem->RenderFrame({submittedCameras, submittedMeshes, submittedSprites});

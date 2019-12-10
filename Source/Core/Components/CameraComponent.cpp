@@ -4,10 +4,9 @@
 
 #include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
-#include "Core/Rendering/Backend/Abstract/RenderResources.h"
-#include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
+#include "Core/Rendering/PreRenderCommands.h"
+#include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/SubmittedCamera.h"
-#include "Core/Resources/ResourceManager.h"
 #include "Core/dtime.h"
 #include "Core/entity.h"
 
@@ -24,12 +23,7 @@ REFLECT_STRUCT_END()
 
 CameraComponent::~CameraComponent()
 {
-    auto descriptorSet = this->descriptorSet;
-    auto uniforms = this->uniforms;
-    ResourceManager::DestroyResources([descriptorSet, uniforms](ResourceCreationContext & ctx) {
-        ctx.DestroyDescriptorSet(descriptorSet);
-        ctx.DestroyBuffer(uniforms);
-    });
+    RenderSystem::GetInstance()->DestroyCamera(this->cameraHandle);
 }
 
 glm::mat4 const & CameraComponent::GetProjection()
@@ -90,23 +84,7 @@ Deserializable * CameraComponent::s_Deserialize(DeserializationContext * deseria
         ret->defaultsToMain = defaultsToMainOpt.value();
     }
 
-    auto layout =
-        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraPt.layout");
-    ResourceManager::CreateResources([ret, layout](ResourceCreationContext & ctx) {
-        ret->uniforms = ctx.CreateBuffer({sizeof(glm::mat4),
-                                          BufferUsageFlags::UNIFORM_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
-                                          DEVICE_LOCAL_BIT});
-
-        ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uniformDescriptor = {
-            ret->uniforms, 0, sizeof(glm::mat4)};
-
-        ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
-            {DescriptorType::UNIFORM_BUFFER, 0, uniformDescriptor}};
-
-        ret->descriptorSet = ctx.CreateDescriptorSet({1, descriptors, layout});
-
-        ret->hasCreatedLocalResources = true;
-    });
+    ret->cameraHandle = RenderSystem::GetInstance()->CreateCamera();
 
     return ret;
 }
@@ -148,14 +126,12 @@ void CameraComponent::OnEvent(HashedString name, EventArgs args)
         GameModule::TakeCameraFocus(entity);
     } else if (name == "TakeCameraFocus") {
         GameModule::TakeCameraFocus(entity);
+    } else if (name == "PreRender") {
+        auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
+        builder->WithCameraUpdate({GetView(), GetProjection(), cameraHandle});
     } else if (name == "Tick") {
-        if (hasCreatedLocalResources) {
-            SubmittedCamera submittedCamera;
-            submittedCamera.descriptorSet = descriptorSet;
-            submittedCamera.projection = GetProjection();
-            submittedCamera.view = GetView();
-            submittedCamera.uniforms = uniforms;
-            GameModule::SubmitCamera(submittedCamera);
-        }
+        SubmittedCamera submittedCamera;
+        submittedCamera.cameraHandle = cameraHandle;
+        GameModule::SubmitCamera(submittedCamera);
     }
 }

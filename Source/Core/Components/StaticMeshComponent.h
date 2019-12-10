@@ -3,6 +3,7 @@
 #include <atomic>
 
 #include "Component.h"
+#include "Core/Rendering/StaticMeshInstance.h"
 #include "Core/Resources/StaticMesh.h"
 
 class DescriptorSet;
@@ -15,8 +16,7 @@ public:
 
     StaticMeshComponent() { receiveTicks = true; }
     StaticMeshComponent(std::string file, StaticMesh * mesh);
-
-    // ~StaticMeshComponent() override;
+    ~StaticMeshComponent() override;
 
     SerializedObject Serialize() const override;
 
@@ -29,8 +29,5 @@ private:
     std::string file;
     StaticMesh * mesh;
 
-    DescriptorSet * descriptorSet;
-    BufferHandle * uniforms;
-
-    std::atomic<bool> hasCreatedLocalResources{false};
+    StaticMeshInstance staticMeshInstance;
 };

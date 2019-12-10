@@ -73,6 +73,8 @@ RenderSystem::RenderSystem(Renderer * renderer) : renderer(renderer), uiRenderSy
             this->queuedConfigUpdate = config;
         });
     Console::RegisterCommand(presentModeCommand);
+
+    RenderSystem::instance = this;
 }
 
 void RenderSystem::Init()

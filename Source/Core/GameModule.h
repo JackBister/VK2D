@@ -41,6 +41,7 @@ void Init(RenderSystem * renderSystem);
 void LoadDLL(std::string const &);
 void LoadScene(std::string const &);
 void OnFrameStart(std::function<void()>);
+void PreRender();
 void RemoveEntity(Entity *);
 SerializedObject SerializePhysics();
 void SubmitCamera(SubmittedCamera const & camera);

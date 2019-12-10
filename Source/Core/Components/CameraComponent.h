@@ -7,9 +7,7 @@
 #include <glm/glm.hpp>
 
 #include "Core/Components/component.h"
-
-class BufferHandle;
-class DescriptorSet;
+#include "Core/Rendering/CameraHandle.h"
 
 struct OrthoCamera {
     float viewSize;
@@ -58,7 +56,5 @@ private:
     glm::mat4 projection;
     glm::mat4 view;
 
-    std::atomic<bool> hasCreatedLocalResources{false};
-    DescriptorSet * descriptorSet;
-    BufferHandle * uniforms;
+    CameraHandle cameraHandle;
 };

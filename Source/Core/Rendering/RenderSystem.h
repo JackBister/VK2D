@@ -6,9 +6,17 @@
 
 #include "Core/Rendering/Backend/Abstract/RendererConfig.h"
 #include "Core/Rendering/Backend/Renderer.h"
+#include "Core/Rendering/CameraHandle.h"
+#include "Core/Rendering/CameraResources.h"
+#include "Core/Rendering/PreRenderCommands.h"
+#include "Core/Rendering/SpriteInstance.h"
+#include "Core/Rendering/SpriteInstanceResources.h"
+#include "Core/Rendering/StaticMeshInstance.h"
+#include "Core/Rendering/StaticMeshInstanceResources.h"
 #include "Core/Rendering/SubmittedFrame.h"
 #include "Core/Rendering/UiRenderSystem.h"
 
+class Image;
 class ShaderProgram;
 
 struct ScheduledDestroyer {
@@ -19,17 +27,29 @@ struct ScheduledDestroyer {
 class RenderSystem
 {
 public:
+    static RenderSystem * GetInstance();
+
     RenderSystem(Renderer * renderer);
 
     void Init();
 
     void StartFrame();
+    void PreRenderFrame(PreRenderCommands);
     void RenderFrame(SubmittedFrame const & frame);
 
     void CreateResources(std::function<void(ResourceCreationContext &)> fun);
     void DestroyResources(std::function<void(ResourceCreationContext &)> fun);
 
     glm::ivec2 GetResolution();
+
+    CameraHandle CreateCamera();
+    void DestroyCamera(CameraHandle camera);
+
+    SpriteInstance CreateSpriteInstance(Image * image);
+    void DestroySpriteInstance(SpriteInstance spriteInstance);
+
+    StaticMeshInstance CreateStaticMeshInstance();
+    void DestroyStaticMeshInstance(StaticMeshInstance staticMesh);
 
     void DebugOverrideBackbuffer(ImageViewHandle * image);
 
@@ -57,24 +77,25 @@ private:
         CommandBufferAllocator * commandBufferAllocator;
     };
 
+    static RenderSystem * instance;
+
     void InitFramebuffers(ResourceCreationContext &);
     void InitSwapchainResources();
 
     uint32_t AcquireNextFrame();
-    void PreRenderFrame(SubmittedFrame const & frame);
     void MainRenderFrame(SubmittedFrame const & frame);
     void PostProcessFrame();
     void SubmitSwap();
 
     void Prepass(SubmittedFrame const & frame);
 
-    void PreRenderCameras(std::vector<SubmittedCamera> const & cameras);
+    void PreRenderCameras(std::vector<UpdateCamera> const & cameras);
 
-    void PreRenderMeshes(std::vector<SubmittedMesh> const & meshes);
-    void RenderMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes);
-
-    void PreRenderSprites(std::vector<SubmittedSprite> const & sprites);
+    void PreRenderSprites(std::vector<UpdateSpriteInstance> const & sprites);
     void RenderSprites(SubmittedCamera const & camera, std::vector<SubmittedSprite> const & sprites);
+
+    void PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const & meshes);
+    void RenderMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes);
 
     // FrameInfo related properties
     uint32_t currFrameInfoIdx = 0;
@@ -106,6 +127,18 @@ private:
 
     BufferHandle * quadEbo;
     BufferHandle * quadVbo;
+
+    // cameras
+    std::vector<CameraResources> cameras;
+    CameraResources * GetCamera(CameraHandle);
+
+    // sprites
+    std::vector<SpriteInstanceResources> sprites;
+    SpriteInstanceResources * GetSpriteInstance(SpriteInstance);
+
+    // static meshes
+    std::vector<StaticMeshInstanceResources> staticMeshes;
+    StaticMeshInstanceResources * GetStaticMeshInstance(StaticMeshInstance);
 
     // Other systems
     Renderer * renderer;

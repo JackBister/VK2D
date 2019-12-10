@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 #include "Backend/Abstract/RenderResources.h"
+#include "Core/Rendering/StaticMeshInstance.h"
 #include "Core/Resources/Material.h"
 
 struct SubmittedSubmesh {
@@ -15,11 +16,7 @@ struct SubmittedSubmesh {
 };
 
 struct SubmittedMesh {
-    glm::mat4 localToWorld;
-    // Buffer containing any uniforms shared by all submeshes (such as localToWorld)
-    BufferHandle * uniforms;
-    // DescriptorSet which binds the uniforms Buffer
-    DescriptorSet * descriptorSet;
+    StaticMeshInstance staticMeshInstance;
 
     std::vector<SubmittedSubmesh> submeshes;
 };

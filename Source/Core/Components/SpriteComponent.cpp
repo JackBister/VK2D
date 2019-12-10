@@ -6,11 +6,9 @@
 
 #include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
-#include "Core/Rendering/Backend/Abstract/RenderResources.h"
-#include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
+#include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/SubmittedSprite.h"
 #include "Core/Resources/Image.h"
-#include "Core/Resources/ResourceManager.h"
 #include "Core/entity.h"
 
 static const auto logger = Logger::Create("SpriteComponent");
@@ -22,12 +20,7 @@ REFLECT_STRUCT_END()
 
 SpriteComponent::~SpriteComponent()
 {
-    auto descriptorSet = this->descriptorSet;
-    auto uniforms = this->uniforms;
-    ResourceManager::DestroyResources([descriptorSet, uniforms](ResourceCreationContext & ctx) {
-        ctx.DestroyBuffer(uniforms);
-        ctx.DestroyDescriptorSet(descriptorSet);
-    });
+    RenderSystem::GetInstance()->DestroySpriteInstance(spriteInstance);
 
 #if HOT_RELOAD_RESOURCES
     image->Unsubscribe(hotReloadSubscriptionId);
@@ -43,34 +36,13 @@ Deserializable * SpriteComponent::s_Deserialize(DeserializationContext * deseria
     auto path = deserializationContext->workingDirectory / ret->file;
 
     auto img = Image::FromFile(path.string());
-    auto view = img->GetDefaultView();
 
-    ResourceManager::CreateResources([ret, img, view](ResourceCreationContext & ctx) {
-        auto layout =
-            ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/spritePt.layout");
-        ret->uniforms = ctx.CreateBuffer({sizeof(glm::mat4),
-                                          BufferUsageFlags::UNIFORM_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
-                                          DEVICE_LOCAL_BIT});
-
-        ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uvDescriptor = {
-            ret->uniforms, 0, sizeof(glm::mat4)};
-
-        auto sampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/Default.sampler");
-
-        ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imgDescriptor = {sampler, view};
-
-        ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
-            {DescriptorType::UNIFORM_BUFFER, 0, uvDescriptor},
-            {DescriptorType::COMBINED_IMAGE_SAMPLER, 1, imgDescriptor}};
-
-        ret->descriptorSet = ctx.CreateDescriptorSet({2, descriptors, layout});
-
-        ret->hasCreatedLocalResources = true;
-    });
+    ret->spriteInstance = RenderSystem::GetInstance()->CreateSpriteInstance(img);
 
 #if HOT_RELOAD_RESOURCES
     ret->image = img;
     ret->hotReloadSubscriptionId = img->SubscribeToChanges([ret](auto img) {
+#if 0
         ResourceManager::CreateResources([ret, img](ResourceCreationContext & ctx) {
             auto layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>(
                 "_Primitives/DescriptorSetLayouts/spritePt.layout");
@@ -95,6 +67,7 @@ Deserializable * SpriteComponent::s_Deserialize(DeserializationContext * deseria
             ResourceManager::DestroyResources(
                 [oldDescriptorSet](ResourceCreationContext & ctx) { ctx.DestroyDescriptorSet(oldDescriptorSet); });
         });
+#endif
     });
 #endif
 
@@ -108,13 +81,12 @@ SerializedObject SpriteComponent::Serialize() const
 
 void SpriteComponent::OnEvent(HashedString name, EventArgs args)
 {
-    if (name == "Tick") {
-        if (hasCreatedLocalResources) {
-            SubmittedSprite submittedSprite;
-            submittedSprite.descriptorSet = descriptorSet;
-            submittedSprite.localToWorld = entity->transform.GetLocalToWorld();
-            submittedSprite.uniforms = uniforms;
-            GameModule::SubmitSprite(submittedSprite);
-        }
+    if (name == "PreRender") {
+        auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
+        builder->WithSpriteInstanceUpdate({entity->transform.GetLocalToWorld(), spriteInstance});
+    } else if (name == "Tick") {
+        SubmittedSprite submittedSprite;
+        submittedSprite.spriteInstance = spriteInstance;
+        GameModule::SubmitSprite(submittedSprite);
     }
 }

@@ -3,9 +3,8 @@
 #include <atomic>
 
 #include "Core/Components/Component.h"
+#include "Core/Rendering/SpriteInstance.h"
 
-class BufferHandle;
-class DescriptorSet;
 class Image;
 
 class SpriteComponent final : public Component
@@ -24,9 +23,7 @@ public:
     REFLECT()
     REFLECT_INHERITANCE()
 private:
-    DescriptorSet * descriptorSet;
-    std::atomic<bool> hasCreatedLocalResources{false};
-    BufferHandle * uniforms;
+    SpriteInstance spriteInstance;
 
     std::string file;
 
