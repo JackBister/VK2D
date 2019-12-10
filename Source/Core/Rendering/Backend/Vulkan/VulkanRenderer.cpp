@@ -217,6 +217,7 @@ void Renderer::ExecuteCommandBuffer(CommandBuffer * ctx, std::vector<SemaphoreHa
 void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
 {
     OPTICK_EVENT();
+    OPTICK_GPU_FLIP(swapchain.swapchain);
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     if (waitSem != nullptr) {
@@ -475,6 +476,8 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
             exit(1);
         }
     }
+
+    OPTICK_GPU_INIT_VULKAN(&basics.device, &basics.physicalDevice, &graphicsQueue, &graphicsQueueIdx, 1);
 }
 
 uint32_t Renderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)

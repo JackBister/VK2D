@@ -33,6 +33,8 @@ if (ENABLE_PROFILER)
         Main
         ${OPTICK_LIBRARY}
     )
+else()
+    add_definitions(-DUSE_OPTICK=0)
 endif()
 
 option(HOT_RELOAD_RESOURCES "Hot reload resources on change" ON)
