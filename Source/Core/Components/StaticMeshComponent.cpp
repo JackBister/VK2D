@@ -5,6 +5,7 @@
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/SubmittedMesh.h"
 #include "Core/Resources/ResourceManager.h"
+#include "Core/Resources/StaticMeshLoaderObj.h"
 #include "Core/entity.h"
 
 static const auto logger = Logger::Create("StaticMeshComponent");
@@ -26,8 +27,7 @@ Deserializable * StaticMeshComponent::s_Deserialize(DeserializationContext * des
     auto path = deserializationContext->workingDirectory / file;
     auto existingMesh = ResourceManager::GetResource<StaticMesh>(path.string());
     if (!existingMesh) {
-        // TODO:
-        logger->Errorf("existingMesh %s not found", path.string().c_str());
+        existingMesh = StaticMeshLoaderObj().LoadFile(path.string());
     }
     auto ret = new StaticMeshComponent(file, existingMesh);
     ret->staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance();

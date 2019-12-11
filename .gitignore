@@ -1,3 +1,5 @@
+# Examples that shouldn't be committed
+Examples/3D/
 
 # Generated shader files
 *.spv.h

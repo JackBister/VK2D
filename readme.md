@@ -15,6 +15,7 @@ The following libraries are currently used by the engine:
 * [SDL](https://www.libsdl.org/index.php)
 * [shaderc](https://github.com/google/shaderc)
 * [stb](https://github.com/nothings/stb)
+* [tinyobjloader](https://github.com/syoyo/tinyobjloader)
 
 When it comes to graphics APIs, the engine currently targets:
 
@@ -24,5 +25,5 @@ When it comes to graphics APIs, the engine currently targets:
 ## Installing the required libraries on Windows
 On Windows, I have been using [vcpkg](https://github.com/Microsoft/vcpkg) to install all the required libraries. The following command line should give you everything you need:
 ```
-vcpkg install --triplet=x64-windows bullet3 concurrentqueue glew glm imgui nlohmann-json sdl2 sdl2[vulkan] shaderc stb
+vcpkg install --triplet=x64-windows bullet3 concurrentqueue glew glm imgui nlohmann-json sdl2 sdl2[vulkan] shaderc stb tinyobjloader
 ```
