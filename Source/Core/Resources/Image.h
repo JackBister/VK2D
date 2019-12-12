@@ -18,6 +18,7 @@ public:
           ImageViewHandle * defaultView);
     ~Image();
 
+    static Image * FromData(std::string const &, uint32_t width, uint32_t height, std::vector<uint8_t> data);
     static Image * FromFile(std::string const &, bool forceReload = false);
 
     uint32_t GetHeight() const;

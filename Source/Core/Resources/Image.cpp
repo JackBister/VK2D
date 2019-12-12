@@ -91,6 +91,15 @@ Image::~Image()
     });
 }
 
+Image * Image::FromData(std::string const & filename, uint32_t width, uint32_t height, std::vector<uint8_t> data)
+{
+    auto imageAndView = CreateImageResources(data, width, height);
+    auto ret = new Image(filename, width, height, imageAndView.image, imageAndView.imageView);
+    ResourceManager::AddResource(filename, ret);
+    ResourceManager::AddResource(filename + "/defaultView.imageview", ret->defaultView);
+    return ret;
+}
+
 Image * Image::FromFile(std::string const & fileName, bool forceReload)
 {
     if (!forceReload && ResourceManager::GetResource<Image>(fileName)) {
