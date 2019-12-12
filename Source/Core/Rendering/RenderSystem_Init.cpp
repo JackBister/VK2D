@@ -93,6 +93,8 @@ void RenderSystem::Init()
     meshPipelineLayout =
         ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/mesh.pipelinelayout");
     meshProgram = ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/mesh.program");
+    transparentMeshProgram =
+        ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/TransparentMesh.program");
 
     postprocessSampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/postprocess.sampler");
     postprocessDescriptorSetLayout =

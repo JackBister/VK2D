@@ -7,6 +7,7 @@ void ShaderProgramFactory::CreateResources()
 {
     CreatePassthroughTransformShaderProgram();
     CreateMeshShaderProgram();
+    CreateTransparentMeshShaderProgram();
     CreateUiShaderProgram();
     CreatePostprocessShaderProgram();
 }
@@ -39,6 +40,25 @@ void ShaderProgramFactory::CreateMeshShaderProgram()
 
     ShaderProgram::Create(
         "_Primitives/ShaderPrograms/mesh.program",
+        {"shaders/mesh.vert", "shaders/mesh.frag"},
+        ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/mesh.state"),
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/mesh.pipelinelayout"),
+        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass"),
+        CullMode::BACK,
+        FrontFace::COUNTER_CLOCKWISE,
+        0,
+        depthStencil);
+}
+
+void ShaderProgramFactory::CreateTransparentMeshShaderProgram()
+{
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    depthStencil.depthCompareOp = CompareOp::LESS_OR_EQUAL;
+    depthStencil.depthTestEnable = true;
+    depthStencil.depthWriteEnable = true;
+
+    ShaderProgram::Create(
+        "_Primitives/ShaderPrograms/TransparentMesh.program",
         {"shaders/mesh.vert", "shaders/mesh.frag"},
         ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/mesh.state"),
         ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/mesh.pipelinelayout"),

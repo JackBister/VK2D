@@ -96,6 +96,7 @@ private:
 
     void PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const & meshes);
     void RenderMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes);
+    void RenderTransparentMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes);
 
     // FrameInfo related properties
     uint32_t currFrameInfoIdx = 0;
@@ -117,6 +118,7 @@ private:
 
     PipelineLayoutHandle * meshPipelineLayout;
     ShaderProgram * meshProgram;
+    ShaderProgram * transparentMeshProgram;
 
     ShaderProgram * uiProgram;
 

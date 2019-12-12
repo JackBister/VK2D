@@ -344,7 +344,7 @@ void RenderPrimitiveFactory::CreateDefaultMaterial(ResourceCreationContext & ctx
     albedoViewInfo.viewType = ImageViewHandle::Type::TYPE_2D;
     auto albedoView = ctx.CreateImageView(albedoViewInfo);
 
-    auto albedoImage = new Image("_Primitives/Materials/default.mtl/image", 2, 2, albedoImg, albedoView);
+    auto albedoImage = new Image("_Primitives/Materials/default.mtl/image", 2, 2, false, albedoImg, albedoView);
     ResourceManager::AddResource("_Primitives/Materials/default.mtl/image", albedoImage);
 
     auto defaultMaterial = new Material(albedoImage);

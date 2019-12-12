@@ -52,11 +52,7 @@ void StaticMeshComponent::OnEvent(HashedString name, EventArgs args)
         submit.staticMeshInstance = staticMeshInstance;
         for (size_t i = 0; i < submeshes.size(); ++i) {
             SubmittedSubmesh submittedSubmesh;
-            auto materialDescriptor = submeshes[i].GetMaterial()->GetDescriptorSet();
-            if (!materialDescriptor) {
-                continue;
-            }
-            submittedSubmesh.materialDescriptor = materialDescriptor;
+            submittedSubmesh.material = submeshes[i].GetMaterial();
             submittedSubmesh.numIndexes = submeshes[i].GetNumIndexes();
             submittedSubmesh.indexBuffer = submeshes[i].GetIndexBuffer();
             submittedSubmesh.numVertices = submeshes[i].GetNumVertices();

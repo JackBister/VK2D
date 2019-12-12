@@ -4,6 +4,7 @@
 #include <optick/optick.h>
 
 #include "Core/Logging/Logger.h"
+#include "Core/Resources/Image.h"
 #include "Core/Resources/ShaderProgram.h"
 #include "Core/Semaphore.h"
 #include "Core/entity.h"
@@ -166,6 +167,8 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
     for (auto const & camera : frame.cameras) {
         RenderMeshes(camera, frame.meshes);
         RenderSprites(camera, frame.sprites);
+
+        RenderTransparentMeshes(camera, frame.meshes);
     }
 
     currFrame.mainCommandBuffer->CmdEndRenderPass();
@@ -257,6 +260,13 @@ void RenderSystem::Prepass(SubmittedFrame const & frame)
                 prepassPipelineLayout, 1, {meshResources->descriptorSet});
 
             for (auto const & submesh : mesh.submeshes) {
+                if (!submesh.material->GetDescriptorSet()) {
+                    continue;
+                }
+                if (submesh.material->GetAlbedo()->HasTransparency()) {
+                    continue;
+                }
+
                 if (submesh.indexBuffer) {
                     currFrame.mainCommandBuffer->CmdBindIndexBuffer(
                         submesh.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
@@ -320,7 +330,55 @@ void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<Subm
         currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 1, {meshResources->descriptorSet});
 
         for (auto const & submesh : mesh.submeshes) {
-            currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 2, {submesh.materialDescriptor});
+            if (!submesh.material->GetDescriptorSet()) {
+                continue;
+            }
+            currFrame.mainCommandBuffer->CmdBindDescriptorSets(
+                meshPipelineLayout, 2, {submesh.material->GetDescriptorSet()});
+            if (submesh.indexBuffer) {
+                currFrame.mainCommandBuffer->CmdBindIndexBuffer(
+                    submesh.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
+                currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                currFrame.mainCommandBuffer->CmdDrawIndexed(submesh.numIndexes, 1, 0, 0);
+            } else {
+                currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                currFrame.mainCommandBuffer->CmdDraw(submesh.numVertices, 1, 0, 0);
+            }
+        }
+    }
+}
+
+void RenderSystem::RenderTransparentMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes)
+{
+    OPTICK_EVENT();
+    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto res = renderer->GetResolution();
+
+    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    currFrame.mainCommandBuffer->CmdSetViewport(0, 1, &viewport);
+
+    CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
+    currFrame.mainCommandBuffer->CmdSetScissor(0, 1, &scissor);
+
+    currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                 transparentMeshProgram->GetPipeline());
+
+    auto cam = GetCamera(camera.cameraHandle);
+    currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 0, {cam->descriptorSet});
+
+    for (auto const & mesh : meshes) {
+        auto meshResources = GetStaticMeshInstance(mesh.staticMeshInstance);
+        currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 1, {meshResources->descriptorSet});
+
+        for (auto const & submesh : mesh.submeshes) {
+            if (!submesh.material->GetDescriptorSet()) {
+                continue;
+            }
+            if (!submesh.material->GetAlbedo()->HasTransparency()) {
+                continue;
+            }
+            currFrame.mainCommandBuffer->CmdBindDescriptorSets(
+                meshPipelineLayout, 2, {submesh.material->GetDescriptorSet()});
             if (submesh.indexBuffer) {
                 currFrame.mainCommandBuffer->CmdBindIndexBuffer(
                     submesh.indexBuffer, 0, CommandBuffer::IndexType::UINT32);

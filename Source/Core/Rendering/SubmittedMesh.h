@@ -7,8 +7,7 @@
 #include "Core/Resources/Material.h"
 
 struct SubmittedSubmesh {
-    // DescriptorSet containing the different material descriptors and buffers
-    DescriptorSet * materialDescriptor;
+    Material * material;
     size_t numIndexes;
     BufferHandle * indexBuffer;
     size_t numVertices;

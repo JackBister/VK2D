@@ -14,7 +14,7 @@
 class Image
 {
 public:
-    Image(std::string const & fileName, uint32_t width, uint32_t height, ImageHandle * img,
+    Image(std::string const & fileName, uint32_t width, uint32_t height, bool hasTransparency, ImageHandle * img,
           ImageViewHandle * defaultView);
     ~Image();
 
@@ -24,7 +24,9 @@ public:
     uint32_t GetHeight() const;
     uint32_t GetWidth() const;
 
-    ImageViewHandle * GetDefaultView();
+    bool HasTransparency() const;
+
+    ImageViewHandle * GetDefaultView() const;
     ImageHandle * GetImage() const;
 
 #if HOT_RELOAD_RESOURCES
@@ -36,6 +38,7 @@ private:
     std::string fileName;
 
     uint32_t width, height;
+    bool hasTransparency;
     ImageHandle * img;
 
     ImageViewHandle * defaultView;

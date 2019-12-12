@@ -58,6 +58,18 @@ static ImageAndView CreateImageResources(std::vector<uint8_t> const & data, int 
     return ret;
 }
 
+bool CheckForTransparency(std::vector<uint8_t> const & data)
+{
+    if (data.size() >= 4) {
+        for (size_t i = 3; i < data.size(); i += 4) {
+            if (data[i] != 0xFF) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 static std::vector<uint8_t> ReadImageFile(std::string fileName, int * width, int * height)
 {
     int n;
@@ -75,10 +87,12 @@ static std::vector<uint8_t> ReadImageFile(std::string fileName, int * width, int
     return data;
 }
 
-Image::Image(std::string const & fileName, uint32_t width, uint32_t height, ImageHandle * img,
+Image::Image(std::string const & fileName, uint32_t width, uint32_t height, bool hasTransparency, ImageHandle * img,
              ImageViewHandle * defaultView)
-    : fileName(fileName), width(width), height(height), img(img), defaultView(defaultView)
+    : fileName(fileName), width(width), height(height), hasTransparency(hasTransparency), img(img),
+      defaultView(defaultView)
 {
+    logger->Infof("Image %s hasTransparency %d", fileName.c_str(), hasTransparency);
 }
 
 Image::~Image()
@@ -94,7 +108,8 @@ Image::~Image()
 Image * Image::FromData(std::string const & filename, uint32_t width, uint32_t height, std::vector<uint8_t> data)
 {
     auto imageAndView = CreateImageResources(data, width, height);
-    auto ret = new Image(filename, width, height, imageAndView.image, imageAndView.imageView);
+    auto ret =
+        new Image(filename, width, height, CheckForTransparency(data), imageAndView.image, imageAndView.imageView);
     ResourceManager::AddResource(filename, ret);
     ResourceManager::AddResource(filename + "/defaultView.imageview", ret->defaultView);
     return ret;
@@ -112,7 +127,8 @@ Image * Image::FromFile(std::string const & fileName, bool forceReload)
     auto imageAndView = CreateImageResources(data, width, height);
     logger->Infof(
         "Initial load '%s' image=%p, imageView=%p", fileName.c_str(), imageAndView.image, imageAndView.imageView);
-    auto ret = new Image(fileName, width, height, imageAndView.image, imageAndView.imageView);
+    auto ret =
+        new Image(fileName, width, height, CheckForTransparency(data), imageAndView.image, imageAndView.imageView);
     ResourceManager::AddResource(fileName, ret);
     ResourceManager::AddResource(fileName + "/defaultView.imageview", ret->defaultView);
 
@@ -159,7 +175,12 @@ uint32_t Image::GetWidth() const
     return width;
 }
 
-ImageViewHandle * Image::GetDefaultView()
+bool Image::HasTransparency() const
+{
+    return hasTransparency;
+}
+
+ImageViewHandle * Image::GetDefaultView() const
 {
     return defaultView;
 }
