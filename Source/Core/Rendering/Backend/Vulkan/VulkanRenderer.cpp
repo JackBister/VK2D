@@ -175,7 +175,7 @@ uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalReady, FenceHan
     auto res = vkAcquireNextImageKHR(
         basics.device,
         swapchain.swapchain,
-        std::numeric_limits<uint64_t>::max(),
+        0,
         signalReady != nullptr ? ((VulkanSemaphoreHandle *)signalReady)->semaphore : VK_NULL_HANDLE,
         signalFence != nullptr ? ((VulkanFenceHandle *)signalFence)->fence : VK_NULL_HANDLE,
         &imageIndex);
