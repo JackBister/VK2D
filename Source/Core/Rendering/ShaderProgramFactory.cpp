@@ -59,7 +59,7 @@ void ShaderProgramFactory::CreateTransparentMeshShaderProgram()
 
     ShaderProgram::Create(
         "_Primitives/ShaderPrograms/TransparentMesh.program",
-        {"shaders/mesh.vert", "shaders/mesh.frag"},
+        {"shaders/mesh.vert", "shaders/mesh_transparent.frag"},
         ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/mesh.state"),
         ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/mesh.pipelinelayout"),
         ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass"),

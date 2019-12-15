@@ -3,7 +3,6 @@
 
 #include "Specialization.h"
 
-layout (early_fragment_tests) in;
 layout (location = 0) in vec3 Color;
 layout (location = 1) in vec2 Texcoord;
 
@@ -13,5 +12,8 @@ layout (set = 2, binding = 0) uniform sampler2D albedo;
 
 void main() {
 	vec4 col = texture(albedo, Texcoord) * vec4(Color, 1.0);
+	if (col.a == 0) {
+		discard;
+	}
 	outColor = col;
 }

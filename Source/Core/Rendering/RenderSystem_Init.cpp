@@ -264,7 +264,7 @@ void RenderSystem::InitSwapchainResources()
         depthStencil.depthWriteEnable = true;
         prepassProgram = ShaderProgram::Create(
             "_Primitives/ShaderPrograms/prepass.program",
-            {"shaders/prepass.vert", "shaders/prepass.frag"},
+            {"shaders/prepass.vert"},
             ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/mesh.state"),
             ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/prepass.pipelinelayout"),
             prepass,
