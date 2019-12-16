@@ -51,12 +51,12 @@ void StaticMeshComponent::OnEvent(HashedString name, EventArgs args)
         SubmittedMesh submit;
         submit.staticMeshInstance = staticMeshInstance;
         for (size_t i = 0; i < submeshes.size(); ++i) {
-            SubmittedSubmesh submittedSubmesh;
-            submittedSubmesh.material = submeshes[i].GetMaterial();
-            submittedSubmesh.numIndexes = submeshes[i].GetNumIndexes();
-            submittedSubmesh.indexBuffer = submeshes[i].GetIndexBuffer();
-            submittedSubmesh.numVertices = submeshes[i].GetNumVertices();
-            submittedSubmesh.vertexBuffer = submeshes[i].GetVertexBuffer();
+            SubmittedSubmesh submittedSubmesh{submeshes[i].GetMaterial(),
+                                              submeshes[i].GetNumIndexes(),
+                                              submeshes[i].GetIndexBuffer(),
+                                              submeshes[i].GetNumVertices(),
+                                              submeshes[i].GetVertexBuffer()};
+
             submit.submeshes.push_back(submittedSubmesh);
         }
         if (submit.submeshes.size() > 0) {

@@ -16,6 +16,7 @@
 #include "Core/Logging/LoggerFactory.h"
 #include "Core/Queue.h"
 #include "Core/Rendering/Backend/Renderer.h"
+#include "Core/Rendering/BufferAllocator.h"
 #include "Core/Rendering/RenderPrimitiveFactory.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/ShaderProgramFactory.h"
@@ -48,6 +49,7 @@ int main(int argc, char * argv[])
     RenderPrimitiveFactory renderPrimitiveFactory(&renderer);
     renderPrimitiveFactory.CreatePrimitives();
     RenderSystem renderSystem(&renderer);
+    BufferAllocator bufferAllocator(&renderSystem);
     ResourceManager::Init(&renderSystem);
     renderPrimitiveFactory.LateCreatePrimitives();
     ShaderProgramFactory::CreateResources();

@@ -388,7 +388,9 @@ void RenderPrimitiveFactory::CreateQuadMesh()
     auto vertexBuffer = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
     auto material = ResourceManager::GetResource<Material>("_Primitives/Materials/default.mtl");
 
-    Submesh submesh("main", material, 6, indexBuffer, 4, vertexBuffer);
+    BufferSlice indexBufferSlice{indexBuffer, 0, 6 * sizeof(uint32_t)};
+    BufferSlice vertexBufferSlice{vertexBuffer, 0, 4 * 8 * sizeof(float)};
+    Submesh submesh("main", material, 6, indexBufferSlice, 4, vertexBufferSlice);
     auto staticMesh = new StaticMesh({submesh});
     ResourceManager::AddResource("/_Primitives/Meshes/Quad.obj", staticMesh);
 }
@@ -461,7 +463,10 @@ void RenderPrimitiveFactory::CreateBoxMesh()
     auto vertexBuffer = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/BoxVBO.buffer");
     auto material = ResourceManager::GetResource<Material>("_Primitives/Materials/default.mtl");
 
-    Submesh submesh("main", material, 6 * 6, vertexBuffer);
+    BufferSlice vertexBufferSlice{
+        vertexBuffer, 0, 6 * 6 * 8 * sizeof(float)
+    };
+    Submesh submesh("main", material, 6 * 6, vertexBufferSlice);
     auto staticMesh = new StaticMesh({submesh});
     ResourceManager::AddResource("/_Primitives/Meshes/Box.obj", staticMesh);
 }

@@ -267,13 +267,16 @@ void RenderSystem::Prepass(SubmittedFrame const & frame)
                     continue;
                 }
 
-                if (submesh.indexBuffer) {
+                if (submesh.indexBuffer.has_value()) {
+                    auto indexBuffer = submesh.indexBuffer.value();
                     currFrame.mainCommandBuffer->CmdBindIndexBuffer(
-                        submesh.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
-                    currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                        indexBuffer.GetBuffer(), indexBuffer.GetOffset(), CommandBuffer::IndexType::UINT32);
+                    currFrame.mainCommandBuffer->CmdBindVertexBuffer(
+                        submesh.vertexBuffer.GetBuffer(), 0, submesh.vertexBuffer.GetOffset(), 8 * sizeof(float));
                     currFrame.mainCommandBuffer->CmdDrawIndexed(submesh.numIndexes, 1, 0, 0);
                 } else {
-                    currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                    currFrame.mainCommandBuffer->CmdBindVertexBuffer(
+                        submesh.vertexBuffer.GetBuffer(), 0, submesh.vertexBuffer.GetOffset(), 8 * sizeof(float));
                     currFrame.mainCommandBuffer->CmdDraw(submesh.numVertices, 1, 0, 0);
                 }
             }
@@ -335,13 +338,17 @@ void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<Subm
             }
             currFrame.mainCommandBuffer->CmdBindDescriptorSets(
                 meshPipelineLayout, 2, {submesh.material->GetDescriptorSet()});
-            if (submesh.indexBuffer) {
+
+            if (submesh.indexBuffer.has_value()) {
+                auto indexBuffer = submesh.indexBuffer.value();
                 currFrame.mainCommandBuffer->CmdBindIndexBuffer(
-                    submesh.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
-                currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                    indexBuffer.GetBuffer(), indexBuffer.GetOffset(), CommandBuffer::IndexType::UINT32);
+                currFrame.mainCommandBuffer->CmdBindVertexBuffer(
+                    submesh.vertexBuffer.GetBuffer(), 0, submesh.vertexBuffer.GetOffset(), 8 * sizeof(float));
                 currFrame.mainCommandBuffer->CmdDrawIndexed(submesh.numIndexes, 1, 0, 0);
             } else {
-                currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                currFrame.mainCommandBuffer->CmdBindVertexBuffer(
+                    submesh.vertexBuffer.GetBuffer(), 0, submesh.vertexBuffer.GetOffset(), 8 * sizeof(float));
                 currFrame.mainCommandBuffer->CmdDraw(submesh.numVertices, 1, 0, 0);
             }
         }
@@ -379,13 +386,17 @@ void RenderSystem::RenderTransparentMeshes(SubmittedCamera const & camera, std::
             }
             currFrame.mainCommandBuffer->CmdBindDescriptorSets(
                 meshPipelineLayout, 2, {submesh.material->GetDescriptorSet()});
-            if (submesh.indexBuffer) {
+
+            if (submesh.indexBuffer.has_value()) {
+                auto indexBuffer = submesh.indexBuffer.value();
                 currFrame.mainCommandBuffer->CmdBindIndexBuffer(
-                    submesh.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
-                currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                    indexBuffer.GetBuffer(), indexBuffer.GetOffset(), CommandBuffer::IndexType::UINT32);
+                currFrame.mainCommandBuffer->CmdBindVertexBuffer(
+                    submesh.vertexBuffer.GetBuffer(), 0, submesh.vertexBuffer.GetOffset(), 8 * sizeof(float));
                 currFrame.mainCommandBuffer->CmdDrawIndexed(submesh.numIndexes, 1, 0, 0);
             } else {
-                currFrame.mainCommandBuffer->CmdBindVertexBuffer(submesh.vertexBuffer, 0, 0, 8 * sizeof(float));
+                currFrame.mainCommandBuffer->CmdBindVertexBuffer(
+                    submesh.vertexBuffer.GetBuffer(), 0, submesh.vertexBuffer.GetOffset(), 8 * sizeof(float));
                 currFrame.mainCommandBuffer->CmdDraw(submesh.numVertices, 1, 0, 0);
             }
         }

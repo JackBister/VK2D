@@ -8,6 +8,7 @@
 
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
+#include "Core/Rendering/BufferAllocator.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ResourceManager.h"
@@ -20,6 +21,12 @@ struct Vertex {
     glm::vec3 pos;
     glm::vec3 color;
     glm::vec2 uv;
+};
+
+struct CpuSubmesh {
+    std::string name;
+    Material * material;
+    std::vector<Vertex> vertices;
 };
 
 StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
@@ -67,7 +74,8 @@ StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
         }
     }
 
-    std::vector<Submesh> submeshes;
+    std::vector<CpuSubmesh> cpuSubmeshes;
+    size_t totalVboSize = 0;
     for (size_t s = 0; s < shapes.size(); ++s) {
         auto & shape = shapes[s];
         std::vector<Vertex> vertices;
@@ -118,20 +126,40 @@ StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
         } else {
             material = materialIdToMaterial.at(mtlId);
         }
-        BufferHandle * vbo;
-        Semaphore sem;
-        ResourceManager::CreateResources([&sem, &vertices, &vbo, numVtx](ResourceCreationContext & ctx) {
-            vbo = ctx.CreateBuffer({numVtx * sizeof(Vertex),
-                                    BufferUsageFlags::VERTEX_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
-                                    DEVICE_LOCAL_BIT});
 
-            ctx.BufferSubData(vbo, (uint8_t *)&vertices[0], 0, vertices.size() * sizeof(Vertex));
-            sem.Signal();
-        });
-        sem.Wait();
-
-        submeshes.emplace_back(name, material, numVtx, vbo);
+        CpuSubmesh cpuSubmesh;
+        cpuSubmesh.name = name;
+        cpuSubmesh.material = material;
+        cpuSubmesh.vertices = vertices;
+        cpuSubmeshes.push_back(cpuSubmesh);
+        totalVboSize += vertices.size() * sizeof(Vertex);
     }
+
+    auto bufferAllocator = BufferAllocator::GetInstance();
+    auto buffer =
+        bufferAllocator->AllocateBuffer(totalVboSize,
+                                        BufferUsageFlags::TRANSFER_DST_BIT | BufferUsageFlags::VERTEX_BUFFER_BIT,
+                                        MemoryPropertyFlagBits::DEVICE_LOCAL_BIT);
+    std::vector<Submesh> submeshes;
+    Semaphore sem;
+    ResourceManager::CreateResources([&sem, &cpuSubmeshes, &submeshes, &buffer](ResourceCreationContext & ctx) {
+        size_t offset = 0;
+        for (auto & submesh : cpuSubmeshes) {
+            size_t size = submesh.vertices.size() * sizeof(Vertex);
+            size_t totalOffset = buffer.GetOffset() + offset;
+            ctx.BufferSubData(buffer.GetBuffer(),
+                              (uint8_t *)&submesh.vertices[0],
+                              totalOffset,
+                              submesh.vertices.size() * sizeof(Vertex));
+            submeshes.emplace_back(submesh.name,
+                                   submesh.material,
+                                   submesh.vertices.size(),
+                                   BufferSlice(buffer.GetBuffer(), totalOffset, size));
+            offset += size;
+        }
+        sem.Signal();
+    });
+    sem.Wait();
 
     return new StaticMesh(submeshes);
 }

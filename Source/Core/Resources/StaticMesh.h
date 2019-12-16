@@ -1,21 +1,23 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
-class BufferHandle;
+#include "Core/Rendering/BufferSlice.h"
+
 class Material;
 
 class Submesh
 {
 public:
-    Submesh(std::string const & name, Material * material, size_t numVertices, BufferHandle * vertexBuffer)
-        : name(name), numIndexes(0), indexBuffer(nullptr), material(material), numVertices(numVertices),
-          vertexBuffer(vertexBuffer)
+    Submesh(std::string const & name, Material * material, size_t numVertices, BufferSlice vertexBuffer)
+        : name(name), numIndexes(0), material(material), numVertices(numVertices), vertexBuffer(vertexBuffer)
     {
     }
-    Submesh(std::string const & name, Material * material, size_t numIndexes, BufferHandle * indexBuffer,
-            size_t numVertices, BufferHandle * vertexBuffer)
+
+    Submesh(std::string const & name, Material * material, size_t numIndexes, BufferSlice indexBuffer,
+            size_t numVertices, BufferSlice vertexBuffer)
         : name(name), material(material), numIndexes(numIndexes), indexBuffer(indexBuffer), numVertices(numVertices),
           vertexBuffer(vertexBuffer)
     {
@@ -23,9 +25,9 @@ public:
 
     inline Material * GetMaterial() { return material; }
     inline size_t GetNumIndexes() { return numIndexes; }
-    inline BufferHandle * GetIndexBuffer() { return indexBuffer; }
+    inline std::optional<BufferSlice> GetIndexBuffer() { return indexBuffer; }
     inline size_t GetNumVertices() { return numVertices; }
-    inline BufferHandle * GetVertexBuffer() { return vertexBuffer; }
+    inline BufferSlice GetVertexBuffer() { return vertexBuffer; }
 
 private:
     std::string name;
@@ -33,16 +35,14 @@ private:
     Material * material;
 
     size_t numIndexes;
-    BufferHandle * indexBuffer;
+    std::optional<BufferSlice> indexBuffer;
     size_t numVertices;
-    BufferHandle * vertexBuffer;
+    BufferSlice vertexBuffer;
 };
 
 class StaticMesh
 {
 public:
-    // static StaticMesh * FromFile(std::string const & filename);
-
     StaticMesh(std::vector<Submesh> const & submeshes);
 
     inline std::vector<Submesh> GetSubmeshes() { return submeshes; }

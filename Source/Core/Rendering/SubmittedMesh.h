@@ -1,17 +1,19 @@
 #pragma once
+#include <optional>
 
 #include <glm/glm.hpp>
 
 #include "Backend/Abstract/RenderResources.h"
+#include "Core/Rendering/BufferSlice.h"
 #include "Core/Rendering/StaticMeshInstance.h"
 #include "Core/Resources/Material.h"
 
 struct SubmittedSubmesh {
     Material * material;
     size_t numIndexes;
-    BufferHandle * indexBuffer;
+    std::optional<BufferSlice> indexBuffer;
     size_t numVertices;
-    BufferHandle * vertexBuffer;
+    BufferSlice vertexBuffer;
 };
 
 struct SubmittedMesh {
