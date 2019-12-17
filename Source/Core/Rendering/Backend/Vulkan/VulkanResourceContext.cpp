@@ -37,48 +37,27 @@ void VulkanResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data,
     OPTICK_EVENT();
     auto const nativeHandle = (VulkanBufferHandle *)buffer;
 
-    VkBufferCreateInfo stagingInfo = {};
-    stagingInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    stagingInfo.size = size;
-    stagingInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    stagingInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    VkBuffer stagingBuffer;
-    auto res = vkCreateBuffer(renderer->basics.device, &stagingInfo, nullptr, &stagingBuffer);
-    assert(res == VK_SUCCESS);
-
-    VkMemoryRequirements stagingRequirements = {};
-    vkGetBufferMemoryRequirements(renderer->basics.device, stagingBuffer, &stagingRequirements);
-
-    VkMemoryAllocateInfo stagingAllocateInfo{};
-    stagingAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    stagingAllocateInfo.allocationSize = stagingRequirements.size;
-    stagingAllocateInfo.memoryTypeIndex = renderer->FindMemoryType(
-        stagingRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    VkDeviceMemory stagingMemory;
-    res = vkAllocateMemory(renderer->basics.device, &stagingAllocateInfo, nullptr, &stagingMemory);
-    assert(res == VK_SUCCESS);
-
-    vkBindBufferMemory(renderer->basics.device, stagingBuffer, stagingMemory, 0);
+    auto stagingBuffer = renderer->GetStagingBuffer(size);
 
     uint8_t * const mappedMemory = [this](VkDeviceMemory const & memory, size_t size) {
         uint8_t * ret = nullptr;
         auto const res = vkMapMemory(renderer->basics.device, memory, 0, size, 0, (void **)&ret);
         assert(res == VK_SUCCESS);
         return ret;
-    }(stagingMemory, stagingRequirements.size);
+    }(stagingBuffer.buffer->memory, size);
 
     for (size_t i = 0; i < size; ++i) {
         mappedMemory[i] = data[i];
     }
 
-    vkUnmapMemory(renderer->basics.device, stagingMemory);
+    vkUnmapMemory(renderer->basics.device, stagingBuffer.buffer->memory);
 
     auto cb = renderer->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     vkBeginCommandBuffer(cb, &beginInfo);
-    renderer->CopyBufferToBuffer(cb, stagingBuffer, nativeHandle->buffer, offset, size);
+    renderer->CopyBufferToBuffer(cb, stagingBuffer.buffer->buffer, nativeHandle->buffer, offset, size);
     vkEndCommandBuffer(cb);
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -90,8 +69,6 @@ void VulkanResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data,
     vkQueueWaitIdle(renderer->graphicsQueue);
 
     vkFreeCommandBuffers(renderer->basics.device, renderer->graphicsPool, 1, &cb);
-    vkDestroyBuffer(renderer->basics.device, stagingBuffer, nullptr);
-    vkFreeMemory(renderer->basics.device, stagingMemory, nullptr);
 }
 
 BufferHandle * VulkanResourceContext::CreateBuffer(BufferCreateInfo const & ci)

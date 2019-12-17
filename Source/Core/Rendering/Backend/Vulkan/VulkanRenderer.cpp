@@ -12,6 +12,8 @@
 static const auto logger = Logger::Create("VulkanRenderer");
 static const auto vulkanLogger = Logger::Create("Vulkan");
 
+static const size_t MIN_STAGING_BUFFER_SIZE = 2 * 1024 * 1024;
+
 static Format ToAbstractFormat(VkFormat format)
 {
     switch (format) {
@@ -592,6 +594,49 @@ uint32_t Renderer::GetDesiredNumberOfImages(VkSurfaceCapabilitiesKHR surfaceCapa
         desiredNumberOfImages = surfaceCapabilities.maxImageCount;
     }
     return desiredNumberOfImages;
+}
+
+GuardedBufferHandle Renderer::GetStagingBuffer(size_t size)
+{
+    OPTICK_EVENT();
+    for (size_t i = 0; i < stagingBuffers.size(); ++i) {
+        if (stagingBuffers[i].size >= size && stagingBuffers[i].guard.try_lock()) {
+            return {std::lock_guard<std::mutex>(stagingBuffers[i].guard, std::adopt_lock), &stagingBuffers[i].buffer};
+        }
+    }
+
+    VkBufferCreateInfo stagingInfo = {};
+    stagingInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    // We always round up to a multiplier of MIN_STAGING_BUFFER_SIZE
+    size_t multiplier = (size + MIN_STAGING_BUFFER_SIZE - 1) / MIN_STAGING_BUFFER_SIZE;
+    stagingInfo.size = multiplier * MIN_STAGING_BUFFER_SIZE;
+    stagingInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    stagingInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VkBuffer stagingBuffer;
+    auto res = vkCreateBuffer(basics.device, &stagingInfo, nullptr, &stagingBuffer);
+    assert(res == VK_SUCCESS);
+
+    VkMemoryRequirements stagingRequirements = {};
+    vkGetBufferMemoryRequirements(basics.device, stagingBuffer, &stagingRequirements);
+
+    VkMemoryAllocateInfo stagingAllocateInfo{};
+    stagingAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    stagingAllocateInfo.allocationSize = stagingRequirements.size;
+    stagingAllocateInfo.memoryTypeIndex = FindMemoryType(
+        stagingRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    VkDeviceMemory stagingMemory;
+    res = vkAllocateMemory(basics.device, &stagingAllocateInfo, nullptr, &stagingMemory);
+    assert(res == VK_SUCCESS);
+
+    vkBindBufferMemory(basics.device, stagingBuffer, stagingMemory, 0);
+
+    // 20 minutes of fighting the compiler over copy constructors led to this
+    VulkanBufferHandle ffs;
+    ffs.buffer = stagingBuffer;
+    ffs.memory = stagingMemory;
+    stagingBuffers.emplace_back(ffs, stagingInfo.size);
+    auto idx = stagingBuffers.size() - 1;
+    return {std::lock_guard<std::mutex>(stagingBuffers[idx].guard), &stagingBuffers[idx].buffer};
 }
 
 void Renderer::InitSurfaceCapabilities()

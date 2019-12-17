@@ -2,8 +2,10 @@
 #ifndef USE_OGL_RENDERER
 #include <chrono>
 #include <cstdint>
+#include <deque>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #include <gl/glew.h>
@@ -13,6 +15,19 @@
 #include "Core/Queue.h"
 #include "Core/Rendering/Backend/Abstract/AbstractRenderer.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanContextStructs.h"
+
+struct GuardedBufferHandle {
+    std::lock_guard<std::mutex> guard;
+    VulkanBufferHandle * buffer;
+};
+
+struct VulkanStagingBuffer {
+    VulkanStagingBuffer(VulkanBufferHandle buffer, size_t size) : buffer(buffer), size(size) {}
+
+    VulkanBufferHandle buffer;
+    size_t size;
+    std::mutex guard;
+};
 
 class Renderer : IRenderer
 {
@@ -74,6 +89,7 @@ private:
     VkPresentModeKHR GetDesiredPresentMode(std::vector<VkPresentModeKHR>);
     VkSurfaceFormatKHR GetDesiredSurfaceFormat(std::vector<VkSurfaceFormatKHR>);
     uint32_t GetDesiredNumberOfImages(VkSurfaceCapabilitiesKHR);
+    GuardedBufferHandle GetStagingBuffer(size_t size);
     void InitSurfaceCapabilities();
     void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout,
                                VkImageLayout newLayout);
@@ -97,6 +113,8 @@ private:
 
     VkCommandPool graphicsPool;
     VkCommandPool presentPool;
+
+    std::deque<VulkanStagingBuffer> stagingBuffers;
 
     SDL_Window * window;
 };
