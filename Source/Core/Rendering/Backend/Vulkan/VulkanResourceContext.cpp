@@ -833,42 +833,43 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
     auto res = vkAllocateDescriptorSets(renderer->basics.device, &ai, &set);
     assert(res == VK_SUCCESS);
 
+    std::unordered_map<uint32_t, size_t> bindingToIdx;
     std::vector<VkDescriptorBufferInfo> bufferInfos;
     std::vector<VkDescriptorImageInfo> imageInfos;
-    std::vector<VkWriteDescriptorSet> writes(info.descriptorCount);
-    std::transform(
-        info.descriptors,
-        &info.descriptors[info.descriptorCount],
-        writes.begin(),
-        [&](DescriptorSetCreateInfo::Descriptor descriptor) {
-            size_t bufferInfoIdx = bufferInfos.size();
-            size_t imageInfoIdx = imageInfos.size();
+    for (size_t i = 0; i < info.descriptorCount; ++i) {
+        auto & descriptor = info.descriptors[i];
+        if (descriptor.type == DescriptorType::UNIFORM_BUFFER) {
+            auto buffer =
+                std::get<ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor>(descriptor.descriptor);
+            auto nativeBuffer = (VulkanBufferHandle *)buffer.buffer;
+            bufferInfos.push_back({nativeBuffer->buffer, buffer.offset, buffer.range});
+            bindingToIdx.insert_or_assign(descriptor.binding, bufferInfos.size() - 1);
+        } else if (descriptor.type == DescriptorType::COMBINED_IMAGE_SAMPLER) {
+            auto image =
+                std::get<ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor>(descriptor.descriptor);
+            imageInfos.push_back({((VulkanSamplerHandle *)image.sampler)->sampler,
+                                  ((VulkanImageViewHandle *)image.imageView)->imageView,
+                                  VK_IMAGE_LAYOUT_GENERAL});
+            bindingToIdx.insert_or_assign(descriptor.binding, imageInfos.size() - 1);
+        }
+    }
 
-            if (descriptor.type == DescriptorType::UNIFORM_BUFFER) {
-                auto buffer =
-                    std::get<ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor>(descriptor.descriptor);
-                auto nativeBuffer = (VulkanBufferHandle *)buffer.buffer;
-                bufferInfos.push_back({nativeBuffer->buffer, buffer.offset, buffer.range});
-            } else if (descriptor.type == DescriptorType::COMBINED_IMAGE_SAMPLER) {
-                auto image =
-                    std::get<ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor>(descriptor.descriptor);
-                imageInfos.push_back({((VulkanSamplerHandle *)image.sampler)->sampler,
-                                      ((VulkanImageViewHandle *)image.imageView)->imageView,
-                                      VK_IMAGE_LAYOUT_GENERAL});
-            }
-            return VkWriteDescriptorSet{
-                VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                nullptr,
-                set,
-                descriptor.binding,
-                0,
-                1,
-                ToVulkanDescriptorType(descriptor.type),
-                descriptor.type == DescriptorType::COMBINED_IMAGE_SAMPLER ? &imageInfos[imageInfoIdx] : nullptr,
-                descriptor.type == DescriptorType::UNIFORM_BUFFER ? &bufferInfos[bufferInfoIdx] : nullptr,
-                // TODO: if UNIFORM_TEXEL_BUFFER/STORAGE_TEXEL_BUFFER uniforms become available
-                nullptr};
-        });
+    std::vector<VkWriteDescriptorSet> writes(info.descriptorCount);
+    for (size_t i = 0; i < info.descriptorCount; ++i) {
+        auto & descriptor = info.descriptors[i];
+        auto idx = bindingToIdx.at(descriptor.binding);
+        writes[i] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                     nullptr,
+                     set,
+                     descriptor.binding,
+                     0,
+                     1,
+                     ToVulkanDescriptorType(descriptor.type),
+                     descriptor.type == DescriptorType::COMBINED_IMAGE_SAMPLER ? &imageInfos[idx] : nullptr,
+                     descriptor.type == DescriptorType::UNIFORM_BUFFER ? &bufferInfos[idx] : nullptr,
+                     // TODO: if UNIFORM_TEXEL_BUFFER/STORAGE_TEXEL_BUFFER uniforms become available
+                     nullptr};
+    }
 
     vkUpdateDescriptorSets(renderer->basics.device, (uint32_t)writes.size(), &writes[0], 0, nullptr);
 
