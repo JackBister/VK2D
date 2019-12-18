@@ -635,8 +635,48 @@ GuardedBufferHandle Renderer::GetStagingBuffer(size_t size)
     ffs.buffer = stagingBuffer;
     ffs.memory = stagingMemory;
     stagingBuffers.emplace_back(ffs, stagingInfo.size);
+    // Despite all the fucking around this still isn't actually thread safe
     auto idx = stagingBuffers.size() - 1;
     return {std::lock_guard<std::mutex>(stagingBuffers[idx].guard), &stagingBuffers[idx].buffer};
+}
+
+GuardedStagingCommandBuffer Renderer::GetStagingCommandBuffer()
+{
+    OPTICK_EVENT();
+    for (size_t i = 0; i < stagingCommandBuffers.size(); ++i) {
+        if (vkGetFenceStatus(basics.device, stagingCommandBuffers[i].inUse) == VK_SUCCESS &&
+            stagingCommandBuffers[i].guard.try_lock()) {
+            vkResetFences(basics.device, 1, &stagingCommandBuffers[i].inUse);
+            return {std::lock_guard<std::mutex>(stagingCommandBuffers[i].guard, std::adopt_lock),
+                    stagingCommandBuffers[i].inUse,
+                    stagingCommandBuffers[i].commandBuffer};
+        }
+    }
+
+    VkFenceCreateInfo fenceCreateInfo;
+    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.pNext = nullptr;
+    fenceCreateInfo.flags = 0;
+    VkFence fence;
+    auto res = vkCreateFence(basics.device, &fenceCreateInfo, nullptr, &fence);
+    assert(res == VK_SUCCESS);
+
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo;
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.pNext = nullptr;
+    commandBufferAllocateInfo.commandBufferCount = 1;
+    commandBufferAllocateInfo.commandPool = graphicsPool;
+    commandBufferAllocateInfo.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    VkCommandBuffer commandBuffer;
+    res = vkAllocateCommandBuffers(basics.device, &commandBufferAllocateInfo, &commandBuffer);
+    assert(res == VK_SUCCESS);
+
+    stagingCommandBuffers.emplace_back(fence, commandBuffer);
+    size_t idx = stagingCommandBuffers.size() - 1;
+
+    return {std::lock_guard<std::mutex>(stagingCommandBuffers[idx].guard),
+            stagingCommandBuffers[idx].inUse,
+            stagingCommandBuffers[idx].commandBuffer};
 }
 
 void Renderer::InitSurfaceCapabilities()

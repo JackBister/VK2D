@@ -52,23 +52,21 @@ void VulkanResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data,
 
     vkUnmapMemory(renderer->basics.device, stagingBuffer.buffer->memory);
 
-    auto cb = renderer->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto cb = renderer->GetStagingCommandBuffer();
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vkBeginCommandBuffer(cb, &beginInfo);
-    renderer->CopyBufferToBuffer(cb, stagingBuffer.buffer->buffer, nativeHandle->buffer, offset, size);
-    vkEndCommandBuffer(cb);
+    vkBeginCommandBuffer(cb.commandBuffer, &beginInfo);
+    renderer->CopyBufferToBuffer(cb.commandBuffer, stagingBuffer.buffer->buffer, nativeHandle->buffer, offset, size);
+    vkEndCommandBuffer(cb.commandBuffer);
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &cb;
+    submitInfo.pCommandBuffers = &cb.commandBuffer;
     // TODO: Could submit and return a fence here that the user can use to know that their data has uploaded instead of
     // using vkQueueWaitIdle
-    vkQueueSubmit(renderer->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueSubmit(renderer->graphicsQueue, 1, &submitInfo, cb.inUse);
     vkQueueWaitIdle(renderer->graphicsQueue);
-
-    vkFreeCommandBuffers(renderer->basics.device, renderer->graphicsPool, 1, &cb);
 }
 
 BufferHandle * VulkanResourceContext::CreateBuffer(BufferCreateInfo const & ci)
@@ -286,31 +284,30 @@ void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> co
     res = vkBindImageMemory(renderer->basics.device, nativeImg->image, memory, 0);
     assert(res == VK_SUCCESS);
 
-    auto cb = renderer->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto cb = renderer->GetStagingCommandBuffer();
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vkBeginCommandBuffer(cb, &beginInfo);
-    renderer->TransitionImageLayout(cb,
+    vkBeginCommandBuffer(cb.commandBuffer, &beginInfo);
+    renderer->TransitionImageLayout(cb.commandBuffer,
                                     nativeImg->image,
                                     ToVulkanFormat(nativeImg->format),
                                     VK_IMAGE_LAYOUT_UNDEFINED,
                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    renderer->CopyBufferToImage(cb, stagingBuffer, nativeImg->image, nativeImg->width, nativeImg->height);
-    renderer->TransitionImageLayout(cb,
+    renderer->CopyBufferToImage(cb.commandBuffer, stagingBuffer, nativeImg->image, nativeImg->width, nativeImg->height);
+    renderer->TransitionImageLayout(cb.commandBuffer,
                                     nativeImg->image,
                                     ToVulkanFormat(nativeImg->format),
                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    vkEndCommandBuffer(cb);
+    vkEndCommandBuffer(cb.commandBuffer);
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &cb;
-    vkQueueSubmit(renderer->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    submitInfo.pCommandBuffers = &cb.commandBuffer;
+    vkQueueSubmit(renderer->graphicsQueue, 1, &submitInfo, cb.inUse);
     vkQueueWaitIdle(renderer->graphicsQueue);
 
-    vkFreeCommandBuffers(renderer->basics.device, renderer->graphicsPool, 1, &cb);
     vkDestroyBuffer(renderer->basics.device, stagingBuffer, nullptr);
     vkFreeMemory(renderer->basics.device, stagingMemory, nullptr);
 

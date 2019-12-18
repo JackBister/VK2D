@@ -29,6 +29,23 @@ struct VulkanStagingBuffer {
     std::mutex guard;
 };
 
+struct VulkanStagingCommandBuffer {
+    VulkanStagingCommandBuffer(VkFence inUse, VkCommandBuffer commandBuffer)
+        : inUse(inUse), commandBuffer(commandBuffer)
+    {
+    }
+
+    std::mutex guard;
+    VkFence inUse;
+    VkCommandBuffer commandBuffer;
+};
+
+struct GuardedStagingCommandBuffer {
+    std::lock_guard<std::mutex> guard;
+    VkFence inUse;
+    VkCommandBuffer commandBuffer;
+};
+
 class Renderer : IRenderer
 {
     friend class VulkanResourceContext;
@@ -90,6 +107,7 @@ private:
     VkSurfaceFormatKHR GetDesiredSurfaceFormat(std::vector<VkSurfaceFormatKHR>);
     uint32_t GetDesiredNumberOfImages(VkSurfaceCapabilitiesKHR);
     GuardedBufferHandle GetStagingBuffer(size_t size);
+    GuardedStagingCommandBuffer GetStagingCommandBuffer();
     void InitSurfaceCapabilities();
     void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout,
                                VkImageLayout newLayout);
@@ -115,6 +133,7 @@ private:
     VkCommandPool presentPool;
 
     std::deque<VulkanStagingBuffer> stagingBuffers;
+    std::deque<VulkanStagingCommandBuffer> stagingCommandBuffers;
 
     SDL_Window * window;
 };
