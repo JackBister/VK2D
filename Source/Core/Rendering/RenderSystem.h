@@ -19,6 +19,33 @@
 class Image;
 class ShaderProgram;
 
+struct DrawIndirectCommand {
+    // TODO: This needs to go away in the future
+    DescriptorSet * meshDescriptor;
+    uint32_t vertexCount;
+    uint32_t instanceCount;
+    uint32_t firstVertex;
+    uint32_t firstInstance;
+};
+
+struct DrawIndexedIndirectCommand {
+    // TODO: This needs to go away in the future
+    DescriptorSet * meshDescriptor;
+    uint32_t indexCount;
+    uint32_t instanceCount;
+    uint32_t firstIndex;
+    int32_t vertexOffset;
+    uint32_t firstInstance;
+};
+
+struct MeshBatch {
+    BufferHandle * indexBuffer = nullptr;
+    BufferHandle * vertexBuffer = nullptr;
+    Material * material = nullptr;
+    std::vector<DrawIndirectCommand> drawCommands;
+    std::vector<DrawIndexedIndirectCommand> drawIndexedCommands;
+};
+
 struct ScheduledDestroyer {
     int remainingFrames;
     std::function<void(ResourceCreationContext &)> fun;
@@ -87,7 +114,7 @@ private:
     void PostProcessFrame();
     void SubmitSwap();
 
-    void Prepass(SubmittedFrame const & frame);
+    void Prepass(SubmittedFrame const & frame, std::vector<MeshBatch> const & batches);
 
     void PreRenderCameras(std::vector<UpdateCamera> const & cameras);
 
@@ -95,8 +122,10 @@ private:
     void RenderSprites(SubmittedCamera const & camera, std::vector<SubmittedSprite> const & sprites);
 
     void PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const & meshes);
-    void RenderMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes);
+    void RenderMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes, std::vector<MeshBatch> const & batches);
     void RenderTransparentMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes);
+
+    std::vector<MeshBatch> CreateBatches(std::vector<SubmittedMesh> const & meshes);
 
     // FrameInfo related properties
     uint32_t currFrameInfoIdx = 0;
