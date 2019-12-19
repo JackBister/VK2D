@@ -72,6 +72,26 @@
             "problemMatcher": []
         },
         {
+            "label": "cmake_release",
+            "dependsOn": "build_folder",
+            "type": "shell",
+            "windows": {
+                "command": "cmake",
+                "args": [
+                    "-DCMAKE_BUILD_TYPE=Release",
+                    "-G",
+                    "Visual Studio 16 2019",
+                    "-A",
+                    "x64",
+                    ".."
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder}/build"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "clean",
             "type": "shell",
             "windows": {
