@@ -18,6 +18,7 @@ struct SubmittedSubmesh {
 
 struct SubmittedMesh {
     StaticMeshInstance staticMeshInstance;
+    glm::mat4 localToWorld;
 
     std::vector<SubmittedSubmesh> submeshes;
 };

@@ -118,6 +118,7 @@ private:
 
     VulkanBasics basics;
     SurfaceCapabilities capabilities;
+    VkPhysicalDeviceFeatures supportedFeatures;
 
     VkDescriptorPool descriptorPool;
 

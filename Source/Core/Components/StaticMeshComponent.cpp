@@ -50,6 +50,7 @@ void StaticMeshComponent::OnEvent(HashedString name, EventArgs args)
         auto submeshes = mesh->GetSubmeshes();
         SubmittedMesh submit;
         submit.staticMeshInstance = staticMeshInstance;
+        submit.localToWorld = entity->transform.GetLocalToWorld();
         for (size_t i = 0; i < submeshes.size(); ++i) {
             SubmittedSubmesh submittedSubmesh{submeshes[i].GetMaterial(),
                                               submeshes[i].GetNumIndexes(),

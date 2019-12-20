@@ -24,7 +24,7 @@ public:
     struct BufferCreateInfo {
         size_t size;
         uint32_t usage;
-        MemoryPropertyFlagBits memoryProperties;
+        uint32_t memoryProperties;
     };
     virtual BufferHandle * CreateBuffer(BufferCreateInfo const &) = 0;
     virtual void DestroyBuffer(BufferHandle *) = 0;

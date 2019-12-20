@@ -170,9 +170,10 @@ void RenderPrimitiveFactory::CreateMeshPipelineLayout(ResourceCreationContext & 
     auto cameraMeshLayout = ctx.CreateDescriptorSetLayout({1, cameraUniformBindings});
     ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/cameraMesh.layout", cameraMeshLayout);
 
-    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding modelUniformBindings[1] = {
-        {0, DescriptorType::UNIFORM_BUFFER, ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT}};
-    auto modelMeshLayout = ctx.CreateDescriptorSetLayout({1, modelUniformBindings});
+    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding modelUniformBindings[2] = {
+        {0, DescriptorType::UNIFORM_BUFFER, ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT},
+        {1, DescriptorType::UNIFORM_BUFFER, ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT}};
+    auto modelMeshLayout = ctx.CreateDescriptorSetLayout({2, modelUniformBindings});
     ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/modelMesh.layout", modelMeshLayout);
 
     ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding materialUniformBindings[1] = {

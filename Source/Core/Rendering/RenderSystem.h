@@ -20,8 +20,6 @@ class Image;
 class ShaderProgram;
 
 struct DrawIndirectCommand {
-    // TODO: This needs to go away in the future
-    DescriptorSet * meshDescriptor;
     uint32_t vertexCount;
     uint32_t instanceCount;
     uint32_t firstVertex;
@@ -29,8 +27,6 @@ struct DrawIndirectCommand {
 };
 
 struct DrawIndexedIndirectCommand {
-    // TODO: This needs to go away in the future
-    DescriptorSet * meshDescriptor;
     uint32_t indexCount;
     uint32_t instanceCount;
     uint32_t firstIndex;
@@ -42,6 +38,10 @@ struct MeshBatch {
     BufferHandle * indexBuffer = nullptr;
     BufferHandle * vertexBuffer = nullptr;
     Material * material = nullptr;
+    size_t drawCommandsOffset;
+    size_t drawCommandsCount;
+    size_t drawIndexedCommandsOffset;
+    size_t drawIndexedCommandsCount;
     std::vector<DrawIndirectCommand> drawCommands;
     std::vector<DrawIndexedIndirectCommand> drawIndexedCommands;
 };
@@ -102,6 +102,27 @@ private:
         SemaphoreHandle * postprocessFinished;
 
         CommandBufferAllocator * commandBufferAllocator;
+
+        // Contains per-mesh uniform info (such as localToWorld matrix)
+        size_t meshUniformsSize = 0;
+        BufferHandle * meshUniforms = nullptr;
+        glm::mat4 * meshUniformsMapped = nullptr;
+        // Contains per-draw indexes into the meshUniforms buffer
+        size_t meshUniformIndexesSize = 0;
+        BufferHandle * meshUniformIndexes = nullptr;
+        uint32_t * meshUniformIndexesMapped = nullptr;
+        // Contains per-draw indexes into the meshUniforms buffer (used for DrawIndexed commands)
+        size_t meshUniformIndexesForIndexedSize = 0;
+        BufferHandle * meshUniformIndexesForIndexed = nullptr;
+        uint32_t * meshUniformIndexesForIndexedMapped = nullptr;
+        DescriptorSet * meshUniformsDescriptorSet = nullptr;
+        DescriptorSet * meshUniformsForIndexedDescriptorSet = nullptr;
+        size_t meshIndirectSize = 0;
+        BufferHandle * meshIndirect = nullptr;
+        DrawIndirectCommand * meshIndirectMapped = nullptr;
+        size_t meshIndexedIndirectSize = 0;
+        BufferHandle * meshIndexedIndirect = nullptr;
+        DrawIndexedIndirectCommand * meshIndexedIndirectMapped = nullptr;
     };
 
     static RenderSystem * instance;
@@ -145,6 +166,7 @@ private:
     PipelineLayoutHandle * passthroughTransformPipelineLayout;
     ShaderProgram * passthroughTransformProgram;
 
+    DescriptorSetLayoutHandle * meshModelLayout;
     PipelineLayoutHandle * meshPipelineLayout;
     ShaderProgram * meshProgram;
     ShaderProgram * transparentMeshProgram;
