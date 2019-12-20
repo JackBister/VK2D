@@ -122,8 +122,8 @@ private:
     void RenderSprites(SubmittedCamera const & camera, std::vector<SubmittedSprite> const & sprites);
 
     void PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const & meshes);
-    void RenderMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes, std::vector<MeshBatch> const & batches);
-    void RenderTransparentMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes);
+    void RenderMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches);
+    void RenderTransparentMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches);
 
     std::vector<MeshBatch> CreateBatches(std::vector<SubmittedMesh> const & meshes);
 

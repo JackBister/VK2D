@@ -169,10 +169,10 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
         mainRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 1, DEFAULT_CLEAR_VALUES};
     currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::INLINE);
     for (auto const & camera : frame.cameras) {
-        RenderMeshes(camera, frame.meshes, meshBatches);
+        RenderMeshes(camera, meshBatches);
         RenderSprites(camera, frame.sprites);
 
-        RenderTransparentMeshes(camera, frame.meshes);
+        RenderTransparentMeshes(camera, meshBatches);
     }
 
     currFrame.mainCommandBuffer->CmdEndRenderPass();
@@ -318,8 +318,7 @@ void RenderSystem::PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const &
     }
 }
 
-void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes,
-                                std::vector<MeshBatch> const & batches)
+void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
@@ -376,7 +375,7 @@ void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<Subm
     }
 }
 
-void RenderSystem::RenderTransparentMeshes(SubmittedCamera const & camera, std::vector<SubmittedMesh> const & meshes)
+void RenderSystem::RenderTransparentMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
@@ -394,32 +393,41 @@ void RenderSystem::RenderTransparentMeshes(SubmittedCamera const & camera, std::
     auto cam = GetCamera(camera.cameraHandle);
     currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 0, {cam->descriptorSet});
 
-    for (auto const & mesh : meshes) {
-        auto meshResources = GetStaticMeshInstance(mesh.staticMeshInstance);
-        currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 1, {meshResources->descriptorSet});
+    DescriptorSet * currentMaterialDescriptorSet = nullptr;
+    DescriptorSet * currentMeshDescriptorSet = nullptr;
+    for (auto const & batch : batches) {
+        if (!batch.material->GetDescriptorSet()) {
+            continue;
+        }
+        if (!batch.material->GetAlbedo()->HasTransparency()) {
+            continue;
+        }
 
-        for (auto const & submesh : mesh.submeshes) {
-            if (!submesh.material->GetDescriptorSet()) {
-                continue;
-            }
-            if (!submesh.material->GetAlbedo()->HasTransparency()) {
-                continue;
-            }
+        if (batch.material->GetDescriptorSet() != currentMaterialDescriptorSet) {
+            currentMaterialDescriptorSet = batch.material->GetDescriptorSet();
             currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-                meshPipelineLayout, 2, {submesh.material->GetDescriptorSet()});
+                meshPipelineLayout, 2, {batch.material->GetDescriptorSet()});
+        }
 
-            if (submesh.indexBuffer.has_value()) {
-                auto indexBuffer = submesh.indexBuffer.value();
-                currFrame.mainCommandBuffer->CmdBindIndexBuffer(
-                    indexBuffer.GetBuffer(), indexBuffer.GetOffset(), CommandBuffer::IndexType::UINT32);
-                currFrame.mainCommandBuffer->CmdBindVertexBuffer(
-                    submesh.vertexBuffer.GetBuffer(), 0, submesh.vertexBuffer.GetOffset(), 8 * sizeof(float));
-                currFrame.mainCommandBuffer->CmdDrawIndexed(submesh.numIndexes, 1, 0, 0);
-            } else {
-                currFrame.mainCommandBuffer->CmdBindVertexBuffer(
-                    submesh.vertexBuffer.GetBuffer(), 0, submesh.vertexBuffer.GetOffset(), 8 * sizeof(float));
-                currFrame.mainCommandBuffer->CmdDraw(submesh.numVertices, 1, 0, 0);
+        currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, 8 * sizeof(float));
+        if (batch.indexBuffer != nullptr) {
+            currFrame.mainCommandBuffer->CmdBindIndexBuffer(batch.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
+        }
+        for (auto const & command : batch.drawCommands) {
+            if (command.meshDescriptor != currentMeshDescriptorSet) {
+                currentMeshDescriptorSet = command.meshDescriptor;
+                currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 1, {command.meshDescriptor});
             }
+            currFrame.mainCommandBuffer->CmdDraw(
+                command.vertexCount, command.instanceCount, command.firstVertex, command.firstInstance);
+        }
+        for (auto const & command : batch.drawIndexedCommands) {
+            if (command.meshDescriptor != currentMeshDescriptorSet) {
+                currentMeshDescriptorSet = command.meshDescriptor;
+                currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 1, {command.meshDescriptor});
+            }
+            currFrame.mainCommandBuffer->CmdDrawIndexed(
+                command.indexCount, command.instanceCount, command.firstIndex, command.vertexOffset);
         }
     }
 }
