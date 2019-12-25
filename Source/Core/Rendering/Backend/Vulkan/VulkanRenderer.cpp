@@ -177,7 +177,8 @@ uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalReady, FenceHan
     auto res = vkAcquireNextImageKHR(
         basics.device,
         swapchain.swapchain,
-        0,
+        // TODO: Timeout of 0 returns VK_NOT_READY sometimes, how do we handle this?
+        UINT64_MAX,
         signalReady != nullptr ? ((VulkanSemaphoreHandle *)signalReady)->semaphore : VK_NULL_HANDLE,
         signalFence != nullptr ? ((VulkanFenceHandle *)signalFence)->fence : VK_NULL_HANDLE,
         &imageIndex);

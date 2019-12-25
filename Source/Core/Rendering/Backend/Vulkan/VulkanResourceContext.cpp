@@ -846,7 +846,8 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
                 std::get<ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor>(descriptor.descriptor);
             imageInfos.push_back({((VulkanSamplerHandle *)image.sampler)->sampler,
                                   ((VulkanImageViewHandle *)image.imageView)->imageView,
-                                  VK_IMAGE_LAYOUT_GENERAL});
+                                  // TODO: Add this to the createInfo?
+                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
             bindingToIdx.insert_or_assign(descriptor.binding, imageInfos.size() - 1);
         }
     }
