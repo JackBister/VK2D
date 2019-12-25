@@ -335,7 +335,8 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
     }
     basics.physicalDevice = physDeviceOptional.value();
 
-    std::vector<const char *> const deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    std::vector<const char *> const deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                                                        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME};
 
     if (!CheckVkDeviceExtensions(basics.physicalDevice, deviceExtensions)) {
         logger->Severef("CheckVkDeviceExtensions failed.");

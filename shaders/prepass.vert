@@ -22,7 +22,7 @@ layout (location = 0) out vec3 Color;
 layout (location = 1) out vec2 Texcoord;
 
 void main() {
-	mat4 pvm = pv * m[0];
+	mat4 pvm = pv * m[gl_BaseInstance];
 	gl_Position = pvm * vec4(pos, 1.0);
 	Color = color;
 	Texcoord = texcoord;

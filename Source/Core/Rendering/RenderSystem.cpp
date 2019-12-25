@@ -555,7 +555,8 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(std::vector<SubmittedMesh> co
             if (submesh.submesh.indexBuffer.has_value()) {
                 DrawIndexedIndirectCommand command;
                 command.firstIndex = submesh.submesh.indexBuffer->GetOffset();
-                command.firstInstance = 0;
+                // command.firstInstance = 0;
+                command.firstInstance = submesh.id;
                 command.indexCount = submesh.submesh.numIndexes;
                 command.instanceCount = 1;
                 command.vertexOffset = submesh.submesh.vertexBuffer.GetOffset() / (8 * sizeof(float));
@@ -564,7 +565,8 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(std::vector<SubmittedMesh> co
                 uniformIndexesForIndexed.push_back(submesh.id);
             } else {
                 DrawIndirectCommand command;
-                command.firstInstance = 0;
+                // command.firstInstance = 0;
+                command.firstInstance = submesh.id;
                 command.firstVertex = submesh.submesh.vertexBuffer.GetOffset() / (8 * sizeof(float));
                 command.instanceCount = 1;
                 command.vertexCount = submesh.submesh.numVertices;
@@ -730,16 +732,6 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(std::vector<SubmittedMesh> co
     {
         OPTICK_EVENT("UploadUniformData");
         uniformCreationDone.Wait();
-        /*
-        if (uniformIndexes.size() > 0) {
-            memcpy(currFrame.meshUniformIndexesMapped, uniformIndexes.data(), uniformIndexes.size() * sizeof(size_t));
-        }
-        if (uniformIndexesForIndexed.size() > 0) {
-            memcpy(currFrame.meshUniformIndexesForIndexedMapped,
-                   uniformIndexesForIndexed.data(),
-                   uniformIndexesForIndexed.size() * sizeof(size_t));
-        }
-        */
         if (drawCommands.size() > 0) {
             memcpy(
                 currFrame.meshIndirectMapped, drawCommands.data(), drawCommands.size() * sizeof(DrawIndirectCommand));
