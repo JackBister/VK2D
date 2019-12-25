@@ -13,9 +13,6 @@ layout (std140, set = 0, binding = 0) uniform camera {
 layout (std140, set = 1, binding = 0) uniform model {
 	mat4 m[16];
 };
-layout(std140, set = 1, binding = 1) uniform idx {
-	uint indexes[1024];
-};
 
 layout (location = 0) out vec3 Color;
 layout (location = 1) out vec2 Texcoord;

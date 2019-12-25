@@ -107,16 +107,7 @@ private:
         size_t meshUniformsSize = 0;
         BufferHandle * meshUniforms = nullptr;
         glm::mat4 * meshUniformsMapped = nullptr;
-        // Contains per-draw indexes into the meshUniforms buffer
-        size_t meshUniformIndexesSize = 0;
-        BufferHandle * meshUniformIndexes = nullptr;
-        uint32_t * meshUniformIndexesMapped = nullptr;
-        // Contains per-draw indexes into the meshUniforms buffer (used for DrawIndexed commands)
-        size_t meshUniformIndexesForIndexedSize = 0;
-        BufferHandle * meshUniformIndexesForIndexed = nullptr;
-        uint32_t * meshUniformIndexesForIndexedMapped = nullptr;
         DescriptorSet * meshUniformsDescriptorSet = nullptr;
-        DescriptorSet * meshUniformsForIndexedDescriptorSet = nullptr;
         size_t meshIndirectSize = 0;
         BufferHandle * meshIndirect = nullptr;
         DrawIndirectCommand * meshIndirectMapped = nullptr;
