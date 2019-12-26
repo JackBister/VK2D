@@ -12,6 +12,21 @@
 #include "Core/Util/SetThreadName.h"
 
 static const auto logger = Logger::Create("OpenGLRenderer");
+static const auto openGlLogger = Logger::Create("OpenGL");
+
+#ifdef _DEBUG
+static void DbgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const * message,
+                        void const * userParam)
+{
+    if (severity == GL_DEBUG_SEVERITY_HIGH) {
+        openGlLogger->Errorf("%s", message);
+    } else if (severity == GL_DEBUG_SEVERITY_MEDIUM || severity == GL_DEBUG_SEVERITY_LOW) {
+        openGlLogger->Warnf("%s", message);
+    } else {
+        openGlLogger->Infof("%s", message);
+    }
+}
+#endif
 
 Renderer::~Renderer()
 {
@@ -25,6 +40,9 @@ Renderer::Renderer(char const * title, int const winX, int const winY, uint32_t 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+#ifdef _DEBUG
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
     window = SDL_CreateWindow(
         title, winX, winY, config.windowResolution.x, config.windowResolution.y, flags | SDL_WINDOW_OPENGL);
     auto ctx = SDL_GL_CreateContext(window);
@@ -42,6 +60,11 @@ Renderer::Renderer(char const * title, int const winX, int const winY, uint32_t 
     glReadBuffer(GL_BACK);
     glGenFramebuffers(1, &backbufferFramebuffer);
     RecreateSwapchain();
+
+#ifdef _DEBUG
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(DbgCallback, nullptr);
+#endif
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
