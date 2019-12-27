@@ -8,7 +8,7 @@
 
 static const auto logger = Logger::Create("DefaultFileSlurper");
 
-std::string DefaultFileSlurper::slurpFile(std::string const & fileName)
+std::string DefaultFileSlurper::SlurpFile(std::string const & fileName)
 {
     FILE * f = fopen(fileName.c_str(), "rb");
     if (f) {

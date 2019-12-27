@@ -47,7 +47,7 @@ public:
     {
         std::filesystem::path requestingSourcePath(requesting_source);
         auto requestedPath = requestingSourcePath.remove_filename().append(requested_source);
-        auto fileContent = fileSlurper->slurpFile(requestedPath.string());
+        auto fileContent = fileSlurper->SlurpFile(requestedPath.string());
         auto contentCopy = new char[fileContent.size() + 1];
         strcpy(contentCopy, fileContent.c_str());
 
@@ -73,7 +73,7 @@ private:
 SpirvCompilationResult GlslToSpirvShaderCompiler::CompileGlslFile(std::string const & fileName)
 {
     std::filesystem::path filePath(fileName);
-    auto fileContent = fileSlurper->slurpFile(fileName);
+    auto fileContent = fileSlurper->SlurpFile(fileName);
     auto shaderType = GetShaderType(filePath.extension().string());
 
     shaderc::Compiler compiler;

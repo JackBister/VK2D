@@ -2,7 +2,8 @@
 
 #include <string>
 
-class FileSlurper {
+class FileSlurper
+{
 public:
-	virtual std::string slurpFile(std::string const& fileName) = 0;
+    virtual std::string SlurpFile(std::string const & fileName) = 0;
 };
