@@ -9,6 +9,8 @@ class StaticMeshInstanceResources
     friend class RenderSystem;
 
 private:
-    BufferHandle * uniformBuffer;
-    DescriptorSet * descriptorSet;
+    /*
+        BufferHandle * uniformBuffer;
+        DescriptorSet * descriptorSet;
+        */
 };

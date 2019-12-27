@@ -6,6 +6,7 @@ StaticMeshInstance RenderSystem::CreateStaticMeshInstance()
 {
     staticMeshes.emplace_back();
     auto id = staticMeshes.size() - 1;
+    /*
     Semaphore sem;
     renderer->CreateResources([this, &sem, id](ResourceCreationContext & ctx) {
         auto layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>(
@@ -26,6 +27,7 @@ StaticMeshInstance RenderSystem::CreateStaticMeshInstance()
         sem.Signal();
     });
     sem.Wait();
+    */
     StaticMeshInstance ret;
     ret.id = id;
     return ret;
@@ -34,12 +36,14 @@ StaticMeshInstance RenderSystem::CreateStaticMeshInstance()
 void RenderSystem::DestroyStaticMeshInstance(StaticMeshInstance staticMesh)
 {
     auto mesh = GetStaticMeshInstance(staticMesh);
+    /*
     auto descriptorSet = mesh->descriptorSet;
     auto uniforms = mesh->uniformBuffer;
     this->DestroyResources([descriptorSet, uniforms](ResourceCreationContext & ctx) {
         ctx.DestroyDescriptorSet(descriptorSet);
         ctx.DestroyBuffer(uniforms);
     });
+    */
 }
 
 StaticMeshInstanceResources * RenderSystem::GetStaticMeshInstance(StaticMeshInstance staticMesh)

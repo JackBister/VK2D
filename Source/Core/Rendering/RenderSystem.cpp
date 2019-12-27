@@ -16,6 +16,8 @@ static const auto logger = Logger::Create("RenderSystem");
 static constexpr CommandBuffer::ClearValue DEFAULT_CLEAR_VALUES[] = {
     {CommandBuffer::ClearValue::Type::COLOR, {0.f, 0.f, 1.f, 1.f}}};
 
+static constexpr size_t MIN_INDEXES_BUFFER_SIZE = 128 * sizeof(uint32_t);
+
 RenderSystem * RenderSystem::instance = nullptr;
 
 RenderSystem * RenderSystem::GetInstance()
@@ -256,7 +258,8 @@ void RenderSystem::Prepass(SubmittedFrame const & frame, std::vector<MeshBatch> 
 
     for (auto const & camera : frame.cameras) {
         auto cam = GetCamera(camera.cameraHandle);
-        currFrame.mainCommandBuffer->CmdBindDescriptorSets(prepassPipelineLayout, 0, {cam->descriptorSet});
+        currFrame.mainCommandBuffer->CmdBindDescriptorSets(
+            prepassPipelineLayout, 0, {cam->descriptorSet, currFrame.meshUniformsDescriptorSet});
         DescriptorSet * currentMeshDescriptorSet = nullptr;
         for (auto const & batch : batches) {
             if (!batch.material->GetDescriptorSet()) {
@@ -270,23 +273,17 @@ void RenderSystem::Prepass(SubmittedFrame const & frame, std::vector<MeshBatch> 
             if (batch.indexBuffer != nullptr) {
                 currFrame.mainCommandBuffer->CmdBindIndexBuffer(batch.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
             }
-            for (auto const & command : batch.drawCommands) {
-                if (command.meshDescriptor != currentMeshDescriptorSet) {
-                    currentMeshDescriptorSet = command.meshDescriptor;
-                    currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-                        prepassPipelineLayout, 1, {command.meshDescriptor});
-                }
-                currFrame.mainCommandBuffer->CmdDraw(
-                    command.vertexCount, command.instanceCount, command.firstVertex, command.firstInstance);
+
+            if (batch.drawCommandsCount > 0) {
+                currFrame.mainCommandBuffer->CmdDrawIndirect(currFrame.meshIndirect,
+                                                             batch.drawCommandsOffset * sizeof(DrawIndirectCommand),
+                                                             batch.drawCommandsCount);
             }
-            for (auto const & command : batch.drawIndexedCommands) {
-                if (command.meshDescriptor != currentMeshDescriptorSet) {
-                    currentMeshDescriptorSet = command.meshDescriptor;
-                    currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-                        prepassPipelineLayout, 1, {command.meshDescriptor});
+            if (batch.drawIndexedCommands.size() > 0) {
+                for (auto const & command : batch.drawIndexedCommands) {
+                    currFrame.mainCommandBuffer->CmdDrawIndexed(
+                        command.indexCount, command.instanceCount, command.firstIndex, command.vertexOffset);
                 }
-                currFrame.mainCommandBuffer->CmdDrawIndexed(
-                    command.indexCount, command.instanceCount, command.firstIndex, command.vertexOffset);
             }
         }
     }
@@ -310,12 +307,6 @@ void RenderSystem::PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const &
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
-
-    for (auto const & mesh : meshes) {
-        auto meshResources = GetStaticMeshInstance(mesh.staticMeshInstance);
-        currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
-            meshResources->uniformBuffer, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(mesh.localToWorld));
-    }
 }
 
 void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches)
@@ -334,10 +325,10 @@ void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<Mesh
                                                  meshProgram->GetPipeline());
 
     auto cam = GetCamera(camera.cameraHandle);
-    currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 0, {cam->descriptorSet});
+    currFrame.mainCommandBuffer->CmdBindDescriptorSets(
+        meshPipelineLayout, 0, {cam->descriptorSet, currFrame.meshUniformsDescriptorSet});
 
     DescriptorSet * currentMaterialDescriptorSet = nullptr;
-    DescriptorSet * currentMeshDescriptorSet = nullptr;
     for (auto const & batch : batches) {
         if (!batch.material->GetDescriptorSet()) {
             continue;
@@ -356,21 +347,16 @@ void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<Mesh
         if (batch.indexBuffer != nullptr) {
             currFrame.mainCommandBuffer->CmdBindIndexBuffer(batch.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
         }
-        for (auto const & command : batch.drawCommands) {
-            if (command.meshDescriptor != currentMeshDescriptorSet) {
-                currentMeshDescriptorSet = command.meshDescriptor;
-                currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 1, {command.meshDescriptor});
-            }
-            currFrame.mainCommandBuffer->CmdDraw(
-                command.vertexCount, command.instanceCount, command.firstVertex, command.firstInstance);
+        if (batch.drawCommandsCount > 0) {
+            currFrame.mainCommandBuffer->CmdDrawIndirect(currFrame.meshIndirect,
+                                                         batch.drawCommandsOffset * sizeof(DrawIndirectCommand),
+                                                         batch.drawCommandsCount);
         }
-        for (auto const & command : batch.drawIndexedCommands) {
-            if (command.meshDescriptor != currentMeshDescriptorSet) {
-                currentMeshDescriptorSet = command.meshDescriptor;
-                currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 1, {command.meshDescriptor});
+        if (batch.drawIndexedCommands.size() > 0) {
+            for (auto const & command : batch.drawIndexedCommands) {
+                currFrame.mainCommandBuffer->CmdDrawIndexed(
+                    command.indexCount, command.instanceCount, command.firstIndex, command.vertexOffset);
             }
-            currFrame.mainCommandBuffer->CmdDrawIndexed(
-                command.indexCount, command.instanceCount, command.firstIndex, command.vertexOffset);
         }
     }
 }
@@ -391,10 +377,10 @@ void RenderSystem::RenderTransparentMeshes(SubmittedCamera const & camera, std::
                                                  transparentMeshProgram->GetPipeline());
 
     auto cam = GetCamera(camera.cameraHandle);
-    currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 0, {cam->descriptorSet});
+    currFrame.mainCommandBuffer->CmdBindDescriptorSets(
+        meshPipelineLayout, 0, {cam->descriptorSet, currFrame.meshUniformsDescriptorSet});
 
     DescriptorSet * currentMaterialDescriptorSet = nullptr;
-    DescriptorSet * currentMeshDescriptorSet = nullptr;
     for (auto const & batch : batches) {
         if (!batch.material->GetDescriptorSet()) {
             continue;
@@ -413,21 +399,16 @@ void RenderSystem::RenderTransparentMeshes(SubmittedCamera const & camera, std::
         if (batch.indexBuffer != nullptr) {
             currFrame.mainCommandBuffer->CmdBindIndexBuffer(batch.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
         }
-        for (auto const & command : batch.drawCommands) {
-            if (command.meshDescriptor != currentMeshDescriptorSet) {
-                currentMeshDescriptorSet = command.meshDescriptor;
-                currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 1, {command.meshDescriptor});
-            }
-            currFrame.mainCommandBuffer->CmdDraw(
-                command.vertexCount, command.instanceCount, command.firstVertex, command.firstInstance);
+        if (batch.drawCommandsCount > 0) {
+            currFrame.mainCommandBuffer->CmdDrawIndirect(currFrame.meshIndirect,
+                                                         batch.drawCommandsOffset * sizeof(DrawIndirectCommand),
+                                                         batch.drawCommandsCount);
         }
-        for (auto const & command : batch.drawIndexedCommands) {
-            if (command.meshDescriptor != currentMeshDescriptorSet) {
-                currentMeshDescriptorSet = command.meshDescriptor;
-                currFrame.mainCommandBuffer->CmdBindDescriptorSets(meshPipelineLayout, 1, {command.meshDescriptor});
+        if (batch.drawIndexedCommands.size() > 0) {
+            for (auto const & command : batch.drawIndexedCommands) {
+                currFrame.mainCommandBuffer->CmdDrawIndexed(
+                    command.indexCount, command.instanceCount, command.firstIndex, command.vertexOffset);
             }
-            currFrame.mainCommandBuffer->CmdDrawIndexed(
-                command.indexCount, command.instanceCount, command.firstIndex, command.vertexOffset);
         }
     }
 }
@@ -507,21 +488,27 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(std::vector<SubmittedMesh> co
 {
     OPTICK_EVENT();
 
+    std::vector<glm::mat4> localToWorlds;
     std::set<SubmeshWithUniformId, SubmeshComparer> sortedSubmeshes;
-    std::vector<DescriptorSet *> uniforms;
     {
         OPTICK_EVENT("SortSubmeshes");
         for (auto const & mesh : meshes) {
             auto instance = GetStaticMeshInstance(mesh.staticMeshInstance);
-            uniforms.push_back(instance->descriptorSet);
-            uint32_t id = uniforms.size() - 1;
+            localToWorlds.push_back(mesh.localToWorld);
+            uint32_t id = localToWorlds.size() - 1;
             for (auto const & submesh : mesh.submeshes) {
                 sortedSubmeshes.insert({submesh, id});
             }
         }
     }
 
+    auto & currFrame = frameInfo[currFrameInfoIdx];
+
     std::vector<MeshBatch> batches;
+    size_t drawCommandsOffset = 0;
+    std::vector<DrawIndirectCommand> drawCommands;
+    size_t drawIndexedOffset = 0;
+    std::vector<DrawIndexedIndirectCommand> drawIndexedCommands;
     {
         OPTICK_EVENT("GatherBatches");
         MeshBatch currentBatch;
@@ -530,9 +517,15 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(std::vector<SubmittedMesh> co
                 submesh.submesh.vertexBuffer.GetBuffer() != currentBatch.vertexBuffer ||
                 (submesh.submesh.indexBuffer.has_value() ? submesh.submesh.indexBuffer->GetBuffer() : nullptr) !=
                     currentBatch.indexBuffer) {
+                currentBatch.drawCommandsOffset = drawCommandsOffset;
+                currentBatch.drawCommandsCount = drawCommands.size() - drawCommandsOffset;
+                currentBatch.drawIndexedCommandsOffset = drawIndexedOffset;
+                currentBatch.drawIndexedCommandsCount = drawIndexedCommands.size() - drawIndexedOffset;
                 if (currentBatch.material != nullptr) {
                     batches.push_back(currentBatch);
                 }
+                drawCommandsOffset = drawCommands.size();
+                drawIndexedOffset = drawIndexedCommands.size();
                 currentBatch.drawCommands.clear();
                 currentBatch.drawIndexedCommands.clear();
                 currentBatch.indexBuffer =
@@ -543,23 +536,126 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(std::vector<SubmittedMesh> co
             if (submesh.submesh.indexBuffer.has_value()) {
                 DrawIndexedIndirectCommand command;
                 command.firstIndex = submesh.submesh.indexBuffer->GetOffset();
-                command.firstInstance = 0;
+                command.firstInstance = submesh.id;
                 command.indexCount = submesh.submesh.numIndexes;
                 command.instanceCount = 1;
-                command.meshDescriptor = uniforms[submesh.id];
                 command.vertexOffset = submesh.submesh.vertexBuffer.GetOffset() / (8 * sizeof(float));
                 currentBatch.drawIndexedCommands.push_back(command);
+                drawIndexedCommands.push_back(command);
             } else {
                 DrawIndirectCommand command;
-                command.firstInstance = 0;
+                command.firstInstance = submesh.id;
                 command.firstVertex = submesh.submesh.vertexBuffer.GetOffset() / (8 * sizeof(float));
                 command.instanceCount = 1;
-                command.meshDescriptor = uniforms[submesh.id];
                 command.vertexCount = submesh.submesh.numVertices;
                 currentBatch.drawCommands.push_back(command);
+                drawCommands.push_back(command);
             }
         }
-        batches.push_back(currentBatch);
+        if (currentBatch.material != nullptr) {
+            currentBatch.drawCommandsOffset = drawCommandsOffset;
+            currentBatch.drawCommandsCount = drawCommands.size() - drawCommandsOffset;
+            currentBatch.drawIndexedCommandsOffset = drawIndexedOffset;
+            currentBatch.drawIndexedCommandsCount = drawIndexedCommands.size() - drawIndexedOffset;
+            batches.push_back(currentBatch);
+        }
+    }
+
+    Semaphore uniformCreationDone;
+    if (localToWorlds.size() * sizeof(glm::mat4) > currFrame.meshUniformsSize ||
+        drawCommands.size() * sizeof(DrawIndirectCommand) > currFrame.meshIndirectSize ||
+        drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand) > currFrame.meshIndexedIndirectSize) {
+        renderer->CreateResources(
+            [this, &uniformCreationDone, &currFrame, &drawCommands, &drawIndexedCommands, &localToWorlds](
+                ResourceCreationContext & ctx) {
+                OPTICK_EVENT("CreateUniformBuffers");
+                if (localToWorlds.size() * sizeof(glm::mat4) > currFrame.meshUniformsSize) {
+                    if (currFrame.meshUniforms) {
+                        ctx.UnmapBuffer(currFrame.meshUniforms);
+                        ctx.DestroyBuffer(currFrame.meshUniforms);
+                    }
+                    currFrame.meshUniformsSize = localToWorlds.size() * sizeof(glm::mat4);
+                    ResourceCreationContext::BufferCreateInfo uniformsCreateInfo;
+                    uniformsCreateInfo.memoryProperties =
+                        MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
+                    uniformsCreateInfo.size = currFrame.meshUniformsSize;
+                    uniformsCreateInfo.usage = BufferUsageFlags::UNIFORM_BUFFER_BIT;
+                    currFrame.meshUniforms = ctx.CreateBuffer(uniformsCreateInfo);
+                    currFrame.meshUniformsMapped =
+                        (glm::mat4 *)ctx.MapBuffer(currFrame.meshUniforms, 0, currFrame.meshUniformsSize);
+                }
+                if (currFrame.meshUniformsDescriptorSet) {
+                    ctx.DestroyDescriptorSet(currFrame.meshUniformsDescriptorSet);
+                }
+                {
+                    ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uniformDescriptors[1] = {
+                        {currFrame.meshUniforms, 0, currFrame.meshUniformsSize}};
+                    ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[2] = {
+                        {DescriptorType::UNIFORM_BUFFER, 0, uniformDescriptors[0]}};
+                    ResourceCreationContext::DescriptorSetCreateInfo uniformsDescriptorSetCi;
+                    uniformsDescriptorSetCi.descriptorCount = 1;
+                    uniformsDescriptorSetCi.descriptors = descriptors;
+                    uniformsDescriptorSetCi.layout = this->meshModelLayout;
+                    currFrame.meshUniformsDescriptorSet = ctx.CreateDescriptorSet(uniformsDescriptorSetCi);
+                }
+
+                if (drawCommands.size() * sizeof(DrawIndirectCommand) > currFrame.meshIndirectSize) {
+                    if (currFrame.meshIndirect) {
+                        ctx.UnmapBuffer(currFrame.meshIndirect);
+                        ctx.DestroyBuffer(currFrame.meshIndirect);
+                    }
+                    currFrame.meshIndirectSize = drawCommands.size() * sizeof(DrawIndirectCommand);
+                    if (currFrame.meshIndirectSize == 0) {
+                        currFrame.meshIndirectSize = MIN_INDEXES_BUFFER_SIZE;
+                    }
+                    ResourceCreationContext::BufferCreateInfo meshIndirectCreateInfo;
+                    meshIndirectCreateInfo.memoryProperties =
+                        MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
+                    meshIndirectCreateInfo.size = currFrame.meshIndirectSize;
+                    meshIndirectCreateInfo.usage = BufferUsageFlags::INDIRECT_BUFFER_BIT;
+                    currFrame.meshIndirect = ctx.CreateBuffer(meshIndirectCreateInfo);
+                    currFrame.meshIndirectMapped =
+                        (DrawIndirectCommand *)ctx.MapBuffer(currFrame.meshIndirect, 0, currFrame.meshIndirectSize);
+                }
+                if (drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand) >
+                    currFrame.meshIndexedIndirectSize) {
+                    if (currFrame.meshIndexedIndirect) {
+                        ctx.UnmapBuffer(currFrame.meshIndexedIndirect);
+                        ctx.DestroyBuffer(currFrame.meshIndexedIndirect);
+                    }
+                    currFrame.meshIndexedIndirectSize = drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand);
+                    if (currFrame.meshIndexedIndirectSize == 0) {
+                        currFrame.meshIndexedIndirectSize = MIN_INDEXES_BUFFER_SIZE;
+                    }
+                    ResourceCreationContext::BufferCreateInfo meshIndexedIndirectCreateInfo;
+                    meshIndexedIndirectCreateInfo.memoryProperties =
+                        MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
+                    meshIndexedIndirectCreateInfo.size = currFrame.meshIndexedIndirectSize;
+                    meshIndexedIndirectCreateInfo.usage = BufferUsageFlags::INDIRECT_BUFFER_BIT;
+                    currFrame.meshIndexedIndirect = ctx.CreateBuffer(meshIndexedIndirectCreateInfo);
+                    currFrame.meshIndexedIndirectMapped = (DrawIndexedIndirectCommand *)ctx.MapBuffer(
+                        currFrame.meshIndexedIndirect, 0, currFrame.meshIndexedIndirectSize);
+                }
+                uniformCreationDone.Signal();
+            });
+    } else {
+        uniformCreationDone.Signal();
+    }
+    {
+        OPTICK_EVENT("UploadUniformData");
+        uniformCreationDone.Wait();
+        if (drawCommands.size() > 0) {
+            memcpy(
+                currFrame.meshIndirectMapped, drawCommands.data(), drawCommands.size() * sizeof(DrawIndirectCommand));
+        }
+        if (drawIndexedCommands.size() > 0) {
+            memcpy(currFrame.meshIndexedIndirectMapped,
+                   drawIndexedCommands.data(),
+                   drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand));
+        }
+        // TODO: If this is moved up above the other memcpys the data in meshUniformsMapped somehow gets corrupted
+        // and I don't understand why.
+        memcpy(currFrame.meshUniformsMapped, localToWorlds.data(), localToWorlds.size() * sizeof(glm::mat4));
     }
 
     return batches;

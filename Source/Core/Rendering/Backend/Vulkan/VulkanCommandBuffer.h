@@ -29,6 +29,7 @@ public:
     virtual void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) override;
     virtual void CmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
                          uint32_t firstInstance) override;
+    virtual void CmdDrawIndirect(BufferHandle * buffer, size_t offset, uint32_t drawCount) override;
     virtual void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                                 int32_t vertexOffset) override;
     virtual void CmdEndRenderPass() override;

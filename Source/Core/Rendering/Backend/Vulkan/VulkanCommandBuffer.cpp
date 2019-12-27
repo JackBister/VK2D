@@ -1,6 +1,8 @@
 #ifndef USE_OGL_RENDERER
 #include "Core/Rendering/Backend/Vulkan/VulkanCommandBuffer.h"
 
+#include <optick/optick.h>
+
 #include "Core/Rendering/Backend/Vulkan/VulkanCommandBufferAllocator.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanContextStructs.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanConverterFuncs.h"
@@ -165,12 +167,20 @@ void VulkanCommandBuffer::CmdBindVertexBuffer(BufferHandle * buffer, uint32_t bi
 void VulkanCommandBuffer::CmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
                                   uint32_t firstInstance)
 {
+    OPTICK_EVENT();
     vkCmdDraw(this->buffer, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void VulkanCommandBuffer::CmdDrawIndirect(BufferHandle * buffer, size_t offset, uint32_t drawCount)
+{
+    vkCmdDrawIndirect(
+        this->buffer, ((VulkanBufferHandle *)buffer)->buffer, offset, drawCount, sizeof(VkDrawIndirectCommand));
 }
 
 void VulkanCommandBuffer::CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                                          int32_t vertexOffset)
 {
+    OPTICK_EVENT();
     vkCmdDrawIndexed(this->buffer, indexCount, instanceCount, firstIndex, vertexOffset, 0);
 }
 

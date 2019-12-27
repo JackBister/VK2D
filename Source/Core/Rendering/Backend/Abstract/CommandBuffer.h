@@ -79,6 +79,7 @@ public:
     virtual void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) = 0;
     virtual void CmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
                          uint32_t firstInstance) = 0;
+    virtual void CmdDrawIndirect(BufferHandle * buffer, size_t offset, uint32_t drawCount) = 0;
     virtual void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                                 int32_t vertexOffset) = 0;
     virtual void CmdEndRenderPass() = 0;

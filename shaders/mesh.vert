@@ -1,4 +1,4 @@
-#version 420
+#version 460
 #extension GL_GOOGLE_include_directive : require
 
 #include "Specialization.h"
@@ -11,14 +11,14 @@ layout (std140, set = 0, binding = 0) uniform camera {
 	mat4 pv;
 };
 layout (std140, set = 1, binding = 0) uniform model {
-	mat4 m;
+	mat4 m[16];
 };
 
 layout (location = 0) out vec3 Color;
 layout (location = 1) out vec2 Texcoord;
 
 void main() {
-	mat4 pvm = pv * m;
+	mat4 pvm = pv * m[gl_BaseInstance];
 	gl_Position = pvm * vec4(pos, 1.0);
 	Color = color;
 	Texcoord = texcoord;

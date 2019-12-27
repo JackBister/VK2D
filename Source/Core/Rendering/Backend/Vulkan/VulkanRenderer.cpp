@@ -177,7 +177,8 @@ uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalReady, FenceHan
     auto res = vkAcquireNextImageKHR(
         basics.device,
         swapchain.swapchain,
-        0,
+        // TODO: Timeout of 0 returns VK_NOT_READY sometimes, how do we handle this?
+        UINT64_MAX,
         signalReady != nullptr ? ((VulkanSemaphoreHandle *)signalReady)->semaphore : VK_NULL_HANDLE,
         signalFence != nullptr ? ((VulkanFenceHandle *)signalFence)->fence : VK_NULL_HANDLE,
         &imageIndex);
@@ -334,7 +335,8 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
     }
     basics.physicalDevice = physDeviceOptional.value();
 
-    std::vector<const char *> const deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    std::vector<const char *> const deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                                                        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME};
 
     if (!CheckVkDeviceExtensions(basics.physicalDevice, deviceExtensions)) {
         logger->Severef("CheckVkDeviceExtensions failed.");
@@ -421,6 +423,15 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
 #endif
     };
 
+    vkGetPhysicalDeviceFeatures(basics.physicalDevice, &this->supportedFeatures);
+    if (!this->supportedFeatures.multiDrawIndirect) {
+        logger->Severef(
+            "multiDrawIndirect feature not supported. The engine currently only works with multiDrawIndirect");
+        exit(1);
+    }
+    VkPhysicalDeviceFeatures enabledFeatures = {0};
+    enabledFeatures.multiDrawIndirect = VK_TRUE;
+
     VkDeviceCreateInfo deviceCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                                            nullptr,
                                            0,
@@ -430,7 +441,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
                                            deviceLayers.size() > 0 ? &deviceLayers[0] : nullptr,
                                            static_cast<uint32_t>(deviceExtensions.size()),
                                            deviceExtensions.size() > 0 ? &deviceExtensions[0] : nullptr,
-                                           nullptr};
+                                           &enabledFeatures};
 
     if (vkCreateDevice(basics.physicalDevice, &deviceCreateInfo, nullptr, &basics.device) != VK_SUCCESS) {
         logger->Severef("Couldn't create device.");
