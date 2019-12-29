@@ -244,6 +244,9 @@ void RenderSystem::SubmitSwap()
 void RenderSystem::Prepass(std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
+    if (batches.size() == 0) {
+        return;
+    }
     auto & currFrame = frameInfo[currFrameInfoIdx];
     auto res = renderer->GetResolution();
 
@@ -338,6 +341,9 @@ void RenderSystem::PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const &
 void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
+    if (batches.size() == 0) {
+        return;
+    }
     auto & currFrame = frameInfo[currFrameInfoIdx];
 
     if (!currFrame.meshUniformsDescriptorSet) {
@@ -394,6 +400,9 @@ void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatc
 void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
+    if (batches.size() == 0) {
+        return;
+    }
     auto & currFrame = frameInfo[currFrameInfoIdx];
 
     if (!currFrame.meshUniformsDescriptorSet) {
