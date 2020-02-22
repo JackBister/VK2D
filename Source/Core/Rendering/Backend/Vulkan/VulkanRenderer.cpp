@@ -479,7 +479,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
 
     {
         std::vector<VkDescriptorPoolSize> poolSizes(
-            {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 50}, {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 50}});
+            {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100}, {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100}});
 
         VkDescriptorPoolCreateInfo ci = {};
         ci.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
