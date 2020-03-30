@@ -1,6 +1,7 @@
 #include "Core/Components/CameraComponent.h"
 
 #include "glm/gtc/matrix_transform.hpp"
+#include <optick/optick.h>
 
 #include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
@@ -122,6 +123,11 @@ SerializedObject CameraComponent::Serialize() const
 
 void CameraComponent::OnEvent(HashedString name, EventArgs args)
 {
+    OPTICK_EVENT();
+#if _DEBUG
+    OPTICK_TAG("EventName", name.c_str());
+#endif
+
     if (name == "BeginPlay" && defaultsToMain) {
         GameModule::TakeCameraFocus(entity);
     } else if (name == "TakeCameraFocus") {

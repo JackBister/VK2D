@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <optick/optick.h>
+
 #include "Core/Components/component.h"
 #include "Core/Logging/Logger.h"
 
@@ -19,6 +21,11 @@ REFLECT_STRUCT_END()
 
 void Entity::FireEvent(HashedString ename, EventArgs args)
 {
+    OPTICK_EVENT();
+#if _DEBUG
+    OPTICK_TAG("EventName", ename.c_str());
+#endif
+
     for (auto const & c : components) {
         if (c->isActive) {
             // Only send tick event if component::receiveTicks is true

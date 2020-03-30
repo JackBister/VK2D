@@ -1,6 +1,7 @@
 ﻿#include "Core/Components/PhysicsComponent.h"
 
 #include "BulletCollision/CollisionShapes/btBox2dShape.h"
+#include <optick/optick.h>
 
 #include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
@@ -122,6 +123,10 @@ SerializedObject PhysicsComponent::Serialize() const
 
 void PhysicsComponent::OnEvent(HashedString name, EventArgs args)
 {
+    OPTICK_EVENT();
+#if _DEBUG
+    OPTICK_TAG("EventName", name.c_str());
+#endif
     if (name == "BeginPlay") {
         btVector3 localInertia;
         shape->calculateLocalInertia(mass, localInertia);

@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "glm/gtc/type_ptr.hpp"
+#include <optick/optick.h>
 
 #include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
@@ -81,6 +82,11 @@ SerializedObject SpriteComponent::Serialize() const
 
 void SpriteComponent::OnEvent(HashedString name, EventArgs args)
 {
+    OPTICK_EVENT();
+#if _DEBUG
+    OPTICK_TAG("EventName", name.c_str());
+#endif
+
     if (name == "PreRender") {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
         builder->WithSpriteInstanceUpdate({entity->transform.GetLocalToWorld(), spriteInstance});
