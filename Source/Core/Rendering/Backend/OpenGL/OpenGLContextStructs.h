@@ -11,6 +11,8 @@ struct OpenGLBufferHandle : BufferHandle {
     GLuint nativeHandle = 0;
     size_t offset = 0;
     GLenum elementType = 0;
+    uint32_t usage = 0;
+    uint32_t memoryProperties = 0;
 };
 
 struct OpenGLDescriptorSet : DescriptorSet {

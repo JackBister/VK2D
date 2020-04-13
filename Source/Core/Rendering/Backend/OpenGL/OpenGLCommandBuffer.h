@@ -29,8 +29,9 @@ public:
     void CmdBindIndexBuffer(BufferHandle * buffer, size_t offset, CommandBuffer::IndexType indexType) final override;
     void CmdBindPipeline(RenderPassHandle::PipelineBindPoint, PipelineHandle *) final override;
     void CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride) final override;
-    virtual void CmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
-                         uint32_t firstInstance) override;
+    void CmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
+                 uint32_t firstInstance) final override;
+    void CmdDrawIndirect(BufferHandle * buffer, size_t offset, uint32_t drawCount) final override;
     void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                         int32_t vertexOffset) final override;
     void CmdEndRenderPass() final override;
@@ -54,6 +55,7 @@ private:
         BIND_PIPELINE,
         BIND_VERTEX_BUFFER,
         DRAW,
+        DRAW_INDIRECT,
         DRAW_INDEXED,
         END_RENDERPASS,
         EXECUTE_COMMANDS,
@@ -112,6 +114,11 @@ private:
         uint32_t firstVertex;
         uint32_t firstInstance;
     };
+    struct DrawIndirectArgs {
+        GLuint buffer;
+        size_t offset;
+        uint32_t drawCount;
+    };
     struct DrawIndexedArgs {
         GLsizei count;
         // Why the hell does OpenGL want a pointer for this?
@@ -146,8 +153,8 @@ private:
     };
     using RenderCommand =
         std::variant<BeginRenderPassArgs, BindDescriptorSetArgs, BindIndexBufferArgs, BindPipelineArgs,
-                     BindVertexBufferArgs, DrawArgs, DrawIndexedArgs, EndRenderPassArgs, ExecuteCommandsArgs,
-                     ExecuteCommandsVectorArgs, SetScissorArgs, SetViewportArgs, UpdateBufferArgs>;
+                     BindVertexBufferArgs, DrawArgs, DrawIndirectArgs, DrawIndexedArgs, EndRenderPassArgs,
+                     ExecuteCommandsArgs, ExecuteCommandsVectorArgs, SetScissorArgs, SetViewportArgs, UpdateBufferArgs>;
 
     /*
             The list of commands to execute

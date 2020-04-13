@@ -126,6 +126,11 @@ void OpenGLCommandBuffer::CmdDraw(uint32_t vertexCount, uint32_t instanceCount, 
     commandList.push_back(DrawArgs{vertexCount, instanceCount, firstVertex, firstInstance});
 }
 
+void OpenGLCommandBuffer::CmdDrawIndirect(BufferHandle * buffer, size_t offset, uint32_t drawCount)
+{
+    commandList.push_back(DrawIndirectArgs{((OpenGLBufferHandle *)buffer)->nativeHandle, offset, drawCount});
+}
+
 void OpenGLCommandBuffer::CmdEndRenderPass() {}
 
 void OpenGLCommandBuffer::CmdExecuteCommands(uint32_t commandBufferCount, CommandBuffer ** pCommandBuffers)
@@ -244,6 +249,12 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
             auto args = std::get<DrawArgs>(rc);
             glDrawArraysInstancedBaseInstance(
                 GL_TRIANGLES, args.firstVertex, args.vertexCount, args.instanceCount, args.firstInstance);
+            break;
+        }
+        case RenderCommandType::DRAW_INDIRECT: {
+            auto args = std::get<DrawIndirectArgs>(rc);
+            glBindBuffer(GL_DRAW_INDIRECT_BUFFER, args.buffer);
+            glMultiDrawArraysIndirect(GL_TRIANGLES, (void *)args.offset, (GLsizei)args.drawCount, (GLsizei)16);
             break;
         }
         case RenderCommandType::DRAW_INDEXED: {

@@ -20,8 +20,15 @@ void OpenGLResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data,
 BufferHandle * OpenGLResourceContext::CreateBuffer(BufferCreateInfo const & bc)
 {
     auto ret = (OpenGLBufferHandle *)allocator.allocate(sizeof(OpenGLBufferHandle));
+    GLbitfield flags = GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT;
+    if (bc.memoryProperties & MemoryPropertyFlagBits::HOST_COHERENT_BIT) {
+        flags |= GL_MAP_COHERENT_BIT | GL_MAP_PERSISTENT_BIT;
+    }
+
     glCreateBuffers(1, &ret->nativeHandle);
-    glNamedBufferData(ret->nativeHandle, bc.size, nullptr, GL_STATIC_DRAW);
+    glNamedBufferStorage(ret->nativeHandle, bc.size, nullptr, flags);
+    ret->usage = bc.usage;
+    ret->memoryProperties = bc.memoryProperties;
     return ret;
 }
 
@@ -32,8 +39,12 @@ void OpenGLResourceContext::DestroyBuffer(BufferHandle * handle)
 
 uint8_t * OpenGLResourceContext::MapBuffer(BufferHandle * handle, size_t offset, size_t size)
 {
-    return (uint8_t *)glMapNamedBufferRange(
-        ((OpenGLBufferHandle *)handle)->nativeHandle, offset, size, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT);
+    auto nativeHandle = (OpenGLBufferHandle *)handle;
+    GLbitfield access = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT;
+    if (nativeHandle->memoryProperties & MemoryPropertyFlagBits::HOST_COHERENT_BIT) {
+        access |= GL_MAP_COHERENT_BIT | GL_MAP_PERSISTENT_BIT;
+    }
+    return (uint8_t *)glMapNamedBufferRange(nativeHandle->nativeHandle, offset, size, access);
 }
 
 void OpenGLResourceContext::UnmapBuffer(BufferHandle * handle)
