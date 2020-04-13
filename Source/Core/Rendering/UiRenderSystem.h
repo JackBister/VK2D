@@ -22,11 +22,15 @@ public:
 private:
     struct FrameInfo {
         BufferHandle * indexBuffer = nullptr;
+        uint8_t * indexBufferMapped = nullptr;
         size_t indexBufferSize = 0;
 
         BufferHandle * vertexBuffer = nullptr;
+        uint8_t * vertexBufferMapped = nullptr;
         size_t vertexBufferSize = 0;
     };
+
+    void RecreateBuffers(uint32_t frameIndex, size_t totalVertexSize, size_t totalIndexSize);
 
     // FrameInfo related properties
     std::vector<FrameInfo> frameData;

@@ -78,6 +78,30 @@ void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuf
     if (totalIndexSize == 0 || totalVertexSize == 0) {
         return;
     }
+    if (fd.vertexBuffer == nullptr || fd.vertexBufferSize < totalVertexSize || fd.indexBuffer == nullptr ||
+        fd.indexBufferSize < totalIndexSize) {
+        RecreateBuffers(frameIndex, totalVertexSize, totalIndexSize);
+    }
+
+    size_t currIndexPos = 0;
+    size_t currVertexPos = 0;
+    for (int i = 0; i < data->CmdListsCount; ++i) {
+        auto cmdList = data->CmdLists[i];
+        memcpy(
+            fd.indexBufferMapped + currIndexPos, cmdList->IdxBuffer.Data, cmdList->IdxBuffer.Size * sizeof(ImDrawIdx));
+        memcpy(fd.vertexBufferMapped + currVertexPos,
+               cmdList->VtxBuffer.Data,
+               cmdList->VtxBuffer.Size * sizeof(ImDrawVert));
+        currIndexPos += cmdList->IdxBuffer.Size * sizeof(ImDrawIdx);
+        currVertexPos += cmdList->VtxBuffer.Size * sizeof(ImDrawVert);
+    }
+
+    commandBuffer->CmdUpdateBuffer(resolutionUniformBuffer, 0, sizeof(glm::vec2), (uint32_t *)&res);
+}
+
+void UiRenderSystem::RecreateBuffers(uint32_t frameIndex, size_t totalVertexSize, size_t totalIndexSize)
+{
+    auto & fd = frameData[frameIndex];
     Semaphore resourceCreationFinished;
     renderer->CreateResources([&](ResourceCreationContext & ctx) {
         if (fd.vertexBuffer == nullptr || fd.vertexBufferSize < totalVertexSize) {
@@ -86,10 +110,11 @@ void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuf
             }
             fd.vertexBufferSize = totalVertexSize;
             ResourceCreationContext::BufferCreateInfo ci;
-            ci.memoryProperties = MemoryPropertyFlagBits::DEVICE_LOCAL_BIT;
+            ci.memoryProperties = MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
             ci.size = totalVertexSize;
-            ci.usage = BufferUsageFlags::VERTEX_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT;
+            ci.usage = BufferUsageFlags::VERTEX_BUFFER_BIT;
             fd.vertexBuffer = ctx.CreateBuffer(ci);
+            fd.vertexBufferMapped = ctx.MapBuffer(fd.vertexBuffer, 0, totalVertexSize);
         }
         if (fd.indexBuffer == nullptr || fd.indexBufferSize < totalIndexSize) {
             if (fd.indexBuffer != nullptr) {
@@ -97,31 +122,15 @@ void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuf
             }
             fd.indexBufferSize = totalIndexSize;
             ResourceCreationContext::BufferCreateInfo ci;
-            ci.memoryProperties = MemoryPropertyFlagBits::DEVICE_LOCAL_BIT;
+            ci.memoryProperties = MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
             ci.size = totalIndexSize;
-            ci.usage = BufferUsageFlags::INDEX_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT;
+            ci.usage = BufferUsageFlags::INDEX_BUFFER_BIT;
             fd.indexBuffer = ctx.CreateBuffer(ci);
-        }
-        size_t currIndexPos = 0;
-        size_t currVertexPos = 0;
-        for (int i = 0; i < data->CmdListsCount; ++i) {
-            auto cmdList = data->CmdLists[i];
-            ctx.BufferSubData(fd.indexBuffer,
-                              (uint8_t *)cmdList->IdxBuffer.Data,
-                              currIndexPos,
-                              cmdList->IdxBuffer.Size * sizeof(ImDrawIdx));
-            ctx.BufferSubData(fd.vertexBuffer,
-                              (uint8_t *)cmdList->VtxBuffer.Data,
-                              currVertexPos,
-                              cmdList->VtxBuffer.Size * sizeof(ImDrawVert));
-            currIndexPos += cmdList->IdxBuffer.Size * sizeof(ImDrawIdx);
-            currVertexPos += cmdList->VtxBuffer.Size * sizeof(ImDrawVert);
+            fd.indexBufferMapped = ctx.MapBuffer(fd.indexBuffer, 0, totalIndexSize);
         }
         resourceCreationFinished.Signal();
     });
     resourceCreationFinished.Wait();
-
-    commandBuffer->CmdUpdateBuffer(resolutionUniformBuffer, 0, sizeof(glm::vec2), (uint32_t *)&res);
 }
 
 void UiRenderSystem::RenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer)
