@@ -4,11 +4,14 @@ class BufferHandle;
 class DescriptorSet;
 class RenderSystem;
 
-class SpriteInstanceResources
+using CameraInstanceId = size_t;
+
+class CameraInstance
 {
     friend class RenderSystem;
 
 private:
-    BufferHandle * uniformBuffer;
+    CameraInstanceId id;
     DescriptorSet * descriptorSet;
+    BufferHandle * uniformBuffer;
 };

@@ -1,11 +1,17 @@
 #pragma once
 
+class BufferHandle;
+class DescriptorSet;
 class RenderSystem;
+
+using SpriteInstanceId = size_t;
 
 class SpriteInstance
 {
     friend class RenderSystem;
 
 private:
-    size_t id;
+    SpriteInstanceId id;
+    BufferHandle * uniformBuffer;
+    DescriptorSet * descriptorSet;
 };

@@ -5,5 +5,5 @@
 #include "Core/Rendering/SpriteInstance.h"
 
 struct SubmittedSprite {
-    SpriteInstance spriteInstance;
+    SpriteInstanceId spriteInstance;
 };

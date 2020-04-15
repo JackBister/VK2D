@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 
 #include "Core/Components/component.h"
-#include "Core/Rendering/CameraHandle.h"
+#include "Core/Rendering/CameraInstance.h"
 
 struct OrthoCamera {
     float viewSize;
@@ -56,5 +56,5 @@ private:
     glm::mat4 projection;
     glm::mat4 view;
 
-    CameraHandle cameraHandle;
+    CameraInstanceId cameraHandle;
 };

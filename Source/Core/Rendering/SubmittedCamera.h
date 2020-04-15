@@ -2,8 +2,8 @@
 
 #include <glm/glm.hpp>
 
-#include "Core/Rendering/CameraHandle.h"
+#include "Core/Rendering/CameraInstance.h"
 
 struct SubmittedCamera {
-    CameraHandle cameraHandle;
+    CameraInstanceId cameraHandle;
 };

@@ -32,7 +32,7 @@ Deserializable * StaticMeshComponent::s_Deserialize(DeserializationContext * des
         existingMesh = StaticMeshLoaderObj().LoadFile(path.string());
     }
     auto ret = new StaticMeshComponent(file, existingMesh);
-    ret->staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance();
+    ret->staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance(existingMesh);
     return ret;
 }
 

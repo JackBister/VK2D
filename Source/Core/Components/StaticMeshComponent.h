@@ -29,5 +29,5 @@ private:
     std::string file;
     StaticMesh * mesh;
 
-    StaticMeshInstance staticMeshInstance;
+    StaticMeshInstanceId staticMeshInstance;
 };

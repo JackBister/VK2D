@@ -4,7 +4,7 @@
 
 #include <glm/glm.hpp>
 
-#include "CameraHandle.h"
+#include "CameraInstance.h"
 #include "SpriteInstance.h"
 #include "StaticMeshInstance.h"
 
@@ -13,17 +13,17 @@ class RenderSystem;
 struct UpdateCamera {
     glm::mat4 view;
     glm::mat4 projection;
-    CameraHandle cameraHandle;
+    CameraInstanceId cameraHandle;
 };
 
 struct UpdateSpriteInstance {
     glm::mat4 localToWorld;
-    SpriteInstance spriteInstance;
+    SpriteInstanceId spriteInstance;
 };
 
 struct UpdateStaticMeshInstance {
     glm::mat4 localToWorld;
-    StaticMeshInstance staticMeshInstance;
+    StaticMeshInstanceId staticMeshInstance;
 };
 
 class PreRenderCommands

@@ -23,7 +23,7 @@ public:
     REFLECT()
     REFLECT_INHERITANCE()
 private:
-    SpriteInstance spriteInstance;
+    SpriteInstanceId spriteInstance;
 
     std::string file;
 

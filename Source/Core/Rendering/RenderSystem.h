@@ -6,13 +6,10 @@
 
 #include "Core/Rendering/Backend/Abstract/RendererConfig.h"
 #include "Core/Rendering/Backend/Renderer.h"
-#include "Core/Rendering/CameraHandle.h"
-#include "Core/Rendering/CameraResources.h"
+#include "Core/Rendering/CameraInstance.h"
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/SpriteInstance.h"
-#include "Core/Rendering/SpriteInstanceResources.h"
 #include "Core/Rendering/StaticMeshInstance.h"
-#include "Core/Rendering/StaticMeshInstanceResources.h"
 #include "Core/Rendering/SubmittedFrame.h"
 #include "Core/Rendering/UiRenderSystem.h"
 
@@ -69,14 +66,14 @@ public:
 
     glm::ivec2 GetResolution();
 
-    CameraHandle CreateCamera();
-    void DestroyCamera(CameraHandle camera);
+    CameraInstanceId CreateCamera();
+    void DestroyCamera(CameraInstanceId camera);
 
-    SpriteInstance CreateSpriteInstance(Image * image);
-    void DestroySpriteInstance(SpriteInstance spriteInstance);
+    SpriteInstanceId CreateSpriteInstance(Image * image);
+    void DestroySpriteInstance(SpriteInstanceId spriteInstance);
 
-    StaticMeshInstance CreateStaticMeshInstance();
-    void DestroyStaticMeshInstance(StaticMeshInstance staticMesh);
+    StaticMeshInstanceId CreateStaticMeshInstance(StaticMesh * mesh);
+    void DestroyStaticMeshInstance(StaticMeshInstanceId staticMesh);
 
     void DebugOverrideBackbuffer(ImageViewHandle * image);
 
@@ -173,16 +170,16 @@ private:
     BufferHandle * quadVbo;
 
     // cameras
-    std::vector<CameraResources> cameras;
-    CameraResources * GetCamera(CameraHandle);
+    std::vector<CameraInstance> cameras;
+    CameraInstance * GetCamera(CameraInstanceId);
 
     // sprites
-    std::vector<SpriteInstanceResources> sprites;
-    SpriteInstanceResources * GetSpriteInstance(SpriteInstance);
+    std::vector<SpriteInstance> sprites;
+    SpriteInstance * GetSpriteInstance(SpriteInstanceId);
 
     // static meshes
-    std::vector<StaticMeshInstanceResources> staticMeshes;
-    StaticMeshInstanceResources * GetStaticMeshInstance(StaticMeshInstance);
+    std::vector<StaticMeshInstance> staticMeshes;
+    StaticMeshInstance * GetStaticMeshInstance(StaticMeshInstanceId);
 
     // Other systems
     Renderer * renderer;

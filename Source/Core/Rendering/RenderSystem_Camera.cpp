@@ -3,11 +3,12 @@
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
 
-CameraHandle RenderSystem::CreateCamera()
+CameraInstanceId RenderSystem::CreateCamera()
 {
     // TODO: multithread danger?
     cameras.emplace_back();
     auto id = cameras.size() - 1;
+    cameras[id].id = id;
     Semaphore sem;
     renderer->CreateResources([this, &sem, id](ResourceCreationContext & ctx) {
         auto layout =
@@ -27,12 +28,10 @@ CameraHandle RenderSystem::CreateCamera()
         sem.Signal();
     });
     sem.Wait();
-    CameraHandle ret;
-    ret.id = id;
-    return ret;
+    return id;
 }
 
-void RenderSystem::DestroyCamera(CameraHandle cameraHandle)
+void RenderSystem::DestroyCamera(CameraInstanceId cameraHandle)
 {
     auto cam = GetCamera(cameraHandle);
     auto descriptorSet = cam->descriptorSet;
@@ -43,7 +42,7 @@ void RenderSystem::DestroyCamera(CameraHandle cameraHandle)
     });
 }
 
-CameraResources * RenderSystem::GetCamera(CameraHandle cameraHandle)
+CameraInstance * RenderSystem::GetCamera(CameraInstanceId id)
 {
-    return &this->cameras[cameraHandle.id];
+    return &this->cameras[id];
 }

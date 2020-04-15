@@ -1,11 +1,15 @@
 #pragma once
 
 class RenderSystem;
+class StaticMesh;
+
+using StaticMeshInstanceId = size_t;
 
 class StaticMeshInstance
 {
     friend class RenderSystem;
 
 private:
-    size_t id;
+    StaticMeshInstanceId id;
+    StaticMesh * mesh;
 };

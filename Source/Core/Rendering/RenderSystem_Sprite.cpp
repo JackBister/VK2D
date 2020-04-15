@@ -4,10 +4,11 @@
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
 
-SpriteInstance RenderSystem::CreateSpriteInstance(Image * image)
+SpriteInstanceId RenderSystem::CreateSpriteInstance(Image * image)
 {
     sprites.emplace_back();
     auto id = sprites.size() - 1;
+    sprites[id].id = id;
 
     Semaphore sem;
     renderer->CreateResources([this, &sem, id, image](ResourceCreationContext & ctx) {
@@ -34,13 +35,10 @@ SpriteInstance RenderSystem::CreateSpriteInstance(Image * image)
         sem.Signal();
     });
     sem.Wait();
-
-    SpriteInstance ret;
-    ret.id = id;
-    return ret;
+    return id;
 }
 
-void RenderSystem::DestroySpriteInstance(SpriteInstance spriteInstance)
+void RenderSystem::DestroySpriteInstance(SpriteInstanceId spriteInstance)
 {
     auto sprite = GetSpriteInstance(spriteInstance);
     auto descriptorSet = sprite->descriptorSet;
@@ -51,7 +49,7 @@ void RenderSystem::DestroySpriteInstance(SpriteInstance spriteInstance)
     });
 }
 
-SpriteInstanceResources * RenderSystem::GetSpriteInstance(SpriteInstance spriteInstance)
+SpriteInstance * RenderSystem::GetSpriteInstance(SpriteInstanceId id)
 {
-    return &sprites[spriteInstance.id];
+    return &sprites[id];
 }
