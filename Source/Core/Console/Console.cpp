@@ -70,6 +70,13 @@ void Init(RenderSystem * inRenderSystem)
             logger->Infof("%s", command.GetDocString().c_str());
         });
     RegisterCommand(docCommand);
+
+    CommandDefinition listCommand("list_commands", "list_commands - Lists all available commands.", 0, [](auto args) {
+        for (auto const & command : commands) {
+            logger->Infof("%s", command.first.c_str());
+        }
+    });
+    RegisterCommand(listCommand);
 }
 
 void OnGui()

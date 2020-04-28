@@ -29,7 +29,7 @@ Entity * mainCameraEntity;
 CameraComponent * mainCameraComponent;
 PhysicsWorld * physicsWorld;
 RenderSystem * renderSystem;
-std::vector<Scene *> scenes;
+Scene * scene = nullptr;
 
 std::vector<std::function<void()>> onFrameStart;
 
@@ -88,6 +88,11 @@ PhysicsWorld * GetPhysicsWorld()
     return physicsWorld;
 }
 
+Scene * GetScene()
+{
+    return scene;
+}
+
 void Init(RenderSystem * inRenderSystem)
 {
     // TODO: This is dumb
@@ -98,20 +103,9 @@ void Init(RenderSystem * inRenderSystem)
     Time::Start();
 
     CommandDefinition dumpSceneCommand(
-        "scene_dump",
-        "scene_dump <from_file> <to_file> - Dumps the scene load from <from_file> into <to_file>",
-        2,
-        [](auto args) {
-            auto fromFile = args[0];
-            auto toFile = args[1];
-
-            for (auto scene : scenes) {
-                if (scene->GetFileName() == fromFile) {
-                    scene->SerializeToFile(toFile);
-                    return;
-                }
-            }
-            logger->Warnf("No scene with name '%s' found", fromFile.c_str());
+        "scene_dump", "scene_dump <to_file> - Dumps the scene into <to_file>", 1, [](auto args) {
+            auto toFile = args[0];
+            scene->SerializeToFile(toFile);
         });
     Console::RegisterCommand(dumpSceneCommand);
 
@@ -123,25 +117,16 @@ void Init(RenderSystem * inRenderSystem)
     Console::RegisterCommand(loadSceneCommand);
 
     CommandDefinition unloadSceneCommand(
-        "scene_unload", "scene_unload <filename> - Unloads the scene defined in the given file.", 1, [](auto args) {
-            auto fileName = args[0];
-            for (auto scene : scenes) {
-                if (scene->GetFileName() == fileName) {
-                    scene->Unload();
-                    break;
-                }
-            }
-            scenes.erase(std::remove_if(scenes.begin(),
-                                        scenes.end(),
-                                        [fileName](Scene * scene) { return scene->GetFileName() == fileName; }),
-                         scenes.end());
-        });
+        "scene_unload", "scene_unload - Unloads the scene.", 0, [](auto args) { scene->Unload(); });
     Console::RegisterCommand(unloadSceneCommand);
 }
 
 void LoadScene(std::string const & fileName)
 {
-    scenes.push_back(Scene::FromFile(fileName));
+    if (scene) {
+        scene->Unload();
+    }
+    scene = Scene::FromFile(fileName);
 }
 
 void OnFrameStart(std::function<void()> fun)
@@ -266,5 +251,13 @@ void TickEntities()
     for (auto entity : entities) {
         entity->FireEvent("Tick", {{"deltaTime", Time::GetDeltaTime()}});
     }
+}
+
+void UnloadScene()
+{
+    OPTICK_EVENT();
+
+    scene->Unload();
+    scene = nullptr;
 }
 };

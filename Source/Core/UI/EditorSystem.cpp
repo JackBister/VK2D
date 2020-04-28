@@ -11,9 +11,12 @@
 #define REFLECT_IMPL
 #include "Core/Reflect.h"
 #undef REFLECT_IMPL
+#include "Core/Resources/Scene.h"
 #include "Core/dtime.h"
 
 static const auto logger = Logger::Create("EditorSystem");
+
+void SaveScene();
 
 void DrawEditorNode(EditorNode * e)
 {
@@ -79,6 +82,10 @@ const float CAMERA_DRAG_INCREASE_STEP = 20.f;
 float cameraDragMultiplier = 30.f;
 Transform cameraTransformBeforeEditorWasOpened;
 
+// Scene menu state
+char newSceneFilename[256];
+size_t newSceneFilenameLen = sizeof(newSceneFilename);
+
 // Entity Editor state
 bool isEntityEditorOpen = false;
 struct {
@@ -138,38 +145,59 @@ void OnGui()
                     glm::rotate(glm::mat4(1.f), dragDelta.y * Time::GetUnscaledDeltaTime(), glm::vec3(-1.f, 0.f, 0.f));
             }
 
-            if (Input::GetKey(KC_w)) {
-                auto fwd = GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(0.f, 0.f, -1.f, 0.f);
-                fwd *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
-                cameraPos.x += fwd.x;
-                cameraPos.y += fwd.y;
-                cameraPos.z += fwd.z;
-            } else if (Input::GetKey(KC_s)) {
-                auto bwd = GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(0.f, 0.f, 1.f, 0.f);
-                bwd *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
-                cameraPos.x += bwd.x;
-                cameraPos.y += bwd.y;
-                cameraPos.z += bwd.z;
-            }
+            if (!io.KeyAlt && !io.KeyCtrl && !io.KeyShift && !ImGui::IsAnyWindowFocused()) {
+                if (Input::GetKey(KC_w)) {
+                    auto fwd =
+                        GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(0.f, 0.f, -1.f, 0.f);
+                    fwd *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
+                    cameraPos.x += fwd.x;
+                    cameraPos.y += fwd.y;
+                    cameraPos.z += fwd.z;
+                } else if (Input::GetKey(KC_s)) {
+                    auto bwd = GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(0.f, 0.f, 1.f, 0.f);
+                    bwd *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
+                    cameraPos.x += bwd.x;
+                    cameraPos.y += bwd.y;
+                    cameraPos.z += bwd.z;
+                }
 
-            if (Input::GetKey(KC_a)) {
-                auto left = GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(-1.f, 0.f, 0.f, 0.f);
-                left *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
-                cameraPos.x += left.x;
-                cameraPos.y += left.y;
-                cameraPos.z += left.z;
-            } else if (Input::GetKey(KC_d)) {
-                auto right = GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(1.f, 0.f, 0.f, 0.f);
-                right *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
-                cameraPos.x += right.x;
-                cameraPos.y += right.y;
-                cameraPos.z += right.z;
+                if (Input::GetKey(KC_a)) {
+                    auto left =
+                        GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(-1.f, 0.f, 0.f, 0.f);
+                    left *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
+                    cameraPos.x += left.x;
+                    cameraPos.y += left.y;
+                    cameraPos.z += left.z;
+                } else if (Input::GetKey(KC_d)) {
+                    auto right =
+                        GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(1.f, 0.f, 0.f, 0.f);
+                    right *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
+                    cameraPos.x += right.x;
+                    cameraPos.y += right.y;
+                    cameraPos.z += right.z;
+                }
             }
 
             GameModule::GetMainCamera()->transform.SetPosition(cameraPos);
             GameModule::GetMainCamera()->transform.SetRotation(cameraRot);
         }
+        bool newSceneDialogOpened = false;
+        if (io.KeyCtrl && Input::GetKeyDown(KC_n)) {
+            newSceneDialogOpened = true;
+        }
+        if (io.KeyCtrl && Input::GetKeyDown(KC_s)) {
+            SaveScene();
+        }
         if (ImGui::BeginMainMenuBar()) {
+            if (ImGui::BeginMenu("Scene")) {
+                if (ImGui::MenuItem("New Scene")) {
+                    newSceneDialogOpened = true;
+                }
+                if (ImGui::MenuItem("Save Scene")) {
+                    SaveScene();
+                }
+                ImGui::EndMenu();
+            }
             if (ImGui::BeginMenu("Entities")) {
                 if (ImGui::MenuItem("Entity Editor", nullptr, &isEntityEditorOpen)) {
                     entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
@@ -184,6 +212,35 @@ void OnGui()
                 isWorldPaused = true;
             }
             ImGui::EndMainMenuBar();
+        }
+
+        if (newSceneDialogOpened) {
+            ImGui::OpenPopup("New Scene");
+        }
+        if (ImGui::BeginPopupModal("New Scene")) {
+            ImGui::SetWindowSize("New Scene", ImVec2(300, 100));
+            auto hasInputtedText = ImGui::InputText("File name", newSceneFilename, newSceneFilenameLen);
+            if (newSceneDialogOpened) {
+                ImGui::SetItemDefaultFocus();
+                ImGui::SetKeyboardFocusHere(-1);
+            }
+            if (ImGui::Button("OK")) {
+                auto parent = std::filesystem::path(newSceneFilename).parent_path();
+                std::filesystem::create_directories(parent);
+                auto newScene = Scene::Create(newSceneFilename);
+                newScene->AddEntity(GameModule::GetMainCamera());
+                newScene->SerializeToFile(newSceneFilename);
+
+                GameModule::LoadScene(newSceneFilename);
+                entityEditor.currEntityIndex = 0;
+                entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+
+                ImGui::CloseCurrentPopup();
+            }
+            if (ImGui::Button("Close")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
         }
 
         if (isEntityEditorOpen && ImGui::Begin("Entity Editor")) {
@@ -211,4 +268,10 @@ void OnGui()
         }
     }
 }
+}
+
+void SaveScene()
+{
+    auto scene = GameModule::GetScene();
+    scene->SerializeToFile(scene->GetFileName());
 }

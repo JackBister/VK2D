@@ -111,6 +111,11 @@ Scene * Scene::FromFile(std::string const & fileName)
     return ret;
 }
 
+std::unique_ptr<Scene> Scene::Create(std::string const & fileName)
+{
+    return std::unique_ptr<Scene>(new Scene(fileName, std::vector<std::string>(), std::vector<Entity *>()));
+}
+
 void Scene::SerializeToFile(std::string const & filename)
 {
     // TODO: input

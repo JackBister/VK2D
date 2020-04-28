@@ -67,7 +67,7 @@ static nlohmann::json SerializeObject(SerializedObject const & obj);
 
 static nlohmann::json SerializeArray(SerializedArray const & arr)
 {
-    nlohmann::json ret;
+    nlohmann::json ret = nlohmann::json::array();
 
     for (size_t i = 0; i < arr.size(); ++i) {
         auto const & element = arr[i];
@@ -91,7 +91,7 @@ static nlohmann::json SerializeArray(SerializedArray const & arr)
 
 static nlohmann::json SerializeObject(SerializedObject const & obj)
 {
-    nlohmann::json j;
+    nlohmann::json j = nlohmann::json::object();
 
     for (auto kv : obj.GetValues()) {
         if (kv.second.index() == SerializedValue::BOOL) {
