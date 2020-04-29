@@ -247,6 +247,15 @@ void RenderSystem::Prepass(SubmittedFrame const & frame, std::vector<MeshBatch> 
         prepass, currFrame.prepassFramebuffer, {{0, 0}, {res.x, res.y}}, 1, &depthClear};
     currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::INLINE);
 
+    if (!currFrame.meshUniformsDescriptorSet) {
+        // If there are no meshes in the scene, the prepass is not used.
+        // TODO: We begin and end the renderpass just to transition the prepass depth image into the right layout.
+        // This is slightly wasteful but I currently think it's more work than it's worth to create alternate
+        // framebuffers and render passes for sprite-only scenes
+        currFrame.mainCommandBuffer->CmdEndRenderPass();
+        return;
+    }
+
     CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
     currFrame.mainCommandBuffer->CmdSetViewport(0, 1, &viewport);
 
@@ -313,6 +322,11 @@ void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<Mesh
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
+
+    if (!currFrame.meshUniformsDescriptorSet) {
+        return;
+    }
+
     auto res = renderer->GetResolution();
 
     CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
@@ -365,6 +379,11 @@ void RenderSystem::RenderTransparentMeshes(SubmittedCamera const & camera, std::
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
+
+    if (!currFrame.meshUniformsDescriptorSet) {
+        return;
+    }
+
     auto res = renderer->GetResolution();
 
     CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
