@@ -5,11 +5,12 @@
 
 #include "Core/Components/Component.h"
 
+class PhysicsComponentDeserializer;
+
 class PhysicsComponent : public Component, public btMotionState
 {
 public:
-    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
-                                          SerializedObject const & obj);
+    friend class PhysicsComponentDeserializer;
 
     PhysicsComponent() { receiveTicks = false; }
     ~PhysicsComponent() override;

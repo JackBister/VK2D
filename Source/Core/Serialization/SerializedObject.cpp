@@ -49,7 +49,7 @@ SerializedObject SerializedObject::Builder::Build()
 std::optional<bool> SerializedObject::GetBool(std::string const & key) const
 {
     auto it = FindByKey(key);
-    if (it == values.end() || it->second.index() != SerializedValue::BOOL) {
+    if (it == values.end() || it->second.GetType() != SerializedValueType::BOOL) {
         return {};
     }
     return std::get<bool>(it->second);
@@ -58,7 +58,7 @@ std::optional<bool> SerializedObject::GetBool(std::string const & key) const
 std::optional<double> SerializedObject::GetNumber(std::string const & key) const
 {
     auto it = FindByKey(key);
-    if (it == values.end() || it->second.index() != SerializedValue::DOUBLE) {
+    if (it == values.end() || it->second.GetType() != SerializedValueType::DOUBLE) {
         return {};
     }
     return std::get<double>(it->second);
@@ -67,7 +67,7 @@ std::optional<double> SerializedObject::GetNumber(std::string const & key) const
 std::optional<std::string> SerializedObject::GetString(std::string const & key) const
 {
     auto it = FindByKey(key);
-    if (it == values.end() || it->second.index() != SerializedValue::STRING) {
+    if (it == values.end() || it->second.GetType() != SerializedValueType::STRING) {
         return {};
     }
     return std::get<std::string>(it->second);
@@ -76,7 +76,7 @@ std::optional<std::string> SerializedObject::GetString(std::string const & key) 
 std::optional<SerializedObject> SerializedObject::GetObject(std::string const & key) const
 {
     auto it = FindByKey(key);
-    if (it == values.end() || it->second.index() != SerializedValue::OBJECT) {
+    if (it == values.end() || it->second.GetType() != SerializedValueType::OBJECT) {
         return {};
     }
     return std::get<SerializedObject>(it->second);
@@ -85,10 +85,19 @@ std::optional<SerializedObject> SerializedObject::GetObject(std::string const & 
 std::optional<std::vector<SerializedValue>> SerializedObject::GetArray(std::string const & key) const
 {
     auto it = FindByKey(key);
-    if (it == values.end() || it->second.index() != SerializedValue::ARRAY) {
+    if (it == values.end() || it->second.GetType() != SerializedValueType::ARRAY) {
         return {};
     }
     return std::get<SerializedArray>(it->second);
+}
+
+std::optional<SerializedValueType> SerializedObject::GetType(std::string const & key) const
+{
+    auto it = FindByKey(key);
+    if (it == values.end()) {
+        return {};
+    }
+    return it->second.GetType();
 }
 
 ValueMap SerializedObject::GetValues() const

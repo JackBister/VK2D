@@ -13,9 +13,6 @@
 class Entity final : public Deserializable
 {
 public:
-    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
-                                          SerializedObject const & obj);
-
     SerializedObject Serialize() const override;
     void FireEvent(HashedString name, EventArgs args = {});
     Component * GetComponent(std::string type) const;

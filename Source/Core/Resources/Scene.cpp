@@ -18,7 +18,61 @@
 
 static const auto logger = Logger::Create("Scene");
 
-static void ReadFile(std::string const & fileName, std::vector<std::string> & dlls, std::vector<Entity *> & entities)
+static SerializedObjectSchema const SCENE_SCHEMA = SerializedObjectSchema({
+    SerializedPropertySchema("dlls", SerializedValueType::ARRAY, SerializedValueType::STRING),
+    SerializedPropertySchema("entities", SerializedValueType::ARRAY, SerializedValueType::OBJECT),
+});
+
+class SceneDeserializer : public Deserializer
+{
+    SerializedObjectSchema GetSchema() final override { return SCENE_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
+    {
+        std::vector<std::string> dlls;
+        std::vector<Entity *> entities;
+
+        auto dllsOpt = obj.GetArray("dlls");
+        if (dllsOpt.has_value()) {
+            for (auto dll : dllsOpt.value()) {
+                auto dllStr = std::get<std::string>(dll);
+                dlls.push_back(dllStr);
+                GameModule::LoadDLL((ctx->workingDirectory / dllStr).string());
+            }
+        }
+
+        auto inputOpt = obj.GetObject("input");
+        if (inputOpt.has_value()) {
+            auto input = inputOpt.value();
+            auto keybindsOpt = input.GetArray("keybinds");
+            for (auto kb : keybindsOpt.value()) {
+                auto keybind = std::get<SerializedObject>(kb);
+                auto keys = keybind.GetArray("keys");
+                for (auto k : keys.value()) {
+                    Input::AddKeybind(keybind.GetString("name").value(), strToKeycode[std::get<std::string>(k)]);
+                }
+            }
+        }
+
+        auto physicsOpt = obj.GetObject("physics");
+        if (physicsOpt.has_value()) {
+            GameModule::DeserializePhysics(ctx, physicsOpt.value());
+        }
+
+        auto serializedEntities = obj.GetArray("entities");
+        for (auto & e : serializedEntities.value()) {
+            Entity * entity = static_cast<Entity *>(Deserializable::Deserialize(ctx, std::get<SerializedObject>(e)));
+            entities.push_back(entity);
+            GameModule::AddEntity(entity);
+        }
+
+        return new Scene(dlls, entities);
+    }
+};
+
+DESERIALIZABLE_IMPL(Scene, new SceneDeserializer())
+
+static Scene * ReadFile(std::string const & fileName)
 {
     FILE * f = fopen(fileName.c_str(), "rb");
     std::string serializedSceneString;
@@ -31,66 +85,24 @@ static void ReadFile(std::string const & fileName, std::vector<std::string> & dl
         serializedSceneString = std::string(buf.begin(), buf.end());
     } else {
         logger->Errorf("LoadFile failed to open fileName=%s", fileName.c_str());
-        // TODO:
-        return;
+        return nullptr;
     }
 
     auto serializedScene = JsonSerializer().Deserialize(serializedSceneString).value();
 
     DeserializationContext context = {std::filesystem::path(fileName).parent_path()};
 
-    auto dllsOpt = serializedScene.GetArray("dlls");
-    if (dllsOpt.has_value()) {
-        for (auto dll : dllsOpt.value()) {
-            if (dll.index() != SerializedValue::STRING) {
-                logger->Errorf("Unexpected non-string in dlls array in scene file.");
-            }
-            auto dllStr = std::get<std::string>(dll);
-            dlls.push_back(dllStr);
-            GameModule::LoadDLL((context.workingDirectory / dllStr).string());
-        }
-    }
-
-    auto inputOpt = serializedScene.GetObject("input");
-    if (inputOpt.has_value()) {
-        auto input = inputOpt.value();
-        auto keybindsOpt = input.GetArray("keybinds");
-        for (auto kb : keybindsOpt.value()) {
-            if (kb.index() != SerializedValue::OBJECT) {
-                logger->Errorf("Unexpected non-object in keybinds array in scene file.");
-            }
-            auto keybind = std::get<SerializedObject>(kb);
-            auto keys = keybind.GetArray("keys");
-            for (auto k : keys.value()) {
-                Input::AddKeybind(keybind.GetString("name").value(), strToKeycode[std::get<std::string>(k)]);
-            }
-        }
-    }
-
-    auto physicsOpt = serializedScene.GetObject("physics");
-    if (physicsOpt.has_value()) {
-        GameModule::DeserializePhysics(&context, physicsOpt.value());
-    }
-
-    auto serializedEntities = serializedScene.GetArray("entities");
-    for (auto & e : serializedEntities.value()) {
-        if (e.index() != SerializedValue::OBJECT) {
-            logger->Errorf("Unexpected non-object in entities array in scene file.");
-        }
-        Entity * entity = static_cast<Entity *>(Deserializable::Deserialize(&context, std::get<SerializedObject>(e)));
-        entities.push_back(entity);
-        GameModule::AddEntity(entity);
-    }
+    return (Scene *)Deserializable::Deserialize(&context, serializedScene);
 }
 
 Scene * Scene::FromFile(std::string const & fileName)
 {
-    std::vector<std::string> dlls;
-    std::vector<Entity *> entities;
 
-    ReadFile(fileName, dlls, entities);
-
-    auto ret = new Scene(fileName, dlls, entities);
+    auto ret = ReadFile(fileName);
+    if (!ret) {
+        return nullptr;
+    }
+    ret->fileName = fileName;
     ResourceManager::AddResource(fileName, ret);
 #if HOT_RELOAD_RESOURCES
     WatchFile(fileName, [fileName]() {
@@ -103,8 +115,18 @@ Scene * Scene::FromFile(std::string const & fileName)
                 return;
             }
 
+            // This is pretty messy
+            auto newScene = ReadFile(fileName);
+            if (!newScene) {
+                logger->Warnf("Failed to reload scene file=%s, will keep existing scene. See previous errors",
+                              fileName.c_str());
+                return;
+            }
+            newScene->fileName = fileName;
             scene->Unload();
-            ReadFile(fileName, scene->dlls, scene->entities);
+            scene->dlls = newScene->dlls;
+            scene->entities = newScene->entities;
+            delete newScene;
         });
     });
 #endif
@@ -116,10 +138,11 @@ std::unique_ptr<Scene> Scene::Create(std::string const & fileName)
     return std::unique_ptr<Scene>(new Scene(fileName, std::vector<std::string>(), std::vector<Entity *>()));
 }
 
-void Scene::SerializeToFile(std::string const & filename)
+SerializedObject Scene::Serialize() const
 {
     // TODO: input
     SerializedObject::Builder builder;
+    builder.WithString("type", "Scene");
     builder.WithObject("physics", GameModule::SerializePhysics());
 
     std::vector<SerializedValue> serializedDlls;
@@ -135,9 +158,14 @@ void Scene::SerializeToFile(std::string const & filename)
         serializedEntities.push_back(e->Serialize());
     }
     builder.WithArray("entities", serializedEntities);
+    return builder.Build();
+}
 
+void Scene::SerializeToFile(std::string const & filename)
+{
+    SerializedObject serialized = Serialize();
     std::ofstream out(filename);
-    out << JsonSerializer().Serialize(builder.Build());
+    out << JsonSerializer().Serialize(serialized);
 }
 
 void Scene::Unload()
@@ -157,3 +185,5 @@ Scene::Scene(std::string const & fileName, std::vector<std::string> dlls, std::v
     : fileName(fileName), dlls(dlls), entities(entities)
 {
 }
+
+Scene::Scene(std::vector<std::string> dlls, std::vector<Entity *> entities) : dlls(dlls), entities(entities) {}

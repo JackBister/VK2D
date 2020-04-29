@@ -8,32 +8,41 @@
 #include "Core/Rendering/SubmittedMesh.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/StaticMeshLoaderObj.h"
+#include "Core/Serialization/DeserializationContext.h"
 #include "Core/entity.h"
 
 static const auto logger = Logger::Create("StaticMeshComponent");
 
-COMPONENT_IMPL(StaticMeshComponent, &StaticMeshComponent::s_Deserialize);
-
 REFLECT_STRUCT_BEGIN(StaticMeshComponent)
 REFLECT_STRUCT_END()
+
+static SerializedObjectSchema const STATIC_MESH_COMPONENT_SCHEMA = SerializedObjectSchema({
+    SerializedPropertySchema("file", SerializedValueType::STRING, {}, nullptr, true),
+});
+
+class StaticMeshComponentDeserializer : public Deserializer
+{
+    SerializedObjectSchema GetSchema() final override { return STATIC_MESH_COMPONENT_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override
+    {
+        auto file = obj.GetString("file").value();
+        auto path = ctx->workingDirectory / file;
+        auto existingMesh = ResourceManager::GetResource<StaticMesh>(path.string());
+        if (!existingMesh) {
+            existingMesh = StaticMeshLoaderObj().LoadFile(path.string());
+        }
+        auto ret = new StaticMeshComponent(file, existingMesh);
+        ret->staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance(existingMesh);
+        return ret;
+    }
+};
+
+COMPONENT_IMPL(StaticMeshComponent, new StaticMeshComponentDeserializer());
 
 StaticMeshComponent::~StaticMeshComponent()
 {
     RenderSystem::GetInstance()->DestroyStaticMeshInstance(staticMeshInstance);
-}
-
-Deserializable * StaticMeshComponent::s_Deserialize(DeserializationContext * deserializationContext,
-                                                    SerializedObject const & obj)
-{
-    auto file = obj.GetString("file").value();
-    auto path = deserializationContext->workingDirectory / file;
-    auto existingMesh = ResourceManager::GetResource<StaticMesh>(path.string());
-    if (!existingMesh) {
-        existingMesh = StaticMeshLoaderObj().LoadFile(path.string());
-    }
-    auto ret = new StaticMeshComponent(file, existingMesh);
-    ret->staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance(existingMesh);
-    return ret;
 }
 
 StaticMeshComponent::StaticMeshComponent(std::string file, StaticMesh * mesh) : file(file), mesh(mesh) {}

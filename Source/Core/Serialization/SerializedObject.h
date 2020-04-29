@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Core/DllExport.h"
+#include "SerializedValueType.h"
 
 class SerializedValue;
 
@@ -34,6 +35,8 @@ public:
     std::optional<std::string> GetString(std::string const &) const;
     std::optional<SerializedObject> GetObject(std::string const &) const;
     std::optional<std::vector<SerializedValue>> GetArray(std::string const &) const;
+
+    std::optional<SerializedValueType> GetType(std::string const &) const;
 
     ValueMap GetValues() const;
 

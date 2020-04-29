@@ -13,14 +13,76 @@
 
 static const auto logger = Logger::Create("CameraComponent");
 
-COMPONENT_IMPL(CameraComponent, CameraComponent::s_Deserialize)
-
 REFLECT_STRUCT_BEGIN(CameraComponent)
 REFLECT_STRUCT_MEMBER(isProjectionDirty)
 REFLECT_STRUCT_MEMBER(isViewDirty)
 REFLECT_STRUCT_MEMBER(projection)
 REFLECT_STRUCT_MEMBER(view)
 REFLECT_STRUCT_END()
+
+static SerializedObjectSchema CAMERA_COMPONENT_SCHEMA = SerializedObjectSchema({
+    SerializedPropertySchema("ortho", SerializedValueType::OBJECT, {},
+                             new SerializedObjectSchema({
+                                 SerializedPropertySchema("aspect", SerializedValueType::DOUBLE, {}, {}, true),
+                                 SerializedPropertySchema("viewSize", SerializedValueType::DOUBLE, {}, {}, true),
+                             }),
+                             false, {"perspective"}),
+    SerializedPropertySchema("perspective", SerializedValueType::OBJECT, {},
+                             new SerializedObjectSchema({
+                                 SerializedPropertySchema("aspect", SerializedValueType::DOUBLE, {}, {}, true),
+                                 SerializedPropertySchema("fov", SerializedValueType::DOUBLE, {}, {}, true),
+                                 SerializedPropertySchema("zFar", SerializedValueType::DOUBLE, {}, {}, true),
+                                 SerializedPropertySchema("zNear", SerializedValueType::DOUBLE, {}, {}, true),
+                             }),
+                             false, {"ortho"}),
+    SerializedPropertySchema("defaultsToMain", SerializedValueType::BOOL),
+});
+
+class CameraComponentDeserializer : public Deserializer
+{
+    SerializedObjectSchema GetSchema() final override { return CAMERA_COMPONENT_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override
+    {
+        CameraComponent * ret = new CameraComponent();
+
+        auto orthoOpt = obj.GetObject("ortho");
+        auto perspectiveOpt = obj.GetObject("perspective");
+        if (orthoOpt.has_value()) {
+            auto ortho = orthoOpt.value();
+            OrthoCamera cam;
+            cam.aspect = ortho.GetNumber("aspect").value();
+            cam.viewSize = ortho.GetNumber("viewSize").value();
+            ret->cameraData = cam;
+        } else if (perspectiveOpt.has_value()) {
+            auto perspective = perspectiveOpt.value();
+            PerspectiveCamera cam;
+            cam.aspect = perspective.GetNumber("aspect").value();
+            cam.fov = perspective.GetNumber("fov").value();
+            cam.zFar = perspective.GetNumber("zFar").value();
+            cam.zNear = perspective.GetNumber("zNear").value();
+            ret->cameraData = cam;
+        } else {
+            logger->Errorf("CameraComponent must be initialized with either an 'ortho' parameter or a 'perspective' "
+                           "parameter. Will create a default ortho camera.");
+            OrthoCamera cam;
+            cam.aspect = 0.75;
+            cam.viewSize = 60;
+            ret->cameraData = cam;
+        }
+
+        auto defaultsToMainOpt = obj.GetBool("defaultsToMain");
+        if (defaultsToMainOpt.has_value()) {
+            ret->defaultsToMain = defaultsToMainOpt.value();
+        }
+
+        ret->cameraHandle = RenderSystem::GetInstance()->CreateCamera();
+
+        return ret;
+    }
+};
+
+COMPONENT_IMPL(CameraComponent, new CameraComponentDeserializer())
 
 CameraComponent::~CameraComponent()
 {
@@ -48,46 +110,6 @@ glm::mat4 const & CameraComponent::GetView()
         view = glm::inverse(entity->transform.GetLocalToWorld());
     }
     return view;
-}
-
-Deserializable * CameraComponent::s_Deserialize(DeserializationContext * deserializationContext,
-                                                SerializedObject const & obj)
-{
-    CameraComponent * ret = new CameraComponent();
-
-    auto orthoOpt = obj.GetObject("ortho");
-    auto perspectiveOpt = obj.GetObject("perspective");
-    if (orthoOpt.has_value()) {
-        auto ortho = orthoOpt.value();
-        OrthoCamera cam;
-        cam.aspect = ortho.GetNumber("aspect").value();
-        cam.viewSize = ortho.GetNumber("viewSize").value();
-        ret->cameraData = cam;
-    } else if (perspectiveOpt.has_value()) {
-        auto perspective = perspectiveOpt.value();
-        PerspectiveCamera cam;
-        cam.aspect = perspective.GetNumber("aspect").value();
-        cam.fov = perspective.GetNumber("fov").value();
-        cam.zFar = perspective.GetNumber("zFar").value();
-        cam.zNear = perspective.GetNumber("zNear").value();
-        ret->cameraData = cam;
-    } else {
-        logger->Errorf("CameraComponent must be initialized with either an 'ortho' parameter or a 'perspective' "
-                       "parameter. Will create a default ortho camera.");
-        OrthoCamera cam;
-        cam.aspect = 0.75;
-        cam.viewSize = 60;
-        ret->cameraData = cam;
-    }
-
-    auto defaultsToMainOpt = obj.GetBool("defaultsToMain");
-    if (defaultsToMainOpt.has_value()) {
-        ret->defaultsToMain = defaultsToMainOpt.value();
-    }
-
-    ret->cameraHandle = RenderSystem::GetInstance()->CreateCamera();
-
-    return ret;
 }
 
 SerializedObject CameraComponent::Serialize() const

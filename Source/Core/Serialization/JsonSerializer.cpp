@@ -71,15 +71,15 @@ static nlohmann::json SerializeArray(SerializedArray const & arr)
 
     for (size_t i = 0; i < arr.size(); ++i) {
         auto const & element = arr[i];
-        if (element.index() == SerializedValue::BOOL) {
+        if (element.GetType() == SerializedValueType::BOOL) {
             ret.push_back(std::get<bool>(element));
-        } else if (element.index() == SerializedValue::DOUBLE) {
+        } else if (element.GetType() == SerializedValueType::DOUBLE) {
             ret.push_back(std::get<double>(element));
-        } else if (element.index() == SerializedValue::STRING) {
+        } else if (element.GetType() == SerializedValueType::STRING) {
             ret.push_back(std::get<std::string>(element));
-        } else if (element.index() == SerializedValue::OBJECT) {
+        } else if (element.GetType() == SerializedValueType::OBJECT) {
             ret.push_back(SerializeObject(std::get<SerializedObject>(element)));
-        } else if (element.index() == SerializedValue::ARRAY) {
+        } else if (element.GetType() == SerializedValueType::ARRAY) {
             ret.push_back(SerializeArray(std::get<SerializedArray>(element)));
         } else {
             logger->Warnf("Unknown value type (index=%d) for idx=%zu when serializing object.", element.index(), i);
@@ -94,15 +94,15 @@ static nlohmann::json SerializeObject(SerializedObject const & obj)
     nlohmann::json j = nlohmann::json::object();
 
     for (auto kv : obj.GetValues()) {
-        if (kv.second.index() == SerializedValue::BOOL) {
+        if (kv.second.GetType() == SerializedValueType::BOOL) {
             j[kv.first] = std::get<bool>(kv.second);
-        } else if (kv.second.index() == SerializedValue::DOUBLE) {
+        } else if (kv.second.GetType() == SerializedValueType::DOUBLE) {
             j[kv.first] = std::get<double>(kv.second);
-        } else if (kv.second.index() == SerializedValue::STRING) {
+        } else if (kv.second.GetType() == SerializedValueType::STRING) {
             j[kv.first] = std::get<std::string>(kv.second);
-        } else if (kv.second.index() == SerializedValue::OBJECT) {
+        } else if (kv.second.GetType() == SerializedValueType::OBJECT) {
             j[kv.first] = SerializeObject(std::get<SerializedObject>(kv.second));
-        } else if (kv.second.index() == SerializedValue::ARRAY) {
+        } else if (kv.second.GetType() == SerializedValueType::ARRAY) {
             j[kv.first] = SerializeArray(std::get<SerializedArray>(kv.second));
         } else {
             logger->Warnf("Unknown value type (index=%d) for key=%s when serializing object.",

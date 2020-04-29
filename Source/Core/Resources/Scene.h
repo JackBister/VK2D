@@ -5,6 +5,7 @@
 
 #include "SDL2/SDL.h"
 
+#include "Core/Deserializable.h"
 #include "Core/GameModule.h"
 #include "Core/HashedString.h"
 #include "Core/Input.h"
@@ -12,16 +13,18 @@
 #include "Core/dtime.h"
 #include "Core/eventarg.h"
 
-// TODO: Allocate all entities/components from same block for cache
-
 class Entity;
+class SceneDeserializer;
 
-class Scene
+class Scene : public Deserializable
 {
 public:
+    friend class SceneDeserializer;
+
     static Scene * FromFile(std::string const &);
     static std::unique_ptr<Scene> Create(std::string const & fileName);
 
+    SerializedObject Serialize() const final override;
     void SerializeToFile(std::string const & filename);
     void Unload();
 
@@ -30,6 +33,7 @@ public:
 
 private:
     Scene(std::string const & fileName, std::vector<std::string> dlls, std::vector<Entity *> entities);
+    Scene(std::vector<std::string> dlls, std::vector<Entity *> entities);
 
     std::string fileName;
     std::vector<std::string> dlls;

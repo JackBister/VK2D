@@ -6,12 +6,12 @@
 #include "Core/Rendering/SpriteInstance.h"
 
 class Image;
+class SpriteComponentDeserializer;
 
 class SpriteComponent final : public Component
 {
 public:
-    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
-                                          SerializedObject const & str);
+    friend class SpriteComponentDeserializer;
 
     SpriteComponent() { receiveTicks = true; }
     ~SpriteComponent() override;

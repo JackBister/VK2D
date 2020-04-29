@@ -1,4 +1,5 @@
 {
+	"type": "Scene",
 	"dlls": [
 		"FlappyPong.dll"
 	],

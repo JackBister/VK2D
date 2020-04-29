@@ -2,12 +2,12 @@
 #include <Core/Components/Component.h>
 #include <Core/Reflect.h>
 
+class BallComponentDeserializer;
+
 class BallComponent : public Component
 {
 public:
-    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
-                                          SerializedObject const & obj);
-
+    friend class BallComponentDeserializer;
     BallComponent() { receiveTicks = true; };
 
     SerializedObject Serialize() const override;

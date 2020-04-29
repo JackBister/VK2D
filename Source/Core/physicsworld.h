@@ -10,10 +10,13 @@
 #include "Core/collisioninfo.h"
 
 class Entity;
+class PhysicsWorldDeserializer;
 
 class PhysicsWorld : public Deserializable
 {
 public:
+    friend class PhysicsWorldDeserializer;
+
     static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
                                           SerializedObject const & str);
 

@@ -1,11 +1,12 @@
 #pragma once
 #include <Core/Components/Component.h>
 
+class PaddleComponentDeserializer;
+
 class PaddleComponent : public Component
 {
 public:
-    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
-                                          SerializedObject const & obj);
+    friend class PaddleComponentDeserializer;
 
     PaddleComponent() { receiveTicks = true; };
 

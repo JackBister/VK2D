@@ -4,8 +4,6 @@
 #include "Core/GameModule.h"
 #include "Core/Input.h"
 
-COMPONENT_IMPL(PaddleComponent, &PaddleComponent::s_Deserialize)
-
 REFLECT_STRUCT_BEGIN(PaddleComponent)
 REFLECT_STRUCT_MEMBER(flapSpeed)
 REFLECT_STRUCT_MEMBER(gravity)
@@ -13,14 +11,25 @@ REFLECT_STRUCT_MEMBER(isColliding)
 REFLECT_STRUCT_MEMBER(velocityY)
 REFLECT_STRUCT_END()
 
-Deserializable * PaddleComponent::s_Deserialize(DeserializationContext * deserializationContext,
-                                                SerializedObject const & obj)
+static SerializedObjectSchema const PADDLE_COMPONENT_SCHEMA = SerializedObjectSchema({
+    SerializedPropertySchema("flapSpeed", SerializedValueType::DOUBLE),
+    SerializedPropertySchema("gravity", SerializedValueType::DOUBLE),
+});
+
+class PaddleComponentDeserializer : public Deserializer
 {
-    auto ret = new PaddleComponent();
-    ret->flapSpeed = obj.GetNumber("flapSpeed").value_or(40.f);
-    ret->gravity = obj.GetNumber("gravity").value_or(50.f);
-    return ret;
-}
+    SerializedObjectSchema GetSchema() final override { return PADDLE_COMPONENT_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override
+    {
+        auto ret = new PaddleComponent();
+        ret->flapSpeed = obj.GetNumber("flapSpeed").value_or(40.f);
+        ret->gravity = obj.GetNumber("gravity").value_or(50.f);
+        return ret;
+    }
+};
+
+COMPONENT_IMPL(PaddleComponent, new PaddleComponentDeserializer())
 
 SerializedObject PaddleComponent::Serialize() const
 {

@@ -12,12 +12,46 @@
 
 static const auto logger = Logger::Create("Entity");
 
-DESERIALIZABLE_IMPL(Entity, &Entity::s_Deserialize)
-
 REFLECT_STRUCT_BEGIN(Entity)
 REFLECT_STRUCT_MEMBER(transform)
 REFLECT_STRUCT_MEMBER(components)
 REFLECT_STRUCT_END()
+
+static SerializedObjectSchema const ENTITY_SCHEMA = SerializedObjectSchema({
+    SerializedPropertySchema("name", SerializedValueType::STRING, {}, {}, true),
+    SerializedPropertySchema("transform", SerializedValueType::OBJECT, {},
+                             // TODO: Figure out how to do "deferred reference to schema"
+                             // new SerializedObjectSchema(Deserializable::GetSchema("Transform").value())
+                             nullptr, true),
+    SerializedPropertySchema("components", SerializedValueType::ARRAY, SerializedValueType::OBJECT, {}, true),
+});
+
+class EntityDeserializer : public Deserializer
+{
+    SerializedObjectSchema GetSchema() { return ENTITY_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
+    {
+        Entity * const ret = new Entity();
+        ret->name = obj.GetString("name").value();
+        ret->transform = Transform::Deserialize(obj.GetObject("transform").value());
+        auto serializedComponents = obj.GetArray("components");
+        for (auto const & component : serializedComponents.value()) {
+            Component * const c =
+                static_cast<Component *>(Deserializable::Deserialize(ctx, std::get<SerializedObject>(component)));
+            if (!c) {
+                logger->Errorf("Not adding component to entity=%s because deserialization failed. See earlier errors.",
+                               ret->name.c_str());
+                continue;
+            }
+            c->entity = ret;
+            ret->components.emplace_back(std::move(c));
+        }
+        return ret;
+    }
+};
+
+DESERIALIZABLE_IMPL(Entity, new EntityDeserializer())
 
 void Entity::FireEvent(HashedString ename, EventArgs args)
 {
@@ -47,24 +81,6 @@ Component * Entity::GetComponent(std::string type) const
         }
     }
     return nullptr;
-}
-
-Deserializable * Entity::s_Deserialize(DeserializationContext * deserializationContext, SerializedObject const & obj)
-{
-    Entity * const ret = new Entity();
-    ret->name = obj.GetString("name").value();
-    ret->transform = Transform::Deserialize(obj.GetObject("transform").value());
-    auto serializedComponents = obj.GetArray("components");
-    for (auto const & component : serializedComponents.value()) {
-        if (component.index() != SerializedValue::OBJECT) {
-            logger->Errorf("Unexpected non-object in component array when deserializing entity '%s'", ret->name);
-        }
-        Component * const c = static_cast<Component *>(
-            Deserializable::Deserialize(deserializationContext, std::get<SerializedObject>(component)));
-        c->entity = ret;
-        ret->components.emplace_back(std::move(c));
-    }
-    return ret;
 }
 
 SerializedObject Entity::Serialize() const

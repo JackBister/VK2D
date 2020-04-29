@@ -9,7 +9,42 @@
 
 static const auto logger = Logger::Create("PhysicsWorld");
 
-DESERIALIZABLE_IMPL(PhysicsWorld, &PhysicsWorld::s_Deserialize)
+static SerializedObjectSchema const PHYSICS_WORLD_SCHEMA = SerializedObjectSchema({
+    SerializedPropertySchema("gravity", SerializedValueType::OBJECT, {},
+                             new SerializedObjectSchema({
+                                 SerializedPropertySchema("x", SerializedValueType::DOUBLE, {}, {}, true),
+                                 SerializedPropertySchema("y", SerializedValueType::DOUBLE, {}, {}, true),
+                                 SerializedPropertySchema("z", SerializedValueType::DOUBLE, {}, {}, true),
+                             }),
+                             true),
+});
+
+class PhysicsWorldDeserializer : public Deserializer
+{
+
+    SerializedObjectSchema GetSchema() { return PHYSICS_WORLD_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
+    {
+        PhysicsWorld * ret = new PhysicsWorld();
+        ret->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
+        ret->dispatcher = std::make_unique<btCollisionDispatcher>(ret->collisionConfig.get());
+        ret->broadphase = std::make_unique<btDbvtBroadphase>();
+        ret->constraintSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
+        ret->world = std::make_unique<btDiscreteDynamicsWorld>(
+            ret->dispatcher.get(), ret->broadphase.get(), ret->constraintSolver.get(), ret->collisionConfig.get());
+        ret->world->setInternalTickCallback(PhysicsWorld::s_TickCallback);
+        ret->world->setWorldUserInfo(ret);
+
+        auto grav = obj.GetObject("gravity").value();
+        ret->world->setGravity(
+            btVector3(grav.GetNumber("x").value(), grav.GetNumber("y").value(), grav.GetNumber("z").value()));
+
+        return ret;
+    }
+};
+
+DESERIALIZABLE_IMPL(PhysicsWorld, new PhysicsWorldDeserializer());
 
 void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 {
@@ -91,26 +126,6 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
     }
 
     collisionsLastFrame = collisionsThisFrame;
-}
-
-Deserializable * PhysicsWorld::s_Deserialize(DeserializationContext * deserializationContext,
-                                             SerializedObject const & obj)
-{
-    PhysicsWorld * ret = new PhysicsWorld();
-    ret->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
-    ret->dispatcher = std::make_unique<btCollisionDispatcher>(ret->collisionConfig.get());
-    ret->broadphase = std::make_unique<btDbvtBroadphase>();
-    ret->constraintSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
-    ret->world = std::make_unique<btDiscreteDynamicsWorld>(
-        ret->dispatcher.get(), ret->broadphase.get(), ret->constraintSolver.get(), ret->collisionConfig.get());
-    ret->world->setInternalTickCallback(s_TickCallback);
-    ret->world->setWorldUserInfo(ret);
-
-    auto grav = obj.GetObject("gravity").value();
-    ret->world->setGravity(
-        btVector3(grav.GetNumber("x").value(), grav.GetNumber("y").value(), grav.GetNumber("z").value()));
-
-    return ret;
 }
 
 SerializedObject PhysicsWorld::Serialize() const

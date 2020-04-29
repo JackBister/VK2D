@@ -7,12 +7,12 @@
 #include "Core/Resources/StaticMesh.h"
 
 class DescriptorSet;
+class StaticMeshComponentDeserializer;
 
 class StaticMeshComponent : public Component
 {
 public:
-    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
-                                          SerializedObject const & obj);
+    friend class StaticMeshComponentDeserializer;
 
     StaticMeshComponent() { receiveTicks = true; }
     StaticMeshComponent(std::string file, StaticMesh * mesh);

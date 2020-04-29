@@ -10,10 +10,59 @@
 
 static const auto logger = Logger::Create("PhysicsComponent");
 
-COMPONENT_IMPL(PhysicsComponent, &PhysicsComponent::s_Deserialize)
+BroadphaseNativeTypes DeserializeShapeType(std::string s);
 
 REFLECT_STRUCT_BEGIN(PhysicsComponent)
 REFLECT_STRUCT_END()
+
+static SerializedObjectSchema const PHYSICS_COMPONENT_SCHEMA = SerializedObjectSchema({
+    SerializedPropertySchema("mass", SerializedValueType::DOUBLE, {}, {}, true),
+    SerializedPropertySchema("shapeType", SerializedValueType::STRING, {}, {}, true),
+    SerializedPropertySchema("shapeInfo", SerializedValueType::OBJECT, {}, {}, true),
+    SerializedPropertySchema("isKinematic", SerializedValueType::BOOL),
+});
+
+class PhysicsComponentDeserializer : public Deserializer
+{
+    SerializedObjectSchema GetSchema() final override { return PHYSICS_COMPONENT_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override
+    {
+        PhysicsComponent * ret = new PhysicsComponent();
+        ret->mass = obj.GetNumber("mass").value();
+        ret->shapeType = DeserializeShapeType(obj.GetString("shapeType").value());
+
+        auto shapeInfo = obj.GetObject("shapeInfo").value();
+        switch (ret->shapeType) {
+        case BOX_2D_SHAPE_PROXYTYPE: {
+            btVector3 shape_info(shapeInfo.GetNumber("x").value(), shapeInfo.GetNumber("y").value(), 1.f);
+            ret->shape = std::make_unique<btBox2dShape>(shape_info);
+            break;
+        }
+        case BOX_SHAPE_PROXYTYPE: {
+            btVector3 shape_info(
+                shapeInfo.GetNumber("x").value(), shapeInfo.GetNumber("y").value(), shapeInfo.GetNumber("z").value());
+            ret->shape = std::make_unique<btBoxShape>(shape_info);
+            break;
+        }
+        case INVALID_SHAPE_PROXYTYPE:
+            // TODO: Error handling. I mean, the engine's going to crash sooner or later anyway but this isn't very
+            // clean.
+            logger->Errorf("Invalid shapeType %s.", obj.GetString("shapeType").value().c_str());
+            return nullptr;
+        default:
+            logger->Errorf("Unhandled shapeType %s.", obj.GetString("shapeType").value().c_str());
+            return nullptr;
+        }
+        auto isKinematicOpt = obj.GetBool("isKinematic");
+        if (isKinematicOpt.has_value()) {
+            ret->isKinematic = isKinematicOpt.value();
+        }
+        return ret;
+    }
+};
+
+COMPONENT_IMPL(PhysicsComponent, new PhysicsComponentDeserializer())
 
 BroadphaseNativeTypes DeserializeShapeType(std::string s)
 {
@@ -49,41 +98,6 @@ std::string SerializeShapeType(BroadphaseNativeTypes i)
 PhysicsComponent::~PhysicsComponent()
 {
     GameModule::GetPhysicsWorld()->world->removeRigidBody(rigidBody.get());
-}
-
-Deserializable * PhysicsComponent::s_Deserialize(DeserializationContext * deserializationContext,
-                                                 SerializedObject const & obj)
-{
-    PhysicsComponent * ret = new PhysicsComponent();
-    ret->mass = obj.GetNumber("mass").value();
-    ret->shapeType = DeserializeShapeType(obj.GetString("shapeType").value());
-
-    auto shapeInfo = obj.GetObject("shapeInfo").value();
-    switch (ret->shapeType) {
-    case BOX_2D_SHAPE_PROXYTYPE: {
-        btVector3 shape_info(shapeInfo.GetNumber("x").value(), shapeInfo.GetNumber("y").value(), 1.f);
-        ret->shape = std::make_unique<btBox2dShape>(shape_info);
-        break;
-    }
-    case BOX_SHAPE_PROXYTYPE: {
-        btVector3 shape_info(
-            shapeInfo.GetNumber("x").value(), shapeInfo.GetNumber("y").value(), shapeInfo.GetNumber("z").value());
-        ret->shape = std::make_unique<btBoxShape>(shape_info);
-        break;
-    }
-    case INVALID_SHAPE_PROXYTYPE:
-        // TODO: Error handling. I mean, the engine's going to crash sooner or later anyway but this isn't very clean.
-        logger->Errorf("Invalid shapeType %s.", obj.GetString("shapeType").value().c_str());
-        return nullptr;
-    default:
-        logger->Errorf("Unhandled shapeType %s.", obj.GetString("shapeType").value().c_str());
-        return nullptr;
-    }
-    auto isKinematicOpt = obj.GetBool("isKinematic");
-    if (isKinematicOpt.has_value()) {
-        ret->isKinematic = isKinematicOpt.value();
-    }
-    return ret;
 }
 
 SerializedObject PhysicsComponent::Serialize() const

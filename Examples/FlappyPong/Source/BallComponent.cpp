@@ -8,20 +8,28 @@
 
 static const auto logger = Logger::Create("BallComponent");
 
-COMPONENT_IMPL(BallComponent, &BallComponent::s_Deserialize)
-
 REFLECT_STRUCT_BEGIN(BallComponent)
 REFLECT_STRUCT_MEMBER(velocityDir)
 REFLECT_STRUCT_MEMBER(moveSpeed)
 REFLECT_STRUCT_END();
 
-Deserializable * BallComponent::s_Deserialize(DeserializationContext * deserializationContext,
-                                              SerializedObject const & obj)
+static SerializedObjectSchema const BALL_COMPONENT_SCHEMA = SerializedObjectSchema({
+    SerializedPropertySchema("moveSpeed", SerializedValueType::DOUBLE),
+});
+
+class BallComponentDeserializer : public Deserializer
 {
-    auto ret = new BallComponent();
-    ret->moveSpeed = obj.GetNumber("moveSpeed").value_or(50.f);
-    return ret;
-}
+    SerializedObjectSchema GetSchema() final override { return BALL_COMPONENT_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override
+    {
+        auto ret = new BallComponent();
+        ret->moveSpeed = obj.GetNumber("moveSpeed").value_or(50.f);
+        return ret;
+    }
+};
+
+COMPONENT_IMPL(BallComponent, new BallComponentDeserializer())
 
 SerializedObject BallComponent::Serialize() const
 {

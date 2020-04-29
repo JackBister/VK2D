@@ -9,6 +9,8 @@
 #include "Core/Components/component.h"
 #include "Core/Rendering/CameraInstance.h"
 
+class CameraComponentDeserializer;
+
 struct OrthoCamera {
     float viewSize;
     float aspect;
@@ -24,8 +26,7 @@ struct PerspectiveCamera {
 class CameraComponent : public Component
 {
 public:
-    static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
-                                          SerializedObject const & str);
+    friend class CameraComponentDeserializer;
 
     CameraComponent() { receiveTicks = true; };
     ~CameraComponent() override;
