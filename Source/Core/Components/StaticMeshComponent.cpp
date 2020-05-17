@@ -16,9 +16,10 @@ static const auto logger = Logger::Create("StaticMeshComponent");
 REFLECT_STRUCT_BEGIN(StaticMeshComponent)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const STATIC_MESH_COMPONENT_SCHEMA = SerializedObjectSchema({
-    SerializedPropertySchema("file", SerializedValueType::STRING, {}, nullptr, true),
-});
+static SerializedObjectSchema const STATIC_MESH_COMPONENT_SCHEMA = SerializedObjectSchema(
+    "StaticMeshComponent", {
+                               SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true),
+                           });
 
 class StaticMeshComponentDeserializer : public Deserializer
 {
@@ -28,12 +29,16 @@ class StaticMeshComponentDeserializer : public Deserializer
     {
         auto file = obj.GetString("file").value();
         auto path = ctx->workingDirectory / file;
-        auto existingMesh = ResourceManager::GetResource<StaticMesh>(path.string());
-        if (!existingMesh) {
-            existingMesh = StaticMeshLoaderObj().LoadFile(path.string());
+        auto mesh = ResourceManager::GetResource<StaticMesh>(path.string());
+        if (!mesh) {
+            mesh = StaticMeshLoaderObj().LoadFile(path.string());
+            if (!mesh) {
+                logger->Errorf("Failed to load file='%s' when deserializing StaticMeshComponent", file.c_str());
+                return nullptr;
+            }
         }
-        auto ret = new StaticMeshComponent(file, existingMesh);
-        ret->staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance(existingMesh);
+        auto ret = new StaticMeshComponent(file, mesh);
+        ret->staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance(mesh);
         return ret;
     }
 };

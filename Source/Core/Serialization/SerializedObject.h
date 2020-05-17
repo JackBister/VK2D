@@ -30,6 +30,8 @@ public:
         ValueMap values;
     };
 
+    SerializedObject() = default;
+
     std::optional<bool> GetBool(std::string const &) const;
     std::optional<double> GetNumber(std::string const &) const;
     std::optional<std::string> GetString(std::string const &) const;

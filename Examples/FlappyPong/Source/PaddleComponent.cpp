@@ -11,10 +11,11 @@ REFLECT_STRUCT_MEMBER(isColliding)
 REFLECT_STRUCT_MEMBER(velocityY)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const PADDLE_COMPONENT_SCHEMA = SerializedObjectSchema({
-    SerializedPropertySchema("flapSpeed", SerializedValueType::DOUBLE),
-    SerializedPropertySchema("gravity", SerializedValueType::DOUBLE),
-});
+static SerializedObjectSchema const PADDLE_COMPONENT_SCHEMA =
+    SerializedObjectSchema("PaddleComponent", {
+                                                  SerializedPropertySchema("flapSpeed", SerializedValueType::DOUBLE),
+                                                  SerializedPropertySchema("gravity", SerializedValueType::DOUBLE),
+                                              });
 
 class PaddleComponentDeserializer : public Deserializer
 {

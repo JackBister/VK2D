@@ -20,23 +20,30 @@ REFLECT_STRUCT_MEMBER(projection)
 REFLECT_STRUCT_MEMBER(view)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema CAMERA_COMPONENT_SCHEMA = SerializedObjectSchema({
-    SerializedPropertySchema("ortho", SerializedValueType::OBJECT, {},
-                             new SerializedObjectSchema({
-                                 SerializedPropertySchema("aspect", SerializedValueType::DOUBLE, {}, {}, true),
-                                 SerializedPropertySchema("viewSize", SerializedValueType::DOUBLE, {}, {}, true),
-                             }),
-                             false, {"perspective"}),
-    SerializedPropertySchema("perspective", SerializedValueType::OBJECT, {},
-                             new SerializedObjectSchema({
-                                 SerializedPropertySchema("aspect", SerializedValueType::DOUBLE, {}, {}, true),
-                                 SerializedPropertySchema("fov", SerializedValueType::DOUBLE, {}, {}, true),
-                                 SerializedPropertySchema("zFar", SerializedValueType::DOUBLE, {}, {}, true),
-                                 SerializedPropertySchema("zNear", SerializedValueType::DOUBLE, {}, {}, true),
-                             }),
-                             false, {"ortho"}),
-    SerializedPropertySchema("defaultsToMain", SerializedValueType::BOOL),
-});
+static SerializedObjectSchema CAMERA_COMPONENT_SCHEMA = SerializedObjectSchema(
+    "CameraComponent",
+    {
+        SerializedPropertySchema("ortho", SerializedValueType::OBJECT, {}, "OrthoCamera", false, {"perspective"}),
+        SerializedPropertySchema("perspective", SerializedValueType::OBJECT, {}, "PerspectiveCamera", false, {"ortho"}),
+        SerializedPropertySchema("defaultsToMain", SerializedValueType::BOOL),
+    });
+
+static SerializedObjectSchema
+    ORTHO_CAMERA_SCHEMA("OrthoCamera",
+                        {
+                            SerializedPropertySchema("aspect", SerializedValueType::DOUBLE, {}, "", true),
+                            SerializedPropertySchema("viewSize", SerializedValueType::DOUBLE, {}, "", true),
+                        });
+
+static SerializedObjectSchema
+    PERSPECTIVE_CAMERA_SCHEMA("PerspectiveCamera",
+                              {
+
+                                  SerializedPropertySchema("aspect", SerializedValueType::DOUBLE, {}, "", true),
+                                  SerializedPropertySchema("fov", SerializedValueType::DOUBLE, {}, "", true),
+                                  SerializedPropertySchema("zFar", SerializedValueType::DOUBLE, {}, "", true),
+                                  SerializedPropertySchema("zNear", SerializedValueType::DOUBLE, {}, "", true),
+                              });
 
 class CameraComponentDeserializer : public Deserializer
 {
@@ -82,7 +89,38 @@ class CameraComponentDeserializer : public Deserializer
     }
 };
 
+class OrthoCameraDeserializer : public Deserializer
+{
+    SerializedObjectSchema GetSchema() final override { return ORTHO_CAMERA_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override
+    {
+        auto ret = new OrthoCamera();
+        ret->aspect = obj.GetNumber("aspect").value();
+        ret->viewSize = obj.GetNumber("viewSize").value();
+        return ret;
+    }
+};
+
+class PerspectiveCameraDeserializer : public Deserializer
+{
+    SerializedObjectSchema GetSchema() final override { return PERSPECTIVE_CAMERA_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override
+    {
+        auto ret = new PerspectiveCamera();
+        ret->aspect = obj.GetNumber("aspect").value();
+        ret->fov = obj.GetNumber("fov").value();
+        ret->zFar = obj.GetNumber("zFar").value();
+        ret->zNear = obj.GetNumber("zNear").value();
+        return ret;
+    }
+};
+
 COMPONENT_IMPL(CameraComponent, new CameraComponentDeserializer())
+
+DESERIALIZABLE_IMPL(OrthoCamera, new OrthoCameraDeserializer())
+DESERIALIZABLE_IMPL(PerspectiveCamera, new PerspectiveCameraDeserializer())
 
 CameraComponent::~CameraComponent()
 {

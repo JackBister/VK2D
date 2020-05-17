@@ -29,7 +29,9 @@ public:
     void Unload();
 
     inline std::string GetFileName() const { return fileName; }
+
     inline void AddEntity(Entity * entity) { entities.push_back(entity); }
+    void RemoveEntity(Entity * entity);
 
 private:
     Scene(std::string const & fileName, std::vector<std::string> dlls, std::vector<Entity *> entities);

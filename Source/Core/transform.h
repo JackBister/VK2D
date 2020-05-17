@@ -6,13 +6,18 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/quaternion.hpp"
 
+#include "Core/Deserializable.h"
 #include "Core/DllExport.h"
 #include "Core/Reflect.h"
 #include "Core/Serialization/SerializedValue.h"
 
-class EAPI Transform final
+class TransformDeserializer;
+
+class EAPI Transform final : public Deserializable
 {
 public:
+    friend class TransformDeserializer;
+
     static Transform Deserialize(SerializedObject const &);
 
     glm::mat4 const & GetLocalToParent();
@@ -22,7 +27,7 @@ public:
     glm::quat const & GetRotation() const;
     glm::vec3 const & GetScale() const;
 
-    SerializedObject Serialize() const;
+    SerializedObject Serialize() const override;
 
     void SetParent(Transform *);
     void SetPosition(glm::vec3 const &);

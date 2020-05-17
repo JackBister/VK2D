@@ -13,9 +13,10 @@ REFLECT_STRUCT_MEMBER(velocityDir)
 REFLECT_STRUCT_MEMBER(moveSpeed)
 REFLECT_STRUCT_END();
 
-static SerializedObjectSchema const BALL_COMPONENT_SCHEMA = SerializedObjectSchema({
-    SerializedPropertySchema("moveSpeed", SerializedValueType::DOUBLE),
-});
+static SerializedObjectSchema const BALL_COMPONENT_SCHEMA =
+    SerializedObjectSchema("BallComponent", {
+                                                SerializedPropertySchema("moveSpeed", SerializedValueType::DOUBLE),
+                                            });
 
 class BallComponentDeserializer : public Deserializer
 {

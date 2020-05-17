@@ -101,6 +101,7 @@ void Init(RenderSystem * inRenderSystem)
     Console::Init(renderSystem);
     Input::Init();
     Time::Start();
+    EditorSystem::Init();
 
     CommandDefinition dumpSceneCommand(
         "scene_dump", "scene_dump <to_file> - Dumps the scene into <to_file>", 1, [](auto args) {

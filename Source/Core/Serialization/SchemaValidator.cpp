@@ -1,5 +1,7 @@
 #include "SchemaValidator.h"
 
+#include "Core/Deserializable.h"
+
 // TODO: Additional details in error messages, like what index of the array is wrong
 // TODO: Merge error messages from recursive calls
 SchemaValidator::Result SchemaValidator::Validate(SerializedObjectSchema const & schema,
@@ -33,6 +35,8 @@ SchemaValidator::Result SchemaValidator::Validate(SerializedObjectSchema const &
         if (actualType != prop.GetType()) {
             result.AddError(prop.GetName(), "wrong type");
         }
+
+        auto objectSchemaOpt = Deserializable::GetSchema(prop.GetObjectSchemaName());
         if (actualType == SerializedValueType::ARRAY) {
             auto actualArray = object.GetArray(prop.GetName()).value();
             for (size_t i = 0; i < actualArray.size(); ++i) {
@@ -40,16 +44,16 @@ SchemaValidator::Result SchemaValidator::Validate(SerializedObjectSchema const &
                 if (val.GetType() != prop.GetArrayType().value()) {
                     result.AddError(prop.GetName(), "wrong type");
                 }
-                if (val.GetType() == SerializedValueType::OBJECT && prop.GetObjectSchema()) {
-                    auto res = Validate(*prop.GetObjectSchema(), std::get<SerializedObject>(val));
+                if (val.GetType() == SerializedValueType::OBJECT && objectSchemaOpt.has_value()) {
+                    auto res = Validate(objectSchemaOpt.value(), std::get<SerializedObject>(val));
                     if (!res.isValid) {
                         result.AddError(prop.GetName(), "object schema does not match");
                     }
                 }
             }
-        } else if (actualType == SerializedValueType::OBJECT && prop.GetObjectSchema()) {
+        } else if (actualType == SerializedValueType::OBJECT && objectSchemaOpt.has_value()) {
             auto actualObject = object.GetObject(prop.GetName()).value();
-            auto res = Validate(*prop.GetObjectSchema(), actualObject);
+            auto res = Validate(objectSchemaOpt.value(), actualObject);
             if (!res.isValid) {
                 result.AddError(prop.GetName(), "object schema does not match");
             }

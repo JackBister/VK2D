@@ -1,6 +1,9 @@
 #include "Core/transform.h"
 
+#include "Core/Deserializable.h"
 #include "Core/Logging/Logger.h"
+#include "Core/Serialization/Deserializer.h"
+#include "Core/Serialization/SerializedObjectSchema.h"
 
 static const auto logger = Logger::Create("Transform");
 
@@ -9,6 +12,64 @@ REFLECT_STRUCT_MEMBER(position)
 REFLECT_STRUCT_MEMBER(rotation)
 REFLECT_STRUCT_MEMBER(scale)
 REFLECT_STRUCT_END()
+
+static SerializedObjectSchema const TRANSFORM_SCHEMA = SerializedObjectSchema(
+    "Transform", {SerializedPropertySchema("position", SerializedValueType::OBJECT, {}, "Vec3", true),
+                  SerializedPropertySchema("rotation", SerializedValueType::OBJECT, {}, "Vec4", true),
+                  SerializedPropertySchema("scale", SerializedValueType::OBJECT, {}, "Vec3", true)});
+
+static SerializedObjectSchema const VEC4_SCHEMA =
+    SerializedObjectSchema("Vec4", {
+                                       SerializedPropertySchema("x", SerializedValueType::DOUBLE, {}, "", true),
+                                       SerializedPropertySchema("y", SerializedValueType::DOUBLE, {}, "", true),
+                                       SerializedPropertySchema("z", SerializedValueType::DOUBLE, {}, "", true),
+                                       SerializedPropertySchema("w", SerializedValueType::DOUBLE, {}, "", true),
+                                   });
+
+class TransformDeserializer : public Deserializer
+{
+public:
+    SerializedObjectSchema GetSchema() { return TRANSFORM_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
+    {
+        auto ret = new Transform();
+        auto pos = obj.GetObject("position").value();
+        ret->position.x = pos.GetNumber("x").value();
+        ret->position.y = pos.GetNumber("y").value();
+        ret->position.z = pos.GetNumber("z").value();
+        auto rot = obj.GetObject("rotation").value();
+        ret->rotation.x = rot.GetNumber("x").value();
+        ret->rotation.y = rot.GetNumber("y").value();
+        ret->rotation.z = rot.GetNumber("z").value();
+        ret->rotation.w = rot.GetNumber("w").value();
+        auto scale = obj.GetObject("scale").value();
+        ret->scale.x = scale.GetNumber("x").value();
+        ret->scale.y = scale.GetNumber("y").value();
+        ret->scale.z = scale.GetNumber("z").value();
+        return ret;
+    }
+};
+
+// TODO: Move this somewhere else
+class Vec4Deserializer : public Deserializer
+{
+public:
+    SerializedObjectSchema GetSchema() { return VEC4_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
+    {
+        auto ret = new glm::vec4();
+        ret->x = obj.GetNumber("x").value();
+        ret->y = obj.GetNumber("y").value();
+        ret->z = obj.GetNumber("z").value();
+        ret->w = obj.GetNumber("w").value();
+        return ret;
+    }
+};
+
+DESERIALIZABLE_IMPL(Transform, new TransformDeserializer())
+DESERIALIZABLE_IMPL(Vec4, new Vec4Deserializer())
 
 glm::mat4 const & Transform::GetLocalToParent()
 {

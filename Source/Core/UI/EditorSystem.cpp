@@ -13,6 +13,8 @@
 #undef REFLECT_IMPL
 #include "Core/Resources/Scene.h"
 #include "Core/dtime.h"
+#include "SerializedObjectEditor.h"
+#include "TypeChooser.h"
 
 static const auto logger = Logger::Create("EditorSystem");
 
@@ -86,12 +88,33 @@ Transform cameraTransformBeforeEditorWasOpened;
 char newSceneFilename[256];
 size_t newSceneFilenameLen = sizeof(newSceneFilename);
 
+std::optional<TypeChooser> addComponentTypeChooser;
+SerializedObject addComponentNewComponent;
+SerializedObjectEditor addComponentEditor("Add component");
+
+SerializedObject addEntityNewEntity;
+SerializedObjectEditor newEntityEditor("Add entity");
+std::optional<SerializedObjectSchema> entitySchema;
+
+bool isSerializedObjectEditorOpen = false;
+std::optional<SerializedObjectSchema> serializedObjectEditorSchema = {};
+
 // Entity Editor state
 bool isEntityEditorOpen = false;
 struct {
     Entity * currEntity = nullptr;
     size_t currEntityIndex = 0;
 } entityEditor;
+
+void Init()
+{
+    addComponentTypeChooser = TypeChooser("Choose type");
+
+    entitySchema = Deserializable::GetSchema("Entity");
+    if (!entitySchema.has_value()) {
+        logger->Errorf("Could not find the schema for Entity, this should never happen and will cause a crash.");
+    }
+}
 
 void OnGui()
 {
@@ -145,7 +168,7 @@ void OnGui()
                     glm::rotate(glm::mat4(1.f), dragDelta.y * Time::GetUnscaledDeltaTime(), glm::vec3(-1.f, 0.f, 0.f));
             }
 
-            if (!io.KeyAlt && !io.KeyCtrl && !io.KeyShift && !ImGui::IsAnyWindowFocused()) {
+            if (!io.KeyCtrl && !io.KeyShift && !ImGui::IsAnyWindowFocused()) {
                 if (Input::GetKey(KC_w)) {
                     auto fwd =
                         GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(0.f, 0.f, -1.f, 0.f);
@@ -181,6 +204,7 @@ void OnGui()
             GameModule::GetMainCamera()->transform.SetPosition(cameraPos);
             GameModule::GetMainCamera()->transform.SetRotation(cameraRot);
         }
+        bool addEntityDialogOpened = false;
         bool newSceneDialogOpened = false;
         if (io.KeyCtrl && Input::GetKeyDown(KC_n)) {
             newSceneDialogOpened = true;
@@ -201,6 +225,10 @@ void OnGui()
             if (ImGui::BeginMenu("Entities")) {
                 if (ImGui::MenuItem("Entity Editor", nullptr, &isEntityEditorOpen)) {
                     entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+                }
+                if (ImGui::MenuItem("New Entity")) {
+                    addEntityNewEntity = SerializedObject();
+                    addEntityDialogOpened = true;
                 }
                 ImGui::EndMenu();
             }
@@ -243,6 +271,7 @@ void OnGui()
             ImGui::EndPopup();
         }
 
+        bool isSerializedObjectTypeSelectionOpen = false;
         if (isEntityEditorOpen && ImGui::Begin("Entity Editor")) {
             if (entityEditor.currEntityIndex != 0 && ImGui::SmallButton("Prev")) {
                 entityEditor.currEntityIndex--;
@@ -263,8 +292,72 @@ void OnGui()
                 auto eDesc = reflect::TypeResolver<Entity>::get(entityEditor.currEntity);
                 auto e = eDesc->DrawEditorGui("Entity", entityEditor.currEntity, false);
                 DrawEditorNode(e.get());
+                if (ImGui::Button("Add Component")) {
+                    isSerializedObjectTypeSelectionOpen = true;
+                }
+                ImGui::Separator();
+                if (ImGui::Button("Delete entity")) {
+                    GameModule::RemoveEntity(entityEditor.currEntity);
+                    GameModule::GetScene()->RemoveEntity(entityEditor.currEntity);
+                    // TODO: This only happens to work right now because Entities are new-ed, in the future they may be
+                    // allocated in another way
+                    delete entityEditor.currEntity;
+                    if (entityEditor.currEntityIndex > 0) {
+                        entityEditor.currEntityIndex--;
+                    }
+                    entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+                }
             }
             ImGui::End();
+        }
+
+        if (isSerializedObjectTypeSelectionOpen) {
+            addComponentTypeChooser.value().Open();
+        }
+
+        bool serializedObjectEditorOpenedThisFrame = false;
+        if (addComponentTypeChooser.value().Draw(&serializedObjectEditorSchema)) {
+            serializedObjectEditorOpenedThisFrame = true;
+        }
+
+        if (serializedObjectEditorOpenedThisFrame) {
+            addComponentEditor.Open(serializedObjectEditorSchema.value());
+        }
+
+        if (serializedObjectEditorSchema.has_value()) {
+            if (addComponentEditor.Draw(&addComponentNewComponent)) {
+                DeserializationContext context = {
+                    std::filesystem::path(GameModule::GetScene()->GetFileName()).parent_path()};
+                auto newComponent = (Component *)Deserializable::Deserialize(&context, addComponentNewComponent);
+                if (!newComponent) {
+                    logger->Errorf("Failed to deserialize new component");
+                    return;
+                }
+                if (!entityEditor.currEntity) {
+                    logger->Errorf("Cannot add new component because currEntity is null");
+                    return;
+                }
+                newComponent->entity = entityEditor.currEntity;
+                entityEditor.currEntity->components.push_back(std::unique_ptr<Component>(newComponent));
+            }
+        }
+
+        if (addEntityDialogOpened) {
+            newEntityEditor.Open(entitySchema.value());
+        }
+
+        if (newEntityEditor.Draw(&addEntityNewEntity)) {
+            DeserializationContext context = {
+                std::filesystem::path(GameModule::GetScene()->GetFileName()).parent_path()};
+
+            auto entity = (Entity *)Deserializable::Deserialize(&context, addEntityNewEntity);
+            if (!entity) {
+                logger->Errorf("Failed to deserialize new entity");
+                return;
+            }
+
+            GameModule::AddEntity(entity);
+            GameModule::GetScene()->AddEntity(entity);
         }
     }
 }

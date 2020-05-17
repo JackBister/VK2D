@@ -15,12 +15,13 @@ BroadphaseNativeTypes DeserializeShapeType(std::string s);
 REFLECT_STRUCT_BEGIN(PhysicsComponent)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const PHYSICS_COMPONENT_SCHEMA = SerializedObjectSchema({
-    SerializedPropertySchema("mass", SerializedValueType::DOUBLE, {}, {}, true),
-    SerializedPropertySchema("shapeType", SerializedValueType::STRING, {}, {}, true),
-    SerializedPropertySchema("shapeInfo", SerializedValueType::OBJECT, {}, {}, true),
-    SerializedPropertySchema("isKinematic", SerializedValueType::BOOL),
-});
+static SerializedObjectSchema const PHYSICS_COMPONENT_SCHEMA = SerializedObjectSchema(
+    "PhysicsComponent", {
+                            SerializedPropertySchema("mass", SerializedValueType::DOUBLE, {}, "", true),
+                            SerializedPropertySchema("shapeType", SerializedValueType::STRING, {}, "", true),
+                            SerializedPropertySchema("shapeInfo", SerializedValueType::OBJECT, {}, "", true),
+                            SerializedPropertySchema("isKinematic", SerializedValueType::BOOL),
+                        });
 
 class PhysicsComponentDeserializer : public Deserializer
 {

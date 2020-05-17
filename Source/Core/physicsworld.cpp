@@ -9,15 +9,17 @@
 
 static const auto logger = Logger::Create("PhysicsWorld");
 
-static SerializedObjectSchema const PHYSICS_WORLD_SCHEMA = SerializedObjectSchema({
-    SerializedPropertySchema("gravity", SerializedValueType::OBJECT, {},
-                             new SerializedObjectSchema({
-                                 SerializedPropertySchema("x", SerializedValueType::DOUBLE, {}, {}, true),
-                                 SerializedPropertySchema("y", SerializedValueType::DOUBLE, {}, {}, true),
-                                 SerializedPropertySchema("z", SerializedValueType::DOUBLE, {}, {}, true),
-                             }),
-                             true),
-});
+static SerializedObjectSchema const PHYSICS_WORLD_SCHEMA = SerializedObjectSchema(
+    "PhysicsWorld", {
+                        SerializedPropertySchema("gravity", SerializedValueType::OBJECT, {}, "Vec3", true),
+                    });
+
+static SerializedObjectSchema const VEC3_SCHEMA =
+    SerializedObjectSchema("Vec3", {
+                                       SerializedPropertySchema("x", SerializedValueType::DOUBLE, {}, "", true),
+                                       SerializedPropertySchema("y", SerializedValueType::DOUBLE, {}, "", true),
+                                       SerializedPropertySchema("z", SerializedValueType::DOUBLE, {}, "", true),
+                                   });
 
 class PhysicsWorldDeserializer : public Deserializer
 {
@@ -44,7 +46,23 @@ class PhysicsWorldDeserializer : public Deserializer
     }
 };
 
+// TODO: Move this somewhere else
+class Vec3Deserializer : public Deserializer
+{
+    SerializedObjectSchema GetSchema() final override { return VEC3_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
+    {
+        auto ret = new glm::vec3();
+        ret->x = obj.GetNumber("x").value();
+        ret->y = obj.GetNumber("y").value();
+        ret->z = obj.GetNumber("z").value();
+        return ret;
+    }
+};
+
 DESERIALIZABLE_IMPL(PhysicsWorld, new PhysicsWorldDeserializer());
+DESERIALIZABLE_IMPL(Vec3, new Vec3Deserializer());
 
 void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 {

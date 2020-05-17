@@ -2,5 +2,6 @@
 
 namespace EditorSystem
 {
+	void Init();
 	void OnGui();
 }

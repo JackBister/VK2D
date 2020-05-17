@@ -18,10 +18,11 @@
 
 static const auto logger = Logger::Create("Scene");
 
-static SerializedObjectSchema const SCENE_SCHEMA = SerializedObjectSchema({
-    SerializedPropertySchema("dlls", SerializedValueType::ARRAY, SerializedValueType::STRING),
-    SerializedPropertySchema("entities", SerializedValueType::ARRAY, SerializedValueType::OBJECT),
-});
+static SerializedObjectSchema const SCENE_SCHEMA = SerializedObjectSchema(
+    "Scene", {
+                 SerializedPropertySchema("dlls", SerializedValueType::ARRAY, SerializedValueType::STRING),
+                 SerializedPropertySchema("entities", SerializedValueType::ARRAY, SerializedValueType::OBJECT),
+             });
 
 class SceneDeserializer : public Deserializer
 {
@@ -136,6 +137,16 @@ Scene * Scene::FromFile(std::string const & fileName)
 std::unique_ptr<Scene> Scene::Create(std::string const & fileName)
 {
     return std::unique_ptr<Scene>(new Scene(fileName, std::vector<std::string>(), std::vector<Entity *>()));
+}
+
+void Scene::RemoveEntity(Entity * entity)
+{
+    for (auto it = entities.begin(); it != entities.end(); ++it) {
+        if (*it == entity) {
+            entities.erase(it);
+            return;
+        }
+    }
 }
 
 SerializedObject Scene::Serialize() const

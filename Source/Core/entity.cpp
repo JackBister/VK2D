@@ -17,14 +17,13 @@ REFLECT_STRUCT_MEMBER(transform)
 REFLECT_STRUCT_MEMBER(components)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const ENTITY_SCHEMA = SerializedObjectSchema({
-    SerializedPropertySchema("name", SerializedValueType::STRING, {}, {}, true),
-    SerializedPropertySchema("transform", SerializedValueType::OBJECT, {},
-                             // TODO: Figure out how to do "deferred reference to schema"
-                             // new SerializedObjectSchema(Deserializable::GetSchema("Transform").value())
-                             nullptr, true),
-    SerializedPropertySchema("components", SerializedValueType::ARRAY, SerializedValueType::OBJECT, {}, true),
-});
+static SerializedObjectSchema const ENTITY_SCHEMA = SerializedObjectSchema(
+    "Entity",
+    {
+        SerializedPropertySchema("name", SerializedValueType::STRING, {}, {}, true),
+        SerializedPropertySchema("transform", SerializedValueType::OBJECT, {}, "Transform", true),
+        SerializedPropertySchema("components", SerializedValueType::ARRAY, SerializedValueType::OBJECT, "", true),
+    });
 
 class EntityDeserializer : public Deserializer
 {

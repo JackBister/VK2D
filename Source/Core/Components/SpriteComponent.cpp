@@ -17,9 +17,10 @@ static const auto logger = Logger::Create("SpriteComponent");
 REFLECT_STRUCT_BEGIN(SpriteComponent)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const SPRITE_COMPONENT_SCHEMA = SerializedObjectSchema({
-    SerializedPropertySchema("file", SerializedValueType::STRING, {}, {}, true),
-});
+static SerializedObjectSchema const SPRITE_COMPONENT_SCHEMA = SerializedObjectSchema(
+    "SpriteComponent", {
+                           SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true),
+                       });
 
 class SpriteComponentDeserializer : public Deserializer
 {

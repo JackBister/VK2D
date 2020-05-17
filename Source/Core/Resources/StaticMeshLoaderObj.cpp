@@ -48,10 +48,11 @@ StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
 
     if (!err.empty()) {
         logger->Errorf("Error when loading OBJ file '%s', error='%s'", filename.c_str(), err.c_str());
+        return nullptr;
     }
 
     if (!loadResult) {
-        // TODO: return... null?
+        return nullptr;
     }
 
     std::unordered_map<int, Material *> materialIdToMaterial;
