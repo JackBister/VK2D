@@ -28,12 +28,20 @@ class CameraComponent : public Component
 public:
     friend class CameraComponentDeserializer;
 
-    CameraComponent() { receiveTicks = true; };
+    CameraComponent()
+    {
+        receiveTicks = true;
+        type = "CameraComponent";
+    };
+    CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData);
     ~CameraComponent() override;
 
     SerializedObject Serialize() const override;
 
     void OnEvent(HashedString name, EventArgs args = {}) override;
+
+    inline bool IsActive() const { return isActive; }
+    inline void SetActive(bool active) { this->isActive = active; }
 
     glm::mat4 const & GetProjection();
     glm::mat4 const & GetView();
@@ -52,6 +60,7 @@ private:
     std::variant<OrthoCamera, PerspectiveCamera> cameraData;
 
     bool defaultsToMain = false;
+    bool isActive = true;
     bool isProjectionDirty = true;
     bool isViewDirty = true;
     glm::mat4 projection;

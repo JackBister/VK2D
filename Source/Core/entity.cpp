@@ -72,6 +72,12 @@ void Entity::FireEvent(HashedString ename, EventArgs args)
     }
 }
 
+void Entity::AddComponent(std::unique_ptr<Component> component)
+{
+    component->entity = this;
+    components.push_back(std::move(component));
+}
+
 Component * Entity::GetComponent(std::string type) const
 {
     for (auto const & c : components) {

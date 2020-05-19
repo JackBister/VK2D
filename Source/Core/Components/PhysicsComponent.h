@@ -12,7 +12,11 @@ class PhysicsComponent : public Component, public btMotionState
 public:
     friend class PhysicsComponentDeserializer;
 
-    PhysicsComponent() { receiveTicks = false; }
+    PhysicsComponent()
+    {
+        receiveTicks = false;
+        type = "PhysicsComponent";
+    }
     ~PhysicsComponent() override;
 
     SerializedObject Serialize() const override;

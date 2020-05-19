@@ -8,7 +8,11 @@ class PaddleComponent : public Component
 public:
     friend class PaddleComponentDeserializer;
 
-    PaddleComponent() { receiveTicks = true; };
+    PaddleComponent()
+    {
+        receiveTicks = true;
+        type = "PaddleComponent";
+    };
 
     SerializedObject Serialize() const override;
 

@@ -4,6 +4,7 @@
 #include <imgui.h>
 #include <optick/optick.h>
 
+#include "Core/Components/CameraComponent.h"
 #include "Core/GameModule.h"
 #include "Core/Input.h"
 #include "Core/Logging/Logger.h"
@@ -84,7 +85,8 @@ const float CAMERA_DRAG_MULTIPLIER_MIN = 5.f;
 const float CAMERA_DRAG_MULTIPLIER_MAX = 100.f;
 const float CAMERA_DRAG_INCREASE_STEP = 20.f;
 float cameraDragMultiplier = 30.f;
-Transform cameraTransformBeforeEditorWasOpened;
+
+Entity * editorCamera;
 
 // Scene menu state
 char newSceneFilename[256];
@@ -116,6 +118,17 @@ void Init()
     if (!entitySchema.has_value()) {
         logger->Errorf("Could not find the schema for Entity, this should never happen and will cause a crash.");
     }
+
+    editorCamera = new Entity();
+    editorCamera->name = "EditorCamera";
+    editorCamera->type = "Entity";
+    PerspectiveCamera camera;
+    camera.aspect = 1.77;
+    camera.fov = 90;
+    camera.zFar = 10000;
+    camera.zNear = 0.1;
+    editorCamera->AddComponent(std::make_unique<CameraComponent>(camera));
+    GameModule::AddEntity(editorCamera);
 }
 
 void OnGui()
@@ -131,8 +144,8 @@ void OnGui()
     }
     if (isEditorOpen) {
         if (isWorldPaused) {
-            auto cameraPos = GameModule::GetMainCamera()->transform.GetPosition();
-            auto cameraRot = GameModule::GetMainCamera()->transform.GetRotation();
+            auto cameraPos = editorCamera->transform.GetPosition();
+            auto cameraRot = editorCamera->transform.GetRotation();
             if (Input::GetKey(KC_LALT)) {
                 if (io.MouseWheel != 0) {
                     cameraDragMultiplier += io.MouseWheel * CAMERA_DRAG_INCREASE_STEP;
@@ -165,14 +178,13 @@ void OnGui()
 
             if (!io.KeyCtrl && !io.KeyShift && !ImGui::IsAnyWindowFocused()) {
                 if (Input::GetKey(KC_w)) {
-                    auto fwd =
-                        GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(0.f, 0.f, -1.f, 0.f);
+                    auto fwd = editorCamera->transform.GetLocalToWorld() * glm::vec4(0.f, 0.f, -1.f, 0.f);
                     fwd *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
                     cameraPos.x += fwd.x;
                     cameraPos.y += fwd.y;
                     cameraPos.z += fwd.z;
                 } else if (Input::GetKey(KC_s)) {
-                    auto bwd = GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(0.f, 0.f, 1.f, 0.f);
+                    auto bwd = editorCamera->transform.GetLocalToWorld() * glm::vec4(0.f, 0.f, 1.f, 0.f);
                     bwd *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
                     cameraPos.x += bwd.x;
                     cameraPos.y += bwd.y;
@@ -180,15 +192,13 @@ void OnGui()
                 }
 
                 if (Input::GetKey(KC_a)) {
-                    auto left =
-                        GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(-1.f, 0.f, 0.f, 0.f);
+                    auto left = editorCamera->transform.GetLocalToWorld() * glm::vec4(-1.f, 0.f, 0.f, 0.f);
                     left *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
                     cameraPos.x += left.x;
                     cameraPos.y += left.y;
                     cameraPos.z += left.z;
                 } else if (Input::GetKey(KC_d)) {
-                    auto right =
-                        GameModule::GetMainCamera()->transform.GetLocalToWorld() * glm::vec4(1.f, 0.f, 0.f, 0.f);
+                    auto right = editorCamera->transform.GetLocalToWorld() * glm::vec4(1.f, 0.f, 0.f, 0.f);
                     right *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
                     cameraPos.x += right.x;
                     cameraPos.y += right.y;
@@ -196,8 +206,8 @@ void OnGui()
                 }
             }
 
-            GameModule::GetMainCamera()->transform.SetPosition(cameraPos);
-            GameModule::GetMainCamera()->transform.SetRotation(cameraRot);
+            editorCamera->transform.SetPosition(cameraPos);
+            editorCamera->transform.SetRotation(cameraRot);
         }
         bool addEntityDialogOpened = false;
         bool newSceneDialogOpened = false;
@@ -208,6 +218,7 @@ void OnGui()
             SaveScene();
         }
         if (ImGui::BeginMainMenuBar()) {
+            ImGui::Columns(3);
             auto scene = GameModule::GetScene();
             auto tempSceneLocation =
                 (std::filesystem::path(scene->GetFileName()).parent_path() / "_editor.scene").string();
@@ -232,23 +243,28 @@ void OnGui()
                 ImGui::EndMenu();
             }
             if (isWorldPaused && ImGui::MenuItem("Play")) {
-                Time::SetTimeScale(1.f);
-                isWorldPaused = false;
-                scene->SerializeToFile(tempSceneLocation);
+                Play();
             } else if (!isWorldPaused && ImGui::MenuItem("Pause")) {
-                Time::SetTimeScale(0.f);
-                isWorldPaused = true;
-                if (resetOnPause) {
-                    logger->Infof("Reset on pause enabled, reloading scene");
-                    GameModule::LoadScene(tempSceneLocation);
-                    entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
-                    if (!entityEditor.currEntity) {
-                        entityEditor.currEntityIndex = GameModule::GetEntityCount() - 1;
-                        entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
-                    }
-                    logger->Infof("Finished reloading scene");
+                Pause(resetOnPause);
+            }
+
+            ImGui::NextColumn();
+            ImGui::NextColumn();
+            // Hack for right alignment
+            float rightAlignedItemsSize = ImGui::CalcTextSize("Toggle Camera").x;
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - rightAlignedItemsSize -
+                                 ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
+            if (ImGui::MenuItem("Toggle Camera")) {
+                auto editorCameraComponent = (CameraComponent *)editorCamera->GetComponent("CameraComponent");
+                if (editorCameraComponent->IsActive()) {
+                    editorCameraComponent->SetActive(false);
+                    ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(true);
+                } else {
+                    editorCameraComponent->SetActive(true);
+                    ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(false);
                 }
             }
+
             ImGui::EndMainMenuBar();
         }
 
@@ -266,7 +282,6 @@ void OnGui()
                 auto parent = std::filesystem::path(newSceneFilename).parent_path();
                 std::filesystem::create_directories(parent);
                 auto newScene = Scene::Create(newSceneFilename);
-                newScene->AddEntity(GameModule::GetMainCamera());
                 newScene->SerializeToFile(newSceneFilename);
 
                 GameModule::LoadScene(newSceneFilename);
@@ -378,9 +393,9 @@ void CloseEditor()
         return;
     }
     isEditorOpen = false;
-    GameModule::GetMainCamera()->transform = cameraTransformBeforeEditorWasOpened;
-    isWorldPaused = false;
-    Time::SetTimeScale(1.f);
+    ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(true);
+    ((CameraComponent *)editorCamera->GetComponent("CameraComponent"))->SetActive(false);
+    Play();
 }
 
 void OpenEditor()
@@ -389,10 +404,36 @@ void OpenEditor()
         return;
     }
     isEditorOpen = true;
-    cameraTransformBeforeEditorWasOpened = GameModule::GetMainCamera()->transform;
-    isWorldPaused = true;
-    // TODO: Stash timescale and restore it on unpause (both here and in regular pause part)
+    ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(false);
+    ((CameraComponent *)editorCamera->GetComponent("CameraComponent"))->SetActive(true);
+    Pause(false);
+}
+
+void Pause(bool reset)
+{
+    auto scene = GameModule::GetScene();
+    auto tempSceneLocation = (std::filesystem::path(scene->GetFileName()).parent_path() / "_editor.scene").string();
     Time::SetTimeScale(0.f);
+    isWorldPaused = true;
+    if (reset) {
+        logger->Infof("Reset on pause enabled, reloading scene");
+        GameModule::LoadScene(tempSceneLocation);
+        entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+        if (!entityEditor.currEntity) {
+            entityEditor.currEntityIndex = GameModule::GetEntityCount() - 1;
+            entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+        }
+        logger->Infof("Finished reloading scene");
+    }
+}
+
+void Play()
+{
+    auto scene = GameModule::GetScene();
+    auto tempSceneLocation = (std::filesystem::path(scene->GetFileName()).parent_path() / "_editor.scene").string();
+    Time::SetTimeScale(1.f);
+    isWorldPaused = false;
+    scene->SerializeToFile(tempSceneLocation);
 }
 }
 

@@ -13,7 +13,11 @@ class SpriteComponent final : public Component
 public:
     friend class SpriteComponentDeserializer;
 
-    SpriteComponent() { receiveTicks = true; }
+    SpriteComponent()
+    {
+        receiveTicks = true;
+        type = "SpriteComponent";
+    }
     ~SpriteComponent() override;
 
     SerializedObject Serialize() const override;

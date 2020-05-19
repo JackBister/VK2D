@@ -26,6 +26,7 @@ static SerializedObjectSchema CAMERA_COMPONENT_SCHEMA = SerializedObjectSchema(
         SerializedPropertySchema("ortho", SerializedValueType::OBJECT, {}, "OrthoCamera", false, {"perspective"}),
         SerializedPropertySchema("perspective", SerializedValueType::OBJECT, {}, "PerspectiveCamera", false, {"ortho"}),
         SerializedPropertySchema("defaultsToMain", SerializedValueType::BOOL),
+        SerializedPropertySchema("isActive", SerializedValueType::BOOL, {}, "", true),
     });
 
 static SerializedObjectSchema
@@ -83,6 +84,8 @@ class CameraComponentDeserializer : public Deserializer
             ret->defaultsToMain = defaultsToMainOpt.value();
         }
 
+        ret->isActive = obj.GetBool("isActive").value();
+
         ret->cameraHandle = RenderSystem::GetInstance()->CreateCamera();
 
         return ret;
@@ -122,6 +125,13 @@ COMPONENT_IMPL(CameraComponent, new CameraComponentDeserializer())
 DESERIALIZABLE_IMPL(OrthoCamera, new OrthoCameraDeserializer())
 DESERIALIZABLE_IMPL(PerspectiveCamera, new PerspectiveCameraDeserializer())
 
+CameraComponent::CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData) : cameraData(cameraData)
+{
+    receiveTicks = true;
+    type = "CameraComponent";
+    cameraHandle = RenderSystem::GetInstance()->CreateCamera();
+}
+
 CameraComponent::~CameraComponent()
 {
     RenderSystem::GetInstance()->DestroyCamera(this->cameraHandle);
@@ -153,7 +163,9 @@ glm::mat4 const & CameraComponent::GetView()
 SerializedObject CameraComponent::Serialize() const
 {
     SerializedObject::Builder builder;
-    builder.WithString("type", this->Reflection.name).WithBool("defaultsToMain", defaultsToMain);
+    builder.WithString("type", this->Reflection.name)
+        .WithBool("defaultsToMain", defaultsToMain)
+        .WithBool("isActive", isActive);
 
     if (cameraData.index() == CameraType::ORTHO) {
         auto ortho = std::get<OrthoCamera>(cameraData);
@@ -196,8 +208,10 @@ void CameraComponent::OnEvent(HashedString name, EventArgs args)
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
         builder->WithCameraUpdate({GetView(), GetProjection(), cameraHandle});
     } else if (name == "Tick") {
-        SubmittedCamera submittedCamera;
-        submittedCamera.cameraHandle = cameraHandle;
-        GameModule::SubmitCamera(submittedCamera);
+        if (isActive) {
+            SubmittedCamera submittedCamera;
+            submittedCamera.cameraHandle = cameraHandle;
+            GameModule::SubmitCamera(submittedCamera);
+        }
     }
 }

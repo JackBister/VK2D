@@ -7,4 +7,7 @@ void OnGui();
 
 void CloseEditor();
 void OpenEditor();
+
+void Pause(bool reset);
+void Play();
 }

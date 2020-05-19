@@ -14,7 +14,11 @@ class StaticMeshComponent : public Component
 public:
     friend class StaticMeshComponentDeserializer;
 
-    StaticMeshComponent() { receiveTicks = true; }
+    StaticMeshComponent()
+    {
+        receiveTicks = true;
+        type = "StaticMeshComponent";
+    }
     StaticMeshComponent(std::string file, StaticMesh * mesh);
     ~StaticMeshComponent() override;
 

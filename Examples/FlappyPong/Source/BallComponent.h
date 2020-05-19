@@ -8,7 +8,11 @@ class BallComponent : public Component
 {
 public:
     friend class BallComponentDeserializer;
-    BallComponent() { receiveTicks = true; };
+    BallComponent()
+    {
+        receiveTicks = true;
+        type = "BallComponent";
+    };
 
     SerializedObject Serialize() const override;
 
