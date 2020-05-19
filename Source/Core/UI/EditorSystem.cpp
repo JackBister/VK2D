@@ -440,5 +440,7 @@ void Play()
 void SaveScene()
 {
     auto scene = GameModule::GetScene();
+    // Always save main camera as active, otherwise it may be saved as inactive if the editor camera is active
+    ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(true);
     scene->SerializeToFile(scene->GetFileName());
 }
