@@ -68,7 +68,7 @@ StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
             uint8_t r = material.diffuse[0] >= 1.f ? 0xFF : material.diffuse[0] * 256;
             uint8_t g = material.diffuse[1] >= 1.f ? 0xFF : material.diffuse[1] * 256;
             uint8_t b = material.diffuse[2] >= 1.f ? 0xFF : material.diffuse[2] * 256;
-            auto albedoFile = filename + "/albedo";
+            auto albedoFile = filename + '/' + material.name + "/albedo";
             auto albedoImage = Image::FromData(albedoFile, 1, 1, {r, g, b, 0xFF});
 
             materialIdToMaterial[i] = new Material(albedoImage);
@@ -162,5 +162,7 @@ StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
     });
     sem.Wait();
 
-    return new StaticMesh(submeshes);
+    auto ret = new StaticMesh(submeshes);
+    ResourceManager::AddResource(filename, ret);
+    return ret;
 }
