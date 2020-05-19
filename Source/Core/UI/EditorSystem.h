@@ -2,6 +2,9 @@
 
 namespace EditorSystem
 {
-	void Init();
-	void OnGui();
+void Init();
+void OnGui();
+
+void CloseEditor();
+void OpenEditor();
 }

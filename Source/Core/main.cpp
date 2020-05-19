@@ -22,6 +22,7 @@
 #include "Core/Rendering/ShaderProgramFactory.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
+#include "Core/UI/EditorSystem.h"
 #include "Core/Util/DefaultFileSlurper.h"
 #include "Core/Util/SetThreadName.h"
 #include "Core/entity.h"
@@ -37,7 +38,15 @@ int main(int argc, char * argv[])
         printf("Usage: %s <scene file>\n", argv[0]);
         return 1;
     }
-    std::string sceneFileName(argv[1]);
+
+    bool startInEditor = false;
+    for (int i = 0; i < argc; ++i) {
+        if (strcmp(argv[i], "-editor") == 0) {
+            startInEditor = true;
+        }
+    }
+
+    std::string sceneFileName(argv[argc - 1]);
     ImGui::CreateContext();
     SDL_Init(SDL_INIT_EVERYTHING);
     Config::Init();
@@ -61,6 +70,11 @@ int main(int argc, char * argv[])
     GameModule::Init(&renderSystem);
 
     GameModule::LoadScene(sceneFileName);
+
+    if (startInEditor) {
+        EditorSystem::OpenEditor();
+    }
+
     while (true) {
         OPTICK_FRAME("MainThread");
         char const * sdlErr = SDL_GetError();

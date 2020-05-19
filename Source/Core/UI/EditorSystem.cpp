@@ -123,17 +123,10 @@ void OnGui()
     OPTICK_EVENT();
     auto io = ImGui::GetIO();
     if (Input::GetKeyDown(KC_F7)) {
-        isEditorOpen = !isEditorOpen;
-        // Default to pausing when opening editor
         if (isEditorOpen) {
-            cameraTransformBeforeEditorWasOpened = GameModule::GetMainCamera()->transform;
-            isWorldPaused = true;
-            // TODO: Stash timescale and restore it on unpause (both here and in regular pause part)
-            Time::SetTimeScale(0.f);
+            CloseEditor();
         } else {
-            GameModule::GetMainCamera()->transform = cameraTransformBeforeEditorWasOpened;
-            isWorldPaused = false;
-            Time::SetTimeScale(1.f);
+            OpenEditor();
         }
     }
     if (isEditorOpen) {
@@ -377,6 +370,29 @@ void OnGui()
             GameModule::GetScene()->AddEntity(entity);
         }
     }
+}
+
+void CloseEditor()
+{
+    if (!isEditorOpen) {
+        return;
+    }
+    isEditorOpen = false;
+    GameModule::GetMainCamera()->transform = cameraTransformBeforeEditorWasOpened;
+    isWorldPaused = false;
+    Time::SetTimeScale(1.f);
+}
+
+void OpenEditor()
+{
+    if (isEditorOpen) {
+        return;
+    }
+    isEditorOpen = true;
+    cameraTransformBeforeEditorWasOpened = GameModule::GetMainCamera()->transform;
+    isWorldPaused = true;
+    // TODO: Stash timescale and restore it on unpause (both here and in regular pause part)
+    Time::SetTimeScale(0.f);
 }
 }
 
