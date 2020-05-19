@@ -78,6 +78,8 @@ namespace EditorSystem
 bool isEditorOpen = false;
 bool isWorldPaused = false;
 
+bool resetOnPause = true;
+
 const float CAMERA_DRAG_MULTIPLIER_MIN = 5.f;
 const float CAMERA_DRAG_MULTIPLIER_MAX = 100.f;
 const float CAMERA_DRAG_INCREASE_STEP = 20.f;
@@ -213,6 +215,9 @@ void OnGui()
             SaveScene();
         }
         if (ImGui::BeginMainMenuBar()) {
+            auto scene = GameModule::GetScene();
+            auto tempSceneLocation =
+                (std::filesystem::path(scene->GetFileName()).parent_path() / "_editor.scene").string();
             if (ImGui::BeginMenu("Scene")) {
                 if (ImGui::MenuItem("New Scene")) {
                     newSceneDialogOpened = true;
@@ -220,6 +225,7 @@ void OnGui()
                 if (ImGui::MenuItem("Save Scene")) {
                     SaveScene();
                 }
+                ImGui::MenuItem("Reset on pause", nullptr, &resetOnPause);
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Entities")) {
@@ -235,9 +241,20 @@ void OnGui()
             if (isWorldPaused && ImGui::MenuItem("Play")) {
                 Time::SetTimeScale(1.f);
                 isWorldPaused = false;
+                scene->SerializeToFile(tempSceneLocation);
             } else if (!isWorldPaused && ImGui::MenuItem("Pause")) {
                 Time::SetTimeScale(0.f);
                 isWorldPaused = true;
+                if (resetOnPause) {
+                    logger->Infof("Reset on pause enabled, reloading scene");
+                    GameModule::LoadScene(tempSceneLocation);
+                    entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+                    if (!entityEditor.currEntity) {
+                        entityEditor.currEntityIndex = GameModule::GetEntityCount() - 1;
+                        entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+                    }
+                    logger->Infof("Finished reloading scene");
+                }
             }
             ImGui::EndMainMenuBar();
         }
