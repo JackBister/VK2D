@@ -14,11 +14,13 @@ void * Deserializable::Deserialize(DeserializationContext * deserializationConte
         return nullptr;
     }
     std::string type = typeOpt.value();
-    auto deserializer = Map()[type];
-    if (!deserializer) {
+    auto m = Map();
+    auto found = m.find(type);
+    if (found == m.end()) {
         logger->Errorf("No deserializer found for type=%s", type.c_str());
         return nullptr;
     }
+    auto deserializer = found->second;
     auto validationResult = SchemaValidator::Validate(deserializer->GetSchema(), obj);
     if (!validationResult.isValid) {
         logger->Errorf("Failed to deserialize object of type=%s, object does not match schema. Errors:", type.c_str());

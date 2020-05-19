@@ -78,7 +78,7 @@ void Entity::AddComponent(std::unique_ptr<Component> component)
     components.push_back(std::move(component));
 }
 
-Component * Entity::GetComponent(std::string type) const
+Component * Entity::GetComponent(std::string const & type) const
 {
     for (auto const & c : components) {
         if (c->type == type) {
@@ -86,6 +86,16 @@ Component * Entity::GetComponent(std::string type) const
         }
     }
     return nullptr;
+}
+
+bool Entity::HasComponent(std::string const & type) const
+{
+    for (auto const & c : components) {
+        if (c->type == type) {
+            return true;
+        }
+    }
+    return false;
 }
 
 SerializedObject Entity::Serialize() const

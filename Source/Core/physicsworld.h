@@ -20,6 +20,8 @@ public:
     static Deserializable * s_Deserialize(DeserializationContext * deserializationContext,
                                           SerializedObject const & str);
 
+    PhysicsWorld() { this->type = "PhysicsWorld"; }
+
     SerializedObject Serialize() const override;
     void SetGravity(glm::vec3 const &);
 

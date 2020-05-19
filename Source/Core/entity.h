@@ -17,7 +17,8 @@ public:
     void FireEvent(HashedString name, EventArgs args = {});
 
     void AddComponent(std::unique_ptr<Component> component);
-    Component * GetComponent(std::string type) const;
+    Component * GetComponent(std::string const & type) const;
+    bool HasComponent(std::string const & type) const;
 
     std::string name;
     Transform transform;

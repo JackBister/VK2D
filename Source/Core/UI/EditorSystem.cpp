@@ -5,6 +5,7 @@
 #include <optick/optick.h>
 
 #include "Core/Components/CameraComponent.h"
+#include "Core/Components/UneditableComponent.h"
 #include "Core/GameModule.h"
 #include "Core/Input.h"
 #include "Core/Logging/Logger.h"
@@ -110,6 +111,9 @@ struct {
     size_t currEntityIndex = 0;
 } entityEditor;
 
+void ToNextEntity();
+void ToPrevEntity();
+
 void Init()
 {
     addComponentTypeChooser = TypeChooser("Choose type");
@@ -128,6 +132,7 @@ void Init()
     camera.zFar = 10000;
     camera.zNear = 0.1;
     editorCamera->AddComponent(std::make_unique<CameraComponent>(camera));
+    editorCamera->AddComponent(std::make_unique<UneditableComponent>());
     GameModule::AddEntity(editorCamera);
 }
 
@@ -299,19 +304,13 @@ void OnGui()
         bool isSerializedObjectTypeSelectionOpen = false;
         if (isEntityEditorOpen && ImGui::Begin("Entity Editor")) {
             if (entityEditor.currEntityIndex != 0 && ImGui::SmallButton("Prev")) {
-                entityEditor.currEntityIndex--;
-                entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+                ToPrevEntity();
             }
             ImGui::SameLine();
             if (ImGui::SmallButton("Next")) {
-                entityEditor.currEntityIndex++;
-                entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
-                if (entityEditor.currEntity == nullptr) {
-                    entityEditor.currEntityIndex = 0;
-                    entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
-                }
+                ToNextEntity();
             }
-            if (entityEditor.currEntity != nullptr) {
+            if (entityEditor.currEntity != nullptr && !entityEditor.currEntity->HasComponent("UneditableComponent")) {
                 ImGui::Text(entityEditor.currEntity->name.c_str());
                 ImGui::Separator();
                 auto eDesc = reflect::TypeResolver<Entity>::get(entityEditor.currEntity);
@@ -434,6 +433,40 @@ void Play()
     Time::SetTimeScale(1.f);
     isWorldPaused = false;
     scene->SerializeToFile(tempSceneLocation);
+}
+
+void ToNextEntity()
+{
+    auto startIndex = entityEditor.currEntityIndex;
+    entityEditor.currEntityIndex++;
+    entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+    if (entityEditor.currEntity == nullptr) {
+        entityEditor.currEntityIndex = 0;
+        entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+    }
+    while (entityEditor.currEntity->HasComponent("UneditableComponent") && entityEditor.currEntityIndex != startIndex) {
+        entityEditor.currEntityIndex++;
+        entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+        if (entityEditor.currEntity == nullptr) {
+            entityEditor.currEntityIndex = 0;
+            entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+        }
+    }
+}
+
+void ToPrevEntity()
+{
+    auto startIndex = entityEditor.currEntityIndex;
+    entityEditor.currEntityIndex--;
+    entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+    while (entityEditor.currEntity->HasComponent("UneditableComponent") && entityEditor.currEntityIndex != startIndex) {
+        if (entityEditor.currEntityIndex == 0) {
+            entityEditor.currEntityIndex = GameModule::GetEntityCount() - 1;
+        } else {
+            entityEditor.currEntityIndex--;
+        }
+        entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
+    }
 }
 }
 
