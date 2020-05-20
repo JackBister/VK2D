@@ -5,7 +5,6 @@
 #include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/RenderSystem.h"
-#include "Core/Rendering/SubmittedMesh.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/StaticMeshLoaderObj.h"
 #include "Core/Serialization/DeserializationContext.h"
@@ -14,11 +13,13 @@
 static const auto logger = Logger::Create("StaticMeshComponent");
 
 REFLECT_STRUCT_BEGIN(StaticMeshComponent)
+REFLECT_STRUCT_MEMBER(isActive)
 REFLECT_STRUCT_END()
 
 static SerializedObjectSchema const STATIC_MESH_COMPONENT_SCHEMA = SerializedObjectSchema(
     "StaticMeshComponent", {
                                SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true),
+                               SerializedPropertySchema("isActive", SerializedValueType::BOOL),
                            });
 
 class StaticMeshComponentDeserializer : public Deserializer
@@ -39,6 +40,7 @@ class StaticMeshComponentDeserializer : public Deserializer
         }
         auto ret = new StaticMeshComponent(file, mesh);
         ret->staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance(mesh);
+        ret->isActive = obj.GetBool("isActive").value_or(true);
         return ret;
     }
 };
@@ -54,7 +56,11 @@ StaticMeshComponent::StaticMeshComponent(std::string file, StaticMesh * mesh) : 
 
 SerializedObject StaticMeshComponent::Serialize() const
 {
-    return SerializedObject::Builder().WithString("type", this->Reflection.name).WithString("file", this->file).Build();
+    return SerializedObject::Builder()
+        .WithString("type", this->Reflection.name)
+        .WithString("file", this->file)
+        .WithBool("isActive", this->isActive)
+        .Build();
 }
 
 void StaticMeshComponent::OnEvent(HashedString name, EventArgs args)
@@ -66,23 +72,6 @@ void StaticMeshComponent::OnEvent(HashedString name, EventArgs args)
 
     if (name == "PreRender") {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
-        builder->WithStaticMeshInstanceUpdate({entity->transform.GetLocalToWorld(), staticMeshInstance});
-    } else if (name == "Tick") {
-        auto submeshes = mesh->GetSubmeshes();
-        SubmittedMesh submit;
-        submit.staticMeshInstance = staticMeshInstance;
-        submit.localToWorld = entity->transform.GetLocalToWorld();
-        for (size_t i = 0; i < submeshes.size(); ++i) {
-            SubmittedSubmesh submittedSubmesh{submeshes[i].GetMaterial(),
-                                              submeshes[i].GetNumIndexes(),
-                                              submeshes[i].GetIndexBuffer(),
-                                              submeshes[i].GetNumVertices(),
-                                              submeshes[i].GetVertexBuffer()};
-
-            submit.submeshes.push_back(submittedSubmesh);
-        }
-        if (submit.submeshes.size() > 0) {
-            GameModule::SubmitMesh(submit);
-        }
+        builder->WithStaticMeshInstanceUpdate({staticMeshInstance, entity->transform.GetLocalToWorld(), isActive});
     }
 }

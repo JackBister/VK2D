@@ -7,7 +7,9 @@
 
 #include "Core/Logging/Logger.h"
 #include "Core/Resources/Image.h"
+#include "Core/Resources/Material.h"
 #include "Core/Resources/ShaderProgram.h"
+#include "Core/Resources/StaticMesh.h"
 #include "Core/Semaphore.h"
 #include "Core/entity.h"
 
@@ -162,7 +164,7 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
     currFrame.mainCommandBuffer->Reset();
     currFrame.mainCommandBuffer->BeginRecording(nullptr);
 
-    auto meshBatches = CreateBatches(frame.meshes);
+    auto meshBatches = CreateBatches();
 
     Prepass(frame, meshBatches);
 
@@ -316,6 +318,12 @@ void RenderSystem::PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const &
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
+
+    for (auto const & meshUpdate : meshes) {
+        auto instance = GetStaticMeshInstance(meshUpdate.staticMeshInstance);
+        instance->isActive = meshUpdate.isActive;
+        instance->localToWorld = meshUpdate.localToWorld;
+    }
 }
 
 void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches)
@@ -434,33 +442,33 @@ void RenderSystem::RenderTransparentMeshes(SubmittedCamera const & camera, std::
 
 // Absolute caveman code here
 struct SubmeshWithUniformId {
-    SubmittedSubmesh submesh;
+    Submesh const * submesh;
     uint32_t id;
 };
 
 struct SubmeshComparer {
     bool operator()(SubmeshWithUniformId const & lhs, SubmeshWithUniformId const & rhs) const
     {
-        if (lhs.submesh.material->GetDescriptorSet() < rhs.submesh.material->GetDescriptorSet()) {
+        if (lhs.submesh->GetMaterial()->GetDescriptorSet() < rhs.submesh->GetMaterial()->GetDescriptorSet()) {
             return true;
         }
-        if (lhs.submesh.material->GetDescriptorSet() > rhs.submesh.material->GetDescriptorSet()) {
+        if (lhs.submesh->GetMaterial()->GetDescriptorSet() > rhs.submesh->GetMaterial()->GetDescriptorSet()) {
             return false;
         }
         // Same material
-        if (lhs.submesh.vertexBuffer.GetBuffer() < rhs.submesh.vertexBuffer.GetBuffer()) {
+        if (lhs.submesh->GetVertexBuffer().GetBuffer() < rhs.submesh->GetVertexBuffer().GetBuffer()) {
             return true;
         }
-        if (lhs.submesh.vertexBuffer.GetBuffer() > rhs.submesh.vertexBuffer.GetBuffer()) {
+        if (lhs.submesh->GetVertexBuffer().GetBuffer() > rhs.submesh->GetVertexBuffer().GetBuffer()) {
             return false;
         }
         // Same material, same vertex buffer
-        if (!lhs.submesh.indexBuffer.has_value() && !rhs.submesh.indexBuffer.has_value()) {
+        if (!lhs.submesh->GetIndexBuffer().has_value() && !rhs.submesh->GetIndexBuffer().has_value()) {
             // Same material, same vertex buffer, no index buffers
-            if (lhs.submesh.vertexBuffer.GetOffset() < rhs.submesh.vertexBuffer.GetOffset()) {
+            if (lhs.submesh->GetVertexBuffer().GetOffset() < rhs.submesh->GetVertexBuffer().GetOffset()) {
                 return true;
             }
-            if (lhs.submesh.vertexBuffer.GetOffset() > rhs.submesh.vertexBuffer.GetOffset()) {
+            if (lhs.submesh->GetVertexBuffer().GetOffset() > rhs.submesh->GetVertexBuffer().GetOffset()) {
                 return false;
             }
             if (lhs.id < rhs.id) {
@@ -470,26 +478,26 @@ struct SubmeshComparer {
                 return false;
             }
             // Same material, same vertex buffer, no index buffers, same offset, same id
-            return lhs.submesh.numVertices < rhs.submesh.numVertices;
+            return lhs.submesh->GetNumVertices() < rhs.submesh->GetNumVertices();
         }
-        if (lhs.submesh.indexBuffer.has_value() && !rhs.submesh.indexBuffer.has_value()) {
+        if (lhs.submesh->GetIndexBuffer().has_value() && !rhs.submesh->GetIndexBuffer().has_value()) {
             return true;
         }
-        if (!lhs.submesh.indexBuffer.has_value() && rhs.submesh.indexBuffer.has_value()) {
+        if (!lhs.submesh->GetIndexBuffer().has_value() && rhs.submesh->GetIndexBuffer().has_value()) {
             return false;
         }
         // Same material, same vertex buffer, both have index buffer
-        if (lhs.submesh.indexBuffer.value().GetBuffer() < rhs.submesh.indexBuffer.value().GetBuffer()) {
+        if (lhs.submesh->GetIndexBuffer().value().GetBuffer() < rhs.submesh->GetIndexBuffer().value().GetBuffer()) {
             return true;
         }
-        if (lhs.submesh.indexBuffer.value().GetBuffer() > rhs.submesh.indexBuffer.value().GetBuffer()) {
+        if (lhs.submesh->GetIndexBuffer().value().GetBuffer() > rhs.submesh->GetIndexBuffer().value().GetBuffer()) {
             return false;
         }
         // Same material, same vertex buffer, same index buffer
-        if (lhs.submesh.indexBuffer.value().GetOffset() < rhs.submesh.indexBuffer.value().GetOffset()) {
+        if (lhs.submesh->GetIndexBuffer().value().GetOffset() < rhs.submesh->GetIndexBuffer().value().GetOffset()) {
             return true;
         }
-        if (lhs.submesh.indexBuffer.value().GetOffset() > rhs.submesh.indexBuffer.value().GetOffset()) {
+        if (lhs.submesh->GetIndexBuffer().value().GetOffset() > rhs.submesh->GetIndexBuffer().value().GetOffset()) {
             return false;
         }
         if (lhs.id < rhs.id) {
@@ -499,11 +507,11 @@ struct SubmeshComparer {
             return false;
         }
         // Same material, same vertex buffer, same index buffer, same index offset, same id
-        return lhs.submesh.numIndexes < rhs.submesh.numIndexes;
+        return lhs.submesh->GetNumIndexes() < rhs.submesh->GetNumIndexes();
     }
 };
 
-std::vector<MeshBatch> RenderSystem::CreateBatches(std::vector<SubmittedMesh> const & meshes)
+std::vector<MeshBatch> RenderSystem::CreateBatches()
 {
     OPTICK_EVENT();
 
@@ -511,12 +519,14 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(std::vector<SubmittedMesh> co
     std::set<SubmeshWithUniformId, SubmeshComparer> sortedSubmeshes;
     {
         OPTICK_EVENT("SortSubmeshes");
-        for (auto const & mesh : meshes) {
-            auto instance = GetStaticMeshInstance(mesh.staticMeshInstance);
-            localToWorlds.push_back(mesh.localToWorld);
+        for (auto const & instance : this->staticMeshes) {
+            if (!instance.isActive) {
+                continue;
+            }
+            localToWorlds.push_back(instance.localToWorld);
             uint32_t id = localToWorlds.size() - 1;
-            for (auto const & submesh : mesh.submeshes) {
-                sortedSubmeshes.insert({submesh, id});
+            for (auto const & submesh : instance.mesh->GetSubmeshes()) {
+                sortedSubmeshes.insert({&submesh, id});
             }
         }
     }
@@ -532,10 +542,10 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(std::vector<SubmittedMesh> co
         OPTICK_EVENT("GatherBatches");
         MeshBatch currentBatch;
         for (auto const & submesh : sortedSubmeshes) {
-            if (submesh.submesh.material != currentBatch.material ||
-                submesh.submesh.vertexBuffer.GetBuffer() != currentBatch.vertexBuffer ||
-                (submesh.submesh.indexBuffer.has_value() ? submesh.submesh.indexBuffer->GetBuffer() : nullptr) !=
-                    currentBatch.indexBuffer) {
+            if (submesh.submesh->GetMaterial() != currentBatch.material ||
+                submesh.submesh->GetVertexBuffer().GetBuffer() != currentBatch.vertexBuffer ||
+                (submesh.submesh->GetIndexBuffer().has_value() ? submesh.submesh->GetIndexBuffer()->GetBuffer()
+                                                               : nullptr) != currentBatch.indexBuffer) {
                 currentBatch.drawCommandsOffset = drawCommandsOffset;
                 currentBatch.drawCommandsCount = drawCommands.size() - drawCommandsOffset;
                 currentBatch.drawIndexedCommandsOffset = drawIndexedOffset;
@@ -548,25 +558,26 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(std::vector<SubmittedMesh> co
                 currentBatch.drawCommands.clear();
                 currentBatch.drawIndexedCommands.clear();
                 currentBatch.indexBuffer =
-                    (submesh.submesh.indexBuffer.has_value() ? submesh.submesh.indexBuffer->GetBuffer() : nullptr);
-                currentBatch.material = submesh.submesh.material;
-                currentBatch.vertexBuffer = submesh.submesh.vertexBuffer.GetBuffer();
+                    (submesh.submesh->GetIndexBuffer().has_value() ? submesh.submesh->GetIndexBuffer()->GetBuffer()
+                                                                   : nullptr);
+                currentBatch.material = submesh.submesh->GetMaterial();
+                currentBatch.vertexBuffer = submesh.submesh->GetVertexBuffer().GetBuffer();
             }
-            if (submesh.submesh.indexBuffer.has_value()) {
+            if (submesh.submesh->GetIndexBuffer().has_value()) {
                 DrawIndexedIndirectCommand command;
-                command.firstIndex = submesh.submesh.indexBuffer->GetOffset();
+                command.firstIndex = submesh.submesh->GetIndexBuffer()->GetOffset();
                 command.firstInstance = submesh.id;
-                command.indexCount = submesh.submesh.numIndexes;
+                command.indexCount = submesh.submesh->GetNumIndexes();
                 command.instanceCount = 1;
-                command.vertexOffset = submesh.submesh.vertexBuffer.GetOffset() / (8 * sizeof(float));
+                command.vertexOffset = submesh.submesh->GetVertexBuffer().GetOffset() / (8 * sizeof(float));
                 currentBatch.drawIndexedCommands.push_back(command);
                 drawIndexedCommands.push_back(command);
             } else {
                 DrawIndirectCommand command;
                 command.firstInstance = submesh.id;
-                command.firstVertex = submesh.submesh.vertexBuffer.GetOffset() / (8 * sizeof(float));
+                command.firstVertex = submesh.submesh->GetVertexBuffer().GetOffset() / (8 * sizeof(float));
                 command.instanceCount = 1;
-                command.vertexCount = submesh.submesh.numVertices;
+                command.vertexCount = submesh.submesh->GetNumVertices();
                 currentBatch.drawCommands.push_back(command);
                 drawCommands.push_back(command);
             }

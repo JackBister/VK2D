@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 class RenderSystem;
 class StaticMesh;
 
@@ -12,4 +14,6 @@ class StaticMeshInstance
 private:
     StaticMeshInstanceId id;
     StaticMesh * mesh;
+    bool isActive;
+    glm::mat4 localToWorld;
 };

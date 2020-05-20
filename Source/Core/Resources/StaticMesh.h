@@ -23,11 +23,11 @@ public:
     {
     }
 
-    inline Material * GetMaterial() { return material; }
-    inline size_t GetNumIndexes() { return numIndexes; }
-    inline std::optional<BufferSlice> GetIndexBuffer() { return indexBuffer; }
-    inline size_t GetNumVertices() { return numVertices; }
-    inline BufferSlice GetVertexBuffer() { return vertexBuffer; }
+    inline Material * GetMaterial() const { return material; }
+    inline size_t GetNumIndexes() const { return numIndexes; }
+    inline std::optional<BufferSlice> GetIndexBuffer() const { return indexBuffer; }
+    inline size_t GetNumVertices() const { return numVertices; }
+    inline BufferSlice GetVertexBuffer() const { return vertexBuffer; }
 
 private:
     std::string name;
@@ -45,7 +45,7 @@ class StaticMesh
 public:
     StaticMesh(std::vector<Submesh> const & submeshes);
 
-    inline std::vector<Submesh> GetSubmeshes() { return submeshes; }
+    inline std::vector<Submesh> const & GetSubmeshes() { return submeshes; }
 
 private:
     std::vector<Submesh> submeshes;

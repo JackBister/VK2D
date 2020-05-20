@@ -16,7 +16,7 @@ public:
 
     StaticMeshComponent()
     {
-        receiveTicks = true;
+        receiveTicks = false;
         type = "StaticMeshComponent";
     }
     StaticMeshComponent(std::string file, StaticMesh * mesh);
@@ -32,6 +32,7 @@ public:
 private:
     std::string file;
     StaticMesh * mesh;
+    bool isActive;
 
     StaticMeshInstanceId staticMeshInstance;
 };

@@ -14,6 +14,7 @@
 #include "Core/Rendering/UiRenderSystem.h"
 
 class Image;
+class Material;
 class ShaderProgram;
 
 struct DrawIndirectCommand {
@@ -72,7 +73,7 @@ public:
     SpriteInstanceId CreateSpriteInstance(Image * image);
     void DestroySpriteInstance(SpriteInstanceId spriteInstance);
 
-    StaticMeshInstanceId CreateStaticMeshInstance(StaticMesh * mesh);
+    StaticMeshInstanceId CreateStaticMeshInstance(StaticMesh * mesh, bool isActive = true);
     void DestroyStaticMeshInstance(StaticMeshInstanceId staticMesh);
 
     void DebugOverrideBackbuffer(ImageViewHandle * image);
@@ -134,7 +135,7 @@ private:
     void RenderMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches);
     void RenderTransparentMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches);
 
-    std::vector<MeshBatch> CreateBatches(std::vector<SubmittedMesh> const & meshes);
+    std::vector<MeshBatch> CreateBatches();
 
     // FrameInfo related properties
     uint32_t currFrameInfoIdx = 0;

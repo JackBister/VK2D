@@ -35,7 +35,6 @@ std::vector<std::function<void()>> onFrameStart;
 
 // TODO: Remove
 std::vector<SubmittedCamera> submittedCameras;
-std::vector<SubmittedMesh> submittedMeshes;
 std::vector<SubmittedSprite> submittedSprites;
 
 void AddEntity(Entity * e)
@@ -166,11 +165,6 @@ void SubmitCamera(SubmittedCamera const & camera)
     submittedCameras.push_back(camera);
 }
 
-void SubmitMesh(SubmittedMesh const & mesh)
-{
-    submittedMeshes.push_back(mesh);
-}
-
 // TODO: Remove
 void SubmitSprite(SubmittedSprite const & sprite)
 {
@@ -239,10 +233,9 @@ void Tick()
     PreRender();
 
     currFrameStage = FrameStage::RENDER;
-    renderSystem->RenderFrame({submittedCameras, submittedMeshes, submittedSprites});
+    renderSystem->RenderFrame({submittedCameras, submittedSprites});
 
     submittedCameras.clear();
-    submittedMeshes.clear();
     submittedSprites.clear();
 }
 

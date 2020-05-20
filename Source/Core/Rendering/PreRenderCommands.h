@@ -22,8 +22,9 @@ struct UpdateSpriteInstance {
 };
 
 struct UpdateStaticMeshInstance {
-    glm::mat4 localToWorld;
     StaticMeshInstanceId staticMeshInstance;
+    glm::mat4 localToWorld;
+    bool isActive;
 };
 
 class PreRenderCommands
