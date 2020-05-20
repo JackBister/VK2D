@@ -14,7 +14,6 @@ class Entity;
 class PhysicsWorld;
 class RenderSystem;
 class Scene;
-struct SubmittedSprite;
 
 namespace GameModule
 {
@@ -44,7 +43,6 @@ void OnFrameStart(std::function<void()>);
 void PreRender();
 void RemoveEntity(Entity *);
 SerializedObject SerializePhysics();
-void SubmitSprite(SubmittedSprite const & sprite);
 void TakeCameraFocus(Entity *);
 void Tick();
 void TickEntities();

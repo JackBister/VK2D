@@ -10,7 +10,6 @@
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/SpriteInstance.h"
 #include "Core/Rendering/StaticMeshInstance.h"
-#include "Core/Rendering/SubmittedFrame.h"
 #include "Core/Rendering/UiRenderSystem.h"
 
 class Image;
@@ -60,7 +59,7 @@ public:
 
     void StartFrame();
     void PreRenderFrame(PreRenderCommands);
-    void RenderFrame(SubmittedFrame const & frame);
+    void RenderFrame();
 
     void CreateResources(std::function<void(ResourceCreationContext &)> fun);
     void DestroyResources(std::function<void(ResourceCreationContext &)> fun);
@@ -70,7 +69,7 @@ public:
     CameraInstanceId CreateCamera(bool isActive = true);
     void DestroyCamera(CameraInstanceId camera);
 
-    SpriteInstanceId CreateSpriteInstance(Image * image);
+    SpriteInstanceId CreateSpriteInstance(Image * image, bool isActive = true);
     void DestroySpriteInstance(SpriteInstanceId spriteInstance);
 
     StaticMeshInstanceId CreateStaticMeshInstance(StaticMesh * mesh, bool isActive = true);
@@ -120,16 +119,16 @@ private:
     void InitSwapchainResources();
 
     uint32_t AcquireNextFrame();
-    void MainRenderFrame(SubmittedFrame const & frame);
+    void MainRenderFrame();
     void PostProcessFrame();
     void SubmitSwap();
 
-    void Prepass(SubmittedFrame const & frame, std::vector<MeshBatch> const & batches);
+    void Prepass(std::vector<MeshBatch> const & batches);
 
     void PreRenderCameras(std::vector<UpdateCamera> const & cameras);
 
     void PreRenderSprites(std::vector<UpdateSpriteInstance> const & sprites);
-    void RenderSprites(CameraInstance const & camera, std::vector<SubmittedSprite> const & sprites);
+    void RenderSprites(CameraInstance const & camera);
 
     void PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const & meshes);
     void RenderMeshes(CameraInstance const & camera, std::vector<MeshBatch> const & batches);

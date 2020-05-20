@@ -18,8 +18,9 @@ struct UpdateCamera {
 };
 
 struct UpdateSpriteInstance {
-    glm::mat4 localToWorld;
     SpriteInstanceId spriteInstance;
+    glm::mat4 localToWorld;
+    bool isActive;
 };
 
 struct UpdateStaticMeshInstance {

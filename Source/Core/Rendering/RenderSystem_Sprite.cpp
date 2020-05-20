@@ -4,11 +4,12 @@
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
 
-SpriteInstanceId RenderSystem::CreateSpriteInstance(Image * image)
+SpriteInstanceId RenderSystem::CreateSpriteInstance(Image * image, bool isActive)
 {
     sprites.emplace_back();
     auto id = sprites.size() - 1;
     sprites[id].id = id;
+    sprites[id].isActive = isActive;
 
     Semaphore sem;
     renderer->CreateResources([this, &sem, id, image](ResourceCreationContext & ctx) {

@@ -14,4 +14,5 @@ private:
     SpriteInstanceId id;
     BufferHandle * uniformBuffer;
     DescriptorSet * descriptorSet;
+    bool isActive;
 };

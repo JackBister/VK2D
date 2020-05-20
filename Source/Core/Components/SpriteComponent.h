@@ -15,7 +15,7 @@ public:
 
     SpriteComponent()
     {
-        receiveTicks = true;
+        receiveTicks = false;
         type = "SpriteComponent";
     }
     ~SpriteComponent() override;
@@ -30,6 +30,7 @@ private:
     SpriteInstanceId spriteInstance;
 
     std::string file;
+    bool isActive;
 
 #if HOT_RELOAD_RESOURCES
     Image * image;

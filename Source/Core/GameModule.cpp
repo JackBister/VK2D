@@ -32,8 +32,6 @@ Scene * scene = nullptr;
 
 std::vector<std::function<void()>> onFrameStart;
 
-std::vector<SubmittedSprite> submittedSprites;
-
 void AddEntity(Entity * e)
 {
     entities.push_back(e);
@@ -156,12 +154,6 @@ SerializedObject SerializePhysics()
     return physicsWorld->Serialize();
 }
 
-// TODO: Remove
-void SubmitSprite(SubmittedSprite const & sprite)
-{
-    submittedSprites.push_back(sprite);
-}
-
 void TakeCameraFocus(Entity * camera)
 {
     mainCameraEntity = camera;
@@ -224,9 +216,7 @@ void Tick()
     PreRender();
 
     currFrameStage = FrameStage::RENDER;
-    renderSystem->RenderFrame({submittedSprites});
-
-    submittedSprites.clear();
+    renderSystem->RenderFrame();
 }
 
 void TickEntities()

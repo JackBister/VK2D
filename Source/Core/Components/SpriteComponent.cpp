@@ -8,18 +8,19 @@
 #include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/RenderSystem.h"
-#include "Core/Rendering/SubmittedSprite.h"
 #include "Core/Resources/Image.h"
 #include "Core/entity.h"
 
 static const auto logger = Logger::Create("SpriteComponent");
 
 REFLECT_STRUCT_BEGIN(SpriteComponent)
+REFLECT_STRUCT_MEMBER(isActive)
 REFLECT_STRUCT_END()
 
 static SerializedObjectSchema const SPRITE_COMPONENT_SCHEMA = SerializedObjectSchema(
     "SpriteComponent", {
                            SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true),
+                           SerializedPropertySchema("isActive", SerializedValueType::BOOL, {}, "", false),
                        });
 
 class SpriteComponentDeserializer : public Deserializer
@@ -36,6 +37,7 @@ class SpriteComponentDeserializer : public Deserializer
         auto img = Image::FromFile(path.string());
 
         ret->spriteInstance = RenderSystem::GetInstance()->CreateSpriteInstance(img);
+        ret->isActive = obj.GetBool("isActive").value_or(true);
 
 #if HOT_RELOAD_RESOURCES
         ret->image = img;
@@ -98,10 +100,6 @@ void SpriteComponent::OnEvent(HashedString name, EventArgs args)
 
     if (name == "PreRender") {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
-        builder->WithSpriteInstanceUpdate({entity->transform.GetLocalToWorld(), spriteInstance});
-    } else if (name == "Tick") {
-        SubmittedSprite submittedSprite;
-        submittedSprite.spriteInstance = spriteInstance;
-        GameModule::SubmitSprite(submittedSprite);
+        builder->WithSpriteInstanceUpdate({spriteInstance, entity->transform.GetLocalToWorld(), isActive});
     }
 }

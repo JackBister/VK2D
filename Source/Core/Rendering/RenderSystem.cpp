@@ -59,11 +59,11 @@ void RenderSystem::StartFrame()
     }
 }
 
-void RenderSystem::RenderFrame(SubmittedFrame const & frame)
+void RenderSystem::RenderFrame()
 {
     OPTICK_EVENT();
 
-    MainRenderFrame(frame);
+    MainRenderFrame();
     PostProcessFrame();
 
     SubmitSwap();
@@ -157,7 +157,7 @@ void RenderSystem::PreRenderFrame(PreRenderCommands commands)
     renderer->ExecuteCommandBuffer(currFrame.preRenderPassCommandBuffer, {}, {currFrame.preRenderPassFinished});
 }
 
-void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
+void RenderSystem::MainRenderFrame()
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
@@ -166,7 +166,7 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
 
     auto meshBatches = CreateBatches();
 
-    Prepass(frame, meshBatches);
+    Prepass(meshBatches);
 
     auto res = renderer->GetResolution();
     CommandBuffer::RenderPassBeginInfo beginInfo = {
@@ -177,7 +177,7 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
             continue;
         }
         RenderMeshes(camera, meshBatches);
-        RenderSprites(camera, frame.sprites);
+        RenderSprites(camera);
 
         RenderTransparentMeshes(camera, meshBatches);
     }
@@ -238,7 +238,7 @@ void RenderSystem::SubmitSwap()
     renderer->SwapWindow(currFrameInfoIdx, currFrame.postprocessFinished);
 }
 
-void RenderSystem::Prepass(SubmittedFrame const & frame, std::vector<MeshBatch> const & batches)
+void RenderSystem::Prepass(std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
@@ -702,12 +702,13 @@ void RenderSystem::PreRenderSprites(std::vector<UpdateSpriteInstance> const & sp
 
     for (auto const & sprite : sprites) {
         auto spriteInstance = GetSpriteInstance(sprite.spriteInstance);
+        spriteInstance->isActive = sprite.isActive;
         currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
             spriteInstance->uniformBuffer, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(sprite.localToWorld));
     }
 }
 
-void RenderSystem::RenderSprites(CameraInstance const & cam, std::vector<SubmittedSprite> const & sprites)
+void RenderSystem::RenderSprites(CameraInstance const & cam)
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
@@ -728,9 +729,11 @@ void RenderSystem::RenderSprites(CameraInstance const & cam, std::vector<Submitt
     currFrame.mainCommandBuffer->CmdBindDescriptorSets(passthroughTransformPipelineLayout, 0, {cam.descriptorSet});
 
     for (auto const & sprite : sprites) {
-        auto spriteInstance = GetSpriteInstance(sprite.spriteInstance);
+        if (!sprite.isActive) {
+            continue;
+        }
         currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-            passthroughTransformPipelineLayout, 1, {spriteInstance->descriptorSet});
+            passthroughTransformPipelineLayout, 1, {sprite.descriptorSet});
         currFrame.mainCommandBuffer->CmdDrawIndexed(6, 1, 0, 0);
     }
 }
