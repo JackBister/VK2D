@@ -67,7 +67,7 @@ public:
 
     glm::ivec2 GetResolution();
 
-    CameraInstanceId CreateCamera();
+    CameraInstanceId CreateCamera(bool isActive = true);
     void DestroyCamera(CameraInstanceId camera);
 
     SpriteInstanceId CreateSpriteInstance(Image * image);
@@ -129,11 +129,11 @@ private:
     void PreRenderCameras(std::vector<UpdateCamera> const & cameras);
 
     void PreRenderSprites(std::vector<UpdateSpriteInstance> const & sprites);
-    void RenderSprites(SubmittedCamera const & camera, std::vector<SubmittedSprite> const & sprites);
+    void RenderSprites(CameraInstance const & camera, std::vector<SubmittedSprite> const & sprites);
 
     void PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const & meshes);
-    void RenderMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches);
-    void RenderTransparentMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches);
+    void RenderMeshes(CameraInstance const & camera, std::vector<MeshBatch> const & batches);
+    void RenderTransparentMeshes(CameraInstance const & camera, std::vector<MeshBatch> const & batches);
 
     std::vector<MeshBatch> CreateBatches();
 

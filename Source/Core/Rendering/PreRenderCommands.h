@@ -11,9 +11,10 @@
 class RenderSystem;
 
 struct UpdateCamera {
+    CameraInstanceId cameraHandle;
     glm::mat4 view;
     glm::mat4 projection;
-    CameraInstanceId cameraHandle;
+    bool isActive;
 };
 
 struct UpdateSpriteInstance {

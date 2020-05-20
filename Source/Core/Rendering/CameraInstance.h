@@ -14,4 +14,5 @@ private:
     CameraInstanceId id;
     DescriptorSet * descriptorSet;
     BufferHandle * uniformBuffer;
+    bool isActive;
 };

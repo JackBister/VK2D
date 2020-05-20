@@ -3,12 +3,13 @@
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
 
-CameraInstanceId RenderSystem::CreateCamera()
+CameraInstanceId RenderSystem::CreateCamera(bool isActive)
 {
     // TODO: multithread danger?
     cameras.emplace_back();
     auto id = cameras.size() - 1;
     cameras[id].id = id;
+    cameras[id].isActive = isActive;
     Semaphore sem;
     renderer->CreateResources([this, &sem, id](ResourceCreationContext & ctx) {
         auto layout =

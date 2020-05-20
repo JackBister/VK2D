@@ -10,7 +10,6 @@
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/RenderSystem.h"
-#include "Core/Rendering/SubmittedCamera.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/Scene.h"
@@ -33,8 +32,6 @@ Scene * scene = nullptr;
 
 std::vector<std::function<void()>> onFrameStart;
 
-// TODO: Remove
-std::vector<SubmittedCamera> submittedCameras;
 std::vector<SubmittedSprite> submittedSprites;
 
 void AddEntity(Entity * e)
@@ -160,12 +157,6 @@ SerializedObject SerializePhysics()
 }
 
 // TODO: Remove
-void SubmitCamera(SubmittedCamera const & camera)
-{
-    submittedCameras.push_back(camera);
-}
-
-// TODO: Remove
 void SubmitSprite(SubmittedSprite const & sprite)
 {
     submittedSprites.push_back(sprite);
@@ -233,9 +224,8 @@ void Tick()
     PreRender();
 
     currFrameStage = FrameStage::RENDER;
-    renderSystem->RenderFrame({submittedCameras, submittedSprites});
+    renderSystem->RenderFrame({submittedSprites});
 
-    submittedCameras.clear();
     submittedSprites.clear();
 }
 

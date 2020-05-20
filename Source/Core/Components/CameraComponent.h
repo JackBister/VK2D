@@ -30,7 +30,7 @@ public:
 
     CameraComponent()
     {
-        receiveTicks = true;
+        receiveTicks = false;
         type = "CameraComponent";
     };
     CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData);

@@ -172,7 +172,10 @@ void RenderSystem::MainRenderFrame(SubmittedFrame const & frame)
     CommandBuffer::RenderPassBeginInfo beginInfo = {
         mainRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 1, DEFAULT_CLEAR_VALUES};
     currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::INLINE);
-    for (auto const & camera : frame.cameras) {
+    for (auto const & camera : cameras) {
+        if (!camera.isActive) {
+            continue;
+        }
         RenderMeshes(camera, meshBatches);
         RenderSprites(camera, frame.sprites);
 
@@ -267,10 +270,12 @@ void RenderSystem::Prepass(SubmittedFrame const & frame, std::vector<MeshBatch> 
     currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
                                                  prepassProgram->GetPipeline());
 
-    for (auto const & camera : frame.cameras) {
-        auto cam = GetCamera(camera.cameraHandle);
+    for (auto const & cam : cameras) {
+        if (!cam.isActive) {
+            continue;
+        }
         currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-            prepassPipelineLayout, 0, {cam->descriptorSet, currFrame.meshUniformsDescriptorSet});
+            prepassPipelineLayout, 0, {cam.descriptorSet, currFrame.meshUniformsDescriptorSet});
         DescriptorSet * currentMeshDescriptorSet = nullptr;
         for (auto const & batch : batches) {
             if (!batch.material->GetDescriptorSet()) {
@@ -302,12 +307,13 @@ void RenderSystem::Prepass(SubmittedFrame const & frame, std::vector<MeshBatch> 
     currFrame.mainCommandBuffer->CmdEndRenderPass();
 }
 
-void RenderSystem::PreRenderCameras(std::vector<UpdateCamera> const & cameras)
+void RenderSystem::PreRenderCameras(std::vector<UpdateCamera> const & cameraUpdates)
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
-    for (auto const & camera : cameras) {
+    for (auto const & camera : cameraUpdates) {
         auto cam = GetCamera(camera.cameraHandle);
+        cam->isActive = camera.isActive;
         auto pv = camera.projection * camera.view;
         currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
             cam->uniformBuffer, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(pv));
@@ -326,7 +332,7 @@ void RenderSystem::PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const &
     }
 }
 
-void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches)
+void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
@@ -346,9 +352,8 @@ void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<Mesh
     currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
                                                  meshProgram->GetPipeline());
 
-    auto cam = GetCamera(camera.cameraHandle);
     currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-        meshPipelineLayout, 0, {cam->descriptorSet, currFrame.meshUniformsDescriptorSet});
+        meshPipelineLayout, 0, {cam.descriptorSet, currFrame.meshUniformsDescriptorSet});
 
     DescriptorSet * currentMaterialDescriptorSet = nullptr;
     for (auto const & batch : batches) {
@@ -383,7 +388,7 @@ void RenderSystem::RenderMeshes(SubmittedCamera const & camera, std::vector<Mesh
     }
 }
 
-void RenderSystem::RenderTransparentMeshes(SubmittedCamera const & camera, std::vector<MeshBatch> const & batches)
+void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
@@ -403,9 +408,8 @@ void RenderSystem::RenderTransparentMeshes(SubmittedCamera const & camera, std::
     currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
                                                  transparentMeshProgram->GetPipeline());
 
-    auto cam = GetCamera(camera.cameraHandle);
     currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-        meshPipelineLayout, 0, {cam->descriptorSet, currFrame.meshUniformsDescriptorSet});
+        meshPipelineLayout, 0, {cam.descriptorSet, currFrame.meshUniformsDescriptorSet});
 
     DescriptorSet * currentMaterialDescriptorSet = nullptr;
     for (auto const & batch : batches) {
@@ -703,7 +707,7 @@ void RenderSystem::PreRenderSprites(std::vector<UpdateSpriteInstance> const & sp
     }
 }
 
-void RenderSystem::RenderSprites(SubmittedCamera const & camera, std::vector<SubmittedSprite> const & sprites)
+void RenderSystem::RenderSprites(CameraInstance const & cam, std::vector<SubmittedSprite> const & sprites)
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[currFrameInfoIdx];
@@ -721,8 +725,7 @@ void RenderSystem::RenderSprites(SubmittedCamera const & camera, std::vector<Sub
     currFrame.mainCommandBuffer->CmdBindIndexBuffer(quadEbo, 0, CommandBuffer::IndexType::UINT32);
     currFrame.mainCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, 8 * sizeof(float));
 
-    auto cam = GetCamera(camera.cameraHandle);
-    currFrame.mainCommandBuffer->CmdBindDescriptorSets(passthroughTransformPipelineLayout, 0, {cam->descriptorSet});
+    currFrame.mainCommandBuffer->CmdBindDescriptorSets(passthroughTransformPipelineLayout, 0, {cam.descriptorSet});
 
     for (auto const & sprite : sprites) {
         auto spriteInstance = GetSpriteInstance(sprite.spriteInstance);

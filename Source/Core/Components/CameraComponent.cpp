@@ -7,7 +7,6 @@
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/RenderSystem.h"
-#include "Core/Rendering/SubmittedCamera.h"
 #include "Core/dtime.h"
 #include "Core/entity.h"
 
@@ -127,7 +126,7 @@ DESERIALIZABLE_IMPL(PerspectiveCamera, new PerspectiveCameraDeserializer())
 
 CameraComponent::CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData) : cameraData(cameraData)
 {
-    receiveTicks = true;
+    receiveTicks = false;
     type = "CameraComponent";
     cameraHandle = RenderSystem::GetInstance()->CreateCamera();
 }
@@ -206,12 +205,6 @@ void CameraComponent::OnEvent(HashedString name, EventArgs args)
         GameModule::TakeCameraFocus(entity);
     } else if (name == "PreRender") {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
-        builder->WithCameraUpdate({GetView(), GetProjection(), cameraHandle});
-    } else if (name == "Tick") {
-        if (isActive) {
-            SubmittedCamera submittedCamera;
-            submittedCamera.cameraHandle = cameraHandle;
-            GameModule::SubmitCamera(submittedCamera);
-        }
+        builder->WithCameraUpdate({cameraHandle, GetView(), GetProjection(), isActive});
     }
 }
