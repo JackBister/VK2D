@@ -136,6 +136,11 @@ public:
             FrontFace frontFace;
         };
 
+        struct ColorBlendAttachment {
+            // TODO: For now, there are only two preset blend modes
+            bool enableBlending;
+        };
+
         uint32_t stageCount;
         PipelineShaderStageCreateInfo * pStages;
         VertexInputStateHandle * vertexInputState;
@@ -144,6 +149,7 @@ public:
         PipelineLayoutHandle * pipelineLayout;
         RenderPassHandle * renderPass;
         uint32_t subpass;
+        std::vector<ColorBlendAttachment> colorBlendAttachments;
     };
     virtual PipelineHandle * CreateGraphicsPipeline(GraphicsPipelineCreateInfo const &) = 0;
     virtual void DestroyPipeline(PipelineHandle *) = 0;

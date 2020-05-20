@@ -4,6 +4,7 @@
 
 #include "Core/Rendering/Backend/Abstract/RenderResources.h"
 #include "Core/Rendering/Backend/Renderer.h"
+#include "Core/Rendering/Vertex.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ResourceManager.h"
@@ -58,14 +59,29 @@ void RenderPrimitiveFactory::LateCreatePrimitives()
 RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreationContext & ctx)
 {
     std::vector<RenderPassHandle::AttachmentDescription> attachments = {
-        {0,
-         renderer->GetBackbufferFormat(),
-         RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
-         RenderPassHandle::AttachmentDescription::StoreOp::STORE,
-         RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
-         RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
-         ImageLayout::UNDEFINED,
-         ImageLayout::COLOR_ATTACHMENT_OPTIMAL},
+        // Main color buffer
+        {
+            0,
+            renderer->GetBackbufferFormat(),
+            RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
+            RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+            RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+            RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+            ImageLayout::UNDEFINED,
+            ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+        },
+        // Normals buffer
+        {
+            0,
+            Format::R16G16_SFLOAT,
+            RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
+            RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+            RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+            RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+            ImageLayout::UNDEFINED,
+            ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+        },
+        // Depth
         {
             0,
             Format::D32_SFLOAT,
@@ -78,10 +94,15 @@ RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreation
         }};
 
     RenderPassHandle::AttachmentReference colorReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
-    RenderPassHandle::AttachmentReference depthReference = {1, ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL};
+    RenderPassHandle::AttachmentReference normalsGBufferReference = {1, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+    RenderPassHandle::AttachmentReference depthReference = {2, ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL};
 
-    RenderPassHandle::SubpassDescription mainpassSubpass = {
-        RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {colorReference}, {}, depthReference, {}};
+    RenderPassHandle::SubpassDescription mainpassSubpass = {RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                            {},
+                                                            {colorReference, normalsGBufferReference},
+                                                            {},
+                                                            depthReference,
+                                                            {}};
 
     ResourceCreationContext::RenderPassCreateInfo passInfo = {attachments, {mainpassSubpass}, {}};
     auto mainRenderpass = ctx.CreateRenderPass(passInfo);
@@ -148,7 +169,7 @@ VertexInputStateHandle *
 RenderPrimitiveFactory::CreatePassthroughTransformVertexInputState(ResourceCreationContext & ctx)
 {
     std::vector<ResourceCreationContext::VertexInputStateCreateInfo::VertexBindingDescription> binding = {
-        {0, 8 * sizeof(float)}};
+        {0, sizeof(VertexWithColorAndUv)}};
 
     std::vector<ResourceCreationContext::VertexInputStateCreateInfo::VertexAttributeDescription> attributes = {
         {0, 0, VertexComponentType::FLOAT, 3, false, 0},
@@ -187,12 +208,13 @@ void RenderPrimitiveFactory::CreateMeshPipelineLayout(ResourceCreationContext & 
 void RenderPrimitiveFactory::CreateMeshVertexInputState(ResourceCreationContext & ctx)
 {
     std::vector<ResourceCreationContext::VertexInputStateCreateInfo::VertexBindingDescription> binding = {
-        {0, 8 * sizeof(float)}};
+        {0, sizeof(VertexWithNormal)}};
 
     std::vector<ResourceCreationContext::VertexInputStateCreateInfo::VertexAttributeDescription> attributes = {
         {0, 0, VertexComponentType::FLOAT, 3, false, 0},
         {0, 1, VertexComponentType::FLOAT, 3, false, 3 * sizeof(float)},
-        {0, 2, VertexComponentType::FLOAT, 2, false, 6 * sizeof(float)}};
+        {0, 2, VertexComponentType::FLOAT, 3, false, 6 * sizeof(float)},
+        {0, 3, VertexComponentType::FLOAT, 2, false, 9 * sizeof(float)}};
     ResourceCreationContext::VertexInputStateCreateInfo vertexInputStateCreateInfo;
     vertexInputStateCreateInfo.vertexAttributeDescriptions = attributes;
     vertexInputStateCreateInfo.vertexBindingDescriptions = binding;
@@ -373,7 +395,7 @@ void RenderPrimitiveFactory::CreateQuadVbo(ResourceCreationContext & ctx)
         -1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, // Bottom left
     };
     auto quadVbo = ctx.CreateBuffer({// 4 verts, 8 floats (vec3 pos, vec3 color, vec2 texcoord)
-                                     8 * 4 * sizeof(float),
+                                     4 * sizeof(VertexWithColorAndUv),
                                      BufferUsageFlags::VERTEX_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
                                      DEVICE_LOCAL_BIT});
 
@@ -389,7 +411,7 @@ void RenderPrimitiveFactory::CreateQuadMesh()
     auto material = ResourceManager::GetResource<Material>("_Primitives/Materials/default.mtl");
 
     BufferSlice indexBufferSlice{indexBuffer, 0, 6 * sizeof(uint32_t)};
-    BufferSlice vertexBufferSlice{vertexBuffer, 0, 4 * 8 * sizeof(float)};
+    BufferSlice vertexBufferSlice{vertexBuffer, 0, 4 * sizeof(VertexWithColorAndUv)};
     Submesh submesh("main", material, 6, indexBufferSlice, 4, vertexBufferSlice);
     auto staticMesh = new StaticMesh({submesh});
     ResourceManager::AddResource("/_Primitives/Meshes/Quad.obj", staticMesh);
@@ -400,56 +422,56 @@ void RenderPrimitiveFactory::CreateBoxVbo(ResourceCreationContext & ctx)
     std::vector<float> const boxVerts{
         // clang-format off
         // back
-		-0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.0f, 0.0f, //back bottom left
-		-0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 0.0f, 1.0f, //back top left
-		0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 1.0f, 1.0f, //back top right
-		0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 1.0f, 1.0f, //back top right
-		0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 1.0f, 0.0f, //back bottom right
-        -0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.0f, 0.0f, //back bottom left
+		-0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, 1.f, 0.0f, 0.0f, //back bottom left
+		-0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, 1.f, 0.0f, 1.0f, //back top left
+		0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, 1.f, 1.0f, 1.0f, //back top right
+		0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, 1.f, 1.0f, 1.0f, //back top right
+		0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, 1.f, 1.0f, 0.0f, //back bottom right
+        -0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, 1.f, 0.0f, 0.0f, //back bottom left
 
 		//front
-		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 0.0f, 0.0f,
-		0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 1.0f, 0.0f,
-		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 1.0f, 1.0f,
-		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 1.0f, 1.0f,
-		-0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 0.0f, 1.0f,
-		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 0.0f, 0.0f,
+		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, -1.f, 0.0f, 0.0f,
+		0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, -1.f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, -1.f, 1.0f, 1.0f,
+		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, -1.f, 1.0f, 1.0f,
+		-0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, -1.f, 0.0f, 1.0f,
+		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, 0.f, -1.f, 0.0f, 0.0f,
 
 		//left
-		-0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 1.0f, 0.0f,
-		-0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.0f, 1.0f,
-		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 0.0f, 0.0f,
-		-0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 1.0f, 0.0f,
+		-0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, -1.f, 0.f, 0.f, 1.0f, 0.0f,
+		-0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, -1.f, 0.f, 0.f, 1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, -1.f, 0.f, 0.f, 0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, -1.f, 0.f, 0.f, 0.0f, 1.0f,
+		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, -1.f, 0.f, 0.f, 0.0f, 0.0f,
+		-0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, -1.f, 0.f, 0.f, 1.0f, 0.0f,
        
         // right
-		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 1.0f, 0.0f,
-		0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 0.0f, 0.0f,
-		0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.0f, 1.0f,
-		0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 1.0f, 1.0f,
-		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 1.f, 0.f, 0.f, 1.0f, 0.0f,
+		0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 1.f, 0.f, 0.f, 0.0f, 0.0f,
+		0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 1.f, 0.f, 0.f, 0.0f, 1.0f,
+		0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 1.f, 0.f, 0.f, 0.0f, 1.0f,
+		0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 1.f, 0.f, 0.f, 1.0f, 1.0f,
+		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 1.f, 0.f, 0.f, 1.0f, 0.0f,
         
 		//bottom
-		-0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 1.0f, 1.0f,
-		0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 1.0f, 0.0f,
-		0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 1.0f, 0.0f,
-		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, -1.f, 0.f, 0.0f, 1.0f,
+		0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, -1.f, 0.f, 1.0f, 1.0f,
+		0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, -1.f, 0.f, 1.0f, 0.0f,
+		0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, -1.f, 0.f, 1.0f, 0.0f,
+		-0.5f, -0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, -1.f, 0.f, 0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, -1.f, 0.f, 0.0f, 1.0f,
 
         // top
-		-0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 0.0f, 1.0f,
-		-0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 0.0f, 0.0f,
-		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 1.0f, 0.0f,
-		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 1.0f, 0.0f,
-		0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 1.0f, 1.0f,
-		-0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 0.0f, 1.0f,
+		-0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, 1.f, 0.f, 0.0f, 1.0f,
+		-0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, 1.f, 0.f, 0.0f, 0.0f,
+		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, 1.f, 0.f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.5f, 1.f, 1.f, 1.f, 0.f, 1.f, 0.f, 1.0f, 0.0f,
+		0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, 1.f, 0.f, 1.0f, 1.0f,
+		-0.5f, 0.5f, -0.5f, 1.f, 1.f, 1.f, 0.f, 1.f, 0.f, 0.0f, 1.0f,
         //clang-format on
     };
-    auto boxVbo = ctx.CreateBuffer({// 8 floats per vert, 6 verts per face, 6 faces
-                                    8 * 6 * 6 * sizeof(float),
+    auto boxVbo = ctx.CreateBuffer({// 11 floats per vert, 6 verts per face, 6 faces
+                                    sizeof(VertexWithNormal) * 6 * 6,
                                     BufferUsageFlags::VERTEX_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
                                     DEVICE_LOCAL_BIT});
 
@@ -464,7 +486,7 @@ void RenderPrimitiveFactory::CreateBoxMesh()
     auto material = ResourceManager::GetResource<Material>("_Primitives/Materials/default.mtl");
 
     BufferSlice vertexBufferSlice{
-        vertexBuffer, 0, 6 * 6 * 8 * sizeof(float)
+        vertexBuffer, 0, 6 * 6 * sizeof(VertexWithNormal)
     };
     Submesh submesh("main", material, 6 * 6, vertexBufferSlice);
     auto staticMesh = new StaticMesh({submesh});

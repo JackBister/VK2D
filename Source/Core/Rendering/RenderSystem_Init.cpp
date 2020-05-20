@@ -142,14 +142,26 @@ void RenderSystem::InitSwapchainResources()
         // immediately replaced here. RenderPrimitiveFactory was always ugly but having all this resource creation code
         // inline in RenderSystem is also ugly. Need to find a compromise.
         std::vector<RenderPassHandle::AttachmentDescription> attachments = {
-            {0,
-             renderer->GetBackbufferFormat(),
-             RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
-             RenderPassHandle::AttachmentDescription::StoreOp::STORE,
-             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
-             RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
-             ImageLayout::UNDEFINED,
-             ImageLayout::COLOR_ATTACHMENT_OPTIMAL},
+            {
+                0,
+                renderer->GetBackbufferFormat(),
+                RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
+                RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+                RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+                RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+                ImageLayout::UNDEFINED,
+                ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+            },
+            {
+                0,
+                Format::R16G16_SFLOAT,
+                RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
+                RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+                RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+                RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+                ImageLayout::UNDEFINED,
+                ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+            },
             {
                 0,
                 Format::D32_SFLOAT,
@@ -162,10 +174,15 @@ void RenderSystem::InitSwapchainResources()
             }};
 
         RenderPassHandle::AttachmentReference colorReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
-        RenderPassHandle::AttachmentReference depthReference = {1, ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL};
+        RenderPassHandle::AttachmentReference normalsGBufferReference = {1, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+        RenderPassHandle::AttachmentReference depthReference = {2, ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL};
 
-        RenderPassHandle::SubpassDescription mainpassSubpass = {
-            RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {colorReference}, {}, depthReference, {}};
+        RenderPassHandle::SubpassDescription mainpassSubpass = {RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                                {},
+                                                                {colorReference, normalsGBufferReference},
+                                                                {},
+                                                                depthReference,
+                                                                {}};
 
         ResourceCreationContext::RenderPassCreateInfo passInfo = {attachments, {mainpassSubpass}, {}};
         if (this->mainRenderpass) {
@@ -210,6 +227,12 @@ void RenderSystem::InitSwapchainResources()
             }
             if (fi.framebuffer) {
                 ctx.DestroyFramebuffer(fi.framebuffer);
+            }
+            if (fi.normalsGBufferImageView) {
+                ctx.DestroyImageView(fi.normalsGBufferImageView);
+            }
+            if (fi.normalsGBufferImage) {
+                ctx.DestroyImage(fi.normalsGBufferImage);
             }
             if (fi.postprocessFramebuffer) {
                 ctx.DestroyFramebuffer(fi.postprocessFramebuffer);
@@ -273,6 +296,7 @@ void RenderSystem::InitSwapchainResources()
             CullMode::BACK,
             FrontFace::COUNTER_CLOCKWISE,
             0,
+            {},
             depthStencil);
     } else {
         prepassProgram->SetRenderpass(prepass);
@@ -322,8 +346,36 @@ void RenderSystem::InitFramebuffers(ResourceCreationContext & ctx)
         prepassFramebufferCi.renderPass = this->prepass;
         frameInfo[i].prepassFramebuffer = ctx.CreateFramebuffer(prepassFramebufferCi);
 
+        ResourceCreationContext::ImageCreateInfo normalsGBufferImageCi;
+        normalsGBufferImageCi.depth = 1;
+        normalsGBufferImageCi.width = res.x;
+        normalsGBufferImageCi.height = res.y;
+        normalsGBufferImageCi.format = Format::R16G16_SFLOAT;
+        normalsGBufferImageCi.mipLevels = 1;
+        normalsGBufferImageCi.type = ImageHandle::Type::TYPE_2D;
+        normalsGBufferImageCi.usage = ImageUsageFlagBits::IMAGE_USAGE_FLAG_COLOR_ATTACHMENT_BIT |
+                                      ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT;
+        frameInfo[i].normalsGBufferImage = ctx.CreateImage(normalsGBufferImageCi);
+        ctx.AllocateImage(frameInfo[i].normalsGBufferImage);
+
+        ResourceCreationContext::ImageViewCreateInfo normalsGBufferImageViewCi;
+        normalsGBufferImageViewCi.components = ImageViewHandle::ComponentMapping::IDENTITY;
+        normalsGBufferImageViewCi.format = Format::R16G16_SFLOAT;
+        normalsGBufferImageViewCi.image = frameInfo[i].normalsGBufferImage;
+        normalsGBufferImageViewCi.viewType = ImageViewHandle::Type::TYPE_2D;
+        normalsGBufferImageViewCi.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+        normalsGBufferImageViewCi.subresourceRange.baseArrayLayer = 0;
+        normalsGBufferImageViewCi.subresourceRange.baseMipLevel = 0;
+        normalsGBufferImageViewCi.subresourceRange.layerCount = 1;
+        normalsGBufferImageViewCi.subresourceRange.levelCount = 1;
+        frameInfo[i].normalsGBufferImageView = ctx.CreateImageView(normalsGBufferImageViewCi);
+        ResourceManager::AddResource(std::string("/_RenderSystem/frameInfo/") + std::to_string(i) +
+                                         "/normalsGBuffer.imageview",
+                                     frameInfo[i].normalsGBufferImageView);
+
         ResourceCreationContext::FramebufferCreateInfo mainFramebufferCi;
-        mainFramebufferCi.attachments = {frameInfo[i].backbuffer, frameInfo[i].prepassDepthImageView};
+        mainFramebufferCi.attachments = {
+            frameInfo[i].backbuffer, frameInfo[i].normalsGBufferImageView, frameInfo[i].prepassDepthImageView};
         mainFramebufferCi.width = res.x;
         mainFramebufferCi.height = res.y;
         mainFramebufferCi.layers = 1;

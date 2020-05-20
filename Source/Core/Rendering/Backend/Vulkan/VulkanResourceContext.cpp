@@ -608,23 +608,39 @@ VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsP
                                                           VK_FALSE,
                                                           VK_FALSE};
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachment{VK_TRUE,
-                                                             VK_BLEND_FACTOR_SRC_ALPHA,
-                                                             VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-                                                             VK_BLEND_OP_ADD,
-                                                             VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-                                                             VK_BLEND_FACTOR_ZERO,
-                                                             VK_BLEND_OP_ADD,
-                                                             VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                                                                 VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT};
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments(ci.colorBlendAttachments.size());
+    for (size_t i = 0; i < ci.colorBlendAttachments.size(); ++i) {
+        if (ci.colorBlendAttachments[i].enableBlending) {
+            colorBlendAttachments[i] = {VK_TRUE,
+                                        VK_BLEND_FACTOR_SRC_ALPHA,
+                                        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                        VK_BLEND_OP_ADD,
+                                        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                        VK_BLEND_FACTOR_ZERO,
+                                        VK_BLEND_OP_ADD,
+                                        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                            VK_COLOR_COMPONENT_A_BIT};
+        } else {
+            colorBlendAttachments[i] = {VK_FALSE,
+                                        VK_BLEND_FACTOR_SRC_ALPHA,
+                                        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                        VK_BLEND_OP_ADD,
+                                        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                        VK_BLEND_FACTOR_ZERO,
+                                        VK_BLEND_OP_ADD,
+                                        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                            VK_COLOR_COMPONENT_A_BIT};
+        }
+    }
 
     VkPipelineColorBlendStateCreateInfo colorBlendState{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
                                                         nullptr,
                                                         0,
                                                         VK_FALSE,
                                                         VK_LOGIC_OP_COPY,
-                                                        1,
-                                                        &colorBlendAttachment,
+                                                        colorBlendAttachments.size(),
+                                                        colorBlendAttachments.size() > 0 ? &colorBlendAttachments[0]
+                                                                                         : nullptr,
                                                         {0.f, 0.f, 0.f, 0.f}};
 
     VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT};

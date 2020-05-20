@@ -83,6 +83,8 @@ private:
         ImageViewHandle * prepassDepthImageView;
         FramebufferHandle * prepassFramebuffer;
 
+        ImageHandle * normalsGBufferImage;
+        ImageViewHandle * normalsGBufferImageView;
         ImageViewHandle * backbuffer;
         FramebufferHandle * framebuffer;
 

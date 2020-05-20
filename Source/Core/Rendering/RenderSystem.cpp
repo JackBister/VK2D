@@ -12,11 +12,14 @@
 #include "Core/Resources/StaticMesh.h"
 #include "Core/Semaphore.h"
 #include "Core/entity.h"
+#include "Vertex.h"
 
 static const auto logger = Logger::Create("RenderSystem");
 
 static constexpr CommandBuffer::ClearValue DEFAULT_CLEAR_VALUES[] = {
-    {CommandBuffer::ClearValue::Type::COLOR, {0.f, 0.f, 1.f, 1.f}}};
+    {CommandBuffer::ClearValue::Type::COLOR, {0.f, 0.f, 1.f, 1.f}},
+    {CommandBuffer::ClearValue::Type::COLOR, {0.f, 0.f, 0.f, 0.f}},
+};
 
 static constexpr size_t MIN_INDEXES_BUFFER_SIZE = 128 * sizeof(uint32_t);
 
@@ -170,7 +173,7 @@ void RenderSystem::MainRenderFrame()
 
     auto res = renderer->GetResolution();
     CommandBuffer::RenderPassBeginInfo beginInfo = {
-        mainRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 1, DEFAULT_CLEAR_VALUES};
+        mainRenderpass, currFrame.framebuffer, {{0, 0}, {res.x, res.y}}, 2, DEFAULT_CLEAR_VALUES};
     currFrame.mainCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::INLINE);
     for (auto const & camera : cameras) {
         if (!camera.isActive) {
@@ -214,7 +217,7 @@ void RenderSystem::PostProcessFrame()
                                                             postprocessProgram->GetPipeline());
 
         currFrame.postProcessCommandBuffer->CmdBindIndexBuffer(quadEbo, 0, CommandBuffer::IndexType::UINT32);
-        currFrame.postProcessCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, 8 * sizeof(float));
+        currFrame.postProcessCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, sizeof(VertexWithColorAndUv));
 
         currFrame.postProcessCommandBuffer->CmdBindDescriptorSets(postprocessLayout, 0, {backbufferOverride});
         currFrame.postProcessCommandBuffer->CmdDrawIndexed(6, 1, 0, 0);
@@ -285,7 +288,7 @@ void RenderSystem::Prepass(std::vector<MeshBatch> const & batches)
                 continue;
             }
 
-            currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, 8 * sizeof(float));
+            currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, sizeof(VertexWithNormal));
             if (batch.indexBuffer != nullptr) {
                 currFrame.mainCommandBuffer->CmdBindIndexBuffer(batch.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
             }
@@ -370,7 +373,7 @@ void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatc
                 meshPipelineLayout, 2, {batch.material->GetDescriptorSet()});
         }
 
-        currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, 8 * sizeof(float));
+        currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, sizeof(VertexWithNormal));
         if (batch.indexBuffer != nullptr) {
             currFrame.mainCommandBuffer->CmdBindIndexBuffer(batch.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
         }
@@ -426,7 +429,7 @@ void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vect
                 meshPipelineLayout, 2, {batch.material->GetDescriptorSet()});
         }
 
-        currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, 8 * sizeof(float));
+        currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, sizeof(VertexWithNormal));
         if (batch.indexBuffer != nullptr) {
             currFrame.mainCommandBuffer->CmdBindIndexBuffer(batch.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
         }
@@ -573,13 +576,13 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
                 command.firstInstance = submesh.id;
                 command.indexCount = submesh.submesh->GetNumIndexes();
                 command.instanceCount = 1;
-                command.vertexOffset = submesh.submesh->GetVertexBuffer().GetOffset() / (8 * sizeof(float));
+                command.vertexOffset = submesh.submesh->GetVertexBuffer().GetOffset() / sizeof(VertexWithNormal);
                 currentBatch.drawIndexedCommands.push_back(command);
                 drawIndexedCommands.push_back(command);
             } else {
                 DrawIndirectCommand command;
                 command.firstInstance = submesh.id;
-                command.firstVertex = submesh.submesh->GetVertexBuffer().GetOffset() / (8 * sizeof(float));
+                command.firstVertex = submesh.submesh->GetVertexBuffer().GetOffset() / sizeof(VertexWithNormal);
                 command.instanceCount = 1;
                 command.vertexCount = submesh.submesh->GetNumVertices();
                 currentBatch.drawCommands.push_back(command);
@@ -724,7 +727,7 @@ void RenderSystem::RenderSprites(CameraInstance const & cam)
                                                  passthroughTransformProgram->GetPipeline());
 
     currFrame.mainCommandBuffer->CmdBindIndexBuffer(quadEbo, 0, CommandBuffer::IndexType::UINT32);
-    currFrame.mainCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, 8 * sizeof(float));
+    currFrame.mainCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, sizeof(VertexWithColorAndUv));
 
     currFrame.mainCommandBuffer->CmdBindDescriptorSets(passthroughTransformPipelineLayout, 0, {cam.descriptorSet});
 

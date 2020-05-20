@@ -78,6 +78,8 @@ enum class Format {
     RGB8,
     RGBA8,
 
+    R16G16_SFLOAT,
+
     D32_SFLOAT,
 };
 

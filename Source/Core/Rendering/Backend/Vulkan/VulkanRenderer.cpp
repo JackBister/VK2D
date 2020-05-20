@@ -429,8 +429,14 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
             "multiDrawIndirect feature not supported. The engine currently only works with multiDrawIndirect");
         exit(1);
     }
+    if (!this->supportedFeatures.independentBlend) {
+        logger->Severef(
+            "independentBlend feature not supported. The engine currently only works with independentBlend");
+        exit(1);
+    }
     VkPhysicalDeviceFeatures enabledFeatures = {0};
     enabledFeatures.multiDrawIndirect = VK_TRUE;
+    enabledFeatures.independentBlend = VK_TRUE;
 
     VkDeviceCreateInfo deviceCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                                            nullptr,

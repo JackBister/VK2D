@@ -9,6 +9,7 @@
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 #include "Core/Rendering/BufferAllocator.h"
+#include "Core/Rendering/Vertex.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ResourceManager.h"
@@ -17,16 +18,10 @@
 
 static const auto logger = Logger::Create("StaticMeshLoaderObj");
 
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 color;
-    glm::vec2 uv;
-};
-
 struct CpuSubmesh {
     std::string name;
     Material * material;
-    std::vector<Vertex> vertices;
+    std::vector<VertexWithNormal> vertices;
 };
 
 StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
@@ -79,7 +74,7 @@ StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
     size_t totalVboSize = 0;
     for (size_t s = 0; s < shapes.size(); ++s) {
         auto & shape = shapes[s];
-        std::vector<Vertex> vertices;
+        std::vector<VertexWithNormal> vertices;
         size_t indexOffset = 0;
         for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); ++f) {
             auto numFaceVerts = shape.mesh.num_face_vertices[f];
@@ -89,10 +84,14 @@ StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
                 auto vy = attrib.vertices[3 * idx.vertex_index + 1];
                 auto vz = attrib.vertices[3 * idx.vertex_index + 2];
 
+                auto nx = idx.normal_index > -1 ? attrib.normals[3 * idx.normal_index + 0] : 0.f;
+                auto ny = idx.normal_index > -1 ? attrib.normals[3 * idx.normal_index + 1] : 0.f;
+                auto nz = idx.normal_index > -1 ? attrib.normals[3 * idx.normal_index + 2] : 0.f;
+
                 auto tx = idx.texcoord_index > -1 ? attrib.texcoords[2 * idx.texcoord_index + 0] : 0.f;
                 auto ty = idx.texcoord_index > -1 ? attrib.texcoords[2 * idx.texcoord_index + 1] : 0.f;
 
-                vertices.push_back({glm::vec3(vx, vy, vz), glm::vec3(1.f), glm::vec2(tx, ty)});
+                vertices.push_back({glm::vec3(vx, vy, vz), glm::vec3(1.f), glm::vec3(nx, ny, nz), glm::vec2(tx, ty)});
             }
             indexOffset += numFaceVerts;
         }
@@ -133,7 +132,7 @@ StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
         cpuSubmesh.material = material;
         cpuSubmesh.vertices = vertices;
         cpuSubmeshes.push_back(cpuSubmesh);
-        totalVboSize += vertices.size() * sizeof(Vertex);
+        totalVboSize += vertices.size() * sizeof(VertexWithNormal);
     }
 
     auto bufferAllocator = BufferAllocator::GetInstance();
@@ -146,12 +145,12 @@ StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
     ResourceManager::CreateResources([&sem, &cpuSubmeshes, &submeshes, &buffer](ResourceCreationContext & ctx) {
         size_t offset = 0;
         for (auto & submesh : cpuSubmeshes) {
-            size_t size = submesh.vertices.size() * sizeof(Vertex);
+            size_t size = submesh.vertices.size() * sizeof(VertexWithNormal);
             size_t totalOffset = buffer.GetOffset() + offset;
             ctx.BufferSubData(buffer.GetBuffer(),
                               (uint8_t *)&submesh.vertices[0],
                               totalOffset,
-                              submesh.vertices.size() * sizeof(Vertex));
+                              submesh.vertices.size() * sizeof(VertexWithNormal));
             submeshes.emplace_back(submesh.name,
                                    submesh.material,
                                    submesh.vertices.size(),

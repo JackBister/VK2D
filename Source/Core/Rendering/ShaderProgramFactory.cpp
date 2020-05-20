@@ -28,6 +28,12 @@ void ShaderProgramFactory::CreatePassthroughTransformShaderProgram()
         CullMode::BACK,
         FrontFace::CLOCKWISE,
         0,
+        {
+            // Blending is enabled for color attachment
+            {true},
+            // disabled for normals
+            {false},
+        },
         depthStencil);
 }
 
@@ -47,6 +53,12 @@ void ShaderProgramFactory::CreateMeshShaderProgram()
         CullMode::BACK,
         FrontFace::COUNTER_CLOCKWISE,
         0,
+        {
+            // Blending is enabled for color attachment
+            {true},
+            // disabled for normals
+            {false},
+        },
         depthStencil);
 }
 
@@ -66,6 +78,12 @@ void ShaderProgramFactory::CreateTransparentMeshShaderProgram()
         CullMode::BACK,
         FrontFace::COUNTER_CLOCKWISE,
         0,
+        {
+            // Blending is enabled for color attachment
+            {true},
+            // disabled for normals
+            {false},
+        },
         depthStencil);
 }
 
@@ -84,6 +102,10 @@ void ShaderProgramFactory::CreateUiShaderProgram()
         CullMode::NONE,
         FrontFace::COUNTER_CLOCKWISE,
         0,
+        {
+            // Blending enabled for color attachment
+            {true},
+        },
         depthStencil);
 }
 void ShaderProgramFactory::CreatePostprocessShaderProgram()
@@ -103,5 +125,9 @@ void ShaderProgramFactory::CreatePostprocessShaderProgram()
         CullMode::BACK,
         FrontFace::CLOCKWISE,
         0,
+        {
+            // Blending disabled for color attachment
+            {false},
+        },
         depthStencil);
 }

@@ -68,6 +68,7 @@ std::vector<ShaderProgram::ShaderStage> ShaderProgram::ReadShaderStages(std::vec
 PipelineHandle * ShaderProgram::CreatePipeline(
     std::vector<ShaderStage> stages, VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
     RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace, uint32_t subpass,
+    std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil,
     ResourceCreationContext & ctx)
 {
@@ -94,6 +95,7 @@ PipelineHandle * ShaderProgram::CreatePipeline(
     pipelineCreateInfo.stageCount = stagesCreateInfo.size();
     pipelineCreateInfo.pStages = stagesCreateInfo.data();
     pipelineCreateInfo.subpass = subpass;
+    pipelineCreateInfo.colorBlendAttachments = colorBlendAttachments;
     pipelineCreateInfo.vertexInputState = vertexInputState;
     return ctx.CreateGraphicsPipeline(pipelineCreateInfo);
 }
@@ -102,9 +104,11 @@ ShaderProgram::ShaderProgram(
     std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStageCreateInfo> stageCreateInfo,
     VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
     CullMode cullMode, FrontFace frontFace, uint32_t subpass,
+    std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil)
     : name(name), pipeline(pipeline), vertexInputState(vertexInputState), pipelineLayout(pipelineLayout),
-      renderPass(renderPass), cullMode(cullMode), frontFace(frontFace), subpass(subpass), depthStencil(depthStencil)
+      renderPass(renderPass), cullMode(cullMode), frontFace(frontFace), subpass(subpass),
+      colorBlendAttachments(colorBlendAttachments), depthStencil(depthStencil)
 {
     for (auto const & ci : stageCreateInfo) {
         ShaderStage stage;
@@ -121,6 +125,7 @@ ShaderProgram * ShaderProgram::Create(
     std::string const & name, std::vector<std::string> fileNames, VertexInputStateHandle * vertexInputState,
     PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace,
     uint32_t subpass,
+    std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil)
 {
     assert(fileNames.size() > 0);
@@ -137,6 +142,7 @@ ShaderProgram * ShaderProgram::Create(
                                       pipelineLayout,
                                       renderPass,
                                       subpass,
+                                      colorBlendAttachments,
                                       vertexInputState](ResourceCreationContext & ctx) {
         GlslToSpirvShaderCompiler glslCompiler(std::make_shared<DefaultFileSlurper>());
 
@@ -153,8 +159,16 @@ ShaderProgram * ShaderProgram::Create(
                 return;
             }
         }
-        auto pipeline = CreatePipeline(
-            stages, vertexInputState, pipelineLayout, renderPass, cullMode, frontFace, subpass, depthStencil, ctx);
+        auto pipeline = CreatePipeline(stages,
+                                       vertexInputState,
+                                       pipelineLayout,
+                                       renderPass,
+                                       cullMode,
+                                       frontFace,
+                                       subpass,
+                                       colorBlendAttachments,
+                                       depthStencil,
+                                       ctx);
 
         ret = new ShaderProgram(name,
                                 pipeline,
@@ -165,6 +179,7 @@ ShaderProgram * ShaderProgram::Create(
                                 cullMode,
                                 frontFace,
                                 subpass,
+                                colorBlendAttachments,
                                 depthStencil);
         sem.Signal();
     });
@@ -216,6 +231,7 @@ ShaderProgram * ShaderProgram::Create(
                                                    program->cullMode,
                                                    program->frontFace,
                                                    program->subpass,
+                                                   program->colorBlendAttachments,
                                                    program->depthStencil,
                                                    ctx);
                 ResourceManager::DestroyResources([oldStages, oldPipeline](ResourceCreationContext & ctx) {
@@ -244,6 +260,7 @@ void ShaderProgram::SetRenderpass(RenderPassHandle * newPass)
                                         this->cullMode,
                                         this->frontFace,
                                         this->subpass,
+                                        this->colorBlendAttachments,
                                         this->depthStencil,
                                         ctx);
         ResourceManager::DestroyResources(
@@ -255,9 +272,10 @@ ShaderProgram::ShaderProgram(
     std::string const & name, PipelineHandle * pipeline, std::vector<ShaderStage> & stages,
     VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
     CullMode cullMode, FrontFace frontFace, uint32_t subpass,
+    std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil)
     : name(name), pipeline(pipeline), stages(stages), vertexInputState(vertexInputState),
       pipelineLayout(pipelineLayout), renderPass(renderPass), cullMode(cullMode), frontFace(frontFace),
-      subpass(subpass), depthStencil(depthStencil)
+      subpass(subpass), colorBlendAttachments(colorBlendAttachments), depthStencil(depthStencil)
 {
 }

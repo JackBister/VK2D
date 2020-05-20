@@ -1,12 +1,15 @@
 #version 420 
 #extension GL_GOOGLE_include_directive : require
 
+#include "Normals.h"
 #include "Specialization.h"
 
 layout (location = 0) in vec3 Color;
-layout (location = 1) in vec2 Texcoord;
+layout (location = 1) in vec3 Normal;
+layout (location = 2) in vec2 Texcoord;
 
 layout (location = 0) out vec4 outColor;
+layout (location = 1) out vec2 outNormal;
 
 layout (set = 2, binding = 0) uniform sampler2D albedo;
 
@@ -16,4 +19,5 @@ void main() {
 		discard;
 	}
 	outColor = col;
+	outNormal = encode(Normal);
 }
