@@ -52,8 +52,7 @@ class CameraComponentDeserializer : public Deserializer
 
     void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override
     {
-        CameraComponent * ret = new CameraComponent();
-
+        std::variant<OrthoCamera, PerspectiveCamera> cameraData;
         auto orthoOpt = obj.GetObject("ortho");
         auto perspectiveOpt = obj.GetObject("perspective");
         if (orthoOpt.has_value()) {
@@ -61,7 +60,7 @@ class CameraComponentDeserializer : public Deserializer
             OrthoCamera cam;
             cam.aspect = ortho.GetNumber("aspect").value();
             cam.viewSize = ortho.GetNumber("viewSize").value();
-            ret->cameraData = cam;
+            cameraData = cam;
         } else if (perspectiveOpt.has_value()) {
             auto perspective = perspectiveOpt.value();
             PerspectiveCamera cam;
@@ -69,26 +68,19 @@ class CameraComponentDeserializer : public Deserializer
             cam.fov = perspective.GetNumber("fov").value();
             cam.zFar = perspective.GetNumber("zFar").value();
             cam.zNear = perspective.GetNumber("zNear").value();
-            ret->cameraData = cam;
+            cameraData = cam;
         } else {
             logger->Errorf("CameraComponent must be initialized with either an 'ortho' parameter or a 'perspective' "
                            "parameter. Will create a default ortho camera.");
             OrthoCamera cam;
             cam.aspect = 0.75;
             cam.viewSize = 60;
-            ret->cameraData = cam;
         }
 
-        auto defaultsToMainOpt = obj.GetBool("defaultsToMain");
-        if (defaultsToMainOpt.has_value()) {
-            ret->defaultsToMain = defaultsToMainOpt.value();
-        }
+        auto defaultsToMain = obj.GetBool("defaultsToMain").value_or(false);
+        auto isActive = obj.GetBool("isActive").value();
 
-        ret->isActive = obj.GetBool("isActive").value();
-
-        ret->cameraHandle = RenderSystem::GetInstance()->CreateCamera();
-
-        return ret;
+        return new CameraComponent(cameraData, isActive, defaultsToMain);
     }
 };
 
@@ -125,8 +117,9 @@ COMPONENT_IMPL(CameraComponent, new CameraComponentDeserializer())
 DESERIALIZABLE_IMPL(OrthoCamera, new OrthoCameraDeserializer())
 DESERIALIZABLE_IMPL(PerspectiveCamera, new PerspectiveCameraDeserializer())
 
-CameraComponent::CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData, bool isActive)
-    : cameraData(cameraData), isActive(isActive)
+CameraComponent::CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData, bool isActive,
+                                 bool defaultsToMain)
+    : cameraData(cameraData), isActive(isActive), defaultsToMain(defaultsToMain)
 {
     receiveTicks = false;
     type = "CameraComponent";
