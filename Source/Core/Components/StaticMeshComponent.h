@@ -7,19 +7,11 @@
 #include "Core/Resources/StaticMesh.h"
 
 class DescriptorSet;
-class StaticMeshComponentDeserializer;
 
 class StaticMeshComponent : public Component
 {
 public:
-    friend class StaticMeshComponentDeserializer;
-
-    StaticMeshComponent()
-    {
-        receiveTicks = false;
-        type = "StaticMeshComponent";
-    }
-    StaticMeshComponent(std::string file, StaticMesh * mesh);
+    StaticMeshComponent(std::string file, StaticMesh * mesh, bool isActive = true);
     ~StaticMeshComponent() override;
 
     SerializedObject Serialize() const override;

@@ -121,9 +121,10 @@ CameraComponent::CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> ca
                                  bool defaultsToMain)
     : cameraData(cameraData), isActive(isActive), defaultsToMain(defaultsToMain)
 {
+    cameraHandle = RenderSystem::GetInstance()->CreateCamera();
+
     receiveTicks = false;
     type = "CameraComponent";
-    cameraHandle = RenderSystem::GetInstance()->CreateCamera();
 }
 
 CameraComponent::~CameraComponent()

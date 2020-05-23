@@ -38,10 +38,8 @@ class StaticMeshComponentDeserializer : public Deserializer
                 return nullptr;
             }
         }
-        auto ret = new StaticMeshComponent(file, mesh);
-        ret->staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance(mesh);
-        ret->isActive = obj.GetBool("isActive").value_or(true);
-        return ret;
+        auto isActive = obj.GetBool("isActive").value_or(true);
+        return new StaticMeshComponent(file, mesh, isActive);
     }
 };
 
@@ -52,7 +50,14 @@ StaticMeshComponent::~StaticMeshComponent()
     RenderSystem::GetInstance()->DestroyStaticMeshInstance(staticMeshInstance);
 }
 
-StaticMeshComponent::StaticMeshComponent(std::string file, StaticMesh * mesh) : file(file), mesh(mesh) {}
+StaticMeshComponent::StaticMeshComponent(std::string file, StaticMesh * mesh, bool isActive)
+    : file(file), mesh(mesh), isActive(isActive)
+{
+    staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance(mesh);
+
+    receiveTicks = false;
+    type = "StaticMeshComponent";
+}
 
 SerializedObject StaticMeshComponent::Serialize() const
 {
