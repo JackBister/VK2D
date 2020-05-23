@@ -456,93 +456,25 @@ void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vect
     }
 }
 
-// Absolute caveman code here
-struct SubmeshWithUniformId {
-    Submesh const * submesh;
-    uint32_t id;
-};
-
-struct SubmeshComparer {
-    bool operator()(SubmeshWithUniformId const & lhs, SubmeshWithUniformId const & rhs) const
-    {
-        if (lhs.submesh->GetMaterial()->GetDescriptorSet() < rhs.submesh->GetMaterial()->GetDescriptorSet()) {
-            return true;
-        }
-        if (lhs.submesh->GetMaterial()->GetDescriptorSet() > rhs.submesh->GetMaterial()->GetDescriptorSet()) {
-            return false;
-        }
-        // Same material
-        if (lhs.submesh->GetVertexBuffer().GetBuffer() < rhs.submesh->GetVertexBuffer().GetBuffer()) {
-            return true;
-        }
-        if (lhs.submesh->GetVertexBuffer().GetBuffer() > rhs.submesh->GetVertexBuffer().GetBuffer()) {
-            return false;
-        }
-        // Same material, same vertex buffer
-        if (!lhs.submesh->GetIndexBuffer().has_value() && !rhs.submesh->GetIndexBuffer().has_value()) {
-            // Same material, same vertex buffer, no index buffers
-            if (lhs.submesh->GetVertexBuffer().GetOffset() < rhs.submesh->GetVertexBuffer().GetOffset()) {
-                return true;
-            }
-            if (lhs.submesh->GetVertexBuffer().GetOffset() > rhs.submesh->GetVertexBuffer().GetOffset()) {
-                return false;
-            }
-            if (lhs.id < rhs.id) {
-                return true;
-            }
-            if (lhs.id > rhs.id) {
-                return false;
-            }
-            // Same material, same vertex buffer, no index buffers, same offset, same id
-            return lhs.submesh->GetNumVertices() < rhs.submesh->GetNumVertices();
-        }
-        if (lhs.submesh->GetIndexBuffer().has_value() && !rhs.submesh->GetIndexBuffer().has_value()) {
-            return true;
-        }
-        if (!lhs.submesh->GetIndexBuffer().has_value() && rhs.submesh->GetIndexBuffer().has_value()) {
-            return false;
-        }
-        // Same material, same vertex buffer, both have index buffer
-        if (lhs.submesh->GetIndexBuffer().value().GetBuffer() < rhs.submesh->GetIndexBuffer().value().GetBuffer()) {
-            return true;
-        }
-        if (lhs.submesh->GetIndexBuffer().value().GetBuffer() > rhs.submesh->GetIndexBuffer().value().GetBuffer()) {
-            return false;
-        }
-        // Same material, same vertex buffer, same index buffer
-        if (lhs.submesh->GetIndexBuffer().value().GetOffset() < rhs.submesh->GetIndexBuffer().value().GetOffset()) {
-            return true;
-        }
-        if (lhs.submesh->GetIndexBuffer().value().GetOffset() > rhs.submesh->GetIndexBuffer().value().GetOffset()) {
-            return false;
-        }
-        if (lhs.id < rhs.id) {
-            return true;
-        }
-        if (lhs.id > rhs.id) {
-            return false;
-        }
-        // Same material, same vertex buffer, same index buffer, same index offset, same id
-        return lhs.submesh->GetNumIndexes() < rhs.submesh->GetNumIndexes();
-    }
-};
-
 std::vector<MeshBatch> RenderSystem::CreateBatches()
 {
     OPTICK_EVENT();
 
+    std::set<StaticMeshInstanceId> inactiveInstances;
+    std::unordered_map<StaticMeshInstanceId, size_t> instanceIdToLtwIndex;
     std::vector<glm::mat4> localToWorlds;
-    std::set<SubmeshWithUniformId, SubmeshComparer> sortedSubmeshes;
     {
         OPTICK_EVENT("SortSubmeshes");
-        for (auto const & instance : this->staticMeshes) {
-            if (!instance.isActive) {
+        for (auto const & submeshInstance : sortedSubmeshInstances) {
+            auto const staticMeshInstance = GetStaticMeshInstance(submeshInstance.instanceId);
+            if (!staticMeshInstance->isActive) {
+                inactiveInstances.insert(submeshInstance.instanceId);
                 continue;
             }
-            localToWorlds.push_back(instance.localToWorld);
-            uint32_t id = localToWorlds.size() - 1;
-            for (auto const & submesh : instance.mesh->GetSubmeshes()) {
-                sortedSubmeshes.insert({&submesh, id});
+            auto existingLtwIndex = instanceIdToLtwIndex.find(submeshInstance.instanceId);
+            if (existingLtwIndex == instanceIdToLtwIndex.end()) {
+                localToWorlds.push_back(staticMeshInstance->localToWorld);
+                instanceIdToLtwIndex[submeshInstance.instanceId] = localToWorlds.size() - 1;
             }
         }
     }
@@ -557,7 +489,12 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
     {
         OPTICK_EVENT("GatherBatches");
         MeshBatch currentBatch;
-        for (auto const & submesh : sortedSubmeshes) {
+        for (auto const & submesh : sortedSubmeshInstances) {
+            // TODO: Replace with contains when upgraded to C++20.
+            // I can't belive a set implementation does not have a straightforward contains method...
+            if (inactiveInstances.count(submesh.instanceId) > 0) {
+                continue;
+            }
             if (submesh.submesh->GetMaterial() != currentBatch.material ||
                 submesh.submesh->GetVertexBuffer().GetBuffer() != currentBatch.vertexBuffer ||
                 (submesh.submesh->GetIndexBuffer().has_value() ? submesh.submesh->GetIndexBuffer()->GetBuffer()
@@ -582,7 +519,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
             if (submesh.submesh->GetIndexBuffer().has_value()) {
                 DrawIndexedIndirectCommand command;
                 command.firstIndex = submesh.submesh->GetIndexBuffer()->GetOffset();
-                command.firstInstance = submesh.id;
+                command.firstInstance = instanceIdToLtwIndex.at(submesh.instanceId);
                 command.indexCount = submesh.submesh->GetNumIndexes();
                 command.instanceCount = 1;
                 command.vertexOffset = submesh.submesh->GetVertexBuffer().GetOffset() / sizeof(VertexWithNormal);
@@ -590,7 +527,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
                 drawIndexedCommands.push_back(command);
             } else {
                 DrawIndirectCommand command;
-                command.firstInstance = submesh.id;
+                command.firstInstance = instanceIdToLtwIndex.at(submesh.instanceId);
                 command.firstVertex = submesh.submesh->GetVertexBuffer().GetOffset() / sizeof(VertexWithNormal);
                 command.instanceCount = 1;
                 command.vertexCount = submesh.submesh->GetNumVertices();

@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <set>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -11,9 +12,9 @@
 #include "Core/Rendering/SpriteInstance.h"
 #include "Core/Rendering/StaticMeshInstance.h"
 #include "Core/Rendering/UiRenderSystem.h"
+#include "Core/Rendering/SubmeshInstance.h"
 
 class Image;
-class Material;
 class ShaderProgram;
 
 struct DrawIndirectCommand {
@@ -180,6 +181,7 @@ private:
     SpriteInstance * GetSpriteInstance(SpriteInstanceId);
 
     // static meshes
+    std::set<SubmeshInstance, SubmeshInstanceComparer> sortedSubmeshInstances;
     std::vector<StaticMeshInstance> staticMeshes;
     StaticMeshInstance * GetStaticMeshInstance(StaticMeshInstanceId);
 
