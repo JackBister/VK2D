@@ -33,7 +33,7 @@ public:
         receiveTicks = false;
         type = "CameraComponent";
     };
-    CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData);
+    CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData, bool isActive = true);
     ~CameraComponent() override;
 
     SerializedObject Serialize() const override;

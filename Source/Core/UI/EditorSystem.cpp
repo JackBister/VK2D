@@ -131,7 +131,7 @@ void Init()
     camera.fov = 90;
     camera.zFar = 10000;
     camera.zNear = 0.1;
-    editorCamera->AddComponent(std::make_unique<CameraComponent>(camera));
+    editorCamera->AddComponent(std::make_unique<CameraComponent>(camera, false));
     editorCamera->AddComponent(std::make_unique<UneditableComponent>());
     GameModule::AddEntity(editorCamera);
 }

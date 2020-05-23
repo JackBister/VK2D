@@ -125,7 +125,8 @@ COMPONENT_IMPL(CameraComponent, new CameraComponentDeserializer())
 DESERIALIZABLE_IMPL(OrthoCamera, new OrthoCameraDeserializer())
 DESERIALIZABLE_IMPL(PerspectiveCamera, new PerspectiveCameraDeserializer())
 
-CameraComponent::CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData) : cameraData(cameraData)
+CameraComponent::CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData, bool isActive)
+    : cameraData(cameraData), isActive(isActive)
 {
     receiveTicks = false;
     type = "CameraComponent";
