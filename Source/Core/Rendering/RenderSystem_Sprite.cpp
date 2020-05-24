@@ -42,6 +42,7 @@ SpriteInstanceId RenderSystem::CreateSpriteInstance(Image * image, bool isActive
 void RenderSystem::DestroySpriteInstance(SpriteInstanceId spriteInstance)
 {
     auto sprite = GetSpriteInstance(spriteInstance);
+    sprite->isActive = false;
     auto descriptorSet = sprite->descriptorSet;
     auto uniforms = sprite->uniformBuffer;
     this->DestroyResources([descriptorSet, uniforms](ResourceCreationContext & ctx) {
