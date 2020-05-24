@@ -171,9 +171,9 @@ void PhysicsComponent::OnEvent(HashedString name, EventArgs args)
 
 void PhysicsComponent::getWorldTransform(btTransform & worldTransform) const
 {
-    glm::vec3 const & pos = entity->transform.GetPosition();
+    glm::vec3 const & pos = entity->GetTransform()->GetPosition();
     worldTransform.setOrigin(btVector3(pos.x, pos.y, pos.z));
-    glm::quat const & rot = entity->transform.GetRotation();
+    glm::quat const & rot = entity->GetTransform()->GetRotation();
     worldTransform.setRotation(btQuaternion(rot.x, rot.y, rot.z, rot.w));
     // TODO:
     // const Vec3& scale = entity->transform.scale;
@@ -183,9 +183,9 @@ void PhysicsComponent::getWorldTransform(btTransform & worldTransform) const
 void PhysicsComponent::setWorldTransform(btTransform const & worldTransform)
 {
     auto const & pos = worldTransform.getOrigin();
-    entity->transform.SetPosition(glm::vec3(pos.x(), pos.y(), pos.z()));
+    entity->GetTransform()->SetPosition(glm::vec3(pos.x(), pos.y(), pos.z()));
     auto const & rot = worldTransform.getRotation();
     // I don't know why, but for some reason the components of the rotation are shifted one step when they're returned
     // here, which is why x = w, etc.
-    entity->transform.SetRotation(glm::quat(rot.w(), rot.x(), rot.y(), rot.z()));
+    entity->GetTransform()->SetRotation(glm::quat(rot.w(), rot.x(), rot.y(), rot.z()));
 }

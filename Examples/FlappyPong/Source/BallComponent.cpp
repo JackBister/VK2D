@@ -45,8 +45,8 @@ void BallComponent::OnEvent(HashedString name, EventArgs args)
     if (name == "BeginPlay") {
         velocityDir = glm::vec2((float)rand() / (float)RAND_MAX, (float)rand() / (float)RAND_MAX);
     } else if (name == "Tick") {
-        auto position = entity->transform.GetPosition();
-        auto scale = entity->transform.GetScale();
+        auto position = entity->GetTransform()->GetPosition();
+        auto scale = entity->GetTransform()->GetScale();
 
         if (position.y <= -60.f + scale.y || position.y >= 60.f - scale.y) {
             velocityDir.y = -velocityDir.y;
@@ -59,13 +59,13 @@ void BallComponent::OnEvent(HashedString name, EventArgs args)
         position.x = position.x + velocityDir.x * moveSpeed * args["deltaTime"].asFloat;
         position.y = position.y + velocityDir.y * moveSpeed * args["deltaTime"].asFloat;
 
-        entity->transform.SetPosition(position);
+        entity->GetTransform()->SetPosition(position);
     } else if (name == "OnCollisionStart") {
         auto collisionInfo = (CollisionInfo *)args["info"].asPointer;
         if (collisionInfo->normals.size() == 0) {
             logger->Warnf("OnCollisionStart with no normals. thisEntity='%s' otherEntity='%s'",
-                          entity->name.c_str(),
-                          collisionInfo->other->name.c_str());
+                          entity->GetName().c_str(),
+                          collisionInfo->other->GetName().c_str());
             velocityDir.x = -velocityDir.x;
         } else {
             auto norm = glm::normalize(glm::vec2(collisionInfo->normals[0]));

@@ -100,6 +100,6 @@ void SpriteComponent::OnEvent(HashedString name, EventArgs args)
 
     if (name == "PreRender") {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
-        builder->WithSpriteInstanceUpdate({spriteInstance, entity->transform.GetLocalToWorld(), isActive});
+        builder->WithSpriteInstanceUpdate({spriteInstance, entity->GetTransform()->GetLocalToWorld(), isActive});
     }
 }

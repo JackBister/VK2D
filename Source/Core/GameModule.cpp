@@ -60,7 +60,7 @@ Entity * GetEntityByIdx(size_t idx)
 Entity * GetEntityByName(std::string const & name)
 {
     for (auto entity : entities) {
-        if (entity->name == name) {
+        if (entity->GetName() == name) {
             return entity;
         }
     }

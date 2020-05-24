@@ -132,9 +132,7 @@ void Init()
         logger->Errorf("Could not find the schema for Entity, this should never happen and will cause a crash.");
     }
 
-    editorCamera = new Entity();
-    editorCamera->name = "EditorCamera";
-    editorCamera->type = "Entity";
+    editorCamera = new Entity("EditorCamera", Transform());
     PerspectiveCamera camera;
     camera.aspect = 1.77;
     camera.fov = 90;
@@ -158,8 +156,8 @@ void OnGui()
     }
     if (isEditorOpen) {
         if (isWorldPaused) {
-            auto cameraPos = editorCamera->transform.GetPosition();
-            auto cameraRot = editorCamera->transform.GetRotation();
+            auto cameraPos = editorCamera->GetTransform()->GetPosition();
+            auto cameraRot = editorCamera->GetTransform()->GetRotation();
             if (Input::GetKey(KC_LALT)) {
                 if (io.MouseWheel != 0) {
                     cameraDragMultiplier += io.MouseWheel * CAMERA_DRAG_INCREASE_STEP;
@@ -192,13 +190,13 @@ void OnGui()
 
             if (!io.KeyCtrl && !io.KeyShift && !ImGui::IsAnyWindowFocused()) {
                 if (Input::GetKey(KC_w)) {
-                    auto fwd = editorCamera->transform.GetLocalToWorld() * glm::vec4(0.f, 0.f, -1.f, 0.f);
+                    auto fwd = editorCamera->GetTransform()->GetLocalToWorld() * glm::vec4(0.f, 0.f, -1.f, 0.f);
                     fwd *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
                     cameraPos.x += fwd.x;
                     cameraPos.y += fwd.y;
                     cameraPos.z += fwd.z;
                 } else if (Input::GetKey(KC_s)) {
-                    auto bwd = editorCamera->transform.GetLocalToWorld() * glm::vec4(0.f, 0.f, 1.f, 0.f);
+                    auto bwd = editorCamera->GetTransform()->GetLocalToWorld() * glm::vec4(0.f, 0.f, 1.f, 0.f);
                     bwd *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
                     cameraPos.x += bwd.x;
                     cameraPos.y += bwd.y;
@@ -206,13 +204,13 @@ void OnGui()
                 }
 
                 if (Input::GetKey(KC_a)) {
-                    auto left = editorCamera->transform.GetLocalToWorld() * glm::vec4(-1.f, 0.f, 0.f, 0.f);
+                    auto left = editorCamera->GetTransform()->GetLocalToWorld() * glm::vec4(-1.f, 0.f, 0.f, 0.f);
                     left *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
                     cameraPos.x += left.x;
                     cameraPos.y += left.y;
                     cameraPos.z += left.z;
                 } else if (Input::GetKey(KC_d)) {
-                    auto right = editorCamera->transform.GetLocalToWorld() * glm::vec4(1.f, 0.f, 0.f, 0.f);
+                    auto right = editorCamera->GetTransform()->GetLocalToWorld() * glm::vec4(1.f, 0.f, 0.f, 0.f);
                     right *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
                     cameraPos.x += right.x;
                     cameraPos.y += right.y;
@@ -220,8 +218,8 @@ void OnGui()
                 }
             }
 
-            editorCamera->transform.SetPosition(cameraPos);
-            editorCamera->transform.SetRotation(cameraRot);
+            editorCamera->GetTransform()->SetPosition(cameraPos);
+            editorCamera->GetTransform()->SetRotation(cameraRot);
         }
         bool addEntityDialogOpened = false;
         bool newSceneDialogOpened = false;
@@ -330,7 +328,7 @@ void OnGui()
                 ToNextEntity();
             }
             if (entityEditor.currEntity != nullptr && !entityEditor.currEntity->HasComponent("UneditableComponent")) {
-                ImGui::Text(entityEditor.currEntity->name.c_str());
+                ImGui::Text(entityEditor.currEntity->GetName().c_str());
                 ImGui::Separator();
                 auto eDesc = reflect::TypeResolver<Entity>::get(entityEditor.currEntity);
                 auto e = eDesc->DrawEditorGui("Entity", entityEditor.currEntity, false);
@@ -380,8 +378,7 @@ void OnGui()
                     logger->Errorf("Cannot add new component because currEntity is null");
                     return;
                 }
-                newComponent->entity = entityEditor.currEntity;
-                entityEditor.currEntity->components.push_back(std::unique_ptr<Component>(newComponent));
+                entityEditor.currEntity->AddComponent(std::unique_ptr<Component>(newComponent));
             }
         }
 
@@ -407,7 +404,7 @@ void OnGui()
         if (entityEditor.currEntity) {
             float mutableMatrix[16];
             memcpy(mutableMatrix,
-                   glm::value_ptr(entityEditor.currEntity->transform.GetLocalToWorld()),
+                   glm::value_ptr(entityEditor.currEntity->GetTransform()->GetLocalToWorld()),
                    16 * sizeof(float));
             auto cameraComponent = (CameraComponent *)editorCamera->GetComponent("CameraComponent");
             ImGuizmo::Manipulate(glm::value_ptr(cameraComponent->GetView()),
@@ -421,9 +418,9 @@ void OnGui()
             glm::vec4 ignoredPerspective;
             glm::quat newRot;
             glm::decompose(newLtw, newScale, newRot, newPos, ignoredSkew, ignoredPerspective);
-            entityEditor.currEntity->transform.SetPosition(newPos);
-            entityEditor.currEntity->transform.SetRotation(newRot);
-            entityEditor.currEntity->transform.SetScale(newScale);
+            entityEditor.currEntity->GetTransform()->SetPosition(newPos);
+            entityEditor.currEntity->GetTransform()->SetRotation(newRot);
+            entityEditor.currEntity->GetTransform()->SetScale(newScale);
         }
     }
 }

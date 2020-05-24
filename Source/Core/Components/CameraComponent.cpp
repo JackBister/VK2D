@@ -150,7 +150,7 @@ glm::mat4 const & CameraComponent::GetProjection()
 glm::mat4 const & CameraComponent::GetView()
 {
     if (isViewDirty) {
-        view = glm::inverse(entity->transform.GetLocalToWorld());
+        view = glm::inverse(entity->GetTransform()->GetLocalToWorld());
     }
     return view;
 }
@@ -182,7 +182,7 @@ SerializedObject CameraComponent::Serialize() const
         logger->Errorf(
             "Unknown cameraData.index() %zu, will not be able to serialize CameraComponent on Entity='%s' fully.",
             cameraData.index(),
-            entity->name.c_str());
+            entity->GetName().c_str());
     }
 
     return builder.Build();

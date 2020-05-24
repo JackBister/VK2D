@@ -13,6 +13,8 @@
 class Entity final : public Deserializable
 {
 public:
+    Entity(std::string const & name, Transform transform) : name(name), transform(transform) { type = "Entity"; }
+
     SerializedObject Serialize() const override;
     void FireEvent(HashedString name, EventArgs args = {});
 
@@ -20,10 +22,14 @@ public:
     Component * GetComponent(std::string const & type) const;
     bool HasComponent(std::string const & type) const;
 
-    std::string name;
-    Transform transform;
+    inline std::string GetName() { return name; }
 
-    std::vector<std::unique_ptr<Component>> components;
+    inline Transform * GetTransform() { return &transform; }
 
     REFLECT();
+
+private:
+    std::string name;
+    Transform transform;
+    std::vector<std::unique_ptr<Component>> components;
 };
