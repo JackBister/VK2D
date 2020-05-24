@@ -10,6 +10,7 @@ The following libraries are currently used by the engine:
 * [GLEW](http://glew.sourceforge.net/)
 * [GLM](https://github.com/g-truc/glm)
 * [imgui](https://github.com/ocornut/imgui)
+* [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo)
 * [moodycamel::ConcurrentQueue](https://github.com/cameron314/concurrentqueue)
 * [nlohmann::json](https://github.com/nlohmann/json)
 * [SDL](https://www.libsdl.org/index.php)

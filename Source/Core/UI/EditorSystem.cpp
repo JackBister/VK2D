@@ -1,7 +1,14 @@
 #include "Core/UI/EditorSystem.h"
 
 #include <cstdio>
+
 #include <imgui.h>
+
+#include <ImGuizmo.h>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <optick/optick.h>
 
 #include "Core/Components/CameraComponent.h"
@@ -110,6 +117,8 @@ struct {
     Entity * currEntity = nullptr;
     size_t currEntityIndex = 0;
 } entityEditor;
+
+ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
 
 void ToNextEntity();
 void ToPrevEntity();
@@ -256,9 +265,10 @@ void OnGui()
             ImGui::NextColumn();
             ImGui::NextColumn();
             // Hack for right alignment
-            float rightAlignedItemsSize = ImGui::CalcTextSize("Toggle Camera").x;
+            float rightAlignedItemsSize = ImGui::CalcTextSize("Toggle Camera").x + ImGui::CalcTextSize("T").x +
+                                          ImGui::CalcTextSize("R").x + ImGui::CalcTextSize("S").x;
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - rightAlignedItemsSize -
-                                 ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
+                                 ImGui::GetScrollX() - 8 * ImGui::GetStyle().ItemSpacing.x);
             if (ImGui::MenuItem("Toggle Camera")) {
                 auto editorCameraComponent = (CameraComponent *)editorCamera->GetComponent("CameraComponent");
                 if (editorCameraComponent->IsActive()) {
@@ -268,6 +278,15 @@ void OnGui()
                     editorCameraComponent->SetActive(true);
                     ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(false);
                 }
+            }
+            if (ImGui::MenuItem("T")) {
+                currentGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+            }
+            if (ImGui::MenuItem("R")) {
+                currentGizmoOperation = ImGuizmo::OPERATION::ROTATE;
+            }
+            if (ImGui::MenuItem("S")) {
+                currentGizmoOperation = ImGuizmo::OPERATION::SCALE;
             }
 
             ImGui::EndMainMenuBar();
@@ -382,6 +401,29 @@ void OnGui()
 
             GameModule::AddEntity(entity);
             GameModule::GetScene()->AddEntity(entity);
+        }
+
+        // TODO: Make this work with transforms that have parents
+        if (entityEditor.currEntity) {
+            float mutableMatrix[16];
+            memcpy(mutableMatrix,
+                   glm::value_ptr(entityEditor.currEntity->transform.GetLocalToWorld()),
+                   16 * sizeof(float));
+            auto cameraComponent = (CameraComponent *)editorCamera->GetComponent("CameraComponent");
+            ImGuizmo::Manipulate(glm::value_ptr(cameraComponent->GetView()),
+                                 glm::value_ptr(cameraComponent->GetProjection()),
+                                 currentGizmoOperation,
+                                 ImGuizmo::MODE::WORLD,
+                                 mutableMatrix);
+
+            auto newLtw = glm::make_mat4(mutableMatrix);
+            glm::vec3 newPos, newScale, ignoredSkew;
+            glm::vec4 ignoredPerspective;
+            glm::quat newRot;
+            glm::decompose(newLtw, newScale, newRot, newPos, ignoredSkew, ignoredPerspective);
+            entityEditor.currEntity->transform.SetPosition(newPos);
+            entityEditor.currEntity->transform.SetRotation(newRot);
+            entityEditor.currEntity->transform.SetScale(newScale);
         }
     }
 }

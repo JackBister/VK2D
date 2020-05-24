@@ -1,6 +1,8 @@
 #include "Core/Rendering/UiRenderSystem.h"
 
 #include <imgui.h>
+
+#include <ImGuizmo.h>
 #include <optick/optick.h>
 
 #include "Core/Resources/ResourceManager.h"
@@ -62,6 +64,9 @@ void UiRenderSystem::StartFrame()
     auto & io = ImGui::GetIO();
     io.DeltaTime = Time::GetUnscaledDeltaTime();
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
+    glm::vec2 res = renderer->GetResolution();
+    ImGuizmo::SetRect(0, 0, res.x, res.y);
 }
 
 void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer)
