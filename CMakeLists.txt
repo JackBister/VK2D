@@ -9,7 +9,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(vk2d C CXX)
 
-file(GLOB_RECURSE SOURCES Source/*.c Source/*.cpp Source/*.h)
+file(GLOB_RECURSE SOURCES Source/Core/*.c Source/Core/*.cpp Source/Core/*.h)
 add_executable(Main ${SOURCES})
 
 set_property(TARGET Main PROPERTY CXX_STANDARD 17)
@@ -62,7 +62,6 @@ else()
 endif()
 
 find_package(glm CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
 find_package(tinyobjloader CONFIG REQUIRED)
@@ -74,7 +73,7 @@ find_path(MOODY_QUEUE_DIR concurrentqueue/concurrentqueue.h)
 find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.h)
 find_path(STB_IMAGE_INCLUDE_DIR stb_image.h)
 target_include_directories(Main PUBLIC Source)
-target_include_directories(Main SYSTEM PUBLIC include ${BULLET_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${MOODY_QUEUE_DIR} ${SHADERC_INCLUDE_DIR} ${STB_IMAGE_INCLUDE_DIR})
+target_include_directories(Main SYSTEM PUBLIC Source/ThirdParty/imgui include ${BULLET_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${MOODY_QUEUE_DIR} ${SHADERC_INCLUDE_DIR} ${STB_IMAGE_INCLUDE_DIR})
 
 find_library(BULLETDYNAMICS_LIBRARY BulletDynamics_Debug)
 find_library(BULLETCOLLISION_LIBRARY BulletCollision_Debug)
@@ -82,11 +81,13 @@ find_library(LINEARMATH_LIBRARY LinearMath_Debug)
 find_library(SDL2_LIBRARY SDL2)
 find_library(SHADERC_LIBRARY shaderc_combined)
 
+add_library(imgui Source/ThirdParty/imgui/imgui.cpp Source/ThirdParty/imgui/imgui_widgets.cpp Source/ThirdParty/imgui/imgui_draw.cpp)
+
 target_link_libraries(
         Main
         ${BULLETDYNAMICS_LIBRARY}
         ${BULLETCOLLISION_LIBRARY}
-        imgui::imgui
+        imgui
         ${LINEARMATH_LIBRARY}
         ${SDL2_LIBRARY}
         ${SHADERC_LIBRARY}

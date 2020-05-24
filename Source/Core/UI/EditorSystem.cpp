@@ -161,7 +161,7 @@ void OnGui()
                     }
                 }
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
-                if (ImGui::IsMouseDragging()) {
+                if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
                     auto dragDelta = ImGui::GetMouseDragDelta();
                     ImGui::ResetMouseDragDelta();
                     glm::vec2 delta(-dragDelta.x * cameraDragMultiplier, dragDelta.y * cameraDragMultiplier);
@@ -169,7 +169,7 @@ void OnGui()
                     cameraPos.x += delta.x;
                     cameraPos.y += delta.y;
                 }
-            } else if (ImGui::IsMouseDragging(1)) {
+            } else if (ImGui::IsMouseDragging(ImGuiMouseButton_Right)) {
                 auto dragDelta = ImGui::GetMouseDragDelta(1);
                 ImGui::ResetMouseDragDelta(1);
 
