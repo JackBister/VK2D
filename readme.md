@@ -14,6 +14,7 @@ The following libraries are currently used by the engine:
 * [moodycamel::ConcurrentQueue](https://github.com/cameron314/concurrentqueue)
 * [nlohmann::json](https://github.com/nlohmann/json)
 * [SDL](https://www.libsdl.org/index.php)
+* [SDL_GameControllerDB](https://github.com/gabomdq/SDL_GameControllerDB)
 * [shaderc](https://github.com/google/shaderc)
 * [stb](https://github.com/nothings/stb)
 * [tinyobjloader](https://github.com/syoyo/tinyobjloader)

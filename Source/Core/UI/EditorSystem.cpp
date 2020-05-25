@@ -14,7 +14,7 @@
 #include "Core/Components/CameraComponent.h"
 #include "Core/Components/UneditableComponent.h"
 #include "Core/GameModule.h"
-#include "Core/Input.h"
+#include "Core/Input/Input.h"
 #include "Core/Logging/Logger.h"
 #include "Core/entity.h"
 #define REFLECT_IMPL
@@ -119,6 +119,8 @@ struct {
 } entityEditor;
 
 ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+
+bool isGamepadStateViewerOpen = false;
 
 void ToNextEntity();
 void ToPrevEntity();
@@ -252,6 +254,10 @@ void OnGui()
                     addEntityNewEntity = SerializedObject();
                     addEntityDialogOpened = true;
                 }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Utilities")) {
+                ImGui::MenuItem("Gamepad state viewer", nullptr, &isGamepadStateViewerOpen);
                 ImGui::EndMenu();
             }
             if (isWorldPaused && ImGui::MenuItem("Play")) {
@@ -421,6 +427,55 @@ void OnGui()
             entityEditor.currEntity->GetTransform()->SetPosition(newPos);
             entityEditor.currEntity->GetTransform()->SetRotation(newRot);
             entityEditor.currEntity->GetTransform()->SetScale(newScale);
+        }
+
+        if (isGamepadStateViewerOpen && ImGui::Begin("Gamepad state viewer")) {
+            auto gamepadCount = Input::GetGamepadCount();
+            for (int i = 0; i < gamepadCount; ++i) {
+                auto pad = Input::GetGamepad(i);
+                if (pad && ImGui::TreeNodeEx(std::to_string(i).c_str(),
+                                             gamepadCount == 1 ? ImGuiTreeNodeFlags_DefaultOpen : 0)) {
+                    ImGui::Text(
+                        "LX: %f (%f)", pad->GetAxis(GamepadAxis::AXIS_LEFTX), pad->GetAxisRaw(GamepadAxis::AXIS_LEFTX));
+                    ImGui::Text(
+                        "LY: %f (%f)", pad->GetAxis(GamepadAxis::AXIS_LEFTY), pad->GetAxisRaw(GamepadAxis::AXIS_LEFTY));
+                    ImGui::Text("LT: %f (%f)",
+                                pad->GetAxis(GamepadAxis::AXIS_TRIGGERLEFT),
+                                pad->GetAxisRaw(GamepadAxis::AXIS_TRIGGERLEFT));
+                    ImGui::Value("LB", pad->GetButton(GamepadButton::BUTTON_LEFTSHOULDER));
+                    ImGui::Value("LS", pad->GetButton(GamepadButton::BUTTON_LEFTSTICK));
+                    ImGui::Value("Down", pad->GetButton(GamepadButton::BUTTON_DPAD_DOWN));
+                    ImGui::Value("Left", pad->GetButton(GamepadButton::BUTTON_DPAD_LEFT));
+                    ImGui::Value("Up", pad->GetButton(GamepadButton::BUTTON_DPAD_UP));
+                    ImGui::Value("Right", pad->GetButton(GamepadButton::BUTTON_DPAD_RIGHT));
+
+                    ImGui::Value("Back", pad->GetButton(GamepadButton::BUTTON_BACK));
+                    ImGui::Value("Guide", pad->GetButton(GamepadButton::BUTTON_GUIDE));
+                    ImGui::Value("Start", pad->GetButton(GamepadButton::BUTTON_START));
+
+                    ImGui::Text("RX: %f (%f)",
+                                pad->GetAxis(GamepadAxis::AXIS_RIGHTX),
+                                pad->GetAxisRaw(GamepadAxis::AXIS_RIGHTX));
+                    ImGui::Text("RY: %f (%f)",
+                                pad->GetAxis(GamepadAxis::AXIS_RIGHTY),
+                                pad->GetAxisRaw(GamepadAxis::AXIS_RIGHTY));
+                    ImGui::Text("RT: %f (%f)",
+                                pad->GetAxis(GamepadAxis::AXIS_TRIGGERRIGHT),
+                                pad->GetAxisRaw(GamepadAxis::AXIS_TRIGGERRIGHT));
+                    ImGui::Value("RX", pad->GetAxis(GamepadAxis::AXIS_RIGHTX), "%f");
+                    ImGui::Value("RY", pad->GetAxis(GamepadAxis::AXIS_RIGHTY), "%f");
+                    ImGui::Value("RT", pad->GetAxis(GamepadAxis::AXIS_TRIGGERRIGHT), "%f");
+                    ImGui::Value("RB", pad->GetButton(GamepadButton::BUTTON_RIGHTSHOULDER));
+                    ImGui::Value("RS", pad->GetButton(GamepadButton::BUTTON_RIGHTSTICK));
+                    ImGui::Value("A", pad->GetButton(GamepadButton::BUTTON_A));
+                    ImGui::Value("X", pad->GetButton(GamepadButton::BUTTON_X));
+                    ImGui::Value("Y", pad->GetButton(GamepadButton::BUTTON_Y));
+                    ImGui::Value("B", pad->GetButton(GamepadButton::BUTTON_B));
+
+                    ImGui::TreePop();
+                }
+            }
+            ImGui::End();
         }
     }
 }

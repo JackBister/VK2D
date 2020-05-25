@@ -11,6 +11,7 @@ static const auto logger = Logger::Create("Config");
 namespace Config
 {
 std::unordered_map<std::string, bool> boolValues;
+std::unordered_map<std::string, float> floatValues;
 std::unordered_map<std::string, int> intValues;
 std::unordered_map<std::string, std::string> stringValues;
 
@@ -25,6 +26,8 @@ void Init()
                 } else {
                     logger->Infof("false");
                 }
+            } else if (Config::floatValues.find(property) != Config::floatValues.end()) {
+                logger->Infof("%f", floatValues.at(property));
             } else if (Config::intValues.find(property) != Config::intValues.end()) {
                 logger->Infof("%d", intValues.at(property));
             } else if (Config::stringValues.find(property) != Config::stringValues.end()) {
@@ -44,6 +47,9 @@ void Init()
                     return;
                 }
                 boolValues.at(property) = value == "true";
+            } else if (floatValues.find(property) != floatValues.end()) {
+                auto convertedValue = std::strtof(value.c_str(), nullptr);
+                floatValues.at(property) = convertedValue;
             } else if (intValues.find(property) != intValues.end()) {
                 auto convertedValue = std::strtol(value.c_str(), nullptr, 0);
                 if (convertedValue == 0 && value != "0") {
@@ -65,6 +71,12 @@ DynamicBoolProperty AddBool(std::string const & name, bool value)
     return DynamicBoolProperty(value, name);
 }
 
+DynamicFloatProperty AddFloat(std::string const & name, float value)
+{
+    floatValues.insert_or_assign(name, value);
+    return DynamicFloatProperty(value, name);
+}
+
 DynamicIntProperty AddInt(std::string const & name, int value)
 {
     intValues.insert_or_assign(name, value);
@@ -80,6 +92,11 @@ DynamicStringProperty AddString(std::string const & name, std::string value)
 DynamicBoolProperty GetBool(std::string const & name, bool defaultValue)
 {
     return DynamicBoolProperty(defaultValue, name);
+}
+
+DynamicFloatProperty GetFloat(std::string const & name, float defaultValue)
+{
+    return DynamicFloatProperty(defaultValue, name);
 }
 
 DynamicIntProperty GetInt(std::string const & name, int defaultValue)
@@ -99,6 +116,14 @@ bool DynamicBoolProperty::Get() const
         return defaultValue;
     }
     return Config::boolValues.at(propertyName);
+}
+
+float DynamicFloatProperty::Get() const
+{
+    if (Config::floatValues.find(propertyName) == Config::floatValues.end()) {
+        return defaultValue;
+    }
+    return Config::floatValues.at(propertyName);
 }
 
 int DynamicIntProperty::Get() const

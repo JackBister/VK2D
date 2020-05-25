@@ -17,6 +17,21 @@ private:
     std::string propertyName;
 };
 
+class DynamicFloatProperty
+{
+public:
+    DynamicFloatProperty(float defaultValue, std::string propertyName)
+        : defaultValue(defaultValue), propertyName(propertyName)
+    {
+    }
+
+    float Get() const;
+
+private:
+    float defaultValue;
+    std::string propertyName;
+};
+
 class DynamicIntProperty
 {
 public:
@@ -52,9 +67,11 @@ namespace Config
 void Init();
 
 DynamicBoolProperty AddBool(std::string const & name, bool initialValue);
+DynamicFloatProperty AddFloat(std::string const & name, float initialValue);
 DynamicIntProperty AddInt(std::string const & name, int initialValue);
 DynamicStringProperty AddString(std::string const & name, std::string initialValue);
 DynamicBoolProperty GetBool(std::string const & name, bool defaultValue);
+DynamicFloatProperty GetFloat(std::string const & name, float defaultValue);
 DynamicIntProperty GetInt(std::string const & name, int defaultValue);
 DynamicStringProperty GetString(std::string const & name, std::string defaultValue);
 };

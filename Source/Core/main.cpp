@@ -10,7 +10,7 @@
 #include "Core/Components/component.h"
 #include "Core/Config/Config.h"
 #include "Core/GameModule.h"
-#include "Core/Input.h"
+#include "Core/Input/Input.h"
 #include "Core/Logging/Appenders/StdoutLogAppender.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Logging/LoggerFactory.h"
@@ -80,6 +80,7 @@ int main(int argc, char * argv[])
         char const * sdlErr = SDL_GetError();
         if (*sdlErr != '\0') {
             logger->Errorf("SDL_GetError returned an error when ticking: %s", sdlErr);
+            SDL_ClearError();
         }
         GameModule::Tick();
     }

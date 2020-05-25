@@ -6,7 +6,7 @@
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/Console/Console.h"
-#include "Core/Input.h"
+#include "Core/Input/Input.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/RenderSystem.h"

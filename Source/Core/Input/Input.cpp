@@ -1,12 +1,14 @@
-#include "Core/Input.h"
+#include "Input.h"
+
+#include <algorithm>
+#include <optional>
+#include <set>
+#include <unordered_map>
 
 #include <SDL2/SDL.h>
-#include <algorithm>
 #include <glm/glm.hpp>
 #include <imgui.h>
 #include <optick/optick.h>
-#include <set>
-#include <unordered_map>
 
 #include "Core/Logging/Logger.h"
 
@@ -21,6 +23,8 @@ std::unordered_map<Keycode, bool, std::hash<int>> heldKeys;
 std::unordered_map<Keycode, bool, std::hash<int>> upKeys;
 
 glm::ivec2 mousePosition;
+
+std::vector<std::optional<Gamepad>> gamepads;
 
 void Frame()
 {
@@ -46,6 +50,42 @@ void Frame()
         case SDL_QUIT: {
             // TODO:
             exit(0);
+            break;
+        }
+        case SDL_CONTROLLERDEVICEADDED: {
+            logger->Infof("New controller connected, id=%d", e.cdevice.which);
+            auto gameController = SDL_GameControllerOpen(e.cdevice.which);
+            if (!gameController) {
+                logger->Errorf("Failed to open game controller with id=%d", e.cdevice.which);
+                break;
+            }
+            logger->Infof("New controller name='%s'", SDL_GameControllerName(gameController));
+            auto instanceId = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gameController));
+            // TODO: This may be wonky, what I'm trying to accomplish is if I plug in two controllers and then unplug
+            // and replug the first one, the first one should still be considered idx 0. This is likely completely wrong
+            // on console?
+            bool didReplace = false;
+            for (size_t i = 0; i < gamepads.size(); ++i) {
+                if (!gamepads[i].has_value()) {
+                    didReplace = true;
+                    gamepads[i] = Gamepad(gameController, instanceId);
+                    break;
+                }
+            }
+            if (!didReplace) {
+                gamepads.push_back(Gamepad(gameController, instanceId));
+            }
+            break;
+        }
+        case SDL_CONTROLLERDEVICEREMOVED: {
+            logger->Infof("Controller disconnected, id=%d", e.cdevice.which);
+            for (size_t i = 0; i < gamepads.size(); ++i) {
+                if (gamepads[i].has_value() && gamepads[i].value().GetId() == e.cdevice.which) {
+                    gamepads[i] = {};
+                    break;
+                }
+            }
+            break;
         }
         case SDL_KEYDOWN: {
             if (!e.key.repeat) {
@@ -118,6 +158,11 @@ void Init()
     io.KeyMap[ImGuiKey_X] = SDL_SCANCODE_X;
     io.KeyMap[ImGuiKey_Y] = SDL_SCANCODE_Y;
     io.KeyMap[ImGuiKey_Z] = SDL_SCANCODE_Z;
+
+    auto numMappings = SDL_GameControllerAddMappingsFromFile("Assets/ThirdParty/gamecontrollerdb/gamecontrollerdb.txt");
+    if (numMappings < 0) {
+        logger->Warnf("Error loading controller mappings %s", SDL_GetError());
+    }
 }
 
 bool EAPI GetKey(Keycode kc)
@@ -174,6 +219,19 @@ bool EAPI GetButtonUp(HashedString s)
 glm::ivec2 EAPI GetMousePosition()
 {
     return mousePosition;
+}
+
+Gamepad const * GetGamepad(size_t idx)
+{
+    if (idx >= gamepads.size() || !gamepads[idx].has_value()) {
+        return nullptr;
+    }
+    return &gamepads[idx].value();
+}
+
+size_t GetGamepadCount()
+{
+    return gamepads.size();
 }
 
 void EAPI AddKeybind(HashedString s, Keycode kc)
