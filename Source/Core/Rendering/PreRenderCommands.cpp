@@ -7,6 +7,13 @@ PreRenderCommands::Builder & PreRenderCommands::Builder::WithCameraUpdate(Update
 }
 
 PreRenderCommands::Builder &
+PreRenderCommands::Builder::WithSkeletalMeshUpdate(UpdateSkeletalMeshInstance const & updateSkeletalMesh)
+{
+    skeletalMeshUpdates.push_back(updateSkeletalMesh);
+    return *this;
+}
+
+PreRenderCommands::Builder &
 PreRenderCommands::Builder::WithSpriteInstanceUpdate(UpdateSpriteInstance const & updateSprite)
 {
     spriteUpdates.push_back(updateSprite);
@@ -22,5 +29,5 @@ PreRenderCommands::Builder::WithStaticMeshInstanceUpdate(UpdateStaticMeshInstanc
 
 PreRenderCommands PreRenderCommands::Builder::Build()
 {
-    return PreRenderCommands(cameraUpdates, spriteUpdates, staticMeshUpdates);
+    return PreRenderCommands(cameraUpdates, skeletalMeshUpdates, spriteUpdates, staticMeshUpdates);
 }

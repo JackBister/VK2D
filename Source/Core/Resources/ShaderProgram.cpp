@@ -69,6 +69,7 @@ PipelineHandle * ShaderProgram::CreatePipeline(
     std::vector<ShaderStage> stages, VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
     RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace, uint32_t subpass,
     std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
+    ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil,
     ResourceCreationContext & ctx)
 {
@@ -97,6 +98,7 @@ PipelineHandle * ShaderProgram::CreatePipeline(
     pipelineCreateInfo.subpass = subpass;
     pipelineCreateInfo.colorBlendAttachments = colorBlendAttachments;
     pipelineCreateInfo.vertexInputState = vertexInputState;
+    pipelineCreateInfo.inputAssembly = inputAssembly;
     return ctx.CreateGraphicsPipeline(pipelineCreateInfo);
 }
 
@@ -105,6 +107,7 @@ ShaderProgram::ShaderProgram(
     VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
     CullMode cullMode, FrontFace frontFace, uint32_t subpass,
     std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
+    ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil)
     : name(name), pipeline(pipeline), vertexInputState(vertexInputState), pipelineLayout(pipelineLayout),
       renderPass(renderPass), cullMode(cullMode), frontFace(frontFace), subpass(subpass),
@@ -126,6 +129,7 @@ ShaderProgram * ShaderProgram::Create(
     PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace,
     uint32_t subpass,
     std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
+    ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil)
 {
     assert(fileNames.size() > 0);
@@ -143,6 +147,7 @@ ShaderProgram * ShaderProgram::Create(
                                       renderPass,
                                       subpass,
                                       colorBlendAttachments,
+                                      inputAssembly,
                                       vertexInputState](ResourceCreationContext & ctx) {
         GlslToSpirvShaderCompiler glslCompiler(std::make_shared<DefaultFileSlurper>());
 
@@ -167,6 +172,7 @@ ShaderProgram * ShaderProgram::Create(
                                        frontFace,
                                        subpass,
                                        colorBlendAttachments,
+                                       inputAssembly,
                                        depthStencil,
                                        ctx);
 
@@ -180,6 +186,7 @@ ShaderProgram * ShaderProgram::Create(
                                 frontFace,
                                 subpass,
                                 colorBlendAttachments,
+                                inputAssembly,
                                 depthStencil);
         sem.Signal();
     });
@@ -232,6 +239,7 @@ ShaderProgram * ShaderProgram::Create(
                                                    program->frontFace,
                                                    program->subpass,
                                                    program->colorBlendAttachments,
+                                                   program->inputAssembly,
                                                    program->depthStencil,
                                                    ctx);
                 ResourceManager::DestroyResources([oldStages, oldPipeline](ResourceCreationContext & ctx) {
@@ -261,6 +269,7 @@ void ShaderProgram::SetRenderpass(RenderPassHandle * newPass)
                                         this->frontFace,
                                         this->subpass,
                                         this->colorBlendAttachments,
+                                        this->inputAssembly,
                                         this->depthStencil,
                                         ctx);
         ResourceManager::DestroyResources(
@@ -273,9 +282,11 @@ ShaderProgram::ShaderProgram(
     VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
     CullMode cullMode, FrontFace frontFace, uint32_t subpass,
     std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
+    ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil)
     : name(name), pipeline(pipeline), stages(stages), vertexInputState(vertexInputState),
       pipelineLayout(pipelineLayout), renderPass(renderPass), cullMode(cullMode), frontFace(frontFace),
-      subpass(subpass), colorBlendAttachments(colorBlendAttachments), depthStencil(depthStencil)
+      subpass(subpass), colorBlendAttachments(colorBlendAttachments), inputAssembly(inputAssembly),
+      depthStencil(depthStencil)
 {
 }

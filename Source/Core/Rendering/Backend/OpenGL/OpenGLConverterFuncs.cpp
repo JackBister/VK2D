@@ -138,4 +138,20 @@ GLint ToGLInternalFormat(Format format)
     }
 }
 
+GLenum ToGLPrimitiveTopology(PrimitiveTopology topology)
+{
+    switch (topology) {
+    case PrimitiveTopology::LINE_LIST:
+        return GL_LINES;
+    case PrimitiveTopology::POINT_LIST:
+        return GL_POINTS;
+    case PrimitiveTopology::TRIANGLE_LIST:
+        return GL_TRIANGLES;
+    default:
+        logger->Errorf("Unrecognized primitive topology: %d", ToUnderlyingType(topology));
+        assert(false);
+        return GL_TRIANGLES;
+    }
+}
+
 #endif

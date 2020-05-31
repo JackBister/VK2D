@@ -101,6 +101,7 @@ private:
         bool depthTestEnable;
         bool depthWriteEnable;
         GLenum depthFunc;
+        GLenum primitiveTopology;
     };
     struct BindVertexBufferArgs {
         GLuint buffer;
@@ -166,6 +167,8 @@ private:
     */
     size_t indexBufferOffset;
     GLenum indexBufferType;
+
+    GLenum primitiveTopology;
 
     virtual void Reset();
 };

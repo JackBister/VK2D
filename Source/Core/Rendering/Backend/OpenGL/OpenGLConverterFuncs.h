@@ -20,5 +20,6 @@ GLint ToGLFilter(Filter filter);
 GLint ToGLFormat(Format format);
 GLenum ToGLFrontFace(FrontFace frontFace);
 GLint ToGLInternalFormat(Format format);
+GLenum ToGLPrimitiveTopology(PrimitiveTopology topology);
 
 #endif

@@ -42,6 +42,9 @@ void RenderPrimitiveFactory::CreatePrimitives()
 
         CreateBoxVbo(ctx);
 
+        CreateDebugDrawPointVertexInputState(ctx);
+        CreateDebugDrawPipelineLayout(ctx);
+
         finishedCreating.Signal();
     });
     finishedCreating.Wait();
@@ -54,6 +57,35 @@ void RenderPrimitiveFactory::LateCreatePrimitives()
         CreateQuadMesh();
         CreateBoxMesh();
     });
+}
+
+void RenderPrimitiveFactory::CreateDebugDrawPointVertexInputState(ResourceCreationContext & ctx)
+{
+    ResourceCreationContext::VertexInputStateCreateInfo ci;
+
+    std::vector<ResourceCreationContext::VertexInputStateCreateInfo::VertexBindingDescription> binding = {
+        {0, 2 * sizeof(glm::vec3)}};
+
+    std::vector<ResourceCreationContext::VertexInputStateCreateInfo::VertexAttributeDescription> attributes = {
+        {0, 0, VertexComponentType::FLOAT, 3, false, 0},
+        {0, 1, VertexComponentType::FLOAT, 3, false, 3 * sizeof(float)},
+    };
+
+    ci.vertexBindingDescriptions = binding;
+    ci.vertexAttributeDescriptions = attributes;
+
+    auto inputState = ctx.CreateVertexInputState(ci);
+    ResourceManager::AddResource("_Primitives/VertexInputStates/debug_draw.state", inputState);
+}
+
+void RenderPrimitiveFactory::CreateDebugDrawPipelineLayout(ResourceCreationContext & ctx)
+{
+    ResourceCreationContext::PipelineLayoutCreateInfo ci;
+    auto camera =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraPt.layout");
+    ci.setLayouts = {camera};
+    auto layout = ctx.CreatePipelineLayout(ci);
+    ResourceManager::AddResource("_Primitives/PipelineLayouts/debug_draw.pipelinelayout", layout);
 }
 
 RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreationContext & ctx)

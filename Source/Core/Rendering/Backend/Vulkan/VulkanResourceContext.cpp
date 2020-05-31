@@ -571,12 +571,15 @@ VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsP
                                                           (uint32_t)attributeDescriptions.size(),
                                                           &attributeDescriptions[0]};
 
+    VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    if (ci.inputAssembly.topology == PrimitiveTopology::POINT_LIST) {
+        topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+    } else if (ci.inputAssembly.topology == PrimitiveTopology::LINE_LIST) {
+        topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    }
+
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        nullptr,
-        0,
-        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-        VK_FALSE};
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, nullptr, 0, topology, VK_FALSE};
 
     VkRect2D scissor{{0, 0}, renderer->swapchain.extent};
     VkViewport viewport{
@@ -596,7 +599,7 @@ VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsP
                                                              0.f,
                                                              0.f,
                                                              0.f,
-                                                             1.f};
+                                                             4.f};
 
     VkPipelineMultisampleStateCreateInfo multisampleState{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
                                                           nullptr,

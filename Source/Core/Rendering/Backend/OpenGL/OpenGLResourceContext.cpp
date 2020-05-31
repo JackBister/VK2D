@@ -253,6 +253,7 @@ OpenGLResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsP
     ret->depthStencil = *ci.depthStencil;
     ret->rasterizationState = *ci.rasterizationState;
     ret->vertexInputState = ci.vertexInputState;
+    ret->inputAssembly = ci.inputAssembly;
 
     return ret;
 }

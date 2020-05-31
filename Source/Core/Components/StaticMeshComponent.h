@@ -1,12 +1,8 @@
 #pragma once
 
-#include <atomic>
-
 #include "Component.h"
 #include "Core/Rendering/StaticMeshInstance.h"
 #include "Core/Resources/StaticMesh.h"
-
-class DescriptorSet;
 
 class StaticMeshComponent : public Component
 {

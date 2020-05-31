@@ -8,6 +8,7 @@
 #include "Core/Console/Console.h"
 #include "Core/Input/Input.h"
 #include "Core/Logging/Logger.h"
+#include "Core/Rendering/DebugDrawSystem.h"
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Resources/Image.h"
@@ -167,6 +168,8 @@ void Tick()
     Input::Frame();
     currFrameStage = FrameStage::TIME;
     Time::Frame();
+
+    DebugDrawSystem::GetInstance()->Tick();
 
     // TODO: remove these (hardcoded serialize + dump keybinds)
 #if 0

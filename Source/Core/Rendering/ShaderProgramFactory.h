@@ -6,6 +6,7 @@ public:
     static void CreateResources();
 
 private:
+    static void CreateDebugDrawShaderProgram();
     static void CreatePassthroughTransformShaderProgram();
     static void CreateMeshShaderProgram();
     static void CreateTransparentMeshShaderProgram();

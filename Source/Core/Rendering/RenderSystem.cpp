@@ -9,9 +9,11 @@
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ShaderProgram.h"
+#include "Core/Resources/SkeletalMesh.h"
 #include "Core/Resources/StaticMesh.h"
 #include "Core/Semaphore.h"
 #include "Core/entity.h"
+#include "DebugDrawSystem.h"
 #include "Vertex.h"
 
 static const auto logger = Logger::Create("RenderSystem");
@@ -152,8 +154,11 @@ void RenderSystem::PreRenderFrame(PreRenderCommands commands)
     currFrame.preRenderPassCommandBuffer->BeginRecording(nullptr);
 
     PreRenderCameras(commands.cameraUpdates);
+    PreRenderSkeletalMeshes(commands.skeletalMeshUpdates);
     PreRenderSprites(commands.spriteUpdates);
     PreRenderMeshes(commands.staticMeshUpdates);
+
+    UpdateAnimations();
 
     uiRenderSystem.PreRenderUi(currFrameInfoIdx, currFrame.preRenderPassCommandBuffer);
     currFrame.preRenderPassCommandBuffer->EndRecording();
@@ -221,6 +226,13 @@ void RenderSystem::PostProcessFrame()
 
         currFrame.postProcessCommandBuffer->CmdBindDescriptorSets(postprocessLayout, 0, {backbufferOverride});
         currFrame.postProcessCommandBuffer->CmdDrawIndexed(6, 1, 0, 0);
+    }
+
+    for (auto const & camera : cameras) {
+        if (!camera.isActive) {
+            continue;
+        }
+        RenderDebugDraws(camera);
     }
 
     // Render UI here since post processing shouldn't(?) affect the UI
@@ -456,6 +468,95 @@ void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vect
     }
 }
 
+void RenderSystem::RenderDebugDraws(CameraInstance const & camera)
+{
+    OPTICK_EVENT();
+    auto draws = DebugDrawSystem::GetInstance()->GetCurrentDraws();
+
+    if (draws.lines.size() == 0 && draws.points.size() == 0) {
+        return;
+    }
+
+    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto res = renderer->GetResolution();
+
+    size_t requiredLinesSize = draws.lines.size() * 4 * sizeof(glm::vec3);
+    size_t requiredPointsSize = draws.points.size() * 2 * sizeof(glm::vec3);
+    if (requiredPointsSize > currFrame.debugPointsSize || requiredLinesSize > currFrame.debugLinesSize) {
+        Semaphore sem;
+        CreateResources([this, &currFrame, &sem, requiredLinesSize, requiredPointsSize](ResourceCreationContext & ctx) {
+            if (requiredLinesSize > currFrame.debugLinesSize) {
+                if (currFrame.debugLinesMapped && currFrame.debugLines) {
+                    ctx.UnmapBuffer(currFrame.debugLines);
+                    ctx.DestroyBuffer(currFrame.debugLines);
+                }
+                currFrame.debugLinesSize = requiredLinesSize;
+                ResourceCreationContext::BufferCreateInfo debugLinesCreateInfo;
+                debugLinesCreateInfo.memoryProperties =
+                    MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
+                debugLinesCreateInfo.size = currFrame.debugLinesSize;
+                debugLinesCreateInfo.usage = BufferUsageFlags::VERTEX_BUFFER_BIT;
+                currFrame.debugLines = ctx.CreateBuffer(debugLinesCreateInfo);
+                currFrame.debugLinesMapped =
+                    (glm::vec3 *)ctx.MapBuffer(currFrame.debugLines, 0, currFrame.debugLinesSize);
+            }
+            if (requiredPointsSize > currFrame.debugPointsSize) {
+                if (currFrame.debugPointsMapped && currFrame.debugPoints) {
+                    ctx.UnmapBuffer(currFrame.debugPoints);
+                    ctx.DestroyBuffer(currFrame.debugPoints);
+                }
+                currFrame.debugPointsSize = requiredPointsSize;
+                ResourceCreationContext::BufferCreateInfo debugPointsCreateInfo;
+                debugPointsCreateInfo.memoryProperties =
+                    MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
+                debugPointsCreateInfo.size = currFrame.debugPointsSize;
+                debugPointsCreateInfo.usage = BufferUsageFlags::VERTEX_BUFFER_BIT;
+                currFrame.debugPoints = ctx.CreateBuffer(debugPointsCreateInfo);
+                currFrame.debugPointsMapped =
+                    (glm::vec3 *)ctx.MapBuffer(currFrame.debugPoints, 0, currFrame.debugPointsSize);
+            }
+            sem.Signal();
+        });
+        sem.Wait();
+    }
+
+    size_t debugLinesIdx = 0;
+    for (auto const & line : draws.lines) {
+        currFrame.debugLinesMapped[debugLinesIdx++] = line.worldSpaceStartPos;
+        currFrame.debugLinesMapped[debugLinesIdx++] = line.color;
+        currFrame.debugLinesMapped[debugLinesIdx++] = line.worldSpaceEndPos;
+        currFrame.debugLinesMapped[debugLinesIdx++] = line.color;
+    }
+
+    size_t debugPointsIdx = 0;
+    for (auto const & point : draws.points) {
+        currFrame.debugPointsMapped[debugPointsIdx++] = point.worldSpacePos;
+        currFrame.debugPointsMapped[debugPointsIdx++] = point.color;
+    }
+
+    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    currFrame.postProcessCommandBuffer->CmdSetViewport(0, 1, &viewport);
+
+    CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
+    currFrame.postProcessCommandBuffer->CmdSetScissor(0, 1, &scissor);
+
+    currFrame.postProcessCommandBuffer->CmdBindDescriptorSets(debugDrawLayout, 0, {camera.descriptorSet});
+
+    if (draws.lines.size() > 0) {
+        currFrame.postProcessCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                            debugDrawLinesProgram->GetPipeline());
+        currFrame.postProcessCommandBuffer->CmdBindVertexBuffer(currFrame.debugLines, 0, 0, 2 * sizeof(glm::vec3));
+        currFrame.postProcessCommandBuffer->CmdDraw(draws.lines.size() * 2, 1, 0, 0);
+    }
+
+    if (draws.points.size() > 0) {
+        currFrame.postProcessCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                            debugDrawPointsProgram->GetPipeline());
+        currFrame.postProcessCommandBuffer->CmdBindVertexBuffer(currFrame.debugPoints, 0, 0, 2 * sizeof(glm::vec3));
+        currFrame.postProcessCommandBuffer->CmdDraw(draws.points.size(), 1, 0, 0);
+    }
+}
+
 std::vector<MeshBatch> RenderSystem::CreateBatches()
 {
     OPTICK_EVENT();
@@ -465,6 +566,14 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
     std::vector<glm::mat4> localToWorlds;
     {
         OPTICK_EVENT("SortSubmeshes");
+        for (auto const & mesh : skeletalMeshes) {
+            // TODO: +1000000 is just a hack for now to get skeletal meshes rendering
+            auto existingLtwIndex = instanceIdToLtwIndex.find(mesh.id + 1000000);
+            if (existingLtwIndex == instanceIdToLtwIndex.end()) {
+                localToWorlds.push_back(mesh.localToWorld);
+                instanceIdToLtwIndex[mesh.id + 1000000] = localToWorlds.size() - 1;
+            }
+        }
         for (auto const & submeshInstance : sortedSubmeshInstances) {
             auto const staticMeshInstance = GetStaticMeshInstance(submeshInstance.instanceId);
             if (!staticMeshInstance->isActive) {
@@ -489,6 +598,52 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
     {
         OPTICK_EVENT("GatherBatches");
         MeshBatch currentBatch;
+        // TODO: Merge with static mesh batches
+        for (auto const & mesh : skeletalMeshes) {
+            if (!mesh.isActive) {
+                continue;
+            }
+            for (auto const & submesh : mesh.submeshes) {
+                if (submesh.submesh->GetMaterial() != currentBatch.material ||
+                    submesh.vertexBuffer.GetBuffer() != currentBatch.vertexBuffer ||
+                    (submesh.indexBuffer.has_value() ? submesh.indexBuffer.value().GetBuffer() : nullptr) !=
+                        currentBatch.indexBuffer) {
+                    currentBatch.drawCommandsOffset = drawCommandsOffset;
+                    currentBatch.drawCommandsCount = drawCommands.size() - drawCommandsOffset;
+                    currentBatch.drawIndexedCommandsOffset = drawIndexedOffset;
+                    currentBatch.drawIndexedCommandsCount = drawIndexedCommands.size() - drawIndexedOffset;
+                    if (currentBatch.material != nullptr) {
+                        batches.push_back(currentBatch);
+                    }
+                    drawCommandsOffset = drawCommands.size();
+                    drawIndexedOffset = drawIndexedCommands.size();
+                    currentBatch.drawCommands.clear();
+                    currentBatch.drawIndexedCommands.clear();
+                    currentBatch.indexBuffer =
+                        (submesh.indexBuffer.has_value() ? submesh.indexBuffer.value().GetBuffer() : nullptr);
+                    currentBatch.material = submesh.submesh->GetMaterial();
+                    currentBatch.vertexBuffer = submesh.vertexBuffer.GetBuffer();
+                }
+                if (submesh.indexBuffer.has_value()) {
+                    DrawIndexedIndirectCommand command;
+                    command.firstIndex = submesh.indexBuffer.value().GetOffset() / sizeof(uint32_t);
+                    command.firstInstance = instanceIdToLtwIndex.at(mesh.id + 1000000);
+                    command.indexCount = submesh.indexBuffer.value().GetSize() / sizeof(uint32_t);
+                    command.instanceCount = 1;
+                    command.vertexOffset = submesh.vertexBuffer.GetOffset() / sizeof(VertexWithNormal);
+                    currentBatch.drawIndexedCommands.push_back(command);
+                    drawIndexedCommands.push_back(command);
+                } else {
+                    DrawIndirectCommand command;
+                    command.firstInstance = instanceIdToLtwIndex.at(mesh.id + 1000000);
+                    command.firstVertex = submesh.vertexBuffer.GetOffset() / sizeof(VertexWithNormal);
+                    command.instanceCount = 1;
+                    command.vertexCount = submesh.vertexBuffer.GetSize() / sizeof(VertexWithNormal);
+                    currentBatch.drawCommands.push_back(command);
+                    drawCommands.push_back(command);
+                }
+            }
+        }
         for (auto const & submesh : sortedSubmeshInstances) {
             // TODO: Replace with contains when upgraded to C++20.
             // I can't belive a set implementation does not have a straightforward contains method...

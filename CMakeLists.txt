@@ -61,6 +61,7 @@ else()
     )
 endif()
 
+find_package(assimp CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
@@ -87,6 +88,7 @@ target_include_directories(ImGuizmo SYSTEM PRIVATE Source/ThirdParty/imgui)
 
 target_link_libraries(
         Main
+        assimp::assimp
         ${BULLETDYNAMICS_LIBRARY}
         ${BULLETCOLLISION_LIBRARY}
         imgui

@@ -6,6 +6,7 @@ The engine uses C++17 features such as std::filesystem and std::variant, and the
 
 The following libraries are currently used by the engine:
 
+* [assimp](https://github.com/assimp/assimp)
 * [Bullet3](https://github.com/bulletphysics/bullet3)
 * [GLEW](http://glew.sourceforge.net/)
 * [GLM](https://github.com/g-truc/glm)
@@ -27,5 +28,5 @@ When it comes to graphics APIs, the engine currently targets:
 ## Installing the required libraries on Windows
 On Windows, I have been using [vcpkg](https://github.com/Microsoft/vcpkg) to install all the required libraries. The following command line should give you everything you need:
 ```
-vcpkg install --triplet=x64-windows bullet3 concurrentqueue glew glm nlohmann-json sdl2 sdl2[vulkan] shaderc stb tinyobjloader
+vcpkg install --triplet=x64-windows assimp bullet3 concurrentqueue glew glm nlohmann-json sdl2 sdl2[vulkan] shaderc stb tinyobjloader
 ```

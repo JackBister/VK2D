@@ -141,12 +141,17 @@ public:
             bool enableBlending;
         };
 
+        struct InputAssembly {
+            PrimitiveTopology topology;
+        };
+
         uint32_t stageCount;
         PipelineShaderStageCreateInfo * pStages;
         VertexInputStateHandle * vertexInputState;
         PipelineDepthStencilStateCreateInfo * depthStencil;
         PipelineRasterizationStateCreateInfo * rasterizationState;
         PipelineLayoutHandle * pipelineLayout;
+        InputAssembly inputAssembly;
         RenderPassHandle * renderPass;
         uint32_t subpass;
         std::vector<ColorBlendAttachment> colorBlendAttachments;

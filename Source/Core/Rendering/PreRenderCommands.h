@@ -1,10 +1,13 @@
 #pragma once
 
+#include <optional>
+#include <string>
 #include <vector>
 
 #include <glm/glm.hpp>
 
 #include "CameraInstance.h"
+#include "SkeletalMeshInstance.h"
 #include "SpriteInstance.h"
 #include "StaticMeshInstance.h"
 
@@ -23,6 +26,14 @@ struct UpdateSpriteInstance {
     bool isActive;
 };
 
+struct UpdateSkeletalMeshInstance {
+    SkeletalMeshInstanceId skeletalMeshInstance;
+    glm::mat4 localToWorld;
+    bool isActive;
+
+    std::optional<std::string> switchToAnimation;
+};
+
 struct UpdateStaticMeshInstance {
     StaticMeshInstanceId staticMeshInstance;
     glm::mat4 localToWorld;
@@ -38,24 +49,30 @@ public:
     {
     public:
         Builder & WithCameraUpdate(UpdateCamera const &);
+        Builder & WithSkeletalMeshUpdate(UpdateSkeletalMeshInstance const &);
         Builder & WithSpriteInstanceUpdate(UpdateSpriteInstance const &);
         Builder & WithStaticMeshInstanceUpdate(UpdateStaticMeshInstance const &);
         PreRenderCommands Build();
 
     private:
         std::vector<UpdateCamera> cameraUpdates;
+        std::vector<UpdateSkeletalMeshInstance> skeletalMeshUpdates;
         std::vector<UpdateSpriteInstance> spriteUpdates;
         std::vector<UpdateStaticMeshInstance> staticMeshUpdates;
     };
 
 private:
-    PreRenderCommands(std::vector<UpdateCamera> cameraUpdates, std::vector<UpdateSpriteInstance> spriteUpdates,
+    PreRenderCommands(std::vector<UpdateCamera> cameraUpdates,
+                      std::vector<UpdateSkeletalMeshInstance> skeletalMeshUpdates,
+                      std::vector<UpdateSpriteInstance> spriteUpdates,
                       std::vector<UpdateStaticMeshInstance> staticMeshUpdates)
-        : cameraUpdates(cameraUpdates), spriteUpdates(spriteUpdates), staticMeshUpdates(staticMeshUpdates)
+        : cameraUpdates(cameraUpdates), skeletalMeshUpdates(skeletalMeshUpdates), spriteUpdates(spriteUpdates),
+          staticMeshUpdates(staticMeshUpdates)
     {
     }
 
     std::vector<UpdateCamera> cameraUpdates;
+    std::vector<UpdateSkeletalMeshInstance> skeletalMeshUpdates;
     std::vector<UpdateSpriteInstance> spriteUpdates;
     std::vector<UpdateStaticMeshInstance> staticMeshUpdates;
 };

@@ -5,11 +5,53 @@
 
 void ShaderProgramFactory::CreateResources()
 {
+    CreateDebugDrawShaderProgram();
     CreatePassthroughTransformShaderProgram();
     CreateMeshShaderProgram();
     CreateTransparentMeshShaderProgram();
     CreateUiShaderProgram();
     CreatePostprocessShaderProgram();
+}
+void ShaderProgramFactory::CreateDebugDrawShaderProgram()
+{
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    depthStencil.depthCompareOp = CompareOp::NEVER;
+    depthStencil.depthTestEnable = false;
+    depthStencil.depthWriteEnable = false;
+
+    ShaderProgram::Create(
+        "_Primitives/ShaderPrograms/debug_draw_lines.program",
+        {"shaders/debug_draw.vert", "shaders/debug_draw.frag"},
+        ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/debug_draw.state"),
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/debug_draw.pipelinelayout"),
+        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
+        CullMode::BACK,
+        FrontFace::CLOCKWISE,
+        0,
+        {
+            {true},
+        },
+        {
+            PrimitiveTopology::LINE_LIST,
+        },
+        depthStencil);
+
+    ShaderProgram::Create(
+        "_Primitives/ShaderPrograms/debug_draw_points.program",
+        {"shaders/debug_draw.vert", "shaders/debug_draw.frag"},
+        ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/debug_draw.state"),
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/debug_draw.pipelinelayout"),
+        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
+        CullMode::BACK,
+        FrontFace::CLOCKWISE,
+        0,
+        {
+            {true},
+        },
+        {
+            PrimitiveTopology::POINT_LIST,
+        },
+        depthStencil);
 }
 
 void ShaderProgramFactory::CreatePassthroughTransformShaderProgram()
@@ -33,6 +75,9 @@ void ShaderProgramFactory::CreatePassthroughTransformShaderProgram()
             {true},
             // disabled for normals
             {false},
+        },
+        {
+            PrimitiveTopology::TRIANGLE_LIST,
         },
         depthStencil);
 }
@@ -59,6 +104,9 @@ void ShaderProgramFactory::CreateMeshShaderProgram()
             // disabled for normals
             {false},
         },
+        {
+            PrimitiveTopology::TRIANGLE_LIST,
+        },
         depthStencil);
 }
 
@@ -84,6 +132,9 @@ void ShaderProgramFactory::CreateTransparentMeshShaderProgram()
             // disabled for normals
             {false},
         },
+        {
+            PrimitiveTopology::TRIANGLE_LIST,
+        },
         depthStencil);
 }
 
@@ -105,6 +156,9 @@ void ShaderProgramFactory::CreateUiShaderProgram()
         {
             // Blending enabled for color attachment
             {true},
+        },
+        {
+            PrimitiveTopology::TRIANGLE_LIST,
         },
         depthStencil);
 }
@@ -128,6 +182,9 @@ void ShaderProgramFactory::CreatePostprocessShaderProgram()
         {
             // Blending disabled for color attachment
             {false},
+        },
+        {
+            PrimitiveTopology::TRIANGLE_LIST,
         },
         depthStencil);
 }

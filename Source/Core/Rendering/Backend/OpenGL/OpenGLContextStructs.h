@@ -60,6 +60,7 @@ struct OpenGLPipelineHandle : PipelineHandle {
     GLuint nativeHandle;
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineRasterizationStateCreateInfo rasterizationState;
+    ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly;
 };
 
 struct OpenGLSamplerHandle : SamplerHandle {

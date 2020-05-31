@@ -14,6 +14,9 @@ public:
     void LateCreatePrimitives();
 
 private:
+    void CreateDebugDrawPointVertexInputState(ResourceCreationContext &);
+    void CreateDebugDrawPipelineLayout(ResourceCreationContext &);
+
     RenderPassHandle * CreateMainRenderpass(ResourceCreationContext &);
     RenderPassHandle * CreatePostprocessRenderpass(ResourceCreationContext &);
 

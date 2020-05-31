@@ -19,6 +19,7 @@ public:
         VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
         CullMode cullMode, FrontFace frontFace, uint32_t subpass,
         std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
+        ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
         ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil);
 
     static ShaderProgram *
@@ -26,6 +27,7 @@ public:
            PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace,
            uint32_t subpass,
            std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
+           ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
            ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil);
 
     inline PipelineHandle * GetPipeline() { return pipeline; }
@@ -45,6 +47,7 @@ private:
         VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout, RenderPassHandle * renderPass,
         CullMode cullMode, FrontFace frontFace, uint32_t subpass,
         std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
+        ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
         ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil);
 
     static std::vector<ShaderStage> ReadShaderStages(std::vector<std::string> const & fileNames,
@@ -53,6 +56,7 @@ private:
         std::vector<ShaderStage>, VertexInputStateHandle * vertexInputState, PipelineLayoutHandle * pipelineLayout,
         RenderPassHandle * renderPass, CullMode cullMode, FrontFace frontFace, uint32_t subpass,
         std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
+        ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
         ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil,
         ResourceCreationContext & ctx);
 
@@ -63,6 +67,7 @@ private:
 
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
     std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments;
+    ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly;
     VertexInputStateHandle * vertexInputState;
     PipelineLayoutHandle * pipelineLayout;
     RenderPassHandle * renderPass;

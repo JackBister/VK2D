@@ -434,9 +434,16 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
             "independentBlend feature not supported. The engine currently only works with independentBlend");
         exit(1);
     }
+    if (!this->supportedFeatures.wideLines) {
+        // TODO: This is only required for debug draw, so it shouldn't crash the engine like this. But to handle that
+        // the rest of the engine needs to be aware of what features are enabled.
+        logger->Severef("wideLines feature not supported. The engine currently only works with wideLines");
+        exit(1);
+    }
     VkPhysicalDeviceFeatures enabledFeatures = {0};
-    enabledFeatures.multiDrawIndirect = VK_TRUE;
     enabledFeatures.independentBlend = VK_TRUE;
+    enabledFeatures.multiDrawIndirect = VK_TRUE;
+    enabledFeatures.wideLines = VK_TRUE;
 
     VkDeviceCreateInfo deviceCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                                            nullptr,

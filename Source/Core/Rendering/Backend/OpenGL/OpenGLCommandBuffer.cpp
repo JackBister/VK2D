@@ -102,7 +102,8 @@ void OpenGLCommandBuffer::CmdBindPipeline(RenderPassHandle::PipelineBindPoint bp
                                            ToGLFrontFace(nativeHandle->rasterizationState.frontFace),
                                            nativeHandle->depthStencil.depthTestEnable,
                                            nativeHandle->depthStencil.depthWriteEnable,
-                                           ToGLCompareOp(nativeHandle->depthStencil.depthCompareOp)});
+                                           ToGLCompareOp(nativeHandle->depthStencil.depthCompareOp),
+                                           ToGLPrimitiveTopology(nativeHandle->inputAssembly.topology)});
 }
 
 void OpenGLCommandBuffer::CmdBindVertexBuffer(BufferHandle * buffer, uint32_t binding, size_t offset, uint32_t stride)
@@ -237,6 +238,7 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
                 glDisable(GL_DEPTH_TEST);
             }
             glDepthFunc(args.depthFunc);
+            primitiveTopology = args.primitiveTopology;
             break;
         }
         case RenderCommandType::BIND_VERTEX_BUFFER: {
@@ -248,20 +250,20 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
         case RenderCommandType::DRAW: {
             auto args = std::get<DrawArgs>(rc);
             glDrawArraysInstancedBaseInstance(
-                GL_TRIANGLES, args.firstVertex, args.vertexCount, args.instanceCount, args.firstInstance);
+                primitiveTopology, args.firstVertex, args.vertexCount, args.instanceCount, args.firstInstance);
             break;
         }
         case RenderCommandType::DRAW_INDIRECT: {
             auto args = std::get<DrawIndirectArgs>(rc);
             glBindBuffer(GL_DRAW_INDIRECT_BUFFER, args.buffer);
-            glMultiDrawArraysIndirect(GL_TRIANGLES, (void *)args.offset, (GLsizei)args.drawCount, (GLsizei)16);
+            glMultiDrawArraysIndirect(primitiveTopology, (void *)args.offset, (GLsizei)args.drawCount, (GLsizei)16);
             break;
         }
         case RenderCommandType::DRAW_INDEXED: {
             auto args = std::get<DrawIndexedArgs>(rc);
             assert(indexBufferType == GL_UNSIGNED_SHORT || indexBufferType == GL_UNSIGNED_INT);
             auto elementSize = indexBufferType == GL_UNSIGNED_SHORT ? sizeof(uint16_t) : sizeof(uint32_t);
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
+            glDrawElementsInstancedBaseVertex(primitiveTopology,
                                               args.count,
                                               indexBufferType,
                                               (void *)(args.indices * elementSize),

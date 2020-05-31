@@ -9,10 +9,11 @@
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Rendering/CameraInstance.h"
 #include "Core/Rendering/PreRenderCommands.h"
+#include "Core/Rendering/SkeletalMeshInstance.h"
 #include "Core/Rendering/SpriteInstance.h"
 #include "Core/Rendering/StaticMeshInstance.h"
-#include "Core/Rendering/UiRenderSystem.h"
 #include "Core/Rendering/SubmeshInstance.h"
+#include "Core/Rendering/UiRenderSystem.h"
 
 class Image;
 class ShaderProgram;
@@ -70,6 +71,9 @@ public:
     CameraInstanceId CreateCamera(bool isActive = true);
     void DestroyCamera(CameraInstanceId camera);
 
+    SkeletalMeshInstanceId CreateSkeletalMeshInstance(SkeletalMesh * mesh, bool isActive = true);
+    void DestroySkeletalMeshInstance(SkeletalMeshInstanceId id);
+
     SpriteInstanceId CreateSpriteInstance(Image * image, bool isActive = true);
     void DestroySpriteInstance(SpriteInstanceId spriteInstance);
 
@@ -114,6 +118,14 @@ private:
         size_t meshIndexedIndirectSize = 0;
         BufferHandle * meshIndexedIndirect = nullptr;
         DrawIndexedIndirectCommand * meshIndexedIndirectMapped = nullptr;
+
+        size_t debugLinesSize = 0;
+        BufferHandle * debugLines;
+        glm::vec3 * debugLinesMapped = nullptr;
+
+        size_t debugPointsSize = 0;
+        BufferHandle * debugPoints;
+        glm::vec3 * debugPointsMapped = nullptr;
     };
 
     static RenderSystem * instance;
@@ -130,12 +142,16 @@ private:
 
     void PreRenderCameras(std::vector<UpdateCamera> const & cameras);
 
+    void PreRenderSkeletalMeshes(std::vector<UpdateSkeletalMeshInstance> const & meshes);
+
     void PreRenderSprites(std::vector<UpdateSpriteInstance> const & sprites);
     void RenderSprites(CameraInstance const & camera);
 
     void PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const & meshes);
     void RenderMeshes(CameraInstance const & camera, std::vector<MeshBatch> const & batches);
     void RenderTransparentMeshes(CameraInstance const & camera, std::vector<MeshBatch> const & batches);
+
+    void RenderDebugDraws(CameraInstance const & camera);
 
     std::vector<MeshBatch> CreateBatches();
 
@@ -169,6 +185,10 @@ private:
     PipelineLayoutHandle * postprocessLayout;
     ShaderProgram * postprocessProgram;
 
+    PipelineLayoutHandle * debugDrawLayout;
+    ShaderProgram * debugDrawLinesProgram;
+    ShaderProgram * debugDrawPointsProgram;
+
     BufferHandle * quadEbo;
     BufferHandle * quadVbo;
 
@@ -179,6 +199,11 @@ private:
     // sprites
     std::vector<SpriteInstance> sprites;
     SpriteInstance * GetSpriteInstance(SpriteInstanceId);
+
+    // skeletal meshes
+    std::vector<SkeletalMeshInstance> skeletalMeshes;
+    SkeletalMeshInstance * GetSkeletalMeshInstance(SkeletalMeshInstanceId id);
+    void UpdateAnimations();
 
     // static meshes
     std::set<SubmeshInstance, SubmeshInstanceComparer> sortedSubmeshInstances;

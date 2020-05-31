@@ -107,6 +107,13 @@ void RenderSystem::Init()
 
     uiProgram = ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/ui.program");
 
+    debugDrawLayout =
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/debug_draw.pipelinelayout");
+    debugDrawLinesProgram =
+        ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/debug_draw_lines.program");
+    debugDrawPointsProgram =
+        ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/debug_draw_points.program");
+
     quadEbo = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/QuadEBO.buffer");
     quadVbo = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
 
@@ -297,6 +304,9 @@ void RenderSystem::InitSwapchainResources()
             FrontFace::COUNTER_CLOCKWISE,
             0,
             {},
+            {
+                PrimitiveTopology::TRIANGLE_LIST,
+            },
             depthStencil);
     } else {
         prepassProgram->SetRenderpass(prepass);

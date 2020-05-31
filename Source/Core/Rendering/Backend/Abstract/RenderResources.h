@@ -142,6 +142,12 @@ enum PipelineStageFlagBits {
     ALL_COMMANDS_BIT = 0x00010000,
 };
 
+enum class PrimitiveTopology {
+    POINT_LIST = 0,
+    LINE_LIST = 1,
+    TRIANGLE_LIST = 3,
+};
+
 enum class CommandBufferLevel { PRIMARY, SECONDARY };
 
 enum ShaderStageFlagBits {
