@@ -229,6 +229,11 @@ void Renderer::UpdateConfig(RendererConfig config)
         RenderCommand::CreateResourceParams([this](ResourceCreationContext & ctx) { UpdatePresentMode(); })));
 }
 
+RendererProperties const & Renderer::GetProperties()
+{
+    return properties;
+}
+
 void Renderer::CmdAbort(RenderCommand const & command)
 {
     isAborting = true;

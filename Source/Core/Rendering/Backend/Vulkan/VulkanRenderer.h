@@ -73,6 +73,8 @@ public:
     RendererConfig GetConfig() final override;
     void UpdateConfig(RendererConfig) final override;
 
+    RendererProperties const & GetProperties() final override;
+
     int abortCode = 0;
 
 private:
@@ -113,6 +115,8 @@ private:
                                VkImageLayout newLayout);
 
     RendererConfig config;
+    RendererProperties properties;
+
     // TODO: This isn't very elegant
     bool isSwapchainInvalid = false;
 

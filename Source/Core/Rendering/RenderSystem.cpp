@@ -225,7 +225,7 @@ void RenderSystem::PostProcessFrame()
         currFrame.postProcessCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, sizeof(VertexWithColorAndUv));
 
         currFrame.postProcessCommandBuffer->CmdBindDescriptorSets(postprocessLayout, 0, {backbufferOverride});
-        currFrame.postProcessCommandBuffer->CmdDrawIndexed(6, 1, 0, 0);
+        currFrame.postProcessCommandBuffer->CmdDrawIndexed(6, 1, 0, 0, 0);
     }
 
     for (auto const & camera : cameras) {
@@ -312,14 +312,12 @@ void RenderSystem::Prepass(std::vector<MeshBatch> const & batches)
                                                              batch.shaderProgram == meshProgram
                                                                  ? prepassProgram->GetPipeline()
                                                                  : skeletalPrepassProgram->GetPipeline());
-
-                if (batch.shaderProgram == skeletalMeshProgram &&
-                    (batch.boneTransformsOffset != currentBoneOffset || !currentBoneSet)) {
-                    currentBoneOffset = batch.boneTransformsOffset;
-                    currentBoneSet = currFrame.boneTransformOffsets[batch.boneTransformsOffset];
-                    currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-                        skeletalPrepassPipelineLayout, 2, {currentBoneSet});
-                }
+            }
+            if (batch.shaderProgram == skeletalMeshProgram &&
+                (batch.boneTransformsOffset != currentBoneOffset || !currentBoneSet)) {
+                currentBoneOffset = batch.boneTransformsOffset;
+                currentBoneSet = currFrame.boneTransformOffsets[batch.boneTransformsOffset];
+                currFrame.mainCommandBuffer->CmdBindDescriptorSets(skeletalPrepassPipelineLayout, 2, {currentBoneSet});
             }
 
             currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, batch.vertexSize);
@@ -334,8 +332,11 @@ void RenderSystem::Prepass(std::vector<MeshBatch> const & batches)
             }
             if (batch.drawIndexedCommands.size() > 0) {
                 for (auto const & command : batch.drawIndexedCommands) {
-                    currFrame.mainCommandBuffer->CmdDrawIndexed(
-                        command.indexCount, command.instanceCount, command.firstIndex, command.vertexOffset);
+                    currFrame.mainCommandBuffer->CmdDrawIndexed(command.indexCount,
+                                                                command.instanceCount,
+                                                                command.firstIndex,
+                                                                command.vertexOffset,
+                                                                command.firstInstance);
                 }
             }
         }
@@ -417,13 +418,13 @@ void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatc
             currentShaderProgram = batch.shaderProgram;
             currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
                                                          batch.shaderProgram->GetPipeline());
+        }
 
-            if (batch.shaderProgram == skeletalMeshProgram &&
-                (batch.boneTransformsOffset != currentBoneOffset || !currentBoneSet)) {
-                currentBoneOffset = batch.boneTransformsOffset;
-                currentBoneSet = currFrame.boneTransformOffsets[batch.boneTransformsOffset];
-                currFrame.mainCommandBuffer->CmdBindDescriptorSets(skeletalMeshPipelineLayout, 3, {currentBoneSet});
-            }
+        if (batch.shaderProgram == skeletalMeshProgram &&
+            (batch.boneTransformsOffset != currentBoneOffset || !currentBoneSet)) {
+            currentBoneOffset = batch.boneTransformsOffset;
+            currentBoneSet = currFrame.boneTransformOffsets[batch.boneTransformsOffset];
+            currFrame.mainCommandBuffer->CmdBindDescriptorSets(skeletalMeshPipelineLayout, 3, {currentBoneSet});
         }
 
         currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, batch.vertexSize);
@@ -437,8 +438,11 @@ void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatc
         }
         if (batch.drawIndexedCommands.size() > 0) {
             for (auto const & command : batch.drawIndexedCommands) {
-                currFrame.mainCommandBuffer->CmdDrawIndexed(
-                    command.indexCount, command.instanceCount, command.firstIndex, command.vertexOffset);
+                currFrame.mainCommandBuffer->CmdDrawIndexed(command.indexCount,
+                                                            command.instanceCount,
+                                                            command.firstIndex,
+                                                            command.vertexOffset,
+                                                            command.firstInstance);
             }
         }
     }
@@ -492,13 +496,13 @@ void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vect
             currentShaderProgram = batch.shaderProgram;
             currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
                                                          batch.shaderProgram->GetPipeline());
+        }
 
-            if (batch.shaderProgram == skeletalMeshProgram &&
-                (batch.boneTransformsOffset != currentBoneOffset || !currentBoneSet)) {
-                currentBoneOffset = batch.boneTransformsOffset;
-                currentBoneSet = currFrame.boneTransformOffsets[batch.boneTransformsOffset];
-                currFrame.mainCommandBuffer->CmdBindDescriptorSets(skeletalMeshPipelineLayout, 3, {currentBoneSet});
-            }
+        if (batch.shaderProgram == skeletalMeshProgram &&
+            (batch.boneTransformsOffset != currentBoneOffset || !currentBoneSet)) {
+            currentBoneOffset = batch.boneTransformsOffset;
+            currentBoneSet = currFrame.boneTransformOffsets[batch.boneTransformsOffset];
+            currFrame.mainCommandBuffer->CmdBindDescriptorSets(skeletalMeshPipelineLayout, 3, {currentBoneSet});
         }
 
         currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, batch.vertexSize);
@@ -512,8 +516,11 @@ void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vect
         }
         if (batch.drawIndexedCommands.size() > 0) {
             for (auto const & command : batch.drawIndexedCommands) {
-                currFrame.mainCommandBuffer->CmdDrawIndexed(
-                    command.indexCount, command.instanceCount, command.firstIndex, command.vertexOffset);
+                currFrame.mainCommandBuffer->CmdDrawIndexed(command.indexCount,
+                                                            command.instanceCount,
+                                                            command.firstIndex,
+                                                            command.vertexOffset,
+                                                            command.firstInstance);
             }
         }
     }
@@ -620,6 +627,9 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
     {
         OPTICK_EVENT("BuildLtwBuffer");
         for (auto const & mesh : skeletalMeshes) {
+            if (!mesh.isActive) {
+                continue;
+            }
             // TODO: +1000000 is just a hack for now to get skeletal meshes rendering
             auto existingLtwIndex = instanceIdToLtwIndex.find(mesh.id + 1000000);
             if (existingLtwIndex == instanceIdToLtwIndex.end()) {
@@ -641,9 +651,13 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
         }
     }
 
+    // I've probably made this part overly complicated...
     std::vector<size_t> neededBoneOffsetDescriptorSets;
     std::unordered_map<SkeletalMeshInstanceId, size_t> instanceIdToBoneOffset;
     std::vector<glm::mat4> bones;
+    std::vector<size_t> boneOffsets;
+    std::vector<size_t> boneSplits;
+    size_t totalBoneSize = 0;
     {
         OPTICK_EVENT("BuildBoneBuffer");
         size_t currentBoneOffset = 0;
@@ -655,12 +669,22 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
             for (auto const & bone : mesh.bones) {
                 bones.push_back(bone.currentTransform);
             }
+            boneOffsets.push_back(currentBoneOffset);
+            boneSplits.push_back(mesh.bones.size());
             instanceIdToBoneOffset[mesh.id] = currentBoneOffset;
             if (currFrame.boneTransformOffsets.find(currentBoneOffset) == currFrame.boneTransformOffsets.end()) {
                 neededBoneOffsetDescriptorSets.push_back(currentBoneOffset);
             }
 
+            totalBoneSize += mesh.bones.size() * sizeof(glm::mat4);
             currentBoneOffset += mesh.bones.size() * sizeof(glm::mat4);
+            auto uboAlignment = rendererProperties.GetUniformBufferAlignment();
+            if (uboAlignment != 0 && currentBoneOffset % uboAlignment != 0) {
+                // Fix alignment - the bones will be submitted as a UBO and UBO offsets must follow alignment
+                size_t alignment = currentBoneOffset % uboAlignment;
+                currentBoneOffset += alignment;
+                totalBoneSize += alignment;
+            }
         }
     }
 
@@ -747,6 +771,11 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
                 currentBatch.drawIndexedCommandsOffset = drawIndexedOffset;
                 currentBatch.drawIndexedCommandsCount = drawIndexedCommands.size() - drawIndexedOffset;
                 if (currentBatch.material != nullptr) {
+                    if (currentBatch.material->GetAlbedo()->HasTransparency()) {
+                        currentBatch.shaderProgram = transparentMeshProgram;
+                    } else {
+                        currentBatch.shaderProgram = meshProgram;
+                    }
                     batches.push_back(currentBatch);
                 }
                 drawCommandsOffset = drawCommands.size();
@@ -791,7 +820,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
     if (localToWorlds.size() * sizeof(glm::mat4) > currFrame.meshUniformsSize ||
         drawCommands.size() * sizeof(DrawIndirectCommand) > currFrame.meshIndirectSize ||
         drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand) > currFrame.meshIndexedIndirectSize ||
-        neededBoneOffsetDescriptorSets.size() > 0 || bones.size() * sizeof(glm::mat4) > currFrame.boneTransformsSize) {
+        neededBoneOffsetDescriptorSets.size() > 0 || totalBoneSize > currFrame.boneTransformsSize) {
         renderer->CreateResources([this,
                                    &uniformCreationDone,
                                    &currFrame,
@@ -799,6 +828,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
                                    &drawIndexedCommands,
                                    &localToWorlds,
                                    &bones,
+                                   totalBoneSize,
                                    &instanceIdToBoneOffset,
                                    &neededBoneOffsetDescriptorSets](ResourceCreationContext & ctx) {
             OPTICK_EVENT("CreateUniformBuffers");
@@ -869,7 +899,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
                     currFrame.meshIndexedIndirect, 0, currFrame.meshIndexedIndirectSize);
             }
 
-            if (bones.size() * sizeof(glm::mat4) > currFrame.boneTransformsSize) {
+            if (totalBoneSize > currFrame.boneTransformsSize) {
                 for (auto const & descriptorSet : currFrame.boneTransformOffsets) {
                     ctx.DestroyDescriptorSet(descriptorSet.second);
                 }
@@ -878,7 +908,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
                     ctx.UnmapBuffer(currFrame.boneTransforms);
                     ctx.DestroyBuffer(currFrame.boneTransforms);
                 }
-                currFrame.boneTransformsSize = bones.size() * sizeof(glm::mat4);
+                currFrame.boneTransformsSize = totalBoneSize;
                 ResourceCreationContext::BufferCreateInfo boneTransformsCi;
                 boneTransformsCi.memoryProperties =
                     MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
@@ -942,9 +972,18 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
                    drawIndexedCommands.data(),
                    drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand));
         }
+        size_t currentNumberOfBones = 0;
+        for (size_t i = 0; i < boneSplits.size(); ++i) {
+            memcpy(((uint8_t *)currFrame.boneTransformsMapped) + boneOffsets[i],
+                   ((uint8_t *)&bones[currentNumberOfBones]),
+                   boneSplits[i] * sizeof(glm::mat4));
+            currentNumberOfBones += boneSplits[i];
+        }
+        /*
         if (bones.size() > 0) {
             memcpy(currFrame.boneTransformsMapped, bones.data(), bones.size() * sizeof(glm::mat4));
         }
+        */
         // TODO: If this is moved up above the other memcpys the data in meshUniformsMapped somehow gets corrupted
         // and I don't understand why.
         memcpy(currFrame.meshUniformsMapped, localToWorlds.data(), localToWorlds.size() * sizeof(glm::mat4));
@@ -992,6 +1031,6 @@ void RenderSystem::RenderSprites(CameraInstance const & cam)
         }
         currFrame.mainCommandBuffer->CmdBindDescriptorSets(
             passthroughTransformPipelineLayout, 1, {sprite.descriptorSet});
-        currFrame.mainCommandBuffer->CmdDrawIndexed(6, 1, 0, 0);
+        currFrame.mainCommandBuffer->CmdDrawIndexed(6, 1, 0, 0, 0);
     }
 }

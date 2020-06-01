@@ -178,10 +178,10 @@ void VulkanCommandBuffer::CmdDrawIndirect(BufferHandle * buffer, size_t offset, 
 }
 
 void VulkanCommandBuffer::CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
-                                         int32_t vertexOffset)
+                                         int32_t vertexOffset, uint32_t firstInstance)
 {
     OPTICK_EVENT();
-    vkCmdDrawIndexed(this->buffer, indexCount, instanceCount, firstIndex, vertexOffset, 0);
+    vkCmdDrawIndexed(this->buffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void VulkanCommandBuffer::CmdEndRenderPass()

@@ -32,8 +32,8 @@ public:
     void CmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
                  uint32_t firstInstance) final override;
     void CmdDrawIndirect(BufferHandle * buffer, size_t offset, uint32_t drawCount) final override;
-    void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
-                        int32_t vertexOffset) final override;
+    void CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
+                        uint32_t firstInstance) final override;
     void CmdEndRenderPass() final override;
     void CmdExecuteCommands(uint32_t commandBufferCount, CommandBuffer ** pCommandBuffers) final override;
     void CmdExecuteCommands(std::vector<CommandBuffer *> && commandBuffers) final override;
@@ -126,6 +126,7 @@ private:
         uint32_t indices;
         GLsizei primcount;
         GLint basevertex;
+        uint32_t firstInstance;
     };
     struct EndRenderPassArgs {
     };

@@ -37,6 +37,8 @@ public:
     RendererConfig GetConfig() final override;
     void UpdateConfig(RendererConfig) final override;
 
+    RendererProperties const & GetProperties() final override;
+
     int abortCode = 0;
 
 private:
@@ -60,6 +62,7 @@ private:
     Queue<RenderCommand>::Writer renderQueueWrite;
 
     RendererConfig config;
+    RendererProperties properties;
 
     std::chrono::milliseconds totalSwapTime = std::chrono::milliseconds(0);
 

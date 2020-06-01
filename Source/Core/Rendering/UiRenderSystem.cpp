@@ -172,7 +172,7 @@ void UiRenderSystem::RenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer
                 scissor.extent.width = imCmdBuf->ClipRect.z - imCmdBuf->ClipRect.x;
                 scissor.extent.height = imCmdBuf->ClipRect.w - imCmdBuf->ClipRect.y; //+1;
                 commandBuffer->CmdSetScissor(0, 1, &scissor);
-                commandBuffer->CmdDrawIndexed(imCmdBuf->ElemCount, 1, currIndexPos, currVertexPos);
+                commandBuffer->CmdDrawIndexed(imCmdBuf->ElemCount, 1, currIndexPos, currVertexPos, 0);
             }
             currIndexPos += imCmdBuf->ElemCount;
         }

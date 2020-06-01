@@ -503,6 +503,12 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
         }
     }
 
+    {
+        VkPhysicalDeviceProperties props;
+        vkGetPhysicalDeviceProperties(basics.physicalDevice, &props);
+        properties = RendererProperties(props.limits.minUniformBufferOffsetAlignment);
+    }
+
     OPTICK_GPU_INIT_VULKAN(&basics.device, &basics.physicalDevice, &graphicsQueue, &graphicsQueueIdx, 1);
 }
 
@@ -915,6 +921,11 @@ void Renderer::UpdateConfig(RendererConfig config)
     this->config = config;
     SDL_SetWindowSize(window, config.windowResolution.x, config.windowResolution.y);
     this->isSwapchainInvalid = true;
+}
+
+RendererProperties const & Renderer::GetProperties()
+{
+    return this->properties;
 }
 
 #endif

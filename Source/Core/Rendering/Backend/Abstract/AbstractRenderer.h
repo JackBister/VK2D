@@ -5,6 +5,7 @@
 
 #include "Core/Rendering/Backend/Abstract/RenderResources.h"
 #include "Core/Rendering/Backend/Abstract/RendererConfig.h"
+#include "Core/Rendering/Backend/Abstract/RendererProperties.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 
 /**
@@ -81,4 +82,10 @@ public:
      * Update the rendering configuration.
      */
     virtual void UpdateConfig(RendererConfig) = 0;
+
+    /**
+     * Gets the renderer properties for this renderer. Renderer properties are immutable facts about the rendering
+     * backend. Once the renderer has been initialized it is therefore safe to save a reference to this return value.
+     */
+    virtual RendererProperties const & GetProperties() = 0;
 };

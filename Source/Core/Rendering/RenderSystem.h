@@ -233,6 +233,7 @@ private:
 
     // Other systems
     Renderer * renderer;
+    RendererProperties const & rendererProperties;
     UiRenderSystem uiRenderSystem;
 
     // Options

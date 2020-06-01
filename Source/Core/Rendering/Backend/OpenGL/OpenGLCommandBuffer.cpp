@@ -115,10 +115,10 @@ void OpenGLCommandBuffer::CmdBindVertexBuffer(BufferHandle * buffer, uint32_t bi
 }
 
 void OpenGLCommandBuffer::CmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
-                                         int32_t vertexOffset)
+                                         int32_t vertexOffset, uint32_t firstInstance)
 {
-    commandList.push_back(
-        DrawIndexedArgs{static_cast<int>(indexCount), firstIndex, static_cast<int>(instanceCount), vertexOffset});
+    commandList.push_back(DrawIndexedArgs{
+        static_cast<int>(indexCount), firstIndex, static_cast<int>(instanceCount), vertexOffset, firstInstance});
 }
 
 void OpenGLCommandBuffer::CmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
