@@ -26,12 +26,17 @@ void RenderPrimitiveFactory::CreatePrimitives()
         CreateMeshPipelineLayout(ctx);
         CreateMeshVertexInputState(ctx);
 
+        CreateSkeletalMeshPipelineLayout(ctx);
+        CreateSkeletalMeshVertexInputState(ctx);
+
         auto uiPipelineLayout = CreateUiPipelineLayout(ctx);
         auto uiVertexInputState = CreateUiVertexInputState(ctx);
 
         auto postprocessPipelineLayout = CreatePostprocessPipelineLayout(ctx);
 
         CreatePrepassPipelineLayout(ctx);
+        CreateSkeletalPrepassPipelineLayout(ctx);
+
         CreateDefaultSampler(ctx);
         CreatePostprocessSampler(ctx);
 
@@ -178,6 +183,19 @@ void RenderPrimitiveFactory::CreatePrepassPipelineLayout(ResourceCreationContext
     ResourceManager::AddResource("_Primitives/PipelineLayouts/prepass.pipelinelayout", prepassPipelineLayout);
 }
 
+void RenderPrimitiveFactory::CreateSkeletalPrepassPipelineLayout(ResourceCreationContext & ctx)
+{
+    auto cameraMesh =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraMesh.layout");
+    auto modelMesh =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/modelMesh.layout");
+    auto boneMesh =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/boneMesh.layout");
+
+    auto prepassPipelineLayout = ctx.CreatePipelineLayout({{cameraMesh, modelMesh, boneMesh}});
+    ResourceManager::AddResource("_Primitives/PipelineLayouts/prepass_skeletal.pipelinelayout", prepassPipelineLayout);
+}
+
 PipelineLayoutHandle * RenderPrimitiveFactory::CreatePassthroughTransformPipelineLayout(ResourceCreationContext & ctx)
 {
     ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding cameraUniformBindings[1] = {
@@ -252,6 +270,52 @@ void RenderPrimitiveFactory::CreateMeshVertexInputState(ResourceCreationContext 
     vertexInputStateCreateInfo.vertexBindingDescriptions = binding;
     auto meshInputState = ctx.CreateVertexInputState(vertexInputStateCreateInfo);
     ResourceManager::AddResource("_Primitives/VertexInputStates/mesh.state", meshInputState);
+}
+
+void RenderPrimitiveFactory::CreateSkeletalMeshPipelineLayout(ResourceCreationContext & ctx)
+{
+    auto cameraMeshLayout =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraMesh.layout");
+
+    auto modelMeshLayout =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/modelMesh.layout");
+
+    auto materialMeshLayout =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/materialMesh.layout");
+
+    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding boneBindings[1] = {
+        {0, DescriptorType::UNIFORM_BUFFER, ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT}};
+    auto boneLayout = ctx.CreateDescriptorSetLayout({1, boneBindings});
+    ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/boneMesh.layout", boneLayout);
+
+    auto skeletalMeshLayout =
+        ctx.CreatePipelineLayout({{cameraMeshLayout, modelMeshLayout, materialMeshLayout, boneLayout}});
+    ResourceManager::AddResource("_Primitives/PipelineLayouts/mesh_skeletal.pipelinelayout", skeletalMeshLayout);
+}
+
+void RenderPrimitiveFactory::CreateSkeletalMeshVertexInputState(ResourceCreationContext & ctx)
+{
+    std::vector<ResourceCreationContext::VertexInputStateCreateInfo::VertexBindingDescription> binding = {
+        {0, sizeof(VertexWithSkinning)}};
+
+    std::vector<ResourceCreationContext::VertexInputStateCreateInfo::VertexAttributeDescription> attributes = {
+        {0, 0, VertexComponentType::FLOAT, 3, false, 0},
+        {0, 1, VertexComponentType::FLOAT, 3, false, 3 * sizeof(float)},
+        {0, 2, VertexComponentType::FLOAT, 3, false, 6 * sizeof(float)},
+        {0, 3, VertexComponentType::FLOAT, 2, false, 9 * sizeof(float)},
+        {0, 4, VertexComponentType::UINT, MAX_VERTEX_WEIGHTS, false, 11 * sizeof(float)},
+        {0,
+         5,
+         VertexComponentType::FLOAT,
+         MAX_VERTEX_WEIGHTS,
+         false,
+         11 * sizeof(float) + MAX_VERTEX_WEIGHTS * sizeof(uint32_t)},
+    };
+    ResourceCreationContext::VertexInputStateCreateInfo vertexInputStateCreateInfo;
+    vertexInputStateCreateInfo.vertexAttributeDescriptions = attributes;
+    vertexInputStateCreateInfo.vertexBindingDescriptions = binding;
+    auto meshInputState = ctx.CreateVertexInputState(vertexInputStateCreateInfo);
+    ResourceManager::AddResource("_Primitives/VertexInputStates/mesh_skeletal.state", meshInputState);
 }
 
 PipelineLayoutHandle * RenderPrimitiveFactory::CreateUiPipelineLayout(ResourceCreationContext & ctx)

@@ -8,6 +8,7 @@ void ShaderProgramFactory::CreateResources()
     CreateDebugDrawShaderProgram();
     CreatePassthroughTransformShaderProgram();
     CreateMeshShaderProgram();
+    CreateSkeletalMeshShaderProgram();
     CreateTransparentMeshShaderProgram();
     CreateUiShaderProgram();
     CreatePostprocessShaderProgram();
@@ -94,6 +95,34 @@ void ShaderProgramFactory::CreateMeshShaderProgram()
         {"shaders/mesh.vert", "shaders/mesh.frag"},
         ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/mesh.state"),
         ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/mesh.pipelinelayout"),
+        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass"),
+        CullMode::BACK,
+        FrontFace::COUNTER_CLOCKWISE,
+        0,
+        {
+            // Blending is enabled for color attachment
+            {true},
+            // disabled for normals
+            {false},
+        },
+        {
+            PrimitiveTopology::TRIANGLE_LIST,
+        },
+        depthStencil);
+}
+
+void ShaderProgramFactory::CreateSkeletalMeshShaderProgram()
+{
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    depthStencil.depthCompareOp = CompareOp::EQUAL;
+    depthStencil.depthTestEnable = true;
+    depthStencil.depthWriteEnable = false;
+
+    ShaderProgram::Create(
+        "_Primitives/ShaderPrograms/mesh_skeletal.program",
+        {"shaders/mesh_skeletal.vert", "shaders/mesh.frag"},
+        ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/mesh_skeletal.state"),
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/mesh_skeletal.pipelinelayout"),
         ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass"),
         CullMode::BACK,
         FrontFace::COUNTER_CLOCKWISE,

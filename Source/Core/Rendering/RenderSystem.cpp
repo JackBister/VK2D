@@ -285,9 +285,12 @@ void RenderSystem::Prepass(std::vector<MeshBatch> const & batches)
     CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
     currFrame.mainCommandBuffer->CmdSetScissor(0, 1, &scissor);
 
-    currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
-                                                 prepassProgram->GetPipeline());
+    // currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+    //                                             prepassProgram->GetPipeline());
 
+    size_t currentBoneOffset = 0;
+    DescriptorSet * currentBoneSet = nullptr;
+    ShaderProgram * currentShaderProgram = nullptr;
     for (auto const & cam : cameras) {
         if (!cam.isActive) {
             continue;
@@ -303,7 +306,23 @@ void RenderSystem::Prepass(std::vector<MeshBatch> const & batches)
                 continue;
             }
 
-            currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, sizeof(VertexWithNormal));
+            if (batch.shaderProgram != currentShaderProgram) {
+                currentShaderProgram = batch.shaderProgram;
+                currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                             batch.shaderProgram == meshProgram
+                                                                 ? prepassProgram->GetPipeline()
+                                                                 : skeletalPrepassProgram->GetPipeline());
+
+                if (batch.shaderProgram == skeletalMeshProgram &&
+                    (batch.boneTransformsOffset != currentBoneOffset || !currentBoneSet)) {
+                    currentBoneOffset = batch.boneTransformsOffset;
+                    currentBoneSet = currFrame.boneTransformOffsets[batch.boneTransformsOffset];
+                    currFrame.mainCommandBuffer->CmdBindDescriptorSets(
+                        skeletalPrepassPipelineLayout, 2, {currentBoneSet});
+                }
+            }
+
+            currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, batch.vertexSize);
             if (batch.indexBuffer != nullptr) {
                 currFrame.mainCommandBuffer->CmdBindIndexBuffer(batch.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
             }
@@ -370,13 +389,16 @@ void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatc
     CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
     currFrame.mainCommandBuffer->CmdSetScissor(0, 1, &scissor);
 
-    currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
-                                                 meshProgram->GetPipeline());
+    //    currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+    //                                               meshProgram->GetPipeline());
 
     currFrame.mainCommandBuffer->CmdBindDescriptorSets(
         meshPipelineLayout, 0, {cam.descriptorSet, currFrame.meshUniformsDescriptorSet});
 
     DescriptorSet * currentMaterialDescriptorSet = nullptr;
+    size_t currentBoneOffset = 0;
+    DescriptorSet * currentBoneSet = nullptr;
+    ShaderProgram * currentShaderProgram = nullptr;
     for (auto const & batch : batches) {
         if (!batch.material->GetDescriptorSet()) {
             continue;
@@ -391,7 +413,20 @@ void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatc
                 meshPipelineLayout, 2, {batch.material->GetDescriptorSet()});
         }
 
-        currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, sizeof(VertexWithNormal));
+        if (batch.shaderProgram != currentShaderProgram) {
+            currentShaderProgram = batch.shaderProgram;
+            currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                         batch.shaderProgram->GetPipeline());
+
+            if (batch.shaderProgram == skeletalMeshProgram &&
+                (batch.boneTransformsOffset != currentBoneOffset || !currentBoneSet)) {
+                currentBoneOffset = batch.boneTransformsOffset;
+                currentBoneSet = currFrame.boneTransformOffsets[batch.boneTransformsOffset];
+                currFrame.mainCommandBuffer->CmdBindDescriptorSets(skeletalMeshPipelineLayout, 3, {currentBoneSet});
+            }
+        }
+
+        currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, batch.vertexSize);
         if (batch.indexBuffer != nullptr) {
             currFrame.mainCommandBuffer->CmdBindIndexBuffer(batch.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
         }
@@ -429,13 +464,16 @@ void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vect
     CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
     currFrame.mainCommandBuffer->CmdSetScissor(0, 1, &scissor);
 
-    currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
-                                                 transparentMeshProgram->GetPipeline());
+    // currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+    //                                             transparentMeshProgram->GetPipeline());
 
     currFrame.mainCommandBuffer->CmdBindDescriptorSets(
         meshPipelineLayout, 0, {cam.descriptorSet, currFrame.meshUniformsDescriptorSet});
 
+    size_t currentBoneOffset = 0;
+    DescriptorSet * currentBoneSet = nullptr;
     DescriptorSet * currentMaterialDescriptorSet = nullptr;
+    ShaderProgram * currentShaderProgram = nullptr;
     for (auto const & batch : batches) {
         if (!batch.material->GetDescriptorSet()) {
             continue;
@@ -450,7 +488,20 @@ void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vect
                 meshPipelineLayout, 2, {batch.material->GetDescriptorSet()});
         }
 
-        currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, sizeof(VertexWithNormal));
+        if (batch.shaderProgram != currentShaderProgram) {
+            currentShaderProgram = batch.shaderProgram;
+            currFrame.mainCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                         batch.shaderProgram->GetPipeline());
+
+            if (batch.shaderProgram == skeletalMeshProgram &&
+                (batch.boneTransformsOffset != currentBoneOffset || !currentBoneSet)) {
+                currentBoneOffset = batch.boneTransformsOffset;
+                currentBoneSet = currFrame.boneTransformOffsets[batch.boneTransformsOffset];
+                currFrame.mainCommandBuffer->CmdBindDescriptorSets(skeletalMeshPipelineLayout, 3, {currentBoneSet});
+            }
+        }
+
+        currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, batch.vertexSize);
         if (batch.indexBuffer != nullptr) {
             currFrame.mainCommandBuffer->CmdBindIndexBuffer(batch.indexBuffer, 0, CommandBuffer::IndexType::UINT32);
         }
@@ -561,11 +612,13 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
 {
     OPTICK_EVENT();
 
+    auto & currFrame = frameInfo[currFrameInfoIdx];
+
     std::set<StaticMeshInstanceId> inactiveInstances;
     std::unordered_map<StaticMeshInstanceId, size_t> instanceIdToLtwIndex;
     std::vector<glm::mat4> localToWorlds;
     {
-        OPTICK_EVENT("SortSubmeshes");
+        OPTICK_EVENT("BuildLtwBuffer");
         for (auto const & mesh : skeletalMeshes) {
             // TODO: +1000000 is just a hack for now to get skeletal meshes rendering
             auto existingLtwIndex = instanceIdToLtwIndex.find(mesh.id + 1000000);
@@ -588,7 +641,28 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
         }
     }
 
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    std::vector<size_t> neededBoneOffsetDescriptorSets;
+    std::unordered_map<SkeletalMeshInstanceId, size_t> instanceIdToBoneOffset;
+    std::vector<glm::mat4> bones;
+    {
+        OPTICK_EVENT("BuildBoneBuffer");
+        size_t currentBoneOffset = 0;
+        for (auto const & mesh : skeletalMeshes) {
+            if (!mesh.isActive) {
+                continue;
+            }
+
+            for (auto const & bone : mesh.bones) {
+                bones.push_back(bone.currentTransform);
+            }
+            instanceIdToBoneOffset[mesh.id] = currentBoneOffset;
+            if (currFrame.boneTransformOffsets.find(currentBoneOffset) == currFrame.boneTransformOffsets.end()) {
+                neededBoneOffsetDescriptorSets.push_back(currentBoneOffset);
+            }
+
+            currentBoneOffset += mesh.bones.size() * sizeof(glm::mat4);
+        }
+    }
 
     std::vector<MeshBatch> batches;
     size_t drawCommandsOffset = 0;
@@ -598,8 +672,11 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
     {
         OPTICK_EVENT("GatherBatches");
         MeshBatch currentBatch;
+        currentBatch.vertexSize = sizeof(VertexWithSkinning);
+        currentBatch.shaderProgram = skeletalMeshProgram;
         // TODO: Merge with static mesh batches
         for (auto const & mesh : skeletalMeshes) {
+            auto offset = instanceIdToBoneOffset.at(mesh.id);
             if (!mesh.isActive) {
                 continue;
             }
@@ -607,7 +684,8 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
                 if (submesh.submesh->GetMaterial() != currentBatch.material ||
                     submesh.vertexBuffer.GetBuffer() != currentBatch.vertexBuffer ||
                     (submesh.indexBuffer.has_value() ? submesh.indexBuffer.value().GetBuffer() : nullptr) !=
-                        currentBatch.indexBuffer) {
+                        currentBatch.indexBuffer ||
+                    offset != currentBatch.boneTransformsOffset) {
                     currentBatch.drawCommandsOffset = drawCommandsOffset;
                     currentBatch.drawCommandsCount = drawCommands.size() - drawCommandsOffset;
                     currentBatch.drawIndexedCommandsOffset = drawIndexedOffset;
@@ -623,6 +701,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
                         (submesh.indexBuffer.has_value() ? submesh.indexBuffer.value().GetBuffer() : nullptr);
                     currentBatch.material = submesh.submesh->GetMaterial();
                     currentBatch.vertexBuffer = submesh.vertexBuffer.GetBuffer();
+                    currentBatch.boneTransformsOffset = offset;
                 }
                 if (submesh.indexBuffer.has_value()) {
                     DrawIndexedIndirectCommand command;
@@ -630,20 +709,29 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
                     command.firstInstance = instanceIdToLtwIndex.at(mesh.id + 1000000);
                     command.indexCount = submesh.indexBuffer.value().GetSize() / sizeof(uint32_t);
                     command.instanceCount = 1;
-                    command.vertexOffset = submesh.vertexBuffer.GetOffset() / sizeof(VertexWithNormal);
+                    command.vertexOffset = submesh.vertexBuffer.GetOffset() / sizeof(VertexWithSkinning);
                     currentBatch.drawIndexedCommands.push_back(command);
                     drawIndexedCommands.push_back(command);
                 } else {
                     DrawIndirectCommand command;
                     command.firstInstance = instanceIdToLtwIndex.at(mesh.id + 1000000);
-                    command.firstVertex = submesh.vertexBuffer.GetOffset() / sizeof(VertexWithNormal);
+                    command.firstVertex = submesh.vertexBuffer.GetOffset() / sizeof(VertexWithSkinning);
                     command.instanceCount = 1;
-                    command.vertexCount = submesh.vertexBuffer.GetSize() / sizeof(VertexWithNormal);
+                    command.vertexCount = submesh.vertexBuffer.GetSize() / sizeof(VertexWithSkinning);
                     currentBatch.drawCommands.push_back(command);
                     drawCommands.push_back(command);
                 }
             }
         }
+
+        if (currentBatch.material != nullptr) {
+            batches.push_back(currentBatch);
+        }
+        // Force new batch for static meshes since vertex size and shader program is different
+        currentBatch.material = nullptr;
+
+        currentBatch.vertexSize = sizeof(VertexWithNormal);
+        currentBatch.shaderProgram = meshProgram;
         for (auto const & submesh : sortedSubmeshInstances) {
             // TODO: Replace with contains when upgraded to C++20.
             // I can't belive a set implementation does not have a straightforward contains method...
@@ -702,80 +790,143 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
     Semaphore uniformCreationDone;
     if (localToWorlds.size() * sizeof(glm::mat4) > currFrame.meshUniformsSize ||
         drawCommands.size() * sizeof(DrawIndirectCommand) > currFrame.meshIndirectSize ||
-        drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand) > currFrame.meshIndexedIndirectSize) {
-        renderer->CreateResources(
-            [this, &uniformCreationDone, &currFrame, &drawCommands, &drawIndexedCommands, &localToWorlds](
-                ResourceCreationContext & ctx) {
-                OPTICK_EVENT("CreateUniformBuffers");
-                if (localToWorlds.size() * sizeof(glm::mat4) > currFrame.meshUniformsSize) {
-                    if (currFrame.meshUniforms) {
-                        ctx.UnmapBuffer(currFrame.meshUniforms);
-                        ctx.DestroyBuffer(currFrame.meshUniforms);
-                    }
-                    currFrame.meshUniformsSize = localToWorlds.size() * sizeof(glm::mat4);
-                    ResourceCreationContext::BufferCreateInfo uniformsCreateInfo;
-                    uniformsCreateInfo.memoryProperties =
-                        MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
-                    uniformsCreateInfo.size = currFrame.meshUniformsSize;
-                    uniformsCreateInfo.usage = BufferUsageFlags::UNIFORM_BUFFER_BIT;
-                    currFrame.meshUniforms = ctx.CreateBuffer(uniformsCreateInfo);
-                    currFrame.meshUniformsMapped =
-                        (glm::mat4 *)ctx.MapBuffer(currFrame.meshUniforms, 0, currFrame.meshUniformsSize);
+        drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand) > currFrame.meshIndexedIndirectSize ||
+        neededBoneOffsetDescriptorSets.size() > 0 || bones.size() * sizeof(glm::mat4) > currFrame.boneTransformsSize) {
+        renderer->CreateResources([this,
+                                   &uniformCreationDone,
+                                   &currFrame,
+                                   &drawCommands,
+                                   &drawIndexedCommands,
+                                   &localToWorlds,
+                                   &bones,
+                                   &instanceIdToBoneOffset,
+                                   &neededBoneOffsetDescriptorSets](ResourceCreationContext & ctx) {
+            OPTICK_EVENT("CreateUniformBuffers");
+            if (localToWorlds.size() * sizeof(glm::mat4) > currFrame.meshUniformsSize) {
+                if (currFrame.meshUniforms) {
+                    ctx.UnmapBuffer(currFrame.meshUniforms);
+                    ctx.DestroyBuffer(currFrame.meshUniforms);
                 }
-                if (currFrame.meshUniformsDescriptorSet) {
-                    ctx.DestroyDescriptorSet(currFrame.meshUniformsDescriptorSet);
-                }
-                {
-                    ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uniformDescriptors[1] = {
-                        {currFrame.meshUniforms, 0, currFrame.meshUniformsSize}};
-                    ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[2] = {
-                        {DescriptorType::UNIFORM_BUFFER, 0, uniformDescriptors[0]}};
-                    ResourceCreationContext::DescriptorSetCreateInfo uniformsDescriptorSetCi;
-                    uniformsDescriptorSetCi.descriptorCount = 1;
-                    uniformsDescriptorSetCi.descriptors = descriptors;
-                    uniformsDescriptorSetCi.layout = this->meshModelLayout;
-                    currFrame.meshUniformsDescriptorSet = ctx.CreateDescriptorSet(uniformsDescriptorSetCi);
-                }
+                currFrame.meshUniformsSize = localToWorlds.size() * sizeof(glm::mat4);
+                ResourceCreationContext::BufferCreateInfo uniformsCreateInfo;
+                uniformsCreateInfo.memoryProperties =
+                    MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
+                uniformsCreateInfo.size = currFrame.meshUniformsSize;
+                uniformsCreateInfo.usage = BufferUsageFlags::UNIFORM_BUFFER_BIT;
+                currFrame.meshUniforms = ctx.CreateBuffer(uniformsCreateInfo);
+                currFrame.meshUniformsMapped =
+                    (glm::mat4 *)ctx.MapBuffer(currFrame.meshUniforms, 0, currFrame.meshUniformsSize);
+            }
+            if (currFrame.meshUniformsDescriptorSet) {
+                ctx.DestroyDescriptorSet(currFrame.meshUniformsDescriptorSet);
+            }
+            {
+                ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uniformDescriptors[1] = {
+                    {currFrame.meshUniforms, 0, currFrame.meshUniformsSize}};
+                ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[2] = {
+                    {DescriptorType::UNIFORM_BUFFER, 0, uniformDescriptors[0]}};
+                ResourceCreationContext::DescriptorSetCreateInfo uniformsDescriptorSetCi;
+                uniformsDescriptorSetCi.descriptorCount = 1;
+                uniformsDescriptorSetCi.descriptors = descriptors;
+                uniformsDescriptorSetCi.layout = this->meshModelLayout;
+                currFrame.meshUniformsDescriptorSet = ctx.CreateDescriptorSet(uniformsDescriptorSetCi);
+            }
 
-                if (drawCommands.size() * sizeof(DrawIndirectCommand) > currFrame.meshIndirectSize) {
-                    if (currFrame.meshIndirect) {
-                        ctx.UnmapBuffer(currFrame.meshIndirect);
-                        ctx.DestroyBuffer(currFrame.meshIndirect);
-                    }
-                    currFrame.meshIndirectSize = drawCommands.size() * sizeof(DrawIndirectCommand);
-                    if (currFrame.meshIndirectSize == 0) {
-                        currFrame.meshIndirectSize = MIN_INDEXES_BUFFER_SIZE;
-                    }
-                    ResourceCreationContext::BufferCreateInfo meshIndirectCreateInfo;
-                    meshIndirectCreateInfo.memoryProperties =
-                        MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
-                    meshIndirectCreateInfo.size = currFrame.meshIndirectSize;
-                    meshIndirectCreateInfo.usage = BufferUsageFlags::INDIRECT_BUFFER_BIT;
-                    currFrame.meshIndirect = ctx.CreateBuffer(meshIndirectCreateInfo);
-                    currFrame.meshIndirectMapped =
-                        (DrawIndirectCommand *)ctx.MapBuffer(currFrame.meshIndirect, 0, currFrame.meshIndirectSize);
+            if (drawCommands.size() * sizeof(DrawIndirectCommand) > currFrame.meshIndirectSize) {
+                if (currFrame.meshIndirect) {
+                    ctx.UnmapBuffer(currFrame.meshIndirect);
+                    ctx.DestroyBuffer(currFrame.meshIndirect);
                 }
-                if (drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand) >
-                    currFrame.meshIndexedIndirectSize) {
-                    if (currFrame.meshIndexedIndirect) {
-                        ctx.UnmapBuffer(currFrame.meshIndexedIndirect);
-                        ctx.DestroyBuffer(currFrame.meshIndexedIndirect);
-                    }
-                    currFrame.meshIndexedIndirectSize = drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand);
-                    if (currFrame.meshIndexedIndirectSize == 0) {
-                        currFrame.meshIndexedIndirectSize = MIN_INDEXES_BUFFER_SIZE;
-                    }
-                    ResourceCreationContext::BufferCreateInfo meshIndexedIndirectCreateInfo;
-                    meshIndexedIndirectCreateInfo.memoryProperties =
-                        MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
-                    meshIndexedIndirectCreateInfo.size = currFrame.meshIndexedIndirectSize;
-                    meshIndexedIndirectCreateInfo.usage = BufferUsageFlags::INDIRECT_BUFFER_BIT;
-                    currFrame.meshIndexedIndirect = ctx.CreateBuffer(meshIndexedIndirectCreateInfo);
-                    currFrame.meshIndexedIndirectMapped = (DrawIndexedIndirectCommand *)ctx.MapBuffer(
-                        currFrame.meshIndexedIndirect, 0, currFrame.meshIndexedIndirectSize);
+                currFrame.meshIndirectSize = drawCommands.size() * sizeof(DrawIndirectCommand);
+                if (currFrame.meshIndirectSize == 0) {
+                    currFrame.meshIndirectSize = MIN_INDEXES_BUFFER_SIZE;
                 }
-                uniformCreationDone.Signal();
-            });
+                ResourceCreationContext::BufferCreateInfo meshIndirectCreateInfo;
+                meshIndirectCreateInfo.memoryProperties =
+                    MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
+                meshIndirectCreateInfo.size = currFrame.meshIndirectSize;
+                meshIndirectCreateInfo.usage = BufferUsageFlags::INDIRECT_BUFFER_BIT;
+                currFrame.meshIndirect = ctx.CreateBuffer(meshIndirectCreateInfo);
+                currFrame.meshIndirectMapped =
+                    (DrawIndirectCommand *)ctx.MapBuffer(currFrame.meshIndirect, 0, currFrame.meshIndirectSize);
+            }
+            if (drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand) > currFrame.meshIndexedIndirectSize) {
+                if (currFrame.meshIndexedIndirect) {
+                    ctx.UnmapBuffer(currFrame.meshIndexedIndirect);
+                    ctx.DestroyBuffer(currFrame.meshIndexedIndirect);
+                }
+                currFrame.meshIndexedIndirectSize = drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand);
+                if (currFrame.meshIndexedIndirectSize == 0) {
+                    currFrame.meshIndexedIndirectSize = MIN_INDEXES_BUFFER_SIZE;
+                }
+                ResourceCreationContext::BufferCreateInfo meshIndexedIndirectCreateInfo;
+                meshIndexedIndirectCreateInfo.memoryProperties =
+                    MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
+                meshIndexedIndirectCreateInfo.size = currFrame.meshIndexedIndirectSize;
+                meshIndexedIndirectCreateInfo.usage = BufferUsageFlags::INDIRECT_BUFFER_BIT;
+                currFrame.meshIndexedIndirect = ctx.CreateBuffer(meshIndexedIndirectCreateInfo);
+                currFrame.meshIndexedIndirectMapped = (DrawIndexedIndirectCommand *)ctx.MapBuffer(
+                    currFrame.meshIndexedIndirect, 0, currFrame.meshIndexedIndirectSize);
+            }
+
+            if (bones.size() * sizeof(glm::mat4) > currFrame.boneTransformsSize) {
+                for (auto const & descriptorSet : currFrame.boneTransformOffsets) {
+                    ctx.DestroyDescriptorSet(descriptorSet.second);
+                }
+                currFrame.boneTransformOffsets.clear();
+                if (currFrame.boneTransforms) {
+                    ctx.UnmapBuffer(currFrame.boneTransforms);
+                    ctx.DestroyBuffer(currFrame.boneTransforms);
+                }
+                currFrame.boneTransformsSize = bones.size() * sizeof(glm::mat4);
+                ResourceCreationContext::BufferCreateInfo boneTransformsCi;
+                boneTransformsCi.memoryProperties =
+                    MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT;
+                boneTransformsCi.size = currFrame.boneTransformsSize;
+                boneTransformsCi.usage = BufferUsageFlags::UNIFORM_BUFFER_BIT;
+                currFrame.boneTransforms = ctx.CreateBuffer(boneTransformsCi);
+                currFrame.boneTransformsMapped =
+                    (glm::mat4 *)ctx.MapBuffer(currFrame.boneTransforms, 0, currFrame.boneTransformsSize);
+
+                std::set<size_t> createdOffsets;
+                for (auto const & offset : instanceIdToBoneOffset) {
+                    if (createdOffsets.count(offset.second) > 0) {
+                        continue;
+                    }
+                    ResourceCreationContext::DescriptorSetCreateInfo descriptorSetCi;
+                    ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor bufferDescriptor;
+                    bufferDescriptor.buffer = currFrame.boneTransforms;
+                    bufferDescriptor.offset = offset.second;
+                    bufferDescriptor.range = currFrame.boneTransformsSize - offset.second;
+                    ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
+                        {DescriptorType::UNIFORM_BUFFER, 0, bufferDescriptor},
+                    };
+                    descriptorSetCi.descriptors = descriptors;
+                    descriptorSetCi.descriptorCount = 1;
+                    descriptorSetCi.layout = skeletalMeshBoneLayout;
+                    auto descriptorSet = ctx.CreateDescriptorSet(descriptorSetCi);
+                    currFrame.boneTransformOffsets[offset.second] = descriptorSet;
+                    createdOffsets.insert(offset.second);
+                }
+            } else if (neededBoneOffsetDescriptorSets.size() > 0) {
+                for (auto const & offset : neededBoneOffsetDescriptorSets) {
+                    ResourceCreationContext::DescriptorSetCreateInfo descriptorSetCi;
+                    ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor bufferDescriptor;
+                    bufferDescriptor.buffer = currFrame.boneTransforms;
+                    bufferDescriptor.offset = offset;
+                    bufferDescriptor.range = currFrame.boneTransformsSize - offset;
+                    ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
+                        {DescriptorType::UNIFORM_BUFFER, 0, bufferDescriptor},
+                    };
+                    descriptorSetCi.descriptors = descriptors;
+                    descriptorSetCi.descriptorCount = 1;
+                    descriptorSetCi.layout = skeletalMeshBoneLayout;
+                    auto descriptorSet = ctx.CreateDescriptorSet(descriptorSetCi);
+                    currFrame.boneTransformOffsets[offset] = descriptorSet;
+                }
+            }
+            uniformCreationDone.Signal();
+        });
     } else {
         uniformCreationDone.Signal();
     }
@@ -790,6 +941,9 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
             memcpy(currFrame.meshIndexedIndirectMapped,
                    drawIndexedCommands.data(),
                    drawIndexedCommands.size() * sizeof(DrawIndexedIndirectCommand));
+        }
+        if (bones.size() > 0) {
+            memcpy(currFrame.boneTransformsMapped, bones.data(), bones.size() * sizeof(glm::mat4));
         }
         // TODO: If this is moved up above the other memcpys the data in meshUniformsMapped somehow gets corrupted
         // and I don't understand why.

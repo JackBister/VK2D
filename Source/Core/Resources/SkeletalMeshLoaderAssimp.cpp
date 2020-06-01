@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -13,7 +14,6 @@
 #include "Core/Resources/ResourceManager.h"
 #include "SkeletalMesh.h"
 #include "SkeletalMeshAnimation.h"
-#include "SkeletalModel.h"
 
 static auto const logger = Logger::Create("SkeletalMeshLoaderAssimp");
 
@@ -34,7 +34,7 @@ std::vector<QuatKey> ConvertQuatKeys(uint32_t size, aiQuatKey * keys)
     ret.reserve(size);
     for (uint32_t i = 0; i < size; ++i) {
         auto q = keys[i];
-        ret.push_back({q.mTime, glm::quat(q.mValue.x, q.mValue.y, q.mValue.z, q.mValue.w)});
+        ret.push_back({q.mTime, glm::quat(q.mValue.w, q.mValue.x, q.mValue.y, q.mValue.z)});
     }
     return ret;
 }
@@ -42,12 +42,12 @@ std::vector<QuatKey> ConvertQuatKeys(uint32_t size, aiQuatKey * keys)
 glm::mat4 ConvertMat4(aiMatrix4x4 m4)
 {
     // clang-format off
-    return glm::mat4(
+    return glm::transpose(glm::mat4(
         m4.a1, m4.a2, m4.a3, m4.a4,
         m4.b1, m4.b2, m4.b3, m4.b4,
         m4.c1, m4.c2, m4.c3, m4.c4,
         m4.d1, m4.d2, m4.d3, m4.d4
-    );
+    ));
     // clang-format on
 }
 
@@ -58,14 +58,14 @@ struct NodeHierarchy {
     std::vector<std::unique_ptr<NodeHierarchy>> children;
 };
 
-NodeHierarchy * BuildHierarchy(aiNode * node, NodeHierarchy * parent)
+std::unique_ptr<NodeHierarchy> BuildHierarchy(aiNode * node, NodeHierarchy * parent)
 {
-    auto ret = new NodeHierarchy();
+    auto ret = std::make_unique<NodeHierarchy>();
     ret->self = node->mName.C_Str();
     ret->transform = ConvertMat4(node->mTransformation);
     ret->parent = parent;
     for (uint32_t i = 0; i < node->mNumChildren; ++i) {
-        ret->children.push_back(std::unique_ptr<NodeHierarchy>(BuildHierarchy(node->mChildren[i], ret)));
+        ret->children.push_back(BuildHierarchy(node->mChildren[i], ret.get()));
     }
     return ret;
 }
@@ -98,14 +98,46 @@ void CreateRelations(NodeHierarchy * node, std::vector<BoneRelation> & out)
     out.push_back(relation);
 }
 
+struct BoneBuilder {
+    std::string name;
+    std::vector<std::vector<VertexWeight>> weights;
+    glm::mat4 transform;
+    glm::mat4 inverseBindMatrix;
+
+    std::vector<uint32_t> children;
+};
+
+uint32_t CreateBoneBuilders(NodeHierarchy * node, std::vector<BoneBuilder> & out)
+{
+    out.push_back({});
+    uint32_t idx = out.size() - 1;
+    out[idx].name = node->self;
+    out[idx].transform = node->transform;
+    out[idx].children.reserve(node->children.size());
+    for (size_t i = 0; i < node->children.size(); ++i) {
+        auto childIdx = CreateBoneBuilders(node->children[i].get(), out);
+        out[idx].children.push_back(childIdx);
+    }
+    return idx;
+}
+
+struct WeightReference {
+    uint32_t vertexIdx;
+    uint32_t boneIdx;
+    float weight;
+};
+
 SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
 {
     Assimp::Importer importer;
     auto scene = importer.ReadFile(filename,
-                                   aiProcess_CalcTangentSpace | aiProcess_Triangulate |
+                                   aiProcess_LimitBoneWeights | aiProcess_CalcTangentSpace | aiProcess_Triangulate |
                                        aiProcess_JoinIdenticalVertices | aiProcess_SortByPType);
 
     auto hierarchy = BuildHierarchy(scene->mRootNode, nullptr);
+
+    std::vector<BoneBuilder> boneBuilders;
+    CreateBoneBuilders(hierarchy.get(), boneBuilders);
 
     std::vector<SkeletalMeshAnimation> animations;
     animations.reserve(scene->mNumAnimations);
@@ -154,9 +186,9 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
     for (uint32_t i = 0; i < scene->mNumMeshes; ++i) {
         auto mesh = scene->mMeshes[i];
 
-        std::vector<SkeletalBone> bones;
-        bones.reserve(mesh->mNumBones);
+        std::vector<WeightReference> weightRefs;
         for (uint32_t j = 0; j < mesh->mNumBones; ++j) {
+            std::vector<WeightReference> weightRefsThisBone;
             auto bone = mesh->mBones[j];
 
             std::vector<VertexWeight> weights;
@@ -164,11 +196,15 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
             for (uint32_t k = 0; k < bone->mNumWeights; ++k) {
                 auto weight = bone->mWeights[k];
                 weights.push_back({weight.mVertexId, weight.mWeight});
+                WeightReference ref;
+                ref.vertexIdx = weight.mVertexId;
+                ref.weight = weight.mWeight;
+                weightRefsThisBone.push_back(ref);
             }
 
             glm::mat4 inverseBindMatrix = ConvertMat4(bone->mOffsetMatrix);
 
-            auto n = Find(hierarchy, bone->mName.C_Str());
+            auto n = Find(hierarchy.get(), bone->mName.C_Str());
             if (!n) {
                 logger->Warnf("Did not find bone with name='%s' in node hierarchy", bone->mName.C_Str());
                 continue;
@@ -181,19 +217,33 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
             for (auto const & child : n->children) {
                 children.push_back(child->self);
             }
-            // TODO:
-            bones.push_back(
-                SkeletalBone(bone->mName.C_Str(), weights, n->transform, inverseBindMatrix, parent, children));
+
+            for (uint32_t i = 0; i < boneBuilders.size(); ++i) {
+                auto & builder = boneBuilders[i];
+                if (builder.name == bone->mName.C_Str()) {
+                    builder.inverseBindMatrix = inverseBindMatrix;
+                    builder.weights.push_back(weights);
+
+                    for (auto & weightRef : weightRefsThisBone) {
+                        weightRef.boneIdx = i;
+                    }
+                    break;
+                }
+            }
+
+            for (auto const & weightRef : weightRefsThisBone) {
+                weightRefs.push_back(weightRef);
+            }
         }
 
-        std::vector<VertexWithNormal> vertices;
+        std::vector<VertexWithSkinning> vertices;
         vertices.reserve(mesh->mNumVertices);
         for (uint32_t j = 0; j < mesh->mNumVertices; ++j) {
             auto vert = mesh->mVertices[j];
             auto norm = mesh->mNormals[j];
             // auto col = mesh->mColors[j];
             // auto uv = mesh->mTextureCoords[j];
-            VertexWithNormal vertex;
+            VertexWithSkinning vertex;
             /*
             if (col) {
                 vertex.color = glm::vec3(col->r, col->g, col->b);
@@ -210,7 +260,21 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
             } else {
             */
             vertex.uv = glm::vec2(0.f, 1.f);
+
             // }
+
+            for (size_t i = 0; i < MAX_VERTEX_WEIGHTS; ++i) {
+                vertex.bones[i] = UINT32_MAX;
+            }
+
+            size_t weightIdx = 0;
+            for (auto const & weight : weightRefs) {
+                if (weight.vertexIdx == j) {
+                    vertex.bones[weightIdx] = weight.boneIdx;
+                    vertex.weights[weightIdx] = weight.weight;
+                    ++weightIdx;
+                }
+            }
             vertices.push_back(vertex);
         }
 
@@ -232,17 +296,17 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
             material = nullptr;
         }
 
-        submeshes.push_back(SkeletalSubmesh(mesh->mName.C_Str(), bones, vertices, indices, material));
+        submeshes.push_back(SkeletalSubmesh(mesh->mName.C_Str(), vertices, indices, material));
     }
 
-    std::vector<BoneRelation> relations;
-    CreateRelations(hierarchy, relations);
-
-    auto model = new SkeletalModel();
-    AssimpConverter::Convert(scene, *model);
+    std::vector<SkeletalBone> bones;
+    for (auto const & builder : boneBuilders) {
+        bones.push_back(SkeletalBone(
+            builder.name, builder.weights, builder.transform, builder.inverseBindMatrix, builder.children));
+    }
 
     auto ret = new SkeletalMesh(
-        filename, ConvertMat4(scene->mRootNode->mTransformation), relations, submeshes, animations, model);
+        filename, glm::inverse(ConvertMat4(scene->mRootNode->mTransformation)), bones, submeshes, animations);
     ResourceManager::AddResource(filename, ret);
     return ret;
 }

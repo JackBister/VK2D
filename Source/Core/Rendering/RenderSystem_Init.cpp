@@ -85,6 +85,9 @@ void RenderSystem::Init()
     prepassPipelineLayout =
         ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/prepass.pipelinelayout");
 
+    skeletalPrepassPipelineLayout = ResourceManager::GetResource<PipelineLayoutHandle>(
+        "_Primitives/PipelineLayouts/prepass_skeletal.pipelinelayout");
+
     passthroughTransformPipelineLayout =
         ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/pt.pipelinelayout");
     passthroughTransformProgram =
@@ -97,6 +100,13 @@ void RenderSystem::Init()
     meshProgram = ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/mesh.program");
     transparentMeshProgram =
         ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/TransparentMesh.program");
+
+    skeletalMeshBoneLayout =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/boneMesh.layout");
+    skeletalMeshPipelineLayout =
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/mesh_skeletal.pipelinelayout");
+    skeletalMeshProgram =
+        ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/mesh_skeletal.program");
 
     postprocessSampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/postprocess.sampler");
     postprocessDescriptorSetLayout =
@@ -310,6 +320,30 @@ void RenderSystem::InitSwapchainResources()
             depthStencil);
     } else {
         prepassProgram->SetRenderpass(prepass);
+    }
+
+    if (!skeletalPrepassProgram) {
+        ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+        depthStencil.depthCompareOp = CompareOp::LESS;
+        depthStencil.depthTestEnable = true;
+        depthStencil.depthWriteEnable = true;
+        skeletalPrepassProgram = ShaderProgram::Create(
+            "_Primitives/ShaderPrograms/prepass_skeletal.program",
+            {"shaders/prepass_skeletal.vert"},
+            ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/mesh_skeletal.state"),
+            ResourceManager::GetResource<PipelineLayoutHandle>(
+                "_Primitives/PipelineLayouts/prepass_skeletal.pipelinelayout"),
+            prepass,
+            CullMode::BACK,
+            FrontFace::COUNTER_CLOCKWISE,
+            0,
+            {},
+            {
+                PrimitiveTopology::TRIANGLE_LIST,
+            },
+            depthStencil);
+    } else {
+        skeletalPrepassProgram->SetRenderpass(prepass);
     }
 
     passthroughTransformProgram->SetRenderpass(mainRenderpass);

@@ -34,6 +34,9 @@ struct DrawIndexedIndirectCommand {
 };
 
 struct MeshBatch {
+    size_t boneTransformsOffset = 0; // Only used by skeletal mesh
+    size_t vertexSize;
+    ShaderProgram * shaderProgram;
     BufferHandle * indexBuffer = nullptr;
     BufferHandle * vertexBuffer = nullptr;
     Material * material = nullptr;
@@ -119,6 +122,12 @@ private:
         BufferHandle * meshIndexedIndirect = nullptr;
         DrawIndexedIndirectCommand * meshIndexedIndirectMapped = nullptr;
 
+        size_t boneTransformsSize = 0;
+        // Maps a desired offset in the boneTransforms buffer to a descriptor set with that offset
+        std::unordered_map<size_t, DescriptorSet *> boneTransformOffsets;
+        BufferHandle * boneTransforms = nullptr;
+        glm::mat4 * boneTransformsMapped = nullptr;
+
         size_t debugLinesSize = 0;
         BufferHandle * debugLines;
         glm::vec3 * debugLinesMapped = nullptr;
@@ -170,6 +179,9 @@ private:
     PipelineLayoutHandle * prepassPipelineLayout = nullptr;
     ShaderProgram * prepassProgram = nullptr;
 
+    PipelineLayoutHandle * skeletalPrepassPipelineLayout = nullptr;
+    ShaderProgram * skeletalPrepassProgram = nullptr;
+
     PipelineLayoutHandle * passthroughTransformPipelineLayout;
     ShaderProgram * passthroughTransformProgram;
 
@@ -177,6 +189,10 @@ private:
     PipelineLayoutHandle * meshPipelineLayout;
     ShaderProgram * meshProgram;
     ShaderProgram * transparentMeshProgram;
+
+    DescriptorSetLayoutHandle * skeletalMeshBoneLayout;
+    PipelineLayoutHandle * skeletalMeshPipelineLayout;
+    ShaderProgram * skeletalMeshProgram;
 
     ShaderProgram * uiProgram;
 
@@ -203,7 +219,12 @@ private:
     // skeletal meshes
     std::vector<SkeletalMeshInstance> skeletalMeshes;
     SkeletalMeshInstance * GetSkeletalMeshInstance(SkeletalMeshInstanceId id);
+    void ReadNodeHierarchy(float animationTime, SkeletalMeshAnimation const * animation,
+                           SkeletalMeshInstance * skeleton, SkeletalBoneInstance * bone,
+                           const glm::mat4x4 & parentTransform);
+    void TransformVertices(SkeletalMeshInstance * instance);
     void UpdateAnimations();
+    void UpdateAnimation(SkeletalMeshInstance * instance, float dt);
 
     // static meshes
     std::set<SubmeshInstance, SubmeshInstanceComparer> sortedSubmeshInstances;

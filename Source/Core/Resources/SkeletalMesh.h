@@ -4,10 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "AssimpConverter.h"
 #include "Core/Rendering/Vertex.h"
 #include "SkeletalMeshAnimation.h"
-#include "SkeletalModel.h"
 #include "VertexWeight.h"
 
 // TODO: Should NodeAnimation be "compiled" to use pointers or offsets instead of name?
@@ -18,31 +16,27 @@ class Material;
 class SkeletalBone
 {
 public:
-    SkeletalBone(std::string name, std::vector<VertexWeight> weights, glm::mat4 transform, glm::mat4 inverseBindMatrix,
-                 std::optional<std::string> parent, std::vector<std::string> children)
-        : name(name), weights(weights), transform(transform), inverseBindMatrix(inverseBindMatrix), parent(parent),
-          children(children)
+    SkeletalBone(std::string name, std::vector<std::vector<VertexWeight>> weights, glm::mat4 transform,
+                 glm::mat4 inverseBindMatrix, std::vector<uint32_t> children)
+        : name(name), weights(weights), transform(transform), inverseBindMatrix(inverseBindMatrix), children(children)
     {
     }
 
     inline std::string GetName() const { return name; }
-    inline std::vector<VertexWeight> const & GetWeights() const { return weights; }
+    inline std::vector<std::vector<VertexWeight>> const & GetWeights() const { return weights; }
     inline glm::mat4 const & GetTransform() const { return transform; }
     inline glm::mat4 const & GetInverseBindMatrix() const { return inverseBindMatrix; }
-    inline std::optional<std::string> GetParent() const { return parent; }
-    inline std::vector<std::string> const & GetChildren() const { return children; }
+    inline std::vector<uint32_t> const & GetChildren() const { return children; }
 
 private:
     std::string name;
-    std::vector<VertexWeight> weights;
-    // TODO: What even is this? Taken from the node hierarchy in assimp. Is it different from inverseBindMatrix?
+    // Weights split by submesh, so idx=0 contains weights for submesh with idx=0
+    std::vector<std::vector<VertexWeight>> weights;
     glm::mat4 transform;
     // Transform of the mesh relative to the bone in bind pose
     glm::mat4 inverseBindMatrix;
 
-    // TODO: Should be replaced with pointers
-    std::optional<std::string> parent;
-    std::vector<std::string> children;
+    std::vector<uint32_t> children;
 };
 
 // TODO: Assimp splits submeshes by material (nice) - BUT need to verify that this does not mean that each submesh
@@ -50,22 +44,20 @@ private:
 class SkeletalSubmesh
 {
 public:
-    SkeletalSubmesh(std::string name, std::vector<SkeletalBone> bones, std::vector<VertexWithNormal> vertices,
+    SkeletalSubmesh(std::string name, std::vector<VertexWithSkinning> vertices,
                     std::optional<std::vector<uint32_t>> indices, Material * material)
-        : name(name), bones(bones), vertices(vertices), indices(indices), material(material)
+        : name(name), vertices(vertices), indices(indices), material(material)
     {
     }
 
     inline std::string GetName() const { return name; }
-    inline std::vector<SkeletalBone> const & GetBones() const { return bones; }
-    inline std::vector<VertexWithNormal> const & GetVertices() const { return vertices; }
+    inline std::vector<VertexWithSkinning> const & GetVertices() const { return vertices; }
     inline std::optional<std::vector<uint32_t>> const & GetIndices() const { return indices; }
     inline Material * GetMaterial() const { return material; }
 
 private:
     std::string name;
-    std::vector<SkeletalBone> bones;
-    std::vector<VertexWithNormal> vertices;
+    std::vector<VertexWithSkinning> vertices;
     std::optional<std::vector<uint32_t>> indices;
     Material * material;
 };
@@ -84,33 +76,25 @@ struct BoneAndSubmesh {
 class SkeletalMesh
 {
 public:
-    SkeletalMesh(std::string name, glm::mat4 const & rootBoneToModel, std::vector<BoneRelation> boneRelations,
-                 std::vector<SkeletalSubmesh> submeshes, std::vector<SkeletalMeshAnimation> animations,
-                 SkeletalModel * model)
-        : name(name), rootBoneToModel(rootBoneToModel), boneRelations(boneRelations), submeshes(submeshes),
-          animations(animations), model(model)
+    SkeletalMesh(std::string name, glm::mat4 const & inverseGlobalTransform, std::vector<SkeletalBone> bones,
+                 std::vector<SkeletalSubmesh> submeshes, std::vector<SkeletalMeshAnimation> animations)
+        : name(name), inverseGlobalTransform(inverseGlobalTransform), bones(bones), submeshes(submeshes),
+          animations(animations)
     {
     }
 
     inline std::string GetName() const { return name; }
-    inline glm::mat4 GetRootBoneToModel() const { return rootBoneToModel; }
-    inline std::vector<BoneRelation> const & GetBoneRelations() const { return boneRelations; }
+    inline glm::mat4 GetInverseGlobalTransform() const { return inverseGlobalTransform; }
+    inline std::vector<SkeletalBone> const & GetBones() const { return bones; }
     inline std::vector<SkeletalSubmesh> const & GetSubmeshes() const { return submeshes; }
     inline std::vector<SkeletalMeshAnimation> const & GetAnimations() const { return animations; }
-    SkeletalMeshAnimation const * GetAnimation(std::string const & name) const;
-    std::vector<BoneAndSubmesh> GetBone(std::string const & name) const;
-    std::vector<BoneAndSubmesh> GetRootBone() const;
-    std::vector<BoneRelation> GetLeafBones() const;
 
-    inline SkeletalModel * GetModel() const { return model; }
+    SkeletalMeshAnimation const * GetAnimation(std::string name) const;
 
 private:
     std::string name;
-    glm::mat4 rootBoneToModel;
-    std::vector<BoneRelation> boneRelations;
+    glm::mat4 inverseGlobalTransform;
+    std::vector<SkeletalBone> bones;
     std::vector<SkeletalSubmesh> submeshes;
     std::vector<SkeletalMeshAnimation> animations;
-
-    // TODO:
-    SkeletalModel * model;
 };

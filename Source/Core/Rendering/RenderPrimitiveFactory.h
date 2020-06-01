@@ -21,12 +21,16 @@ private:
     RenderPassHandle * CreatePostprocessRenderpass(ResourceCreationContext &);
 
     void CreatePrepassPipelineLayout(ResourceCreationContext &);
+    void CreateSkeletalPrepassPipelineLayout(ResourceCreationContext &);
 
     PipelineLayoutHandle * CreatePassthroughTransformPipelineLayout(ResourceCreationContext &);
     VertexInputStateHandle * CreatePassthroughTransformVertexInputState(ResourceCreationContext &);
 
     void CreateMeshPipelineLayout(ResourceCreationContext &);
     void CreateMeshVertexInputState(ResourceCreationContext &);
+
+    void CreateSkeletalMeshPipelineLayout(ResourceCreationContext &);
+    void CreateSkeletalMeshVertexInputState(ResourceCreationContext &);
 
     PipelineLayoutHandle * CreateUiPipelineLayout(ResourceCreationContext &);
     VertexInputStateHandle * CreateUiVertexInputState(ResourceCreationContext &);

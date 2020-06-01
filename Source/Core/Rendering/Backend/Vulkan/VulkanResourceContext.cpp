@@ -558,6 +558,16 @@ VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsP
             } else if (description.size == 4) {
                 format = VK_FORMAT_R32G32B32A32_SFLOAT;
             }
+        } else if (description.type == VertexComponentType::UINT) {
+            if (description.size == 1) {
+                format = VK_FORMAT_R32_UINT;
+            } else if (description.size == 2) {
+                format = VK_FORMAT_R32G32_UINT;
+            } else if (description.size == 3) {
+                format = VK_FORMAT_R32G32B32_UINT;
+            } else if (description.size == 4) {
+                format = VK_FORMAT_R32G32B32A32_UINT;
+            }
         }
         attributeDescriptions[i] =
             VkVertexInputAttributeDescription{description.location, description.binding, format, description.offset};

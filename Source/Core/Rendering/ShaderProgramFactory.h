@@ -9,6 +9,7 @@ private:
     static void CreateDebugDrawShaderProgram();
     static void CreatePassthroughTransformShaderProgram();
     static void CreateMeshShaderProgram();
+    static void CreateSkeletalMeshShaderProgram();
     static void CreateTransparentMeshShaderProgram();
     static void CreateUiShaderProgram();
     static void CreatePostprocessShaderProgram();

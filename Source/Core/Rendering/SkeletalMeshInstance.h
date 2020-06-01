@@ -5,14 +5,24 @@
 #include <glm/glm.hpp>
 
 #include "BufferSlice.h"
-#include "Core/Resources/SkeletalModel.h"
 #include "Vertex.h"
 
 class RenderSystem;
+class SkeletalMeshAnimation;
 class SkeletalSubmesh;
+class SkeletalBone;
 class SkeletalMesh;
 
 using SkeletalMeshInstanceId = size_t;
+
+class SkeletalBoneInstance
+{
+    friend class RenderSystem;
+
+private:
+    SkeletalBone const * bone;
+    glm::mat4 currentTransform;
+};
 
 class SkeletalSubmeshInstance
 {
@@ -37,20 +47,21 @@ class SkeletalMeshInstance
 private:
     SkeletalMeshInstanceId id;
     SkeletalMesh * mesh;
-    SkeletalModel * model;
     bool isActive;
     glm::mat4 localToWorld;
 
-    std::optional<std::string> currentAnimation;
+    std::optional<std::string> currentAnimationName;
+    SkeletalMeshAnimation const * currentAnimation;
     float elapsedTime;
     size_t keyIdx;
 
+    std::vector<SkeletalBoneInstance> bones;
     std::vector<SkeletalSubmeshInstance> submeshes;
 
     // TODO: One per frameInfo? Since multiple frames can be in flight when animating
     std::optional<BufferSlice> vertexBuffer;
-    VertexWithNormal * mappedVertexBuffer;
+    VertexWithSkinning * mappedVertexBuffer;
 
     std::optional<BufferSlice> indexBuffer;
-    uint8_t * mappedIndexBuffer;
+    uint32_t * mappedIndexBuffer;
 };
