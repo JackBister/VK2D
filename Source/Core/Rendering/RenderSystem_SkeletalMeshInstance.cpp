@@ -28,72 +28,6 @@ SkeletalMeshInstanceId RenderSystem::CreateSkeletalMeshInstance(SkeletalMesh * m
     instance.isActive = isActive;
     instance.mesh = mesh;
 
-    size_t totalIndexSize = 0;
-    size_t totalVertexSize = 0;
-    for (auto const & submesh : mesh->GetSubmeshes()) {
-        totalVertexSize += submesh.GetVertices().size() * sizeof(VertexWithSkinning);
-
-        if (submesh.GetIndices().has_value()) {
-            totalIndexSize += submesh.GetIndices().value().size() * sizeof(uint32_t);
-        }
-    }
-
-    auto bufferAllocator = BufferAllocator::GetInstance();
-
-    instance.vertexBuffer = bufferAllocator->AllocateBuffer(totalVertexSize,
-                                                            BufferUsageFlags::VERTEX_BUFFER_BIT,
-                                                            MemoryPropertyFlagBits::HOST_VISIBLE_BIT |
-                                                                MemoryPropertyFlagBits::HOST_COHERENT_BIT);
-
-    if (totalIndexSize > 0) {
-        instance.indexBuffer = bufferAllocator->AllocateBuffer(totalIndexSize * sizeof(uint32_t),
-                                                               BufferUsageFlags::INDEX_BUFFER_BIT,
-                                                               MemoryPropertyFlagBits::HOST_VISIBLE_BIT |
-                                                                   MemoryPropertyFlagBits::HOST_COHERENT_BIT);
-    }
-
-    Semaphore done;
-    CreateResources([&done, &instance](ResourceCreationContext & ctx) {
-        instance.mappedVertexBuffer = (VertexWithSkinning *)ctx.MapBuffer(instance.vertexBuffer.value().GetBuffer(),
-                                                                          instance.vertexBuffer.value().GetOffset(),
-                                                                          instance.vertexBuffer.value().GetSize());
-        if (instance.indexBuffer.has_value()) {
-            instance.mappedIndexBuffer = (uint32_t *)ctx.MapBuffer(instance.indexBuffer.value().GetBuffer(),
-                                                                   instance.indexBuffer.value().GetOffset(),
-                                                                   instance.indexBuffer.value().GetSize());
-        }
-        done.Signal();
-    });
-    done.Wait();
-
-    std::vector<SkeletalSubmeshInstance> submeshes;
-    size_t currentIndexOffset = 0;
-    size_t currentVertexOffset = 0;
-    for (auto & submesh : mesh->GetSubmeshes()) {
-        memcpy(instance.mappedVertexBuffer + currentVertexOffset,
-               submesh.GetVertices().data(),
-               submesh.GetVertices().size() * sizeof(VertexWithSkinning));
-        BufferSlice vertexBufferSlice(instance.vertexBuffer.value().GetBuffer(),
-                                      instance.vertexBuffer.value().GetOffset() +
-                                          currentVertexOffset * sizeof(VertexWithSkinning),
-                                      submesh.GetVertices().size() * sizeof(VertexWithSkinning));
-        std::optional<BufferSlice> indexBufferSlice;
-        if (instance.indexBuffer.has_value()) {
-            memcpy(instance.mappedIndexBuffer + currentIndexOffset,
-                   submesh.GetIndices().value().data(),
-                   submesh.GetIndices().value().size() * sizeof(uint32_t));
-            indexBufferSlice =
-                BufferSlice(instance.indexBuffer.value().GetBuffer(),
-                            instance.indexBuffer.value().GetOffset() + currentIndexOffset * sizeof(uint32_t),
-                            submesh.GetIndices().value().size() * sizeof(uint32_t));
-            currentIndexOffset += submesh.GetIndices().value().size();
-        }
-        currentVertexOffset += submesh.GetVertices().size();
-        submeshes.emplace_back(SkeletalSubmeshInstance(&submesh, vertexBufferSlice, indexBufferSlice));
-    }
-
-    skeletalMeshes[id].submeshes = submeshes;
-
     for (auto const & bone : mesh->GetBones()) {
         SkeletalBoneInstance instance;
         instance.bone = &bone;
@@ -126,7 +60,6 @@ void RenderSystem::PreRenderSkeletalMeshes(std::vector<UpdateSkeletalMeshInstanc
         instance->localToWorld = mesh.localToWorld;
 
         if (mesh.switchToAnimation.has_value()) {
-            instance->keyIdx = 0;
             instance->elapsedTime = 0.f;
             instance->currentAnimationName = mesh.switchToAnimation;
             instance->currentAnimation = instance->mesh->GetAnimation(mesh.switchToAnimation.value());

@@ -680,10 +680,10 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
             if (!mesh.isActive) {
                 continue;
             }
-            for (auto const & submesh : mesh.submeshes) {
-                if (submesh.submesh->GetMaterial() != currentBatch.material ||
-                    submesh.vertexBuffer.GetBuffer() != currentBatch.vertexBuffer ||
-                    (submesh.indexBuffer.has_value() ? submesh.indexBuffer.value().GetBuffer() : nullptr) !=
+            for (auto const & submesh : mesh.mesh->GetSubmeshes()) {
+                if (submesh.GetMaterial() != currentBatch.material ||
+                    submesh.GetVertexBuffer().GetBuffer() != currentBatch.vertexBuffer ||
+                    (submesh.GetIndexBuffer().has_value() ? submesh.GetIndexBuffer().value().GetBuffer() : nullptr) !=
                         currentBatch.indexBuffer ||
                     offset != currentBatch.boneTransformsOffset) {
                     currentBatch.drawCommandsOffset = drawCommandsOffset;
@@ -698,26 +698,26 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
                     currentBatch.drawCommands.clear();
                     currentBatch.drawIndexedCommands.clear();
                     currentBatch.indexBuffer =
-                        (submesh.indexBuffer.has_value() ? submesh.indexBuffer.value().GetBuffer() : nullptr);
-                    currentBatch.material = submesh.submesh->GetMaterial();
-                    currentBatch.vertexBuffer = submesh.vertexBuffer.GetBuffer();
+                        (submesh.GetIndexBuffer().has_value() ? submesh.GetIndexBuffer().value().GetBuffer() : nullptr);
+                    currentBatch.material = submesh.GetMaterial();
+                    currentBatch.vertexBuffer = submesh.GetVertexBuffer().GetBuffer();
                     currentBatch.boneTransformsOffset = offset;
                 }
-                if (submesh.indexBuffer.has_value()) {
+                if (submesh.GetIndexBuffer().has_value()) {
                     DrawIndexedIndirectCommand command;
-                    command.firstIndex = submesh.indexBuffer.value().GetOffset() / sizeof(uint32_t);
+                    command.firstIndex = submesh.GetIndexBuffer().value().GetOffset() / sizeof(uint32_t);
                     command.firstInstance = instanceIdToLtwIndex.at(mesh.id + 1000000);
-                    command.indexCount = submesh.indexBuffer.value().GetSize() / sizeof(uint32_t);
+                    command.indexCount = submesh.GetIndexBuffer().value().GetSize() / sizeof(uint32_t);
                     command.instanceCount = 1;
-                    command.vertexOffset = submesh.vertexBuffer.GetOffset() / sizeof(VertexWithSkinning);
+                    command.vertexOffset = submesh.GetVertexBuffer().GetOffset() / sizeof(VertexWithSkinning);
                     currentBatch.drawIndexedCommands.push_back(command);
                     drawIndexedCommands.push_back(command);
                 } else {
                     DrawIndirectCommand command;
                     command.firstInstance = instanceIdToLtwIndex.at(mesh.id + 1000000);
-                    command.firstVertex = submesh.vertexBuffer.GetOffset() / sizeof(VertexWithSkinning);
+                    command.firstVertex = submesh.GetVertexBuffer().GetOffset() / sizeof(VertexWithSkinning);
                     command.instanceCount = 1;
-                    command.vertexCount = submesh.vertexBuffer.GetSize() / sizeof(VertexWithSkinning);
+                    command.vertexCount = submesh.GetVertexBuffer().GetSize() / sizeof(VertexWithSkinning);
                     currentBatch.drawCommands.push_back(command);
                     drawCommands.push_back(command);
                 }

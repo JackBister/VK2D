@@ -9,9 +9,12 @@
 #include <assimp/scene.h>
 
 #include "Core/Logging/Logger.h"
+#include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
+#include "Core/Rendering/BufferAllocator.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ResourceManager.h"
+#include "Core/Semaphore.h"
 #include "SkeletalMesh.h"
 #include "SkeletalMeshAnimation.h"
 
@@ -84,20 +87,6 @@ NodeHierarchy * Find(NodeHierarchy * node, std::string name)
     return nullptr;
 }
 
-void CreateRelations(NodeHierarchy * node, std::vector<BoneRelation> & out)
-{
-    BoneRelation relation;
-    if (node->parent) {
-        relation.parent = node->parent->self;
-    }
-    relation.self = node->self;
-    for (auto const & child : node->children) {
-        relation.children.push_back(child->self);
-        CreateRelations(child.get(), out);
-    }
-    out.push_back(relation);
-}
-
 struct BoneBuilder {
     std::string name;
     std::vector<std::vector<VertexWeight>> weights;
@@ -105,6 +94,13 @@ struct BoneBuilder {
     glm::mat4 inverseBindMatrix;
 
     std::vector<uint32_t> children;
+};
+
+struct SubmeshBuilder {
+    std::string name;
+    std::optional<std::vector<uint32_t>> indices;
+    std::vector<VertexWithSkinning> vertices;
+    Material * material;
 };
 
 uint32_t CreateBoneBuilders(NodeHierarchy * node, std::vector<BoneBuilder> & out)
@@ -181,8 +177,10 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
         materials.insert(std::make_pair(i, new Material(albedoImage)));
     }
 
-    std::vector<SkeletalSubmesh> submeshes;
-    submeshes.reserve(scene->mNumMeshes);
+    std::vector<SubmeshBuilder> submeshBuilders;
+    submeshBuilders.reserve(scene->mNumMeshes);
+    size_t totalEboSize = 0;
+    size_t totalVboSize = 0;
     for (uint32_t i = 0; i < scene->mNumMeshes; ++i) {
         auto mesh = scene->mMeshes[i];
 
@@ -296,7 +294,11 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
             material = nullptr;
         }
 
-        submeshes.push_back(SkeletalSubmesh(mesh->mName.C_Str(), vertices, indices, material));
+        if (indices.has_value()) {
+            totalEboSize += indices.value().size() * sizeof(uint32_t);
+        }
+        totalVboSize += vertices.size() * sizeof(VertexWithSkinning);
+        submeshBuilders.push_back({mesh->mName.C_Str(), indices, vertices, material});
     }
 
     std::vector<SkeletalBone> bones;
@@ -304,6 +306,61 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
         bones.push_back(SkeletalBone(
             builder.name, builder.weights, builder.transform, builder.inverseBindMatrix, builder.children));
     }
+
+    std::optional<BufferSlice> indexBufferSlice;
+    if (totalEboSize > 0) {
+        indexBufferSlice = BufferAllocator::GetInstance()->AllocateBuffer(totalEboSize,
+                                                                          BufferUsageFlags::INDEX_BUFFER_BIT |
+                                                                              BufferUsageFlags::TRANSFER_DST_BIT,
+                                                                          MemoryPropertyFlagBits::DEVICE_LOCAL_BIT);
+    }
+    auto vertexBufferSlice = BufferAllocator::GetInstance()->AllocateBuffer(totalVboSize,
+                                                                            BufferUsageFlags::VERTEX_BUFFER_BIT |
+                                                                                BufferUsageFlags::TRANSFER_DST_BIT,
+                                                                            MemoryPropertyFlagBits::DEVICE_LOCAL_BIT);
+
+    std::vector<Submesh> submeshes;
+    submeshes.reserve(scene->mNumMeshes);
+    Semaphore sem;
+    ResourceManager::CreateResources(
+        [&sem, &submeshBuilders, &submeshes, &indexBufferSlice, &vertexBufferSlice, totalEboSize, totalVboSize](
+            ResourceCreationContext & ctx) {
+            size_t eboOffset = 0;
+            size_t vboOffset = 0;
+            for (auto & builder : submeshBuilders) {
+                std::optional<BufferSlice> submeshIndexBuffer;
+                if (builder.indices.has_value() && builder.indices.value().size() > 0) {
+                    size_t totalOffset = indexBufferSlice.value().GetOffset() + eboOffset;
+                    size_t totalSize = builder.indices.value().size() * sizeof(uint32_t);
+                    ctx.BufferSubData(indexBufferSlice.value().GetBuffer(),
+                                      (uint8_t *)builder.indices.value().data(),
+                                      totalOffset,
+                                      totalSize);
+                    eboOffset += totalSize;
+                    submeshIndexBuffer = BufferSlice(indexBufferSlice.value().GetBuffer(), totalOffset, totalSize);
+                }
+                size_t totalOffset = vertexBufferSlice.GetOffset() + vboOffset;
+                size_t totalSize = builder.vertices.size() * sizeof(VertexWithSkinning);
+                ctx.BufferSubData(
+                    vertexBufferSlice.GetBuffer(), (uint8_t *)builder.vertices.data(), totalOffset, totalSize);
+                vboOffset += totalSize;
+                BufferSlice submeshVertexBuffer(vertexBufferSlice.GetBuffer(), totalOffset, totalSize);
+
+                if (submeshIndexBuffer.has_value()) {
+                    submeshes.push_back(Submesh(builder.name,
+                                                builder.material,
+                                                builder.indices.value().size(),
+                                                submeshIndexBuffer.value(),
+                                                builder.vertices.size(),
+                                                submeshVertexBuffer));
+                } else {
+                    submeshes.push_back(
+                        Submesh(builder.name, builder.material, builder.vertices.size(), submeshVertexBuffer));
+                }
+            }
+            sem.Signal();
+        });
+    sem.Wait();
 
     auto ret = new SkeletalMesh(
         filename, glm::inverse(ConvertMat4(scene->mRootNode->mTransformation)), bones, submeshes, animations);
