@@ -700,10 +700,10 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
         currentBatch.shaderProgram = skeletalMeshProgram;
         // TODO: Merge with static mesh batches
         for (auto const & mesh : skeletalMeshes) {
-            auto offset = instanceIdToBoneOffset.at(mesh.id);
             if (!mesh.isActive) {
                 continue;
             }
+            auto offset = instanceIdToBoneOffset.at(mesh.id);
             for (auto const & submesh : mesh.mesh->GetSubmeshes()) {
                 if (submesh.GetMaterial() != currentBatch.material ||
                     submesh.GetVertexBuffer().GetBuffer() != currentBatch.vertexBuffer ||
