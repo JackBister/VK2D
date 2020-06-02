@@ -239,27 +239,19 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
         for (uint32_t j = 0; j < mesh->mNumVertices; ++j) {
             auto vert = mesh->mVertices[j];
             auto norm = mesh->mNormals[j];
-            // auto col = mesh->mColors[j];
-            // auto uv = mesh->mTextureCoords[j];
             VertexWithSkinning vertex;
-            /*
-            if (col) {
-                vertex.color = glm::vec3(col->r, col->g, col->b);
+            if (mesh->mColors[0]) {
+                vertex.color = glm::vec3(mesh->mColors[0][j].r, mesh->mColors[0][j].g, mesh->mColors[0][j].b);
             } else {
-                */
-            vertex.color = glm::vec3(1.f);
-            //}
+                vertex.color = glm::vec3(1.f);
+            }
             vertex.normal = glm::vec3(norm.x, norm.y, norm.z);
             vertex.pos = glm::vec3(vert.x, vert.y, vert.z);
-            // TODO: wtf?
-            /*
-            if (uv) {
-                vertex.uv = glm::vec2(uv->x, uv->y);
+            if (mesh->mTextureCoords[0]) {
+                vertex.uv = glm::vec2(mesh->mTextureCoords[0][j].x, mesh->mTextureCoords[0][j].y);
             } else {
-            */
-            vertex.uv = glm::vec2(0.f, 1.f);
-
-            // }
+                vertex.uv = glm::vec2(0.f, 1.f);
+            }
 
             for (size_t i = 0; i < MAX_VERTEX_WEIGHTS; ++i) {
                 vertex.bones[i] = UINT32_MAX;
