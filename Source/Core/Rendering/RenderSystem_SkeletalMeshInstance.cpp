@@ -61,8 +61,13 @@ void RenderSystem::PreRenderSkeletalMeshes(std::vector<UpdateSkeletalMeshInstanc
 
         if (mesh.switchToAnimation.has_value()) {
             instance->elapsedTime = 0.f;
-            instance->currentAnimationName = mesh.switchToAnimation;
-            instance->currentAnimation = instance->mesh->GetAnimation(mesh.switchToAnimation.value());
+            auto newAnim = instance->mesh->GetAnimation(mesh.switchToAnimation.value());
+            if (!newAnim) {
+                logger->Warnf("animation='%s' not found", mesh.switchToAnimation.value().c_str());
+            } else {
+                instance->currentAnimationName = mesh.switchToAnimation;
+                instance->currentAnimation = newAnim;
+            }
         }
     }
 }

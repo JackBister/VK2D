@@ -17,10 +17,9 @@ REFLECT_STRUCT_MEMBER(isActive)
 REFLECT_STRUCT_END()
 
 static SerializedObjectSchema const SKELETAL_MESH_COMPONENT_SCHEMA = SerializedObjectSchema(
-    "SkeletalMeshComponent", {
-                                 SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true),
-                                 SerializedPropertySchema("isActive", SerializedValueType::BOOL),
-                             });
+    "SkeletalMeshComponent", {SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true),
+                              SerializedPropertySchema("isActive", SerializedValueType::BOOL),
+                              SerializedPropertySchema("startingAnimation", SerializedValueType::STRING)});
 
 class SkeletalMeshComponentDeserializer : public Deserializer
 {
@@ -39,7 +38,8 @@ class SkeletalMeshComponentDeserializer : public Deserializer
             }
         }
         auto isActive = obj.GetBool("isActive").value_or(true);
-        return new SkeletalMeshComponent(file, mesh, isActive);
+        auto startingAnimation = obj.GetString("startingAnimation");
+        return new SkeletalMeshComponent(file, mesh, isActive, startingAnimation);
     }
 };
 
@@ -50,8 +50,10 @@ SkeletalMeshComponent::~SkeletalMeshComponent()
     RenderSystem::GetInstance()->DestroyStaticMeshInstance(SkeletalMeshInstance);
 }
 
-SkeletalMeshComponent::SkeletalMeshComponent(std::string file, SkeletalMesh * mesh, bool isActive)
-    : file(file), mesh(mesh), isActive(isActive)
+SkeletalMeshComponent::SkeletalMeshComponent(std::string file, SkeletalMesh * mesh, bool isActive,
+                                             std::optional<std::string> startingAnimation)
+    : file(file), mesh(mesh), isActive(isActive), startingAnimation(startingAnimation),
+      queuedAnimationChange(startingAnimation)
 {
     SkeletalMeshInstance = RenderSystem::GetInstance()->CreateSkeletalMeshInstance(mesh);
 
@@ -77,13 +79,13 @@ void SkeletalMeshComponent::OnEvent(HashedString name, EventArgs args)
 
     if (name == "PreRender") {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
-        std::optional<std::string> nextAnimation;
-        if (!TESTHASSTARTEDANIM) {
-            // TODO:
-            nextAnimation = "mixamo.com";
-            TESTHASSTARTEDANIM = true;
-        }
         builder->WithSkeletalMeshUpdate(
-            {SkeletalMeshInstance, entity->GetTransform()->GetLocalToWorld(), isActive, nextAnimation});
+            {SkeletalMeshInstance, entity->GetTransform()->GetLocalToWorld(), isActive, queuedAnimationChange});
+        queuedAnimationChange = std::nullopt;
     }
+}
+
+void SkeletalMeshComponent::PlayAnimation(std::string const & newAnimation)
+{
+    queuedAnimationChange = newAnimation;
 }

@@ -1,6 +1,7 @@
 #include "SkeletalMeshLoaderAssimp.h"
 
 #include <optional>
+#include <regex>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -19,6 +20,12 @@
 #include "SkeletalMeshAnimation.h"
 
 static auto const logger = Logger::Create("SkeletalMeshLoaderAssimp");
+
+// If the filename looks like "x@y.fbx" and the file contains one animation, the animation will be renamed to y instead
+// of whatever the name is in the file. Any other files in the same directory with the same "x" will also have their
+// animations imported into this mesh.
+// static std::regex const SPECIAL_ANIMATION_PATTERN("(\\w+)@(\\w+)\\.fbx$", std::regex_constants::icase);
+static std::regex const SPECIAL_ANIMATION_PATTERN(".*\\W(\\w+)@(.+)\\.fbx$", std::regex_constants::icase);
 
 std::vector<Vec3Key> ConvertV3Keys(uint32_t size, aiVectorKey * keys)
 {
@@ -52,6 +59,23 @@ glm::mat4 ConvertMat4(aiMatrix4x4 m4)
         m4.d1, m4.d2, m4.d3, m4.d4
     ));
     // clang-format on
+}
+
+SkeletalMeshAnimation ConvertAnimation(aiAnimation * animation, std::optional<std::string> overrideName)
+{
+    std::vector<NodeAnimation> channels;
+    channels.reserve(animation->mNumChannels);
+    for (uint32_t j = 0; j < animation->mNumChannels; ++j) {
+        auto channel = animation->mChannels[j];
+        NodeAnimation converted;
+        converted.nodeName = channel->mNodeName.C_Str();
+        converted.positionKeys = ConvertV3Keys(channel->mNumPositionKeys, channel->mPositionKeys);
+        converted.rotationKeys = ConvertQuatKeys(channel->mNumRotationKeys, channel->mRotationKeys);
+        converted.scaleKeys = ConvertV3Keys(channel->mNumScalingKeys, channel->mScalingKeys);
+        channels.push_back(converted);
+    }
+    return SkeletalMeshAnimation(
+        overrideName.value_or(animation->mName.C_Str()), animation->mDuration, animation->mTicksPerSecond, channels);
 }
 
 struct NodeHierarchy {
@@ -126,6 +150,28 @@ struct WeightReference {
 SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
 {
     Assimp::Importer importer;
+
+    std::vector<std::pair<std::filesystem::path, std::string>> additionalAnimationFiles;
+    std::optional<std::string> overrideAnimName;
+    std::smatch patternMatch;
+    if (std::regex_match(filename, patternMatch, SPECIAL_ANIMATION_PATTERN) && patternMatch[1].matched &&
+        patternMatch[2].matched) {
+        std::string modelName = patternMatch[1].str();
+        overrideAnimName = patternMatch[2].str();
+
+        std::filesystem::path thisFile(filename);
+        auto dir = thisFile.parent_path();
+        for (auto const & sibling : std::filesystem::directory_iterator(dir)) {
+            std::smatch siblingMatch;
+            auto siblingPath = sibling.path();
+            // Required to get regex_match template magic to understand wtf its doing??? templates were a mistake
+            auto siblingString = siblingPath.string();
+            if (siblingPath != thisFile && std::regex_match(siblingString, siblingMatch, SPECIAL_ANIMATION_PATTERN) &&
+                siblingMatch[1].str() == patternMatch[1].str()) {
+                additionalAnimationFiles.push_back(std::make_pair(siblingPath, siblingMatch[2].str()));
+            }
+        }
+    }
     auto scene = importer.ReadFile(filename,
                                    aiProcess_LimitBoneWeights | aiProcess_CalcTangentSpace | aiProcess_Triangulate |
                                        aiProcess_JoinIdenticalVertices | aiProcess_SortByPType);
@@ -136,21 +182,22 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
     CreateBoneBuilders(hierarchy.get(), boneBuilders);
 
     std::vector<SkeletalMeshAnimation> animations;
-    animations.reserve(scene->mNumAnimations);
+    animations.reserve(scene->mNumAnimations + additionalAnimationFiles.size());
     for (uint32_t i = 0; i < scene->mNumAnimations; ++i) {
-        auto animation = scene->mAnimations[i];
-        std::vector<NodeAnimation> channels;
-        channels.reserve(animation->mNumChannels);
-        for (uint32_t j = 0; j < animation->mNumChannels; ++j) {
-            auto channel = animation->mChannels[j];
-            NodeAnimation converted;
-            converted.nodeName = channel->mNodeName.C_Str();
-            converted.positionKeys = ConvertV3Keys(channel->mNumPositionKeys, channel->mPositionKeys);
-            converted.rotationKeys = ConvertQuatKeys(channel->mNumRotationKeys, channel->mRotationKeys);
-            converted.scaleKeys = ConvertV3Keys(channel->mNumScalingKeys, channel->mScalingKeys);
-            channels.push_back(converted);
+        animations.push_back(ConvertAnimation(
+            scene->mAnimations[i],
+            overrideAnimName.has_value() && scene->mNumAnimations == 1 ? overrideAnimName : std::nullopt));
+    }
+
+    for (auto const & additionalFile : additionalAnimationFiles) {
+        Assimp::Importer animImporter;
+        auto additionalScene =
+            animImporter.ReadFile(additionalFile.first.string(),
+                                  aiProcess_LimitBoneWeights | aiProcess_CalcTangentSpace | aiProcess_Triangulate |
+                                      aiProcess_JoinIdenticalVertices | aiProcess_SortByPType);
+        for (uint32_t i = 0; i < additionalScene->mNumAnimations; ++i) {
+            animations.push_back(ConvertAnimation(additionalScene->mAnimations[i], additionalFile.second));
         }
-        animations.emplace_back(animation->mName.C_Str(), animation->mDuration, animation->mTicksPerSecond, channels);
     }
 
     std::unordered_map<uint32_t, Material *> materials;
