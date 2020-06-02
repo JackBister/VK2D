@@ -42,7 +42,7 @@ void main() {
 	mat4 pvm = pv * m[gl_BaseInstance];
 	gl_Position = pvm * (accumulatedTransform * vec4(pos, 1.0));
 	Color = color;
-	Normal = normalize(mat3(transpose(inverse(m[gl_BaseInstance]))) * normal);
+	Normal = mat3(accumulatedTransform) * normal;
 	Texcoord = texcoord;
 
 	//TODO: In the future this should be changed to be the other way around so OpenGL is the one getting penalized
