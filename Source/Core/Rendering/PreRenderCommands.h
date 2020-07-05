@@ -11,6 +11,7 @@
 #include "SpriteInstance.h"
 #include "StaticMeshInstance.h"
 
+class Image;
 class RenderSystem;
 
 struct UpdateCamera {
@@ -24,6 +25,8 @@ struct UpdateSpriteInstance {
     SpriteInstanceId spriteInstance;
     glm::mat4 localToWorld;
     bool isActive;
+
+    Image * newImage;
 };
 
 struct UpdateSkeletalMeshInstance {

@@ -1,5 +1,8 @@
 #include "RenderSystem.h"
 
+#include <glm/gtc/type_ptr.hpp>
+#include <optick/optick.h>
+
 #include "Core/Resources/Image.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
@@ -54,4 +57,44 @@ void RenderSystem::DestroySpriteInstance(SpriteInstanceId spriteInstance)
 SpriteInstance * RenderSystem::GetSpriteInstance(SpriteInstanceId id)
 {
     return &sprites[id];
+}
+
+void RenderSystem::PreRenderSprites(std::vector<UpdateSpriteInstance> const & sprites)
+{
+    OPTICK_EVENT();
+    auto & currFrame = frameInfo[currFrameInfoIdx];
+
+    for (auto const & sprite : sprites) {
+        auto spriteInstance = GetSpriteInstance(sprite.spriteInstance);
+        spriteInstance->isActive = sprite.isActive;
+        currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
+            spriteInstance->uniformBuffer, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(sprite.localToWorld));
+        if (sprite.newImage) {
+            auto oldDescriptorSet = spriteInstance->descriptorSet;
+            Semaphore sem;
+            renderer->CreateResources([spriteInstance, &sprite, &sem](ResourceCreationContext & ctx) {
+                ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uvDescriptor = {
+                    spriteInstance->uniformBuffer, 0, sizeof(glm::mat4)};
+
+                auto layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>(
+                    "_Primitives/DescriptorSetLayouts/spritePt.layout");
+                auto sampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/Default.sampler");
+
+                ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imgDescriptor = {
+                    sampler, sprite.newImage->GetDefaultView()};
+
+                ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
+                    {DescriptorType::UNIFORM_BUFFER, 0, uvDescriptor},
+                    {DescriptorType::COMBINED_IMAGE_SAMPLER, 1, imgDescriptor}};
+
+                spriteInstance->descriptorSet = ctx.CreateDescriptorSet({2, descriptors, layout});
+                sem.Signal();
+            });
+            sem.Wait();
+            if (oldDescriptorSet) {
+                this->DestroyResources(
+                    [oldDescriptorSet](ResourceCreationContext & ctx) { ctx.DestroyDescriptorSet(oldDescriptorSet); });
+            }
+        }
+    }
 }

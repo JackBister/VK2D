@@ -42,32 +42,8 @@ class SpriteComponentDeserializer : public Deserializer
 #if HOT_RELOAD_RESOURCES
         ret->image = img;
         ret->hotReloadSubscriptionId = img->SubscribeToChanges([ret](auto img) {
-#if 0
-        ResourceManager::CreateResources([ret, img](ResourceCreationContext & ctx) {
-            auto layout = ResourceManager::GetResource<DescriptorSetLayoutHandle>(
-                "_Primitives/DescriptorSetLayouts/spritePt.layout");
-            auto sampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/Default.sampler");
-
-            ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uvDescriptor = {
-                ret->uniforms, 0, sizeof(glm::mat4)};
-
-            ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor imgDescriptor = {sampler,
-                                                                                               img->GetDefaultView()};
-
-            ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
-                {DescriptorType::UNIFORM_BUFFER, 0, uvDescriptor},
-                {DescriptorType::COMBINED_IMAGE_SAMPLER, 1, imgDescriptor}};
-
-            auto oldDescriptorSet = ret->descriptorSet;
-            logger->Infof("Updating sprite descriptorSet");
-            // TODO: memory leak?
-            ret->descriptorSet = ctx.CreateDescriptorSet({2, descriptors, layout});
-            logger->Infof("Updated");
-
-            ResourceManager::DestroyResources(
-                [oldDescriptorSet](ResourceCreationContext & ctx) { ctx.DestroyDescriptorSet(oldDescriptorSet); });
-        });
-#endif
+            ret->image = img;
+            ret->refreshImageNextFrame = true;
         });
 #endif
 
@@ -100,6 +76,12 @@ void SpriteComponent::OnEvent(HashedString name, EventArgs args)
 
     if (name == "PreRender") {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
-        builder->WithSpriteInstanceUpdate({spriteInstance, entity->GetTransform()->GetLocalToWorld(), isActive});
+        Image * newImage = nullptr;
+        if (refreshImageNextFrame) {
+            newImage = this->image;
+            refreshImageNextFrame = false;
+        }
+        builder->WithSpriteInstanceUpdate(
+            {spriteInstance, entity->GetTransform()->GetLocalToWorld(), isActive, newImage});
     }
 }

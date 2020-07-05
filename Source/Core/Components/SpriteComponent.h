@@ -35,5 +35,6 @@ private:
 #if HOT_RELOAD_RESOURCES
     Image * image;
     int hotReloadSubscriptionId;
+    bool refreshImageNextFrame = false;
 #endif
 };

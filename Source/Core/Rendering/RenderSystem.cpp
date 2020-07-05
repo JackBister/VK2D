@@ -992,19 +992,6 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
     return batches;
 }
 
-void RenderSystem::PreRenderSprites(std::vector<UpdateSpriteInstance> const & sprites)
-{
-    OPTICK_EVENT();
-    auto & currFrame = frameInfo[currFrameInfoIdx];
-
-    for (auto const & sprite : sprites) {
-        auto spriteInstance = GetSpriteInstance(sprite.spriteInstance);
-        spriteInstance->isActive = sprite.isActive;
-        currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
-            spriteInstance->uniformBuffer, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(sprite.localToWorld));
-    }
-}
-
 void RenderSystem::RenderSprites(CameraInstance const & cam)
 {
     OPTICK_EVENT();
