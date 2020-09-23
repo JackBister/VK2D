@@ -51,8 +51,8 @@ int main(int argc, char * argv[])
     SDL_Init(SDL_INIT_EVERYTHING);
     Config::Init();
     RendererConfig cfg;
-    cfg.windowResolution.x = 1280;
-    cfg.windowResolution.y = 720;
+    cfg.windowResolution.x = 1920;
+    cfg.windowResolution.y = 1080;
     cfg.presentMode = PresentMode::FIFO;
     Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, cfg);
     RenderPrimitiveFactory renderPrimitiveFactory(&renderer);

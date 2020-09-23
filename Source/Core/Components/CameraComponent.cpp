@@ -201,6 +201,7 @@ void CameraComponent::OnEvent(HashedString name, EventArgs args)
         GameModule::TakeCameraFocus(entity);
     } else if (name == "PreRender") {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
-        builder->WithCameraUpdate({cameraHandle, GetView(), GetProjection(), isActive});
+        builder->WithCameraUpdate(
+            {cameraHandle, entity->GetTransform()->GetPosition(), GetView(), GetProjection(), isActive});
     }
 }

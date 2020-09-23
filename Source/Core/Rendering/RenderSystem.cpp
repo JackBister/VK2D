@@ -154,11 +154,13 @@ void RenderSystem::PreRenderFrame(PreRenderCommands commands)
     currFrame.preRenderPassCommandBuffer->BeginRecording(nullptr);
 
     PreRenderCameras(commands.cameraUpdates);
+    PreRenderLights(commands.lightUpdates);
     PreRenderSkeletalMeshes(commands.skeletalMeshUpdates);
     PreRenderSprites(commands.spriteUpdates);
     PreRenderMeshes(commands.staticMeshUpdates);
 
     UpdateAnimations();
+    UpdateLights();
 
     uiRenderSystem.PreRenderUi(currFrameInfoIdx, currFrame.preRenderPassCommandBuffer);
     currFrame.preRenderPassCommandBuffer->EndRecording();
@@ -352,9 +354,12 @@ void RenderSystem::PreRenderCameras(std::vector<UpdateCamera> const & cameraUpda
     for (auto const & camera : cameraUpdates) {
         auto cam = GetCamera(camera.cameraHandle);
         cam->isActive = camera.isActive;
-        auto pv = camera.projection * camera.view;
+        struct {
+            glm::mat4 pv;
+            glm::vec3 pos;
+        } uniforms = {camera.projection * camera.view, camera.pos};
         currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
-            cam->uniformBuffer, 0, sizeof(glm::mat4), (uint32_t *)glm::value_ptr(pv));
+            cam->uniformBuffer, 0, sizeof(glm::mat4) + sizeof(glm::vec3), (uint32_t *)&uniforms);
     }
 }
 
@@ -394,7 +399,7 @@ void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatc
     //                                               meshProgram->GetPipeline());
 
     currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-        meshPipelineLayout, 0, {cam.descriptorSet, currFrame.meshUniformsDescriptorSet});
+        meshPipelineLayout, 0, {currFrame.lightsDescriptorSet, cam.descriptorSet, currFrame.meshUniformsDescriptorSet});
 
     DescriptorSet * currentMaterialDescriptorSet = nullptr;
     size_t currentBoneOffset = 0;
@@ -411,7 +416,7 @@ void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatc
         if (batch.material->GetDescriptorSet() != currentMaterialDescriptorSet) {
             currentMaterialDescriptorSet = batch.material->GetDescriptorSet();
             currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-                meshPipelineLayout, 2, {batch.material->GetDescriptorSet()});
+                meshPipelineLayout, 3, {batch.material->GetDescriptorSet()});
         }
 
         if (batch.shaderProgram != currentShaderProgram) {
@@ -424,7 +429,7 @@ void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatc
             (batch.boneTransformsOffset != currentBoneOffset || !currentBoneSet)) {
             currentBoneOffset = batch.boneTransformsOffset;
             currentBoneSet = currFrame.boneTransformOffsets[batch.boneTransformsOffset];
-            currFrame.mainCommandBuffer->CmdBindDescriptorSets(skeletalMeshPipelineLayout, 3, {currentBoneSet});
+            currFrame.mainCommandBuffer->CmdBindDescriptorSets(skeletalMeshPipelineLayout, 4, {currentBoneSet});
         }
 
         currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, batch.vertexSize);
@@ -472,7 +477,7 @@ void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vect
     //                                             transparentMeshProgram->GetPipeline());
 
     currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-        meshPipelineLayout, 0, {cam.descriptorSet, currFrame.meshUniformsDescriptorSet});
+        meshPipelineLayout, 0, {currFrame.lightsDescriptorSet, cam.descriptorSet, currFrame.meshUniformsDescriptorSet});
 
     size_t currentBoneOffset = 0;
     DescriptorSet * currentBoneSet = nullptr;
@@ -489,7 +494,7 @@ void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vect
         if (batch.material->GetDescriptorSet() != currentMaterialDescriptorSet) {
             currentMaterialDescriptorSet = batch.material->GetDescriptorSet();
             currFrame.mainCommandBuffer->CmdBindDescriptorSets(
-                meshPipelineLayout, 2, {batch.material->GetDescriptorSet()});
+                meshPipelineLayout, 3, {batch.material->GetDescriptorSet()});
         }
 
         if (batch.shaderProgram != currentShaderProgram) {
@@ -502,7 +507,7 @@ void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vect
             (batch.boneTransformsOffset != currentBoneOffset || !currentBoneSet)) {
             currentBoneOffset = batch.boneTransformsOffset;
             currentBoneSet = currFrame.boneTransformOffsets[batch.boneTransformsOffset];
-            currFrame.mainCommandBuffer->CmdBindDescriptorSets(skeletalMeshPipelineLayout, 3, {currentBoneSet});
+            currFrame.mainCommandBuffer->CmdBindDescriptorSets(skeletalMeshPipelineLayout, 4, {currentBoneSet});
         }
 
         currFrame.mainCommandBuffer->CmdBindVertexBuffer(batch.vertexBuffer, 0, 0, batch.vertexSize);

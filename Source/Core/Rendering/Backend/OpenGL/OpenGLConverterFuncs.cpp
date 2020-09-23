@@ -94,6 +94,8 @@ GLint ToGLFormat(Format format)
         return GL_RGBA;
     case Format::R16G16_SFLOAT:
         return GL_RG;
+    case Format::R32G32B32A32_SFLOAT:
+        return GL_RGBA;
     case Format::D32_SFLOAT:
         return GL_DEPTH_COMPONENT32F;
     default:
@@ -129,6 +131,8 @@ GLint ToGLInternalFormat(Format format)
         return GL_RGBA8;
     case Format::R16G16_SFLOAT:
         return GL_RG16;
+    case R32G32B32A32_SFLOAT:
+        return GL_RGBA32;
     case Format::D32_SFLOAT:
         return GL_DEPTH_COMPONENT32F;
     default:

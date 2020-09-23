@@ -28,6 +28,8 @@ StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
 {
     auto baseDir = std::filesystem::path(filename).parent_path();
 
+    auto defaultNormals = ResourceManager::GetResource<Image>("_Primitives/Images/default_normals.img");
+
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
@@ -54,20 +56,50 @@ StaticMesh * StaticMeshLoaderObj::LoadFile(std::string const & filename)
     for (int i = 0; i < materials.size(); ++i) {
         auto & material = materials[i];
 
+        Image * albedoImage;
+        Image * normalsImage;
+        Image * roughnessImage;
+        Image * metallicImage;
         if (!material.diffuse_texname.empty()) {
             auto albedoFile = baseDir / material.diffuse_texname;
-            auto albedoImage = Image::FromFile(albedoFile.string());
-
-            materialIdToMaterial[i] = new Material(albedoImage);
+            albedoImage = Image::FromFile(albedoFile.string());
         } else {
             uint8_t r = material.diffuse[0] >= 1.f ? 0xFF : material.diffuse[0] * 256;
             uint8_t g = material.diffuse[1] >= 1.f ? 0xFF : material.diffuse[1] * 256;
             uint8_t b = material.diffuse[2] >= 1.f ? 0xFF : material.diffuse[2] * 256;
             auto albedoFile = filename + '/' + material.name + "/albedo";
-            auto albedoImage = Image::FromData(albedoFile, 1, 1, {r, g, b, 0xFF});
-
-            materialIdToMaterial[i] = new Material(albedoImage);
+            albedoImage = Image::FromData(albedoFile, 1, 1, {r, g, b, 0xFF});
         }
+        if (!material.normal_texname.empty()) {
+            auto normalsFile = baseDir / material.normal_texname;
+            normalsImage = Image::FromFile(normalsFile.string());
+        } else if (!material.bump_texname.empty()) {
+            auto normalsFile = baseDir / material.bump_texname;
+            normalsImage = Image::FromFile(normalsFile.string());
+        } else {
+            normalsImage = defaultNormals;
+        }
+        if (!material.roughness_texname.empty()) {
+            auto roughnessFile = baseDir / material.roughness_texname;
+            roughnessImage = Image::FromFile(roughnessFile.string());
+        } else {
+            uint8_t r = material.roughness >= 1.f ? 0xFF : material.roughness * 256;
+            uint8_t g = material.roughness >= 1.f ? 0xFF : material.roughness * 256;
+            uint8_t b = material.roughness >= 1.f ? 0xFF : material.roughness * 256;
+            auto roughnessFile = filename + '/' + material.name + "/roughness";
+            roughnessImage = Image::FromData(roughnessFile, 1, 1, {r, g, b, 0xFF});
+        }
+        if (!material.metallic_texname.empty()) {
+            auto metallicFile = baseDir / material.metallic_texname;
+            metallicImage = Image::FromFile(metallicFile.string());
+        } else {
+            uint8_t r = material.metallic >= 1.f ? 0xFF : material.metallic * 256;
+            uint8_t g = material.metallic >= 1.f ? 0xFF : material.metallic * 256;
+            uint8_t b = material.metallic >= 1.f ? 0xFF : material.metallic * 256;
+            auto metallicFile = filename + '/' + material.name + "/metallic";
+            metallicImage = Image::FromData(metallicFile, 1, 1, {r, g, b, 0xFF});
+        }
+        materialIdToMaterial[i] = new Material(albedoImage, normalsImage, roughnessImage, metallicImage);
     }
 
     std::vector<CpuSubmesh> cpuSubmeshes;

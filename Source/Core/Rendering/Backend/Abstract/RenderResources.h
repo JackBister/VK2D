@@ -80,6 +80,8 @@ enum class Format {
 
     R16G16_SFLOAT,
 
+    R32G32B32A32_SFLOAT,
+
     D32_SFLOAT,
 };
 

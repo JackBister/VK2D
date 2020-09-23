@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 
 #include "CameraInstance.h"
+#include "LightInstance.h"
 #include "SkeletalMeshInstance.h"
 #include "SpriteInstance.h"
 #include "StaticMeshInstance.h"
@@ -16,9 +17,17 @@ class RenderSystem;
 
 struct UpdateCamera {
     CameraInstanceId cameraHandle;
+    glm::vec3 pos;
     glm::mat4 view;
     glm::mat4 projection;
     bool isActive;
+};
+
+struct UpdateLight {
+    LightInstanceId lightInstance;
+    bool isActive;
+    glm::mat4 localToWorld;
+    glm::vec3 color;
 };
 
 struct UpdateSpriteInstance {
@@ -52,6 +61,7 @@ public:
     {
     public:
         Builder & WithCameraUpdate(UpdateCamera const &);
+        Builder & WithLightUpdate(UpdateLight const &);
         Builder & WithSkeletalMeshUpdate(UpdateSkeletalMeshInstance const &);
         Builder & WithSpriteInstanceUpdate(UpdateSpriteInstance const &);
         Builder & WithStaticMeshInstanceUpdate(UpdateStaticMeshInstance const &);
@@ -59,22 +69,24 @@ public:
 
     private:
         std::vector<UpdateCamera> cameraUpdates;
+        std::vector<UpdateLight> lightUpdates;
         std::vector<UpdateSkeletalMeshInstance> skeletalMeshUpdates;
         std::vector<UpdateSpriteInstance> spriteUpdates;
         std::vector<UpdateStaticMeshInstance> staticMeshUpdates;
     };
 
 private:
-    PreRenderCommands(std::vector<UpdateCamera> cameraUpdates,
+    PreRenderCommands(std::vector<UpdateCamera> cameraUpdates, std::vector<UpdateLight> lightUpdates,
                       std::vector<UpdateSkeletalMeshInstance> skeletalMeshUpdates,
                       std::vector<UpdateSpriteInstance> spriteUpdates,
                       std::vector<UpdateStaticMeshInstance> staticMeshUpdates)
-        : cameraUpdates(cameraUpdates), skeletalMeshUpdates(skeletalMeshUpdates), spriteUpdates(spriteUpdates),
-          staticMeshUpdates(staticMeshUpdates)
+        : cameraUpdates(cameraUpdates), lightUpdates(lightUpdates), skeletalMeshUpdates(skeletalMeshUpdates),
+          spriteUpdates(spriteUpdates), staticMeshUpdates(staticMeshUpdates)
     {
     }
 
     std::vector<UpdateCamera> cameraUpdates;
+    std::vector<UpdateLight> lightUpdates;
     std::vector<UpdateSkeletalMeshInstance> skeletalMeshUpdates;
     std::vector<UpdateSpriteInstance> spriteUpdates;
     std::vector<UpdateStaticMeshInstance> staticMeshUpdates;

@@ -1,7 +1,7 @@
 #version 460
 #extension GL_GOOGLE_include_directive : require
 
-#include "Specialization.h"
+#include "Specialization.glsl"
 
 #ifndef UINT32_MAX
 #define UINT32_MAX 0xffffffff
@@ -18,6 +18,7 @@ layout (location = 5) in vec4 weights;
 
 layout (std140, set = 0, binding = 0) uniform camera {
 	mat4 pv;
+	vec3 cameraPos;
 };
 layout (std140, set = 1, binding = 0) uniform model {
 	mat4 m[16];

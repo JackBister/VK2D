@@ -27,6 +27,7 @@
 		{
 			"type": "Entity",
 			"name": "MainCamera",
+			"isActive": true,
 			"transform": {
 				"position": {
 					"x": 0.0,

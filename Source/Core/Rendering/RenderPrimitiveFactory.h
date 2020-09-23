@@ -42,6 +42,9 @@ private:
 
     void CreateFontImage(ResourceCreationContext &);
 
+    void CreateDefaultNormalMap(ResourceCreationContext &);
+    void CreateDefaultRoughnessMap(ResourceCreationContext &);
+    void CreateDefaultMetallicMap(ResourceCreationContext &);
     void CreateDefaultMaterial(ResourceCreationContext &);
 
     void CreateQuadEbo(ResourceCreationContext &);

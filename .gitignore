@@ -1,6 +1,10 @@
 # Examples that shouldn't be committed
 Examples/3D/
 
+# Third party stuff, should only be submodule'd
+Assets/ThirdParty
+Source/ThirdParty
+
 # Generated shader files
 *.spv.h
 

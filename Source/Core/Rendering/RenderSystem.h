@@ -8,6 +8,7 @@
 #include "Core/Rendering/Backend/Abstract/RendererConfig.h"
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Rendering/CameraInstance.h"
+#include "Core/Rendering/LightInstance.h"
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/SkeletalMeshInstance.h"
 #include "Core/Rendering/SpriteInstance.h"
@@ -74,6 +75,9 @@ public:
     CameraInstanceId CreateCamera(bool isActive = true);
     void DestroyCamera(CameraInstanceId camera);
 
+    LightInstanceId CreatePointLightInstance(bool isActive, glm::vec3 color);
+    void DestroyLightInstance(LightInstanceId id);
+
     SkeletalMeshInstanceId CreateSkeletalMeshInstance(SkeletalMesh * mesh, bool isActive = true);
     void DestroySkeletalMeshInstance(SkeletalMeshInstanceId id);
 
@@ -128,6 +132,11 @@ private:
         BufferHandle * boneTransforms = nullptr;
         glm::mat4 * boneTransformsMapped = nullptr;
 
+        size_t lightsSize;
+        BufferHandle * lights = nullptr;
+        LightGpuData * lightsMapped = nullptr;
+        DescriptorSet * lightsDescriptorSet = nullptr;
+
         size_t debugLinesSize = 0;
         BufferHandle * debugLines;
         glm::vec3 * debugLinesMapped = nullptr;
@@ -150,6 +159,9 @@ private:
     void Prepass(std::vector<MeshBatch> const & batches);
 
     void PreRenderCameras(std::vector<UpdateCamera> const & cameras);
+
+    void PreRenderLights(std::vector<UpdateLight> const & lights);
+    void UpdateLights();
 
     void PreRenderSkeletalMeshes(std::vector<UpdateSkeletalMeshInstance> const & meshes);
 
@@ -185,6 +197,8 @@ private:
     PipelineLayoutHandle * passthroughTransformPipelineLayout;
     ShaderProgram * passthroughTransformProgram;
 
+    DescriptorSetLayoutHandle * lightsLayout;
+
     DescriptorSetLayoutHandle * meshModelLayout;
     PipelineLayoutHandle * meshPipelineLayout;
     ShaderProgram * meshProgram;
@@ -211,6 +225,10 @@ private:
     // cameras
     std::vector<CameraInstance> cameras;
     CameraInstance * GetCamera(CameraInstanceId);
+
+    // lights
+    std::vector<LightInstance> lights;
+    LightInstance * GetLight(LightInstanceId);
 
     // sprites
     std::vector<SpriteInstance> sprites;

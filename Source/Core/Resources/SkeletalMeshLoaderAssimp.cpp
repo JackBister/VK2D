@@ -151,6 +151,10 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
 {
     Assimp::Importer importer;
 
+    auto defaultNormals = ResourceManager::GetResource<Image>("_Primitives/Images/default_normals.img");
+    auto defaultRoughness = ResourceManager::GetResource<Image>("_Primitives/Images/default_roughness.img");
+    auto defaultMetallic = ResourceManager::GetResource<Image>("_Primitives/Images/default_metallic.img");
+
     std::vector<std::pair<std::filesystem::path, std::string>> additionalAnimationFiles;
     std::optional<std::string> overrideAnimName;
     std::smatch patternMatch;
@@ -221,7 +225,9 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
                                                0xFF});
             }
         }
-        materials.insert(std::make_pair(i, new Material(albedoImage)));
+        // TODO: Non-default normals, roughness and metallic. But I don't have any test assets right now.
+        materials.insert(
+            std::make_pair(i, new Material(albedoImage, defaultNormals, defaultRoughness, defaultMetallic)));
     }
 
     std::vector<SubmeshBuilder> submeshBuilders;

@@ -58,6 +58,9 @@ void RenderPrimitiveFactory::CreatePrimitives()
 void RenderPrimitiveFactory::LateCreatePrimitives()
 {
     ResourceManager::CreateResources([this](ResourceCreationContext & ctx) {
+        CreateDefaultNormalMap(ctx);
+        CreateDefaultRoughnessMap(ctx);
+        CreateDefaultMetallicMap(ctx);
         CreateDefaultMaterial(ctx);
         CreateQuadMesh();
         CreateBoxMesh();
@@ -199,7 +202,9 @@ void RenderPrimitiveFactory::CreateSkeletalPrepassPipelineLayout(ResourceCreatio
 PipelineLayoutHandle * RenderPrimitiveFactory::CreatePassthroughTransformPipelineLayout(ResourceCreationContext & ctx)
 {
     ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding cameraUniformBindings[1] = {
-        {0, DescriptorType::UNIFORM_BUFFER, ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT}};
+        {0,
+         DescriptorType::UNIFORM_BUFFER,
+         ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT | ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
     auto cameraPtLayout = ctx.CreateDescriptorSetLayout({1, cameraUniformBindings});
     ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/cameraPt.layout", cameraPtLayout);
 
@@ -236,8 +241,15 @@ RenderPrimitiveFactory::CreatePassthroughTransformVertexInputState(ResourceCreat
 
 void RenderPrimitiveFactory::CreateMeshPipelineLayout(ResourceCreationContext & ctx)
 {
+    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding lightsUniformBindings[1] = {
+        {0, DescriptorType::UNIFORM_BUFFER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
+    auto lightsMeshLayout = ctx.CreateDescriptorSetLayout({1, lightsUniformBindings});
+    ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/lightsMesh.layout", lightsMeshLayout);
+
     ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding cameraUniformBindings[1] = {
-        {0, DescriptorType::UNIFORM_BUFFER, ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT}};
+        {0,
+         DescriptorType::UNIFORM_BUFFER,
+         ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT | ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
     auto cameraMeshLayout = ctx.CreateDescriptorSetLayout({1, cameraUniformBindings});
     ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/cameraMesh.layout", cameraMeshLayout);
 
@@ -246,12 +258,16 @@ void RenderPrimitiveFactory::CreateMeshPipelineLayout(ResourceCreationContext & 
     auto modelMeshLayout = ctx.CreateDescriptorSetLayout({1, modelUniformBindings});
     ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/modelMesh.layout", modelMeshLayout);
 
-    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding materialUniformBindings[1] = {
-        {0, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
-    auto materialMeshLayout = ctx.CreateDescriptorSetLayout({1, materialUniformBindings});
+    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding materialUniformBindings[4] = {
+        {0, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT},
+        {1, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT},
+        {2, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT},
+        {3, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
+    auto materialMeshLayout = ctx.CreateDescriptorSetLayout({4, materialUniformBindings});
     ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/materialMesh.layout", materialMeshLayout);
 
-    auto meshPipelineLayout = ctx.CreatePipelineLayout({{cameraMeshLayout, modelMeshLayout, materialMeshLayout}});
+    auto meshPipelineLayout =
+        ctx.CreatePipelineLayout({{lightsMeshLayout, cameraMeshLayout, modelMeshLayout, materialMeshLayout}});
     ResourceManager::AddResource("_Primitives/PipelineLayouts/mesh.pipelinelayout", meshPipelineLayout);
 }
 
@@ -274,6 +290,8 @@ void RenderPrimitiveFactory::CreateMeshVertexInputState(ResourceCreationContext 
 
 void RenderPrimitiveFactory::CreateSkeletalMeshPipelineLayout(ResourceCreationContext & ctx)
 {
+    auto lightsMeshLayout =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/lightsMesh.layout");
     auto cameraMeshLayout =
         ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraMesh.layout");
 
@@ -288,8 +306,8 @@ void RenderPrimitiveFactory::CreateSkeletalMeshPipelineLayout(ResourceCreationCo
     auto boneLayout = ctx.CreateDescriptorSetLayout({1, boneBindings});
     ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/boneMesh.layout", boneLayout);
 
-    auto skeletalMeshLayout =
-        ctx.CreatePipelineLayout({{cameraMeshLayout, modelMeshLayout, materialMeshLayout, boneLayout}});
+    auto skeletalMeshLayout = ctx.CreatePipelineLayout(
+        {{lightsMeshLayout, cameraMeshLayout, modelMeshLayout, materialMeshLayout, boneLayout}});
     ResourceManager::AddResource("_Primitives/PipelineLayouts/mesh_skeletal.pipelinelayout", skeletalMeshLayout);
 }
 
@@ -429,19 +447,122 @@ void RenderPrimitiveFactory::CreateFontImage(ResourceCreationContext & ctx)
     auto sampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/Default.sampler");
 }
 
+void RenderPrimitiveFactory::CreateDefaultNormalMap(ResourceCreationContext & ctx)
+{
+    ResourceCreationContext::ImageCreateInfo normalInfo;
+    normalInfo.depth = 1;
+    normalInfo.format = Format::RGBA8;
+    normalInfo.height = 1;
+    normalInfo.width = 1;
+    normalInfo.mipLevels = 1;
+    normalInfo.type = ImageHandle::Type::TYPE_2D;
+    normalInfo.usage =
+        ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT | ImageUsageFlagBits::IMAGE_USAGE_FLAG_TRANSFER_DST_BIT;
+    auto normalImg = ctx.CreateImage(normalInfo);
+    std::vector<uint8_t> normalData = {
+        // clang-format off
+        0x00, 0x00, 0x00, 0x00,
+        // clang-format on
+    };
+    ctx.ImageData(normalImg, normalData);
+    ResourceCreationContext::ImageViewCreateInfo normalViewInfo;
+    normalViewInfo.components = ImageViewHandle::ComponentMapping::IDENTITY;
+    normalViewInfo.format = Format::RGBA8;
+    normalViewInfo.image = normalImg;
+    normalViewInfo.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+    normalViewInfo.subresourceRange.baseArrayLayer = 0;
+    normalViewInfo.subresourceRange.baseMipLevel = 0;
+    normalViewInfo.subresourceRange.layerCount = 1;
+    normalViewInfo.subresourceRange.levelCount = 1;
+    normalViewInfo.viewType = ImageViewHandle::Type::TYPE_2D;
+    auto normalView = ctx.CreateImageView(normalViewInfo);
+
+    auto normalImage = new Image("_Primitives/Images/default_normals.img", 1, 1, false, normalImg, normalView);
+    ResourceManager::AddResource("_Primitives/Images/default_normals.img", normalImage);
+}
+
+void RenderPrimitiveFactory::CreateDefaultRoughnessMap(ResourceCreationContext & ctx)
+{
+    ResourceCreationContext::ImageCreateInfo roughnessInfo;
+    roughnessInfo.depth = 1;
+    roughnessInfo.format = Format::RGBA8;
+    roughnessInfo.height = 1;
+    roughnessInfo.width = 1;
+    roughnessInfo.mipLevels = 1;
+    roughnessInfo.type = ImageHandle::Type::TYPE_2D;
+    roughnessInfo.usage =
+        ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT | ImageUsageFlagBits::IMAGE_USAGE_FLAG_TRANSFER_DST_BIT;
+    auto roughnessImg = ctx.CreateImage(roughnessInfo);
+    std::vector<uint8_t> roughnessData = {
+        // clang-format off
+        0xFF, 0xFF, 0xFF, 0xFF,
+        // clang-format on
+    };
+    ctx.ImageData(roughnessImg, roughnessData);
+    ResourceCreationContext::ImageViewCreateInfo roughnessViewInfo;
+    roughnessViewInfo.components = ImageViewHandle::ComponentMapping::IDENTITY;
+    roughnessViewInfo.format = Format::RGBA8;
+    roughnessViewInfo.image = roughnessImg;
+    roughnessViewInfo.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+    roughnessViewInfo.subresourceRange.baseArrayLayer = 0;
+    roughnessViewInfo.subresourceRange.baseMipLevel = 0;
+    roughnessViewInfo.subresourceRange.layerCount = 1;
+    roughnessViewInfo.subresourceRange.levelCount = 1;
+    roughnessViewInfo.viewType = ImageViewHandle::Type::TYPE_2D;
+    auto roughnessView = ctx.CreateImageView(roughnessViewInfo);
+
+    auto roughnessImage =
+        new Image("_Primitives/Images/default_roughness.img", 1, 1, false, roughnessImg, roughnessView);
+    ResourceManager::AddResource("_Primitives/Images/default_roughness.img", roughnessImage);
+}
+
+void RenderPrimitiveFactory::CreateDefaultMetallicMap(ResourceCreationContext & ctx)
+{
+    ResourceCreationContext::ImageCreateInfo metallicInfo;
+    metallicInfo.depth = 1;
+    metallicInfo.format = Format::RGBA8;
+    metallicInfo.height = 1;
+    metallicInfo.width = 1;
+    metallicInfo.mipLevels = 1;
+    metallicInfo.type = ImageHandle::Type::TYPE_2D;
+    metallicInfo.usage =
+        ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT | ImageUsageFlagBits::IMAGE_USAGE_FLAG_TRANSFER_DST_BIT;
+    auto metallicImg = ctx.CreateImage(metallicInfo);
+    std::vector<uint8_t> metallicData = {
+        // clang-format off
+        0x00, 0x00, 0x00, 0xFF,
+        // clang-format on
+    };
+    ctx.ImageData(metallicImg, metallicData);
+    ResourceCreationContext::ImageViewCreateInfo metallicViewInfo;
+    metallicViewInfo.components = ImageViewHandle::ComponentMapping::IDENTITY;
+    metallicViewInfo.format = Format::RGBA8;
+    metallicViewInfo.image = metallicImg;
+    metallicViewInfo.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+    metallicViewInfo.subresourceRange.baseArrayLayer = 0;
+    metallicViewInfo.subresourceRange.baseMipLevel = 0;
+    metallicViewInfo.subresourceRange.layerCount = 1;
+    metallicViewInfo.subresourceRange.levelCount = 1;
+    metallicViewInfo.viewType = ImageViewHandle::Type::TYPE_2D;
+    auto metallicView = ctx.CreateImageView(metallicViewInfo);
+
+    auto metallicImage = new Image("_Primitives/Images/default_metallic.img", 1, 1, false, metallicImg, metallicView);
+    ResourceManager::AddResource("_Primitives/Images/default_metallic.img", metallicImage);
+}
+
 void RenderPrimitiveFactory::CreateDefaultMaterial(ResourceCreationContext & ctx)
 {
-    ResourceCreationContext::ImageCreateInfo albedoInfo;
-    albedoInfo.depth = 1;
-    albedoInfo.format = Format::RGBA8;
-    albedoInfo.height = 2;
-    albedoInfo.width = 2;
-    albedoInfo.mipLevels = 1;
-    albedoInfo.type = ImageHandle::Type::TYPE_2D;
-    albedoInfo.usage =
+    ResourceCreationContext::ImageCreateInfo defaultInfo;
+    defaultInfo.depth = 1;
+    defaultInfo.format = Format::RGBA8;
+    defaultInfo.height = 2;
+    defaultInfo.width = 2;
+    defaultInfo.mipLevels = 1;
+    defaultInfo.type = ImageHandle::Type::TYPE_2D;
+    defaultInfo.usage =
         ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT | ImageUsageFlagBits::IMAGE_USAGE_FLAG_TRANSFER_DST_BIT;
-    auto albedoImg = ctx.CreateImage(albedoInfo);
-    std::vector<uint8_t> albedoData = {
+    auto defaultImg = ctx.CreateImage(defaultInfo);
+    std::vector<uint8_t> defaultData = {
         // clang-format off
         0x00, 0x00, 0x00, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
@@ -449,23 +570,27 @@ void RenderPrimitiveFactory::CreateDefaultMaterial(ResourceCreationContext & ctx
         0x00, 0x00, 0x00, 0xFF,
         // clang-format on
     };
-    ctx.ImageData(albedoImg, albedoData);
-    ResourceCreationContext::ImageViewCreateInfo albedoViewInfo;
-    albedoViewInfo.components = ImageViewHandle::ComponentMapping::IDENTITY;
-    albedoViewInfo.format = Format::RGBA8;
-    albedoViewInfo.image = albedoImg;
-    albedoViewInfo.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
-    albedoViewInfo.subresourceRange.baseArrayLayer = 0;
-    albedoViewInfo.subresourceRange.baseMipLevel = 0;
-    albedoViewInfo.subresourceRange.layerCount = 1;
-    albedoViewInfo.subresourceRange.levelCount = 1;
-    albedoViewInfo.viewType = ImageViewHandle::Type::TYPE_2D;
-    auto albedoView = ctx.CreateImageView(albedoViewInfo);
+    ctx.ImageData(defaultImg, defaultData);
+    ResourceCreationContext::ImageViewCreateInfo defaultViewInfo;
+    defaultViewInfo.components = ImageViewHandle::ComponentMapping::IDENTITY;
+    defaultViewInfo.format = Format::RGBA8;
+    defaultViewInfo.image = defaultImg;
+    defaultViewInfo.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+    defaultViewInfo.subresourceRange.baseArrayLayer = 0;
+    defaultViewInfo.subresourceRange.baseMipLevel = 0;
+    defaultViewInfo.subresourceRange.layerCount = 1;
+    defaultViewInfo.subresourceRange.levelCount = 1;
+    defaultViewInfo.viewType = ImageViewHandle::Type::TYPE_2D;
+    auto defaultView = ctx.CreateImageView(defaultViewInfo);
 
-    auto albedoImage = new Image("_Primitives/Materials/default.mtl/image", 2, 2, false, albedoImg, albedoView);
-    ResourceManager::AddResource("_Primitives/Materials/default.mtl/image", albedoImage);
+    auto defaultImage = new Image("_Primitives/Materials/default.mtl/image", 2, 2, false, defaultImg, defaultView);
+    ResourceManager::AddResource("_Primitives/Materials/default.mtl/image", defaultImage);
 
-    auto defaultMaterial = new Material(albedoImage);
+    auto normals = ResourceManager::GetResource<Image>("_Primitives/Images/default_normals.img");
+    auto roughness = ResourceManager::GetResource<Image>("_Primitives/Images/default_roughness.img");
+    auto metallic = ResourceManager::GetResource<Image>("_Primitives/Images/default_metallic.img");
+
+    auto defaultMaterial = new Material(defaultImage, normals, roughness, metallic);
     ResourceManager::AddResource("_Primitives/Materials/default.mtl", defaultMaterial);
 }
 

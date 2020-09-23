@@ -146,6 +146,8 @@ VkFormat ToVulkanFormat(Format const & format)
         return VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
     case Format::R16G16_SFLOAT:
         return VkFormat::VK_FORMAT_R16G16_SFLOAT;
+    case Format::R32G32B32A32_SFLOAT:
+        return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;
     case Format::D32_SFLOAT:
         return VkFormat::VK_FORMAT_D32_SFLOAT;
     default:

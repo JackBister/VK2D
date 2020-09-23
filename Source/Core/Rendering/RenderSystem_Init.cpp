@@ -94,6 +94,9 @@ void RenderSystem::Init()
     passthroughTransformProgram =
         ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/passthrough-transform.program");
 
+    lightsLayout =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/lightsMesh.layout");
+
     meshModelLayout =
         ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/modelMesh.layout");
     meshPipelineLayout =
