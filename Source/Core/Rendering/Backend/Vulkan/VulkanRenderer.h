@@ -1,11 +1,14 @@
 #pragma once
 #ifndef USE_OGL_RENDERER
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <deque>
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include <gl/glew.h>
@@ -16,9 +19,25 @@
 #include "Core/Rendering/Backend/Abstract/AbstractRenderer.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanContextStructs.h"
 
+struct CommandBufferAndFence {
+    VkCommandBuffer commandBuffer;
+    VkFence isReady;
+};
+
 struct GuardedBufferHandle {
     std::lock_guard<std::mutex> guard;
     VulkanBufferHandle * buffer;
+    size_t size;
+};
+
+struct GuardedQueue {
+    std::mutex queueLock;
+    VkQueue queue;
+};
+
+struct LockedQueue {
+    std::lock_guard<std::mutex> queueLock;
+    VkQueue queue;
 };
 
 struct VulkanStagingBuffer {
@@ -53,7 +72,7 @@ class Renderer : IRenderer
     friend class VulkanResourceContext;
 
 public:
-    Renderer(char const * title, int winX, int winY, uint32_t flags, RendererConfig config);
+    Renderer(char const * title, int winX, int winY, uint32_t flags, RendererConfig config, int numThreads);
     ~Renderer();
 
     uint32_t AcquireNextFrameIndex(SemaphoreHandle * signalSem, FenceHandle * signalFence) final override;
@@ -103,16 +122,31 @@ private:
     void CopyBufferToBuffer(VkCommandBuffer commandBuffer, VkBuffer src, VkBuffer dst, size_t dstOffset, size_t size);
     void CopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer buffer, VkImage image, uint32_t width,
                            uint32_t height);
-    VkCommandBuffer CreateCommandBuffer(VkCommandBufferLevel level);
     VkExtent2D GetDesiredExtent(VkSurfaceCapabilitiesKHR, RendererConfig);
     VkPresentModeKHR GetDesiredPresentMode(std::vector<VkPresentModeKHR>);
     VkSurfaceFormatKHR GetDesiredSurfaceFormat(std::vector<VkSurfaceFormatKHR>);
     uint32_t GetDesiredNumberOfImages(VkSurfaceCapabilitiesKHR);
+    CommandBufferAndFence GetGraphicsStagingCommandBuffer();
     GuardedBufferHandle GetStagingBuffer(size_t size);
-    GuardedStagingCommandBuffer GetStagingCommandBuffer();
+    CommandBufferAndFence GetStagingCommandBuffer();
+    LockedQueue GetGraphicsQueue();
+    LockedQueue GetTransferQueue();
     void InitSurfaceCapabilities();
     void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout,
                                VkImageLayout newLayout);
+
+    struct FrameInfo {
+        // All these vectors should have length = NumWorkerThreads after constructor is done
+        std::vector<VkCommandPool> graphicsCommandPools;
+        std::vector<std::vector<CommandBufferAndFence>> graphicsCommandBuffers;
+        std::vector<VkCommandPool> transferCommandPools;
+        std::vector<std::vector<CommandBufferAndFence>> transferCommandBuffers;
+    };
+
+    uint32_t currFrameInfoIdx = 0;
+    uint32_t prevFrameInfoIdx = 0;
+    // length = swapchain length
+    std::vector<FrameInfo> frameInfos;
 
     RendererConfig config;
     RendererProperties properties;
@@ -124,21 +158,25 @@ private:
     SurfaceCapabilities capabilities;
     VkPhysicalDeviceFeatures supportedFeatures;
 
-    VkDescriptorPool descriptorPool;
+    // length = NumWorkerThreads
+    std::vector<VkDescriptorPool> descriptorPools;
 
     VkSurfaceKHR surface;
     VulkanSwapchain swapchain;
 
+    std::deque<GuardedQueue> graphicsQueues;
+    std::deque<GuardedQueue> transferQueues;
+
     uint32_t graphicsQueueIdx;
-    VkQueue graphicsQueue;
+
     uint32_t presentQueueIdx;
     VkQueue presentQueue;
 
-    VkCommandPool graphicsPool;
-    VkCommandPool presentPool;
+    uint32_t transferFamilyIdx;
 
     std::deque<VulkanStagingBuffer> stagingBuffers;
-    std::deque<VulkanStagingCommandBuffer> stagingCommandBuffers;
+
+    int numThreads;
 
     SDL_Window * window;
 };

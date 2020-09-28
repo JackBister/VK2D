@@ -7,140 +7,134 @@
 #include "Core/Semaphore.h"
 
 /*
-	Queue
-	Wraps MoodyCamel's lockless MPMC queue with an (IMO) nicer API.
-	GetReader() creates a consumer, GetWriter() creates a producer.
-	Neither readers nor writers can be copied, only moved.
-	The expectation is that a thread will only have one writer/consumer per queue
-	and that writers/consumers won't be moved between threads or used by multiple threads.
+        Queue
+        Wraps MoodyCamel's lockless MPMC queue with an (IMO) nicer API.
+        GetReader() creates a consumer, GetWriter() creates a producer.
+        Neither readers nor writers can be copied, only moved.
+        The expectation is that a thread will only have one writer/consumer per queue
+        and that writers/consumers won't be moved between threads or used by multiple threads.
 */
 
-template<typename T, bool UseSemaphore = true>
+template <typename T, bool UseSemaphore = true>
 class Queue
 {
 };
 
-template<typename T>
+template <typename T>
 class Queue<T, false>
 {
 public:
-	class Reader
-	{
-		friend class Queue;
-	public:
-		std::optional<T> Pop()
-		{
-			T ret;
-			if (queue->try_dequeue(token, ret)) {
-				return ret;
-			}
-			return {};
-		}
+    class Reader
+    {
+        friend class Queue;
 
-		Reader(Reader&& rhs) : queue(rhs.queue), token(std::move(rhs.token)) {}
-	private:
-		Reader(moodycamel::ConcurrentQueue<T> * q) : queue(q), token(*q) {}
-		moodycamel::ConcurrentQueue<T> * queue;
-		moodycamel::ConsumerToken token;
-	};
+    public:
+        std::optional<T> Pop()
+        {
+            T ret;
+            if (queue->try_dequeue(token, ret)) {
+                return ret;
+            }
+            return {};
+        }
 
-	class Writer
-	{
-		friend class Queue;
-	public:
-		void Push(T&& val)
-		{
-			queue->enqueue(token, std::move(val));
-		}
+        Reader(Reader && rhs) : queue(rhs.queue), token(std::move(rhs.token)) {}
 
-		Writer(Writer&& rhs) : queue(rhs.queue), token(std::move(rhs.token)) {}
-	private:
-		Writer(moodycamel::ConcurrentQueue<T> * q) : queue(q), token(*q) {}
-		moodycamel::ConcurrentQueue<T> * queue;
-		moodycamel::ProducerToken token;
-	};
+    private:
+        Reader(moodycamel::ConcurrentQueue<T> * q) : queue(q), token(*q) {}
+        moodycamel::ConcurrentQueue<T> * queue;
+        moodycamel::ConsumerToken token;
+    };
 
-	Reader GetReader()
-	{
-		return Reader(&queue);
-	}
+    class Writer
+    {
+        friend class Queue;
 
-	Writer GetWriter()
-	{
-		return Writer(&queue);
-	}
+    public:
+        void Push(T && val) { queue->enqueue(token, std::move(val)); }
+
+        Writer(Writer && rhs) : queue(rhs.queue), token(std::move(rhs.token)) {}
+
+    private:
+        Writer(moodycamel::ConcurrentQueue<T> * q) : queue(q), token(*q) {}
+        moodycamel::ConcurrentQueue<T> * queue;
+        moodycamel::ProducerToken token;
+    };
+
+    Reader GetReader() { return Reader(&queue); }
+
+    Writer GetWriter() { return Writer(&queue); }
+
 private:
-	moodycamel::ConcurrentQueue<T> queue;
+    moodycamel::ConcurrentQueue<T> queue;
 };
 
-
-template<typename T>
+template <typename T>
 class Queue<T, true>
 {
 public:
-	class Reader
-	{
-		friend class Queue;
-	public:
-		std::optional<T> Pop()
-		{
-			T ret;
-			if (queue->try_dequeue(token, ret)) {
-				sem->Wait();
-				return ret;
-			}
-			return {};
-		}
+    class Reader
+    {
+        friend class Queue;
 
-		T Wait()
-		{
-			T ret;
-			sem->Wait();
-			if (!queue->try_dequeue(token, ret)) {
-				assert(false);
-			}
-			return ret;
-		}
+    public:
+        std::optional<T> Pop()
+        {
+            T ret;
+            if (queue->try_dequeue(token, ret)) {
+                sem->Wait();
+                return ret;
+            }
+            return {};
+        }
 
-		Reader(Reader&& rhs) : queue(rhs.queue), token(std::move(rhs.token)), sem(rhs.sem) {}
-	private:
-		Reader(moodycamel::ConcurrentQueue<T> * q, Semaphore * sem) : queue(q), token(*q), sem(sem) {}
-		moodycamel::ConcurrentQueue<T> * queue;
-		moodycamel::ConsumerToken token;
+        T Wait()
+        {
+            T ret;
+            sem->Wait();
+            if (!queue->try_dequeue(token, ret)) {
+                assert(false);
+            }
+            return ret;
+        }
 
-		Semaphore * sem;
-	};
+        Reader(Reader && rhs) : queue(rhs.queue), token(std::move(rhs.token)), sem(rhs.sem) {}
 
-	class Writer
-	{
-		friend class Queue;
-	public:
-		void Push(T&& val)
-		{
-			queue->enqueue(token, std::move(val));
-			sem->Signal();
-		}
+    private:
+        Reader(moodycamel::ConcurrentQueue<T> * q, Semaphore * sem) : queue(q), token(*q), sem(sem) {}
+        moodycamel::ConcurrentQueue<T> * queue;
+        moodycamel::ConsumerToken token;
 
-		Writer(Writer&& rhs) : queue(rhs.queue), token(std::move(rhs.token)), sem(rhs.sem) {}
-	private:
-		Writer(moodycamel::ConcurrentQueue<T> * q, Semaphore * sem) : queue(q), token(*q), sem(sem) {}
-		moodycamel::ConcurrentQueue<T> * queue;
-		moodycamel::ProducerToken token;
+        Semaphore * sem;
+    };
 
-		Semaphore * sem;
-	};
+    class Writer
+    {
+        friend class Queue;
 
-	Reader GetReader()
-	{
-		return Reader(&queue, &sem);
-	}
+    public:
+        void Push(T && val)
+        {
+            queue->enqueue(token, std::move(val));
+            sem->Signal();
+        }
 
-	Writer GetWriter()
-	{
-		return Writer(&queue, &sem);
-	}
+        Writer(Writer && rhs) : queue(rhs.queue), token(std::move(rhs.token)), sem(rhs.sem) {}
+
+    private:
+        Writer(moodycamel::ConcurrentQueue<T> * q, Semaphore * sem) : queue(q), token(*q), sem(sem) {}
+        moodycamel::ConcurrentQueue<T> * queue;
+        moodycamel::ProducerToken token;
+
+        Semaphore * sem;
+    };
+
+    Reader GetReader() { return Reader(&queue, &sem); }
+
+    Writer GetWriter() { return Writer(&queue, &sem); }
+
 private:
-	moodycamel::ConcurrentQueue<T> queue;
+    moodycamel::ConcurrentQueue<T> queue;
 
-	Semaphore sem;
+    Semaphore sem;
 };

@@ -1,5 +1,6 @@
 ﻿#include "Image.h"
 
+#include <optick/optick.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -21,9 +22,10 @@ struct ImageAndView {
 
 static ImageAndView CreateImageResources(std::vector<uint8_t> const & data, int width, int height)
 {
+    OPTICK_EVENT();
     ImageAndView ret;
     Semaphore sem;
-    ResourceManager::CreateResources([&ret, &sem, data, width, height](ResourceCreationContext & ctx) {
+    ResourceManager::CreateResources([&ret, &sem, &data, width, height](ResourceCreationContext & ctx) {
         ResourceCreationContext::ImageCreateInfo ic = {Format::RGBA8,
                                                        ImageHandle::Type::TYPE_2D,
                                                        width,
@@ -60,11 +62,17 @@ static ImageAndView CreateImageResources(std::vector<uint8_t> const & data, int 
 
 bool CheckForTransparency(std::vector<uint8_t> const & data)
 {
-    if (data.size() >= 4) {
-        for (size_t i = 3; i < data.size(); i += 4) {
-            if (data[i] != 0xFF) {
+    OPTICK_EVENT();
+    auto size = data.size();
+    if (size >= 4) {
+        size_t i = 4;
+        while (i < size) {
+            // This ends up being about twice as fast as naively looping over each u8 and comparing to 0xFF
+            auto asU64 = (uint64_t *)&data[0];
+            if (*asU64 & 0x000000FF000000FF) {
                 return true;
             }
+            i += 4;
         }
     }
     return false;
@@ -72,6 +80,7 @@ bool CheckForTransparency(std::vector<uint8_t> const & data)
 
 static std::vector<uint8_t> ReadImageFile(std::string fileName, int * width, int * height)
 {
+    OPTICK_EVENT();
     int n;
     FILE * file = fopen(fileName.c_str(), "rb");
     if (!file) {
@@ -80,10 +89,11 @@ static std::vector<uint8_t> ReadImageFile(std::string fileName, int * width, int
         *height = 0;
         return {};
     }
-    uint8_t const * imageData = stbi_load_from_file(file, width, height, &n, 4);
+    uint8_t * imageData = stbi_load_from_file(file, width, height, &n, 4);
     fclose(file);
     std::vector<uint8_t> data(*width * *height * 4);
     memcpy(&data[0], imageData, *width * *height * 4);
+    stbi_image_free(imageData);
     return data;
 }
 
@@ -107,6 +117,7 @@ Image::~Image()
 
 Image * Image::FromData(std::string const & filename, uint32_t width, uint32_t height, std::vector<uint8_t> data)
 {
+    OPTICK_EVENT();
     auto imageAndView = CreateImageResources(data, width, height);
     auto ret =
         new Image(filename, width, height, CheckForTransparency(data), imageAndView.image, imageAndView.imageView);
@@ -117,6 +128,7 @@ Image * Image::FromData(std::string const & filename, uint32_t width, uint32_t h
 
 Image * Image::FromFile(std::string const & fileName, bool forceReload)
 {
+    OPTICK_EVENT();
     if (!forceReload && ResourceManager::GetResource<Image>(fileName)) {
         return ResourceManager::GetResource<Image>(fileName);
     }

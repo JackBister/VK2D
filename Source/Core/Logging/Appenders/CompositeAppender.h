@@ -11,7 +11,7 @@ public:
     CompositeAppender(std::vector<std::shared_ptr<LogAppender>> appenders);
 
 protected:
-    virtual void AppendImpl(LogMessage const & message) const final override;
+    virtual void AppendImpl(LogMessage const & message) final override;
 
 private:
     std::vector<std::shared_ptr<LogAppender>> appenders;

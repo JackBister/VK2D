@@ -5,5 +5,5 @@
 class StdoutLogAppender : public LogAppender
 {
 protected:
-    virtual void AppendImpl(LogMessage const & message) const final override;
+    virtual void AppendImpl(LogMessage const & message) final override;
 };

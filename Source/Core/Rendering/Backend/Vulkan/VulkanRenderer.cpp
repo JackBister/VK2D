@@ -8,6 +8,7 @@
 
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanResourceContext.h"
+#include "Jobs/JobEngine.h"
 
 static const auto logger = Logger::Create("VulkanRenderer");
 static const auto vulkanLogger = Logger::Create("Vulkan");
@@ -186,6 +187,7 @@ uint32_t Renderer::AcquireNextFrameIndex(SemaphoreHandle * signalReady, FenceHan
         return UINT32_MAX;
     }
     assert(res == VK_SUCCESS);
+    currFrameInfoIdx = imageIndex;
     return imageIndex;
 }
 std::vector<ImageViewHandle *> Renderer::GetBackbuffers()
@@ -245,9 +247,10 @@ uint32_t Renderer::GetSwapCount() const
     return (uint32_t)swapchain.images.size();
 }
 
-Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, RendererConfig config)
-    : config(config), window(SDL_CreateWindow(title, winX, winY, config.windowResolution.x, config.windowResolution.y,
-                                              flags | SDL_WINDOW_VULKAN))
+Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, RendererConfig config, int numThreads)
+    : config(config), numThreads(numThreads),
+      window(SDL_CreateWindow(title, winX, winY, config.windowResolution.x, config.windowResolution.y,
+                              flags | SDL_WINDOW_VULKAN))
 {
     stbi_set_flip_vertically_on_load(true);
     std::vector<const char *> instanceExtensions;
@@ -358,6 +361,15 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
 
     vkGetPhysicalDeviceQueueFamilyProperties(basics.physicalDevice, &queueFamilyCount, &queueFamilyProperties[0]);
 
+    uint32_t mostSuitableForGraphicsFamily = UINT32_MAX;
+    VkQueueFlags graphicsQueueFlags = VK_QUEUE_FLAG_BITS_MAX_ENUM;
+    bool graphicsQueuePresentSupport;
+    uint32_t mostSuitableForPresentFamily = UINT32_MAX;
+    uint32_t mostSuitableForTransferFamily = UINT32_MAX;
+    VkQueueFlags transferQueueFlags = VK_QUEUE_FLAG_BITS_MAX_ENUM;
+
+    // Our priority is to find queues with the minimum capabilities required. So the transfer queue should optimally not
+    // be the same as the graphics queue.
     for (uint32_t i = 0; i < queueFamilyCount; ++i) {
         if (vkGetPhysicalDeviceSurfaceSupportKHR(basics.physicalDevice, i, surface, &queuePresentSupport[i]) !=
             VK_SUCCESS) {
@@ -366,55 +378,75 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
             exit(1);
         }
 
-        if ((queueFamilyProperties[i].queueCount > 0) &&
-            (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
-            if (graphicsQueueIdx == UINT32_MAX) {
-                graphicsQueueIdx = i;
-            }
-
-            // This queue family supports both graphics and present - Definitely use it.
-            if (queuePresentSupport[i]) {
-                graphicsQueueIdx = i;
-                presentQueueIdx = i;
-                break;
+        if (queueFamilyProperties[i].queueCount > 0) {
+            if (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                if (mostSuitableForGraphicsFamily == UINT32_MAX) {
+                    mostSuitableForGraphicsFamily = i;
+                    graphicsQueueFlags = queueFamilyProperties[i].queueFlags;
+                    graphicsQueuePresentSupport = queuePresentSupport[i];
+                } else if (queueFamilyProperties[i].queueFlags < graphicsQueueFlags &&
+                           (queuePresentSupport[i] || !graphicsQueuePresentSupport)) {
+                    mostSuitableForGraphicsFamily = i;
+                    graphicsQueueFlags = queueFamilyProperties[i].queueFlags;
+                    graphicsQueuePresentSupport = queuePresentSupport[i];
+                    if (queuePresentSupport[i]) {
+                        mostSuitableForPresentFamily = i;
+                    }
+                }
+            } else if (queuePresentSupport[i] && mostSuitableForPresentFamily == UINT32_MAX) {
+                mostSuitableForPresentFamily = i;
+            } else if (queueFamilyProperties[i].queueFlags & VK_QUEUE_TRANSFER_BIT) {
+                if (mostSuitableForTransferFamily == UINT32_MAX) {
+                    mostSuitableForTransferFamily = i;
+                    transferQueueFlags = queueFamilyProperties[i].queueFlags;
+                } else if (queueFamilyProperties[i].queueFlags < transferQueueFlags) {
+                    mostSuitableForTransferFamily = i;
+                    transferQueueFlags = queueFamilyProperties[i].queueFlags;
+                }
             }
         }
     }
 
-    // No queue supporting both graphics and present - pick out a queue that supports present
-    if (presentQueueIdx == UINT32_MAX) {
-        for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-            if (queuePresentSupport[i]) {
-                presentQueueIdx = i;
-            }
-        }
-    }
+    graphicsQueueIdx = mostSuitableForGraphicsFamily;
+    presentQueueIdx = mostSuitableForPresentFamily;
+    transferFamilyIdx = mostSuitableForTransferFamily;
 
-    // Either no graphics queue exists or no present queue exists. We can't work with this.
-    if (graphicsQueueIdx == UINT32_MAX || presentQueueIdx == UINT32_MAX) {
-        logger->Severef("Vulkan: No queues with graphics or present support found.");
+    // One of our needed queues does not exist. We can't work with this.
+    if (graphicsQueueIdx == UINT32_MAX || presentQueueIdx == UINT32_MAX || transferFamilyIdx == UINT32_MAX) {
+        logger->Severef("No queues with graphics, transfer or present support found.");
         assert(false);
         exit(1);
     }
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::vector<float> queuePriorities = {1.f};
 
+    auto transferFamily = queueFamilyProperties[mostSuitableForTransferFamily];
+    std::vector<float> transferQueuePriorities(transferFamily.queueCount, 1.f);
+    queueCreateInfos.push_back({VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                                nullptr,
+                                0,
+                                mostSuitableForTransferFamily,
+                                transferFamily.queueCount,
+                                &transferQueuePriorities[0]});
+
+    auto graphicsFamily = queueFamilyProperties[mostSuitableForGraphicsFamily];
+    std::vector<float> graphicsQueuePriorities(graphicsFamily.queueCount, 1.f);
     queueCreateInfos.push_back({VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                                 nullptr,
                                 0,
                                 graphicsQueueIdx,
-                                static_cast<uint32_t>(queuePriorities.size()),
-                                &queuePriorities[0]});
+                                static_cast<uint32_t>(graphicsQueuePriorities.size()),
+                                &graphicsQueuePriorities[0]});
 
+    std::vector<float> presentQueuePriorities = {1.f};
     // If we're using a separate present queue we need to create it
     if (graphicsQueueIdx != presentQueueIdx) {
         queueCreateInfos.push_back({VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                                     nullptr,
                                     0,
                                     presentQueueIdx,
-                                    static_cast<uint32_t>(queuePriorities.size()),
-                                    &queuePriorities[0]});
+                                    static_cast<uint32_t>(presentQueuePriorities.size()),
+                                    &presentQueuePriorities[0]});
     }
 
     std::vector<const char *> deviceLayers = {
@@ -463,22 +495,18 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
     }
 
     graphicsQueueIdx = graphicsQueueIdx;
-    vkGetDeviceQueue(basics.device, graphicsQueueIdx, 0, &graphicsQueue);
     presentQueueIdx = presentQueueIdx;
     // TODO: graphicsQueueIdx == presentQueueIdx => same queue used for present and graphics => ?
     vkGetDeviceQueue(basics.device, presentQueueIdx, 0, &presentQueue);
 
-    // Create command pools
-    if (!CreateVkCommandPool(basics.device, graphicsQueueIdx, &graphicsPool)) {
-        logger->Severef("Unable to create graphics pool.");
-        assert(false);
-        exit(1);
+    graphicsQueues.resize(graphicsFamily.queueCount);
+    for (uint32_t i = 0; i < graphicsFamily.queueCount; ++i) {
+        vkGetDeviceQueue(basics.device, mostSuitableForGraphicsFamily, i, &graphicsQueues[i].queue);
     }
 
-    if (!CreateVkCommandPool(basics.device, presentQueueIdx, &presentPool)) {
-        logger->Severef("Unable to create present pool.");
-        assert(false);
-        exit(1);
+    transferQueues.resize(transferFamily.queueCount);
+    for (uint32_t i = 0; i < transferFamily.queueCount; ++i) {
+        vkGetDeviceQueue(basics.device, mostSuitableForTransferFamily, i, &transferQueues[i].queue);
     }
 
     // Get required info and create swap chain
@@ -495,11 +523,16 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
         ci.pPoolSizes = &poolSizes[0];
         ci.maxSets = 100;
 
-        auto res = vkCreateDescriptorPool(basics.device, &ci, nullptr, &descriptorPool);
-        if (res != VK_SUCCESS) {
-            logger->Severef("Couldn't create descriptor pool.");
-            assert(false);
-            exit(1);
+        // TODO: Maybe this should use locking instead, it's kinda weird to scale the number of available descriptors by
+        // the number of threads...
+        descriptorPools.resize(numThreads);
+        for (int i = 0; i < numThreads; ++i) {
+            auto res = vkCreateDescriptorPool(basics.device, &ci, nullptr, &descriptorPools[i]);
+            if (res != VK_SUCCESS) {
+                logger->Severef("Couldn't create descriptor pool.");
+                assert(false);
+                exit(1);
+            }
         }
     }
 
@@ -509,7 +542,8 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
         properties = RendererProperties(props.limits.minUniformBufferOffsetAlignment);
     }
 
-    OPTICK_GPU_INIT_VULKAN(&basics.device, &basics.physicalDevice, &graphicsQueue, &graphicsQueueIdx, 1);
+    // TODO: This will likely result in multiple threads writing to the same graphics queue simultaneously
+    OPTICK_GPU_INIT_VULKAN(&basics.device, &basics.physicalDevice, &graphicsQueues[0].queue, &graphicsQueueIdx, 1);
 }
 
 uint32_t Renderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
@@ -554,14 +588,6 @@ void Renderer::CopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer buffer,
     vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
-VkCommandBuffer Renderer::CreateCommandBuffer(VkCommandBufferLevel level)
-{
-    VkCommandBuffer ret;
-    VkCommandBufferAllocateInfo allocateInfo{
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr, graphicsPool, level, 1};
-    vkAllocateCommandBuffers(basics.device, &allocateInfo, &ret);
-    return ret;
-}
 VkExtent2D Renderer::GetDesiredExtent(VkSurfaceCapabilitiesKHR surfaceCapabilities, RendererConfig cfg)
 {
     VkExtent2D desiredExtent = surfaceCapabilities.currentExtent;
@@ -631,7 +657,9 @@ GuardedBufferHandle Renderer::GetStagingBuffer(size_t size)
     OPTICK_EVENT();
     for (size_t i = 0; i < stagingBuffers.size(); ++i) {
         if (stagingBuffers[i].size >= size && stagingBuffers[i].guard.try_lock()) {
-            return {std::lock_guard<std::mutex>(stagingBuffers[i].guard, std::adopt_lock), &stagingBuffers[i].buffer};
+            return {std::lock_guard<std::mutex>(stagingBuffers[i].guard, std::adopt_lock),
+                    &stagingBuffers[i].buffer,
+                    stagingBuffers[i].size};
         }
     }
 
@@ -667,19 +695,21 @@ GuardedBufferHandle Renderer::GetStagingBuffer(size_t size)
     stagingBuffers.emplace_back(ffs, stagingInfo.size);
     // Despite all the fucking around this still isn't actually thread safe
     auto idx = stagingBuffers.size() - 1;
-    return {std::lock_guard<std::mutex>(stagingBuffers[idx].guard), &stagingBuffers[idx].buffer};
+    return {std::lock_guard<std::mutex>(stagingBuffers[idx].guard), &stagingBuffers[idx].buffer, stagingInfo.size};
 }
 
-GuardedStagingCommandBuffer Renderer::GetStagingCommandBuffer()
+CommandBufferAndFence Renderer::GetGraphicsStagingCommandBuffer()
 {
     OPTICK_EVENT();
-    for (size_t i = 0; i < stagingCommandBuffers.size(); ++i) {
-        if (vkGetFenceStatus(basics.device, stagingCommandBuffers[i].inUse) == VK_SUCCESS &&
-            stagingCommandBuffers[i].guard.try_lock()) {
-            vkResetFences(basics.device, 1, &stagingCommandBuffers[i].inUse);
-            return {std::lock_guard<std::mutex>(stagingCommandBuffers[i].guard, std::adopt_lock),
-                    stagingCommandBuffers[i].inUse,
-                    stagingCommandBuffers[i].commandBuffer};
+
+    auto threadIndex = JobEngine::GetInstance()->GetCurrentThreadIndex();
+    auto & currFrame = frameInfos[currFrameInfoIdx];
+
+    auto & buffers = currFrame.graphicsCommandBuffers[threadIndex];
+    for (auto const & buf : buffers) {
+        if (vkGetFenceStatus(basics.device, buf.isReady) == VK_SUCCESS) {
+            vkResetFences(basics.device, 1, &buf.isReady);
+            return buf;
         }
     }
 
@@ -695,18 +725,87 @@ GuardedStagingCommandBuffer Renderer::GetStagingCommandBuffer()
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     commandBufferAllocateInfo.pNext = nullptr;
     commandBufferAllocateInfo.commandBufferCount = 1;
-    commandBufferAllocateInfo.commandPool = graphicsPool;
+    commandBufferAllocateInfo.commandPool = currFrame.graphicsCommandPools[threadIndex];
     commandBufferAllocateInfo.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
     VkCommandBuffer commandBuffer;
     res = vkAllocateCommandBuffers(basics.device, &commandBufferAllocateInfo, &commandBuffer);
     assert(res == VK_SUCCESS);
 
-    stagingCommandBuffers.emplace_back(fence, commandBuffer);
-    size_t idx = stagingCommandBuffers.size() - 1;
+    CommandBufferAndFence ret = {commandBuffer, fence};
+    buffers.push_back(ret);
+    return ret;
+}
 
-    return {std::lock_guard<std::mutex>(stagingCommandBuffers[idx].guard),
-            stagingCommandBuffers[idx].inUse,
-            stagingCommandBuffers[idx].commandBuffer};
+CommandBufferAndFence Renderer::GetStagingCommandBuffer()
+{
+    OPTICK_EVENT();
+
+    auto threadIndex = JobEngine::GetInstance()->GetCurrentThreadIndex();
+    auto & currFrame = frameInfos[currFrameInfoIdx];
+
+    auto & buffers = currFrame.transferCommandBuffers[threadIndex];
+    for (auto const & buf : buffers) {
+        if (vkGetFenceStatus(basics.device, buf.isReady) == VK_SUCCESS) {
+            vkResetFences(basics.device, 1, &buf.isReady);
+            return buf;
+        }
+    }
+
+    VkFenceCreateInfo fenceCreateInfo;
+    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.pNext = nullptr;
+    fenceCreateInfo.flags = 0;
+    VkFence fence;
+    auto res = vkCreateFence(basics.device, &fenceCreateInfo, nullptr, &fence);
+    assert(res == VK_SUCCESS);
+
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo;
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.pNext = nullptr;
+    commandBufferAllocateInfo.commandBufferCount = 1;
+    commandBufferAllocateInfo.commandPool = currFrame.transferCommandPools[threadIndex];
+    commandBufferAllocateInfo.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+    VkCommandBuffer commandBuffer;
+    res = vkAllocateCommandBuffers(basics.device, &commandBufferAllocateInfo, &commandBuffer);
+    assert(res == VK_SUCCESS);
+
+    CommandBufferAndFence ret = {commandBuffer, fence};
+    buffers.push_back(ret);
+    return ret;
+}
+
+LockedQueue Renderer::GetGraphicsQueue()
+{
+    OPTICK_EVENT();
+
+    for (auto & queue : graphicsQueues) {
+        if (queue.queueLock.try_lock()) {
+            return {std::lock_guard<std::mutex>(queue.queueLock, std::adopt_lock), queue.queue};
+        }
+    }
+
+    logger->Infof("Failed to lock graphics upload queue during loop, defaulting to locking queue at index 0. Maybe in "
+                  "the future this index should be randomized.");
+
+    return {std::lock_guard<std::mutex>(graphicsQueues[0].queueLock), graphicsQueues[0].queue};
+}
+
+LockedQueue Renderer::GetTransferQueue()
+{
+    OPTICK_EVENT();
+
+    for (auto & queue : transferQueues) {
+        if (queue.queueLock.try_lock()) {
+            return {std::lock_guard<std::mutex>(queue.queueLock, std::adopt_lock), queue.queue};
+        }
+    }
+
+    logger->Infof("Failed to lock graphics upload queue during loop, defaulting to locking queue at index 0. Maybe in "
+                  "the future this index should be randomized.");
+
+    return {std::lock_guard<std::mutex>(transferQueues[0].queueLock), transferQueues[0].queue};
 }
 
 void Renderer::InitSurfaceCapabilities()
@@ -803,6 +902,7 @@ void Renderer::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage imag
 
 void Renderer::RecreateSwapchain()
 {
+    OPTICK_EVENT();
     logger->Infof("Renderer::RecreateSwapchain");
     isSwapchainInvalid = false;
     InitSurfaceCapabilities();
@@ -907,6 +1007,35 @@ void Renderer::RecreateSwapchain()
             logger->Severef("Couldn't create swap chain image views.");
             assert(false);
             exit(1);
+        }
+    }
+
+    for (auto const & frameInfo : frameInfos) {
+        for (auto & pool : frameInfo.graphicsCommandPools) {
+            vkDestroyCommandPool(basics.device, pool, nullptr);
+        }
+        for (auto & pool : frameInfo.transferCommandPools) {
+            vkDestroyCommandPool(basics.device, pool, nullptr);
+        }
+    }
+    frameInfos.clear();
+    frameInfos.resize(swapchain.images.size());
+    for (auto & frameInfo : frameInfos) {
+        frameInfo.graphicsCommandBuffers.resize(numThreads);
+        frameInfo.graphicsCommandPools.resize(numThreads);
+        frameInfo.transferCommandBuffers.resize(numThreads);
+        frameInfo.transferCommandPools.resize(numThreads);
+        for (int i = 0; i < numThreads; ++i) {
+            VkCommandPoolCreateInfo graphicsPoolCreateInfo = {};
+            graphicsPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            graphicsPoolCreateInfo.queueFamilyIndex = graphicsQueueIdx;
+            graphicsPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            vkCreateCommandPool(basics.device, &graphicsPoolCreateInfo, nullptr, &frameInfo.graphicsCommandPools[i]);
+            VkCommandPoolCreateInfo transferPoolCreateInfo = {};
+            transferPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            transferPoolCreateInfo.queueFamilyIndex = transferFamilyIdx;
+            transferPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            vkCreateCommandPool(basics.device, &transferPoolCreateInfo, nullptr, &frameInfo.transferCommandPools[i]);
         }
     }
 }

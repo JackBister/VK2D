@@ -1,5 +1,7 @@
 ﻿#include "ResourceManager.h"
 
+#include <optick/optick.h>
+
 #include "Core/Rendering/RenderSystem.h"
 
 namespace ResourceManager
@@ -8,14 +10,16 @@ std::unique_ptr<Logger> logger = Logger::Create("ResourceManager");
 RenderSystem * renderSystem;
 std::unordered_map<std::string, void *> resources;
 
-void CreateResources(std::function<void(ResourceCreationContext &)> fun)
+void CreateResources(std::function<void(ResourceCreationContext &)> && fun)
 {
-    renderSystem->CreateResources(fun);
+    OPTICK_EVENT();
+    renderSystem->CreateResources(std::move(fun));
 }
 
-void DestroyResources(std::function<void(ResourceCreationContext &)> fun)
+void DestroyResources(std::function<void(ResourceCreationContext &)> && fun)
 {
-    renderSystem->DestroyResources(fun);
+    OPTICK_EVENT();
+    renderSystem->DestroyResources(std::move(fun));
 }
 
 void Init(RenderSystem * inRenderSystem)

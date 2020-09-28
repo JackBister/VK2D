@@ -28,6 +28,7 @@
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
 #include "Core/transform.h"
+#include "Jobs/JobEngine.h"
 
 static const auto logger = Logger::Create("main");
 
@@ -45,16 +46,21 @@ int main(int argc, char * argv[])
             startInEditor = true;
         }
     }
+    SetThreadName(std::this_thread::get_id(), "Main Thread");
+    OPTICK_THREAD("Main Thread");
 
     std::string sceneFileName(argv[argc - 1]);
     ImGui::CreateContext();
     SDL_Init(SDL_INIT_EVERYTHING);
     Config::Init();
+    int numJobThreads = 6;
+    JobEngine jobEngine(numJobThreads);
+    jobEngine.RegisterMainThread();
     RendererConfig cfg;
     cfg.windowResolution.x = 1920;
     cfg.windowResolution.y = 1080;
     cfg.presentMode = PresentMode::FIFO;
-    Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, cfg);
+    Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, cfg, numJobThreads + 1);
     RenderPrimitiveFactory renderPrimitiveFactory(&renderer);
     renderPrimitiveFactory.CreatePrimitives();
     RenderSystem renderSystem(&renderer);
@@ -63,9 +69,6 @@ int main(int argc, char * argv[])
     renderPrimitiveFactory.LateCreatePrimitives();
     ShaderProgramFactory::CreateResources();
     renderSystem.Init();
-
-    SetThreadName(std::this_thread::get_id(), "Main Thread");
-    OPTICK_THREAD("Main Thread");
 
     GameModule::Init(&renderSystem);
 

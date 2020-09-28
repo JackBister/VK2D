@@ -8,6 +8,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <optick/optick.h>
 
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
@@ -149,6 +150,7 @@ struct WeightReference {
 
 SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
 {
+    OPTICK_EVENT();
     Assimp::Importer importer;
 
     auto defaultNormals = ResourceManager::GetResource<Image>("_Primitives/Images/default_normals.img");

@@ -29,11 +29,15 @@ void VulkanCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
     submitInfo.pWaitSemaphores = vulkanWaitSems.size() > 0 ? &vulkanWaitSems[0] : nullptr;
     submitInfo.signalSemaphoreCount = (uint32_t)vulkanSignalSems.size();
     submitInfo.pSignalSemaphores = vulkanSignalSems.size() > 0 ? &vulkanSignalSems[0] : nullptr;
-    auto res = vkQueueSubmit(renderer->graphicsQueue,
-                             1,
-                             &submitInfo,
-                             signalFence != nullptr ? ((VulkanFenceHandle *)signalFence)->fence : VK_NULL_HANDLE);
-    assert(res == VK_SUCCESS);
+
+    {
+        auto queue = renderer->GetGraphicsQueue();
+        auto res = vkQueueSubmit(queue.queue,
+                                 1,
+                                 &submitInfo,
+                                 signalFence != nullptr ? ((VulkanFenceHandle *)signalFence)->fence : VK_NULL_HANDLE);
+        assert(res == VK_SUCCESS);
+    }
 }
 
 void VulkanCommandBuffer::BeginRecording(CommandBuffer::InheritanceInfo * inheritanceInfo)

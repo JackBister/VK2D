@@ -8,6 +8,7 @@
 #include "Core/Rendering/Backend/Vulkan/VulkanContextStructs.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanConverterFuncs.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanRenderer.h"
+#include "Jobs/JobEngine.h"
 
 static const auto logger = Logger::Create("VulkanResourceContext");
 
@@ -46,9 +47,7 @@ void VulkanResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data,
         return ret;
     }(stagingBuffer.buffer->memory, size);
 
-    for (size_t i = 0; i < size; ++i) {
-        mappedMemory[i] = data[i];
-    }
+    memcpy(mappedMemory, data, size);
 
     vkUnmapMemory(renderer->basics.device, stagingBuffer.buffer->memory);
 
@@ -56,17 +55,38 @@ void VulkanResourceContext::BufferSubData(BufferHandle * buffer, uint8_t * data,
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vkBeginCommandBuffer(cb.commandBuffer, &beginInfo);
-    renderer->CopyBufferToBuffer(cb.commandBuffer, stagingBuffer.buffer->buffer, nativeHandle->buffer, offset, size);
-    vkEndCommandBuffer(cb.commandBuffer);
+    {
+        OPTICK_EVENT("RecordTransferCommands");
+        vkBeginCommandBuffer(cb.commandBuffer, &beginInfo);
+        renderer->CopyBufferToBuffer(
+            cb.commandBuffer, stagingBuffer.buffer->buffer, nativeHandle->buffer, offset, size);
+        vkEndCommandBuffer(cb.commandBuffer);
+    }
+
+    VkFence tempFence;
+    VkFenceCreateInfo fenceInfo = {};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    vkCreateFence(renderer->basics.device, &fenceInfo, nullptr, &tempFence);
+
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cb.commandBuffer;
-    // TODO: Could submit and return a fence here that the user can use to know that their data has uploaded instead of
+    // TODO: Should submit and return a fence here that the user can use to know that their data has uploaded instead of
     // using vkQueueWaitIdle
-    vkQueueSubmit(renderer->graphicsQueue, 1, &submitInfo, cb.inUse);
-    vkQueueWaitIdle(renderer->graphicsQueue);
+    {
+        auto queue = renderer->GetTransferQueue();
+        vkQueueSubmit(queue.queue, 1, &submitInfo, cb.isReady);
+        VkSubmitInfo dummySubmit = {};
+        dummySubmit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        dummySubmit.commandBufferCount = 0;
+        vkQueueSubmit(queue.queue, 1, &dummySubmit, tempFence);
+    }
+    {
+        OPTICK_EVENT("FenceWait")
+        vkWaitForFences(renderer->basics.device, 1, &tempFence, VK_TRUE, UINT64_MAX);
+    }
+    vkDestroyFence(renderer->basics.device, tempFence, nullptr);
 }
 
 BufferHandle * VulkanResourceContext::CreateBuffer(BufferCreateInfo const & ci)
@@ -220,7 +240,6 @@ void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> co
     assert(img != nullptr);
 
     auto const nativeImg = (VulkanImageHandle *)img;
-
     VkMemoryRequirements const memoryRequirements = [this](VkImage img) {
         VkMemoryRequirements ret{0};
         vkGetImageMemoryRequirements(renderer->basics.device, img, &ret);
@@ -244,72 +263,107 @@ void VulkanResourceContext::ImageData(ImageHandle * img, std::vector<uint8_t> co
         return ret;
     }(info);
 
-    VkBufferCreateInfo stagingInfo = {};
-    stagingInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    stagingInfo.size = data.size();
-    stagingInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    stagingInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    VkBuffer stagingBuffer;
-    auto res = vkCreateBuffer(renderer->basics.device, &stagingInfo, nullptr, &stagingBuffer);
-    assert(res == VK_SUCCESS);
+    auto guardedStagingBuffer = renderer->GetStagingBuffer(data.size());
+    {
+        OPTICK_EVENT("UploadData")
+        uint8_t * const mappedMemory = [this](VkDeviceMemory const & memory, size_t size) {
+            uint8_t * ret = nullptr;
+            auto const res = vkMapMemory(renderer->basics.device, memory, 0, size, 0, (void **)&ret);
+            assert(res == VK_SUCCESS);
+            return ret;
+        }(guardedStagingBuffer.buffer->memory, guardedStagingBuffer.size);
 
-    VkMemoryRequirements stagingRequirements = {};
-    vkGetBufferMemoryRequirements(renderer->basics.device, stagingBuffer, &stagingRequirements);
+        memcpy(mappedMemory, &data[0], data.size());
 
-    VkMemoryAllocateInfo stagingAllocateInfo{};
-    stagingAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    stagingAllocateInfo.allocationSize = stagingRequirements.size;
-    stagingAllocateInfo.memoryTypeIndex = renderer->FindMemoryType(
-        stagingRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    VkDeviceMemory stagingMemory;
-    res = vkAllocateMemory(renderer->basics.device, &stagingAllocateInfo, nullptr, &stagingMemory);
-    assert(res == VK_SUCCESS);
-
-    vkBindBufferMemory(renderer->basics.device, stagingBuffer, stagingMemory, 0);
-
-    uint8_t * const mappedMemory = [this](VkDeviceMemory const & memory, size_t size) {
-        uint8_t * ret = nullptr;
-        auto const res = vkMapMemory(renderer->basics.device, memory, 0, size, 0, (void **)&ret);
-        assert(res == VK_SUCCESS);
-        return ret;
-    }(stagingMemory, stagingRequirements.size);
-
-    for (size_t i = 0; i < data.size(); ++i) {
-        mappedMemory[i] = data[i];
+        vkUnmapMemory(renderer->basics.device, guardedStagingBuffer.buffer->memory);
     }
 
-    vkUnmapMemory(renderer->basics.device, stagingMemory);
-
     nativeImg->memory = memory;
-    res = vkBindImageMemory(renderer->basics.device, nativeImg->image, memory, 0);
+    VkResult res = vkBindImageMemory(renderer->basics.device, nativeImg->image, memory, 0);
     assert(res == VK_SUCCESS);
 
     auto cb = renderer->GetStagingCommandBuffer();
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vkBeginCommandBuffer(cb.commandBuffer, &beginInfo);
-    renderer->TransitionImageLayout(cb.commandBuffer,
+    {
+        OPTICK_EVENT("RecordTransferCommands")
+        vkBeginCommandBuffer(cb.commandBuffer, &beginInfo);
+        renderer->TransitionImageLayout(cb.commandBuffer,
+                                        nativeImg->image,
+                                        ToVulkanFormat(nativeImg->format),
+                                        VK_IMAGE_LAYOUT_UNDEFINED,
+                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        renderer->CopyBufferToImage(cb.commandBuffer,
+                                    guardedStagingBuffer.buffer->buffer,
                                     nativeImg->image,
-                                    ToVulkanFormat(nativeImg->format),
-                                    VK_IMAGE_LAYOUT_UNDEFINED,
-                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    renderer->CopyBufferToImage(cb.commandBuffer, stagingBuffer, nativeImg->image, nativeImg->width, nativeImg->height);
-    renderer->TransitionImageLayout(cb.commandBuffer,
-                                    nativeImg->image,
-                                    ToVulkanFormat(nativeImg->format),
-                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    vkEndCommandBuffer(cb.commandBuffer);
+                                    nativeImg->width,
+                                    nativeImg->height);
+        vkEndCommandBuffer(cb.commandBuffer);
+    }
+
+    VkSemaphore sem;
+    {
+        OPTICK_EVENT("CreateSemaphore")
+        VkSemaphoreCreateInfo semInfo = {};
+        semInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        vkCreateSemaphore(renderer->basics.device, &semInfo, nullptr, &sem);
+    }
+
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cb.commandBuffer;
-    vkQueueSubmit(renderer->graphicsQueue, 1, &submitInfo, cb.inUse);
-    vkQueueWaitIdle(renderer->graphicsQueue);
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = &sem;
 
-    vkDestroyBuffer(renderer->basics.device, stagingBuffer, nullptr);
-    vkFreeMemory(renderer->basics.device, stagingMemory, nullptr);
+    {
+        OPTICK_EVENT("SubmitTransferCommands")
+        auto transferQueue = renderer->GetTransferQueue();
+        vkQueueSubmit(transferQueue.queue, 1, &submitInfo, cb.isReady);
+    }
+
+    auto graphicsCommandBuffer = renderer->GetGraphicsStagingCommandBuffer();
+    {
+        OPTICK_EVENT("RecordGraphicsCommands")
+        vkBeginCommandBuffer(graphicsCommandBuffer.commandBuffer, &beginInfo);
+        renderer->TransitionImageLayout(graphicsCommandBuffer.commandBuffer,
+                                        nativeImg->image,
+                                        ToVulkanFormat(nativeImg->format),
+                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        vkEndCommandBuffer(graphicsCommandBuffer.commandBuffer);
+    }
+
+    VkFence tempFence;
+    VkFenceCreateInfo fenceInfo = {};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    vkCreateFence(renderer->basics.device, &fenceInfo, nullptr, &tempFence);
+
+    VkPipelineStageFlags waitMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    VkSubmitInfo graphicsSubmitInfo = {};
+    graphicsSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    graphicsSubmitInfo.commandBufferCount = 1;
+    graphicsSubmitInfo.pCommandBuffers = &graphicsCommandBuffer.commandBuffer;
+    graphicsSubmitInfo.waitSemaphoreCount = 1;
+    graphicsSubmitInfo.pWaitSemaphores = &sem;
+    graphicsSubmitInfo.pWaitDstStageMask = &waitMask;
+    {
+        OPTICK_EVENT("SubmitGraphicsCommands")
+        auto queue = renderer->GetGraphicsQueue();
+        vkQueueSubmit(queue.queue, 1, &graphicsSubmitInfo, graphicsCommandBuffer.isReady);
+        VkSubmitInfo dummySubmit = {};
+        dummySubmit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        dummySubmit.commandBufferCount = 0;
+        vkQueueSubmit(queue.queue, 1, &dummySubmit, tempFence);
+    }
+    {
+        OPTICK_EVENT("FenceWait")
+        vkWaitForFences(renderer->basics.device, 1, &tempFence, VK_TRUE, UINT64_MAX);
+    }
+
+    vkDestroyFence(renderer->basics.device, tempFence, nullptr);
+    vkDestroySemaphore(renderer->basics.device, sem, nullptr);
 
     assert(res == VK_SUCCESS);
 }
@@ -852,8 +906,10 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
     assert(info.layout != nullptr);
     VkDescriptorSetLayout layout = ((VulkanDescriptorSetLayoutHandle *)info.layout)->layout;
 
+    auto threadIdx = JobEngine::GetInstance()->GetCurrentThreadIndex();
+
     VkDescriptorSetAllocateInfo ai{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, renderer->descriptorPool, 1, &layout};
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, renderer->descriptorPools[threadIdx], 1, &layout};
 
     VkDescriptorSet set;
     auto res = vkAllocateDescriptorSets(renderer->basics.device, &ai, &set);
@@ -913,7 +969,10 @@ void VulkanResourceContext::DestroyDescriptorSet(DescriptorSet * set)
 
     auto nativeDescriptorSet = (VulkanDescriptorSet *)set;
 
-    auto res = vkFreeDescriptorSets(renderer->basics.device, renderer->descriptorPool, 1, &(nativeDescriptorSet->set));
+    auto threadIdx = JobEngine::GetInstance()->GetCurrentThreadIndex();
+
+    auto res = vkFreeDescriptorSets(
+        renderer->basics.device, renderer->descriptorPools[threadIdx], 1, &(nativeDescriptorSet->set));
     assert(res == VK_SUCCESS);
     allocator.deallocate((uint8_t *)nativeDescriptorSet, sizeof(VulkanDescriptorSet));
 }

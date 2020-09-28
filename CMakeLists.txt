@@ -9,7 +9,9 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(vk2d C CXX)
 
-file(GLOB_RECURSE SOURCES Source/Core/*.c Source/Core/*.cpp Source/Core/*.h)
+file(GLOB_RECURSE SOURCES Source/Core/*.c Source/Core/*.cpp Source/Core/*.h
+    Source/Jobs/*.c Source/Jobs/*.cpp Source/Jobs/*.h
+)
 add_executable(Main ${SOURCES})
 
 set_property(TARGET Main PROPERTY CXX_STANDARD 17)

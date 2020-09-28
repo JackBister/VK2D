@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "Component.h"
 #include "Core/Rendering/StaticMeshInstance.h"
 #include "Core/Resources/StaticMesh.h"
@@ -14,6 +16,8 @@ public:
 
     void OnEvent(HashedString name, EventArgs args) override;
 
+    void SetMesh(StaticMesh * mesh);
+
     REFLECT()
     REFLECT_INHERITANCE()
 
@@ -22,5 +26,5 @@ private:
     StaticMesh * mesh;
     bool isActive;
 
-    StaticMeshInstanceId staticMeshInstance;
+    std::optional<StaticMeshInstanceId> staticMeshInstance;
 };

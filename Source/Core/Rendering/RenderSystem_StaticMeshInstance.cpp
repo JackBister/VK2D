@@ -1,10 +1,13 @@
 #include "RenderSystem.h"
 
+#include <optick/optick.h>
+
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/StaticMesh.h"
 
 StaticMeshInstanceId RenderSystem::CreateStaticMeshInstance(StaticMesh * mesh, bool isActive)
 {
+    OPTICK_EVENT();
     staticMeshes.emplace_back();
     auto id = staticMeshes.size() - 1;
     staticMeshes[id].id = id;
@@ -19,6 +22,7 @@ StaticMeshInstanceId RenderSystem::CreateStaticMeshInstance(StaticMesh * mesh, b
 
 void RenderSystem::DestroyStaticMeshInstance(StaticMeshInstanceId id)
 {
+    OPTICK_EVENT();
     // TODO: Do this properly
     staticMeshes[id].isActive = false;
 

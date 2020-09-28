@@ -15,8 +15,8 @@ namespace ResourceManager
 extern std::unique_ptr<Logger> logger;
 extern std::unordered_map<std::string, void *> resources;
 
-void CreateResources(std::function<void(ResourceCreationContext &)> fun);
-void DestroyResources(std::function<void(ResourceCreationContext &)> fun);
+void CreateResources(std::function<void(ResourceCreationContext &)> && fun);
+void DestroyResources(std::function<void(ResourceCreationContext &)> && fun);
 void Init(RenderSystem * renderSystem);
 
 template <typename T>

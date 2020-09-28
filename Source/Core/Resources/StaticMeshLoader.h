@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 
 class StaticMesh;
@@ -7,5 +8,5 @@ class StaticMesh;
 class StaticMeshLoader
 {
 public:
-    virtual StaticMesh * LoadFile(std::string const & filename) = 0;
+    virtual void LoadFile(std::string const & filename, std::function<void(StaticMesh *)> callback) = 0;
 };

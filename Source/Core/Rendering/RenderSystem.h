@@ -67,8 +67,8 @@ public:
     void PreRenderFrame(PreRenderCommands);
     void RenderFrame();
 
-    void CreateResources(std::function<void(ResourceCreationContext &)> fun);
-    void DestroyResources(std::function<void(ResourceCreationContext &)> fun);
+    void CreateResources(std::function<void(ResourceCreationContext &)> && fun);
+    void DestroyResources(std::function<void(ResourceCreationContext &)> && fun);
 
     glm::ivec2 GetResolution();
 

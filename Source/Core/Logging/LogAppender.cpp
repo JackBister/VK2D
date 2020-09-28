@@ -1,6 +1,6 @@
 #include "LogAppender.h"
 
-void LogAppender::Append(LogMessage message) const
+void LogAppender::Append(LogMessage message)
 {
     if (message.GetLevel() < sharedMinLevel) {
         return;

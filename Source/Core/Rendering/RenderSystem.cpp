@@ -74,13 +74,13 @@ void RenderSystem::RenderFrame()
     SubmitSwap();
 }
 
-void RenderSystem::CreateResources(std::function<void(ResourceCreationContext &)> fun)
+void RenderSystem::CreateResources(std::function<void(ResourceCreationContext &)> && fun)
 {
     OPTICK_EVENT();
     renderer->CreateResources(fun);
 }
 
-void RenderSystem::DestroyResources(std::function<void(ResourceCreationContext &)> fun)
+void RenderSystem::DestroyResources(std::function<void(ResourceCreationContext &)> && fun)
 {
     OPTICK_EVENT();
     // We wait for one "cycle" of frames before destroying. This should ensure that there is no rendering operation in

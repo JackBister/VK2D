@@ -9,6 +9,7 @@
 #include "Core/Resources/StaticMeshLoaderObj.h"
 #include "Core/Serialization/DeserializationContext.h"
 #include "Core/entity.h"
+#include "Jobs/JobEngine.h"
 
 static const auto logger = Logger::Create("StaticMeshComponent");
 
@@ -30,16 +31,19 @@ class StaticMeshComponentDeserializer : public Deserializer
     {
         auto file = obj.GetString("file").value();
         auto path = ctx->workingDirectory / file;
-        auto mesh = ResourceManager::GetResource<StaticMesh>(path.string());
-        if (!mesh) {
-            mesh = StaticMeshLoaderObj().LoadFile(path.string());
-            if (!mesh) {
-                logger->Errorf("Failed to load file='%s' when deserializing StaticMeshComponent", file.c_str());
-                return nullptr;
-            }
-        }
         auto isActive = obj.GetBool("isActive").value_or(true);
-        return new StaticMeshComponent(file, mesh, isActive);
+        auto mesh = ResourceManager::GetResource<StaticMesh>(path.string());
+        auto ret = new StaticMeshComponent(file, mesh, isActive);
+        if (!mesh) {
+            StaticMeshLoaderObj().LoadFile(path.string(), [path, ret](StaticMesh * mesh) {
+                if (!mesh) {
+                    logger->Errorf("Failed to load file='%s' when deserializing StaticMeshComponent", path.c_str());
+                    return;
+                }
+                ret->SetMesh(mesh);
+            });
+        }
+        return ret;
     }
 };
 
@@ -47,13 +51,19 @@ COMPONENT_IMPL(StaticMeshComponent, new StaticMeshComponentDeserializer());
 
 StaticMeshComponent::~StaticMeshComponent()
 {
-    RenderSystem::GetInstance()->DestroyStaticMeshInstance(staticMeshInstance);
+    // TODO: There is a potential race with the MeshLoader, if the MeshLoader loads after the StaticMeshComponent is
+    // destroyed the engine will crash
+    if (staticMeshInstance.has_value()) {
+        RenderSystem::GetInstance()->DestroyStaticMeshInstance(staticMeshInstance.value());
+    }
 }
 
 StaticMeshComponent::StaticMeshComponent(std::string file, StaticMesh * mesh, bool isActive)
     : file(file), mesh(mesh), isActive(isActive)
 {
-    staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance(mesh);
+    if (mesh) {
+        staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance(mesh);
+    }
 
     receiveTicks = false;
     type = "StaticMeshComponent";
@@ -75,9 +85,15 @@ void StaticMeshComponent::OnEvent(HashedString name, EventArgs args)
     OPTICK_TAG("EventName", name.c_str());
 #endif
 
-    if (name == "PreRender") {
+    if (name == "PreRender" && staticMeshInstance.has_value()) {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
         builder->WithStaticMeshInstanceUpdate(
-            {staticMeshInstance, entity->GetTransform()->GetLocalToWorld(), isActive});
+            {staticMeshInstance.value(), entity->GetTransform()->GetLocalToWorld(), isActive});
     }
+}
+
+void StaticMeshComponent::SetMesh(StaticMesh * mesh)
+{
+    this->mesh = mesh;
+    this->staticMeshInstance = RenderSystem::GetInstance()->CreateStaticMeshInstance(mesh, this->isActive);
 }

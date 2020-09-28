@@ -1,6 +1,7 @@
 #include "Console.h"
 
 #include <deque>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -41,13 +42,17 @@ std::shared_ptr<LogAppender> GetAppender()
     class ConsoleLogAppender : public LogAppender
     {
     protected:
-        virtual void AppendImpl(LogMessage const & message) const final override
+        virtual void AppendImpl(LogMessage const & message) final override
         {
+            std::lock_guard<std::mutex> lock(guard);
             lines.push_back(message);
             if (lines.size() > MAX_LINES) {
                 lines.pop_front();
             }
         }
+
+    private:
+        std::mutex guard;
     };
     return std::make_shared<ConsoleLogAppender>();
 }

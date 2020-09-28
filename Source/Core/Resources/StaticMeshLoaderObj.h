@@ -5,5 +5,5 @@
 class StaticMeshLoaderObj : public StaticMeshLoader
 {
 public:
-    StaticMesh * LoadFile(std::string const & filename) override;
+    void LoadFile(std::string const & filename, std::function<void(StaticMesh *)> callback) override;
 };

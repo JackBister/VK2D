@@ -1,15 +1,20 @@
 #include "Semaphore.h"
 
-Semaphore::Semaphore() : sem_(SDL_CreateSemaphore(0))
+#include <optick/optick.h>
+
+Semaphore::Semaphore()
 {
+    OPTICK_EVENT();
+    sem_ = std::unique_ptr<SDL_semaphore, SemDestructor>(SDL_CreateSemaphore(0));
 }
 
 void Semaphore::Signal()
 {
-	SDL_SemPost(sem_.get());
+    OPTICK_EVENT();
+    SDL_SemPost(sem_.get());
 }
 
 void Semaphore::Wait()
 {
-	SDL_SemWait(sem_.get());
+    SDL_SemWait(sem_.get());
 }
