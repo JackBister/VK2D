@@ -7,7 +7,6 @@
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/RenderSystem.h"
-#include "Core/dtime.h"
 #include "Core/entity.h"
 
 static const auto logger = Logger::Create("CameraComponent");

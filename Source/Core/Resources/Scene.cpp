@@ -6,7 +6,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "Core/Components/CameraComponent.h"
+#include "Core/GameModule.h"
 #include "Core/Input/Input.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Resources/ResourceManager.h"
@@ -14,7 +14,6 @@
 #include "Core/Util/WatchFile.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
-#include "Core/transform.h"
 
 static const auto logger = Logger::Create("Scene");
 

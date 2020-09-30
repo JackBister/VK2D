@@ -2,7 +2,6 @@
 
 #include <optick/optick.h>
 
-#include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Resources/ResourceManager.h"

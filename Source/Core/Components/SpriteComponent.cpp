@@ -5,7 +5,6 @@
 #include "glm/gtc/type_ptr.hpp"
 #include <optick/optick.h>
 
-#include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Resources/Image.h"

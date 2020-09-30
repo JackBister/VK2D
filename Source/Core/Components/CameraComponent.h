@@ -1,6 +1,5 @@
 #pragma once
 
-#include <atomic>
 #include <optional>
 #include <variant>
 
@@ -24,7 +23,8 @@ struct PerspectiveCamera {
 class CameraComponent : public Component
 {
 public:
-    CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData, bool isActive = true, bool defaultsToMain = false);
+    CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData, bool isActive = true,
+                    bool defaultsToMain = false);
     ~CameraComponent() override;
 
     SerializedObject Serialize() const override;

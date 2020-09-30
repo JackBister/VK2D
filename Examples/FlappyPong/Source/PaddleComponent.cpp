@@ -1,7 +1,6 @@
 #include "PaddleComponent.h"
 
 #include "Core/Entity.h"
-#include "Core/GameModule.h"
 #include "Core/Input/Input.h"
 
 REFLECT_STRUCT_BEGIN(PaddleComponent)

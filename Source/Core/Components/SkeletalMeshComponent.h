@@ -2,7 +2,8 @@
 
 #include "Component.h"
 #include "Core/Rendering/SkeletalMeshInstance.h"
-#include "Core/Resources/SkeletalMesh.h"
+
+class SkeletalMesh;
 
 class SkeletalMeshComponent : public Component
 {

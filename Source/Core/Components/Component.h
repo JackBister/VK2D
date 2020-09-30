@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 #include "Core/Deserializable.h"
 #include "Core/DllExport.h"
 #include "Core/HashedString.h"
@@ -11,7 +9,7 @@
 class Entity;
 
 /*
-        This must be put in the .cpp file for the component.
+    This must be put in the .cpp file for the component.
 */
 #define COMPONENT_IMPL(str, fn) DESERIALIZABLE_IMPL(str, fn)
 

@@ -3,14 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "SDL2/SDL.h"
-
 #include "Core/Deserializable.h"
-#include "Core/GameModule.h"
 #include "Core/HashedString.h"
-#include "Core/Input/Input.h"
-#include "Core/Queue.h"
-#include "Core/dtime.h"
 #include "Core/eventarg.h"
 
 class Entity;
