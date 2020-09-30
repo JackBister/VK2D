@@ -5,6 +5,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <optick/optick.h>
 
+#include "Core/FrameContext.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
@@ -32,7 +33,7 @@ RenderSystem * RenderSystem::GetInstance()
     return RenderSystem::instance;
 }
 
-void RenderSystem::StartFrame()
+void RenderSystem::StartFrame(FrameContext & context)
 {
     OPTICK_EVENT();
     for (auto & sc : scheduledDestroyers) {
@@ -53,25 +54,25 @@ void RenderSystem::StartFrame()
         renderer->UpdateConfig(queuedConfigUpdate.value());
         queuedConfigUpdate.reset();
     }
-    auto nextFrame = AcquireNextFrame();
+    auto nextFrame = AcquireNextFrame(context);
     while (nextFrame == UINT32_MAX) {
         for (auto & fi : frameInfo) {
             fi.canStartFrame->Wait(std::numeric_limits<uint64_t>::max());
         }
         renderer->RecreateSwapchain();
         InitSwapchainResources();
-        nextFrame = AcquireNextFrame();
+        nextFrame = AcquireNextFrame(context);
     }
 }
 
-void RenderSystem::RenderFrame()
+void RenderSystem::RenderFrame(FrameContext & context)
 {
     OPTICK_EVENT();
 
-    MainRenderFrame();
-    PostProcessFrame();
+    MainRenderFrame(context);
+    PostProcessFrame(context);
 
-    SubmitSwap();
+    SubmitSwap(context);
 }
 
 void RenderSystem::CreateResources(std::function<void(ResourceCreationContext &)> && fun)
@@ -129,54 +130,55 @@ void RenderSystem::DebugOverrideBackbuffer(ImageViewHandle * image)
     }
 }
 
-uint32_t RenderSystem::AcquireNextFrame()
+uint32_t RenderSystem::AcquireNextFrame(FrameContext & context)
 {
     OPTICK_EVENT();
-    auto nextFrameInfoIdx = renderer->AcquireNextFrameIndex(frameInfo[currFrameInfoIdx].framebufferReady, nullptr);
+    auto nextFrameInfoIdx =
+        renderer->AcquireNextFrameIndex(frameInfo[context.currentGpuFrameIndex].framebufferReady, nullptr);
     if (nextFrameInfoIdx == UINT32_MAX) {
         return nextFrameInfoIdx;
     }
     // We use the previous frame's framebufferReady semaphore because in theory we can't know what
     // frame we end up on after calling AcquireNext
-    prevFrameInfoIdx = currFrameInfoIdx;
-    currFrameInfoIdx = nextFrameInfoIdx;
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    context.previousGpuFrameIndex = context.currentGpuFrameIndex;
+    context.currentGpuFrameIndex = nextFrameInfoIdx;
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     currFrame.canStartFrame->Wait(std::numeric_limits<uint64_t>::max());
     currFrame.commandBufferAllocator->Reset();
-    return currFrameInfoIdx;
+    return context.currentGpuFrameIndex;
 }
 
-void RenderSystem::PreRenderFrame(PreRenderCommands commands)
+void RenderSystem::PreRenderFrame(FrameContext & context, PreRenderCommands commands)
 {
     OPTICK_EVENT();
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     currFrame.preRenderPassCommandBuffer->Reset();
     currFrame.preRenderPassCommandBuffer->BeginRecording(nullptr);
 
-    PreRenderCameras(commands.cameraUpdates);
+    PreRenderCameras(context, commands.cameraUpdates);
     PreRenderLights(commands.lightUpdates);
     PreRenderSkeletalMeshes(commands.skeletalMeshUpdates);
-    PreRenderSprites(commands.spriteUpdates);
-    PreRenderMeshes(commands.staticMeshUpdates);
+    PreRenderSprites(context, commands.spriteUpdates);
+    PreRenderMeshes(context, commands.staticMeshUpdates);
 
     UpdateAnimations();
-    UpdateLights();
+    UpdateLights(context);
 
-    uiRenderSystem.PreRenderUi(currFrameInfoIdx, currFrame.preRenderPassCommandBuffer);
+    uiRenderSystem.PreRenderUi(context, currFrame.preRenderPassCommandBuffer);
     currFrame.preRenderPassCommandBuffer->EndRecording();
     renderer->ExecuteCommandBuffer(currFrame.preRenderPassCommandBuffer, {}, {currFrame.preRenderPassFinished});
 }
 
-void RenderSystem::MainRenderFrame()
+void RenderSystem::MainRenderFrame(FrameContext & context)
 {
     OPTICK_EVENT();
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     currFrame.mainCommandBuffer->Reset();
     currFrame.mainCommandBuffer->BeginRecording(nullptr);
 
-    auto meshBatches = CreateBatches();
+    auto meshBatches = CreateBatches(context);
 
-    Prepass(meshBatches);
+    Prepass(context, meshBatches);
 
     auto res = renderer->GetResolution();
     CommandBuffer::RenderPassBeginInfo beginInfo = {
@@ -186,25 +188,26 @@ void RenderSystem::MainRenderFrame()
         if (!camera.isActive) {
             continue;
         }
-        RenderMeshes(camera, meshBatches);
-        RenderSprites(camera);
+        RenderMeshes(context, camera, meshBatches);
+        RenderSprites(context, camera);
 
-        RenderTransparentMeshes(camera, meshBatches);
+        RenderTransparentMeshes(context, camera, meshBatches);
     }
 
     currFrame.mainCommandBuffer->CmdEndRenderPass();
     currFrame.mainCommandBuffer->EndRecording();
-    renderer->ExecuteCommandBuffer(currFrame.mainCommandBuffer,
-                                   // TODO: If main renderpass doesn't render immediately to backbuffer in the future,
-                                   // framebufferReady should be moved to postprocess submit
-                                   {frameInfo[prevFrameInfoIdx].framebufferReady, currFrame.preRenderPassFinished},
-                                   {currFrame.mainRenderPassFinished});
+    renderer->ExecuteCommandBuffer(
+        currFrame.mainCommandBuffer,
+        // TODO: If main renderpass doesn't render immediately to backbuffer in the future,
+        // framebufferReady should be moved to postprocess submit
+        {frameInfo[context.previousGpuFrameIndex].framebufferReady, currFrame.preRenderPassFinished},
+        {currFrame.mainRenderPassFinished});
 }
 
-void RenderSystem::PostProcessFrame()
+void RenderSystem::PostProcessFrame(FrameContext & context)
 {
     OPTICK_EVENT();
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     auto res = renderer->GetResolution();
 
     currFrame.postProcessCommandBuffer->Reset();
@@ -234,11 +237,11 @@ void RenderSystem::PostProcessFrame()
         if (!camera.isActive) {
             continue;
         }
-        RenderDebugDraws(camera);
+        RenderDebugDraws(context, camera);
     }
 
     // Render UI here since post processing shouldn't(?) affect the UI
-    uiRenderSystem.RenderUi(currFrameInfoIdx, currFrame.postProcessCommandBuffer);
+    uiRenderSystem.RenderUi(context, currFrame.postProcessCommandBuffer);
 
     currFrame.postProcessCommandBuffer->CmdEndRenderPass();
     currFrame.postProcessCommandBuffer->EndRecording();
@@ -248,20 +251,20 @@ void RenderSystem::PostProcessFrame()
                                    currFrame.canStartFrame);
 }
 
-void RenderSystem::SubmitSwap()
+void RenderSystem::SubmitSwap(FrameContext & context)
 {
     OPTICK_EVENT();
-    auto & currFrame = frameInfo[currFrameInfoIdx];
-    renderer->SwapWindow(currFrameInfoIdx, currFrame.postprocessFinished);
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
+    renderer->SwapWindow(context.currentGpuFrameIndex, currFrame.postprocessFinished);
 }
 
-void RenderSystem::Prepass(std::vector<MeshBatch> const & batches)
+void RenderSystem::Prepass(FrameContext & context, std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
     if (batches.size() == 0) {
         return;
     }
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     auto res = renderer->GetResolution();
 
     CommandBuffer::ClearValue depthClear;
@@ -347,10 +350,10 @@ void RenderSystem::Prepass(std::vector<MeshBatch> const & batches)
     currFrame.mainCommandBuffer->CmdEndRenderPass();
 }
 
-void RenderSystem::PreRenderCameras(std::vector<UpdateCamera> const & cameraUpdates)
+void RenderSystem::PreRenderCameras(FrameContext & context, std::vector<UpdateCamera> const & cameraUpdates)
 {
     OPTICK_EVENT();
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     for (auto const & camera : cameraUpdates) {
         auto cam = GetCamera(camera.cameraHandle);
         cam->isActive = camera.isActive;
@@ -363,10 +366,10 @@ void RenderSystem::PreRenderCameras(std::vector<UpdateCamera> const & cameraUpda
     }
 }
 
-void RenderSystem::PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const & meshes)
+void RenderSystem::PreRenderMeshes(FrameContext & context, std::vector<UpdateStaticMeshInstance> const & meshes)
 {
     OPTICK_EVENT();
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
 
     for (auto const & meshUpdate : meshes) {
         auto instance = GetStaticMeshInstance(meshUpdate.staticMeshInstance);
@@ -375,13 +378,14 @@ void RenderSystem::PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const &
     }
 }
 
-void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatch> const & batches)
+void RenderSystem::RenderMeshes(FrameContext & context, CameraInstance const & cam,
+                                std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
     if (batches.size() == 0) {
         return;
     }
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
 
     if (!currFrame.meshUniformsDescriptorSet) {
         return;
@@ -453,13 +457,14 @@ void RenderSystem::RenderMeshes(CameraInstance const & cam, std::vector<MeshBatc
     }
 }
 
-void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vector<MeshBatch> const & batches)
+void RenderSystem::RenderTransparentMeshes(FrameContext & context, CameraInstance const & cam,
+                                           std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
     if (batches.size() == 0) {
         return;
     }
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
 
     if (!currFrame.meshUniformsDescriptorSet) {
         return;
@@ -531,7 +536,7 @@ void RenderSystem::RenderTransparentMeshes(CameraInstance const & cam, std::vect
     }
 }
 
-void RenderSystem::RenderDebugDraws(CameraInstance const & camera)
+void RenderSystem::RenderDebugDraws(FrameContext & context, CameraInstance const & camera)
 {
     OPTICK_EVENT();
     auto draws = DebugDrawSystem::GetInstance()->GetCurrentDraws();
@@ -540,7 +545,7 @@ void RenderSystem::RenderDebugDraws(CameraInstance const & camera)
         return;
     }
 
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     auto res = renderer->GetResolution();
 
     size_t requiredLinesSize = draws.lines.size() * 4 * sizeof(glm::vec3);
@@ -620,11 +625,11 @@ void RenderSystem::RenderDebugDraws(CameraInstance const & camera)
     }
 }
 
-std::vector<MeshBatch> RenderSystem::CreateBatches()
+std::vector<MeshBatch> RenderSystem::CreateBatches(FrameContext & context)
 {
     OPTICK_EVENT();
 
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
 
     std::set<StaticMeshInstanceId> inactiveInstances;
     std::unordered_map<StaticMeshInstanceId, size_t> instanceIdToLtwIndex;
@@ -997,10 +1002,10 @@ std::vector<MeshBatch> RenderSystem::CreateBatches()
     return batches;
 }
 
-void RenderSystem::RenderSprites(CameraInstance const & cam)
+void RenderSystem::RenderSprites(FrameContext & context, CameraInstance const & cam)
 {
     OPTICK_EVENT();
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     auto res = renderer->GetResolution();
 
     CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};

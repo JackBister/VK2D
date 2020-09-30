@@ -16,6 +16,7 @@
 #include "Core/Rendering/SubmeshInstance.h"
 #include "Core/Rendering/UiRenderSystem.h"
 
+struct FrameContext;
 class Image;
 class ShaderProgram;
 
@@ -63,9 +64,9 @@ public:
 
     void Init();
 
-    void StartFrame();
-    void PreRenderFrame(PreRenderCommands);
-    void RenderFrame();
+    void StartFrame(FrameContext & context);
+    void PreRenderFrame(FrameContext & context, PreRenderCommands);
+    void RenderFrame(FrameContext & context);
 
     void CreateResources(std::function<void(ResourceCreationContext &)> && fun);
     void DestroyResources(std::function<void(ResourceCreationContext &)> && fun);
@@ -151,34 +152,32 @@ private:
     void InitFramebuffers(ResourceCreationContext &);
     void InitSwapchainResources();
 
-    uint32_t AcquireNextFrame();
-    void MainRenderFrame();
-    void PostProcessFrame();
-    void SubmitSwap();
+    uint32_t AcquireNextFrame(FrameContext & context);
+    void MainRenderFrame(FrameContext & context);
+    void PostProcessFrame(FrameContext & context);
+    void SubmitSwap(FrameContext & context);
 
-    void Prepass(std::vector<MeshBatch> const & batches);
+    void Prepass(FrameContext & context, std::vector<MeshBatch> const & batches);
 
-    void PreRenderCameras(std::vector<UpdateCamera> const & cameras);
+    void PreRenderCameras(FrameContext & context, std::vector<UpdateCamera> const & cameras);
 
     void PreRenderLights(std::vector<UpdateLight> const & lights);
-    void UpdateLights();
+    void UpdateLights(FrameContext & context);
 
     void PreRenderSkeletalMeshes(std::vector<UpdateSkeletalMeshInstance> const & meshes);
 
-    void PreRenderSprites(std::vector<UpdateSpriteInstance> const & sprites);
-    void RenderSprites(CameraInstance const & camera);
+    void PreRenderSprites(FrameContext & context, std::vector<UpdateSpriteInstance> const & sprites);
+    void RenderSprites(FrameContext & context, CameraInstance const & camera);
 
-    void PreRenderMeshes(std::vector<UpdateStaticMeshInstance> const & meshes);
-    void RenderMeshes(CameraInstance const & camera, std::vector<MeshBatch> const & batches);
-    void RenderTransparentMeshes(CameraInstance const & camera, std::vector<MeshBatch> const & batches);
+    void PreRenderMeshes(FrameContext & context, std::vector<UpdateStaticMeshInstance> const & meshes);
+    void RenderMeshes(FrameContext & context, CameraInstance const & camera, std::vector<MeshBatch> const & batches);
+    void RenderTransparentMeshes(FrameContext & context, CameraInstance const & camera,
+                                 std::vector<MeshBatch> const & batches);
 
-    void RenderDebugDraws(CameraInstance const & camera);
+    void RenderDebugDraws(FrameContext & context, CameraInstance const & camera);
 
-    std::vector<MeshBatch> CreateBatches();
+    std::vector<MeshBatch> CreateBatches(FrameContext & context);
 
-    // FrameInfo related properties
-    uint32_t currFrameInfoIdx = 0;
-    uint32_t prevFrameInfoIdx = 0;
     std::vector<FrameInfo> frameInfo;
 
     std::vector<ScheduledDestroyer> scheduledDestroyers;

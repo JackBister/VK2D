@@ -5,10 +5,20 @@
 #include <ImGuizmo.h>
 #include <optick/optick.h>
 
+#include "Core/FrameContext.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/ShaderProgram.h"
 #include "Core/Semaphore.h"
 #include "Core/dtime.h"
+
+ImDrawData * CopyDrawData(ImDrawData * original)
+{
+    auto ret = new ImDrawData(*original);
+    for (int i = 0; i < ret->CmdListsCount; ++i) {
+        ret->CmdLists[i] = original->CmdLists[i]->CloneOutput();
+    }
+    return ret;
+}
 
 UiRenderSystem::UiRenderSystem(Renderer * renderer) : renderer(renderer), frameData(renderer->GetSwapCount())
 {
@@ -69,15 +79,16 @@ void UiRenderSystem::StartFrame()
     ImGuizmo::SetRect(0, 0, res.x, res.y);
 }
 
-void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer)
+void UiRenderSystem::PreRenderUi(FrameContext & context, CommandBuffer * commandBuffer)
 {
     OPTICK_EVENT();
     glm::vec2 res = renderer->GetResolution();
     auto & imguiIo = ImGui::GetIO();
     imguiIo.DisplaySize = ImVec2(res.x, res.y);
     ImGui::Render();
-    auto data = ImGui::GetDrawData();
-    auto & fd = frameData[frameIndex];
+    context.imguiDrawData = CopyDrawData(ImGui::GetDrawData());
+    auto data = context.imguiDrawData;
+    auto & fd = frameData[context.currentGpuFrameIndex];
     size_t totalIndexSize = data->TotalIdxCount * sizeof(ImDrawIdx);
     size_t totalVertexSize = data->TotalVtxCount * sizeof(ImDrawVert);
     if (totalIndexSize == 0 || totalVertexSize == 0) {
@@ -85,7 +96,7 @@ void UiRenderSystem::PreRenderUi(uint32_t frameIndex, CommandBuffer * commandBuf
     }
     if (fd.vertexBuffer == nullptr || fd.vertexBufferSize < totalVertexSize || fd.indexBuffer == nullptr ||
         fd.indexBufferSize < totalIndexSize) {
-        RecreateBuffers(frameIndex, totalVertexSize, totalIndexSize);
+        RecreateBuffers(context.currentGpuFrameIndex, totalVertexSize, totalIndexSize);
     }
 
     size_t currIndexPos = 0;
@@ -138,11 +149,11 @@ void UiRenderSystem::RecreateBuffers(uint32_t frameIndex, size_t totalVertexSize
     resourceCreationFinished.Wait();
 }
 
-void UiRenderSystem::RenderUi(uint32_t frameIndex, CommandBuffer * commandBuffer)
+void UiRenderSystem::RenderUi(FrameContext & context, CommandBuffer * commandBuffer)
 {
     OPTICK_EVENT();
-    auto data = ImGui::GetDrawData();
-    auto & fd = frameData[frameIndex];
+    auto data = context.imguiDrawData;
+    auto & fd = frameData[context.currentGpuFrameIndex];
 
     if (!fd.indexBuffer || !fd.vertexBuffer) {
         return;

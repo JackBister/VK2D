@@ -78,6 +78,8 @@ int main(int argc, char * argv[])
         EditorSystem::OpenEditor();
     }
 
+    uint64_t frameNumber = 0;
+    uint32_t currentGpuFrameIndex = 0;
     while (true) {
         OPTICK_FRAME("MainThread");
         char const * sdlErr = SDL_GetError();
@@ -85,7 +87,13 @@ int main(int argc, char * argv[])
             logger->Errorf("SDL_GetError returned an error when ticking: %s", sdlErr);
             SDL_ClearError();
         }
-        GameModule::Tick();
+        FrameContext context = {};
+        context.frameNumber = frameNumber;
+        context.currentGpuFrameIndex = currentGpuFrameIndex;
+        GameModule::Tick(context);
+        currentGpuFrameIndex = context.currentGpuFrameIndex;
+        FrameContext::Destroy(context);
+        frameNumber++;
     }
     SDL_Quit();
     return renderer.abortCode;

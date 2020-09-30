@@ -2,6 +2,8 @@
 
 #include <optick/optick.h>
 
+#include "Core/FrameContext.h"
+
 constexpr size_t MAX_LIGHTS = 512;
 
 LightInstanceId RenderSystem::CreatePointLightInstance(bool isActive, glm::vec3 color)
@@ -40,14 +42,14 @@ void RenderSystem::PreRenderLights(std::vector<UpdateLight> const & updates)
     }
 }
 
-void RenderSystem::UpdateLights()
+void RenderSystem::UpdateLights(FrameContext & context)
 {
     OPTICK_EVENT();
     if (lights.size() == 0) {
         return;
     }
 
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
 
     if (currFrame.lightsMapped == nullptr) {
         Semaphore sem;

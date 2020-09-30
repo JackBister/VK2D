@@ -130,14 +130,14 @@ void OnFrameStart(std::function<void()> fun)
     onFrameStart.push_back(fun);
 }
 
-void PreRender()
+void PreRender(FrameContext & context)
 {
     OPTICK_EVENT();
     PreRenderCommands::Builder builder;
     for (auto entity : entities) {
         entity->FireEvent("PreRender", {{"commandBuilder", &builder}});
     }
-    renderSystem->PreRenderFrame(builder.Build());
+    renderSystem->PreRenderFrame(context, builder.Build());
 }
 
 void RemoveEntity(Entity * entity)
@@ -161,9 +161,10 @@ void TakeCameraFocus(Entity * camera)
     mainCameraComponent = (CameraComponent *)camera->GetComponent("CameraComponent");
 }
 
-void Tick()
+void Tick(FrameContext & context)
 {
     OPTICK_EVENT();
+    OPTICK_TAG("FrameNumber", context.frameNumber)
     currFrameStage = FrameStage::INPUT;
     Input::Frame();
     currFrameStage = FrameStage::TIME;
@@ -171,35 +172,12 @@ void Tick()
 
     DebugDrawSystem::GetInstance()->Tick();
 
-    // TODO: remove these (hardcoded serialize + dump keybinds)
-#if 0
-    if (Input::GetKeyDown(KC_F8)) {
-        scenes[0].SerializeToFile("_dump.scene");
-    }
-    if (Input::GetKeyDown(KC_F9)) {
-        scenes[0].LoadFile("main.scene");
-        scenes[0].BroadcastEvent("BeginPlay");
-    }
-    if (Input::GetKeyDown(KC_F10)) {
-        for (auto & fi : frameInfo) {
-            fi.canStartFrame->Wait(std::numeric_limits<uint64_t>::max());
-            fi.preRenderPassCommandBuffer->Reset();
-            fi.preRenderPassCommandBuffer->BeginRecording(nullptr);
-            fi.preRenderPassCommandBuffer->EndRecording();
-            renderer->ExecuteCommandBuffer(fi.preRenderPassCommandBuffer, {}, {}, fi.canStartFrame);
-        }
-        mainCameraComponent = nullptr;
-        mainCameraEntity = nullptr;
-        scenes[0].Unload();
-    }
-#endif
-
     if (Input::GetKeyDown(KC_F1)) {
         Console::ToggleVisible();
     }
 
     currFrameStage = FrameStage::FENCE_WAIT;
-    renderSystem->StartFrame();
+    renderSystem->StartFrame(context);
 
     for (auto fun : onFrameStart) {
         fun();
@@ -216,10 +194,10 @@ void Tick()
     EditorSystem::OnGui();
     Console::OnGui();
 
-    PreRender();
+    PreRender(context);
 
     currFrameStage = FrameStage::RENDER;
-    renderSystem->RenderFrame();
+    renderSystem->RenderFrame(context);
 }
 
 void TickEntities()

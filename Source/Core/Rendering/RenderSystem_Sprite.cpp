@@ -3,6 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <optick/optick.h>
 
+#include "Core/FrameContext.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
@@ -59,10 +60,10 @@ SpriteInstance * RenderSystem::GetSpriteInstance(SpriteInstanceId id)
     return &sprites[id];
 }
 
-void RenderSystem::PreRenderSprites(std::vector<UpdateSpriteInstance> const & sprites)
+void RenderSystem::PreRenderSprites(FrameContext & context, std::vector<UpdateSpriteInstance> const & sprites)
 {
     OPTICK_EVENT();
-    auto & currFrame = frameInfo[currFrameInfoIdx];
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
 
     for (auto const & sprite : sprites) {
         auto spriteInstance = GetSpriteInstance(sprite.spriteInstance);

@@ -1,11 +1,12 @@
 #pragma once
 
-#include "Core/Rendering/Backend/Renderer.h"
-
 #include <cstdint>
 #include <vector>
 
+#include "Core/Rendering/Backend/Renderer.h"
+
 class CommandBuffer;
+struct FrameContext;
 class ShaderProgram;
 
 class UiRenderSystem
@@ -16,8 +17,8 @@ public:
     void Init();
 
     void StartFrame();
-    void PreRenderUi(uint32_t frameIndex, CommandBuffer *);
-    void RenderUi(uint32_t frameIndex, CommandBuffer *);
+    void PreRenderUi(FrameContext & context, CommandBuffer *);
+    void RenderUi(FrameContext & context, CommandBuffer *);
 
 private:
     struct FrameInfo {
