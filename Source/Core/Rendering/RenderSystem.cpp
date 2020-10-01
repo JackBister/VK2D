@@ -47,8 +47,6 @@ void RenderSystem::StartFrame(FrameContext & context)
                                              [](auto sc) { return sc.remainingFrames < 0; }),
                               scheduledDestroyers.end());
 
-    uiRenderSystem.StartFrame();
-
     if (queuedConfigUpdate.has_value()) {
         logger->Infof("UpdateConfig");
         renderer->UpdateConfig(queuedConfigUpdate.value());

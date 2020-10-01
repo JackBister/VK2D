@@ -70,7 +70,7 @@ int main(int argc, char * argv[])
     ShaderProgramFactory::CreateResources();
     renderSystem.Init();
 
-    GameModule::Init(&renderSystem);
+    GameModule::Init();
 
     GameModule::LoadScene(sceneFileName);
 

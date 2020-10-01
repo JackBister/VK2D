@@ -11,6 +11,13 @@
 #include "Core/Semaphore.h"
 #include "Core/dtime.h"
 
+UiRenderSystem * UiRenderSystem::instance = nullptr;
+
+UiRenderSystem * UiRenderSystem::GetInstance()
+{
+    return UiRenderSystem::instance;
+}
+
 ImDrawData * CopyDrawData(ImDrawData * original)
 {
     auto ret = new ImDrawData(*original);
@@ -26,6 +33,7 @@ UiRenderSystem::UiRenderSystem(Renderer * renderer) : renderer(renderer), frameD
     imguiIo.MouseDrawCursor = false;
     auto res = renderer->GetResolution();
     imguiIo.DisplaySize = ImVec2(res.x, res.y);
+    UiRenderSystem::instance = this;
 }
 
 void UiRenderSystem::Init()
@@ -79,7 +87,7 @@ void UiRenderSystem::StartFrame()
     ImGuizmo::SetRect(0, 0, res.x, res.y);
 }
 
-void UiRenderSystem::PreRenderUi(FrameContext & context, CommandBuffer * commandBuffer)
+void UiRenderSystem::EndFrame(FrameContext & context)
 {
     OPTICK_EVENT();
     glm::vec2 res = renderer->GetResolution();
@@ -87,6 +95,11 @@ void UiRenderSystem::PreRenderUi(FrameContext & context, CommandBuffer * command
     imguiIo.DisplaySize = ImVec2(res.x, res.y);
     ImGui::Render();
     context.imguiDrawData = CopyDrawData(ImGui::GetDrawData());
+}
+
+void UiRenderSystem::PreRenderUi(FrameContext & context, CommandBuffer * commandBuffer)
+{
+    OPTICK_EVENT();
     auto data = context.imguiDrawData;
     auto & fd = frameData[context.currentGpuFrameIndex];
     size_t totalIndexSize = data->TotalIdxCount * sizeof(ImDrawIdx);
@@ -112,6 +125,7 @@ void UiRenderSystem::PreRenderUi(FrameContext & context, CommandBuffer * command
         currVertexPos += cmdList->VtxBuffer.Size * sizeof(ImDrawVert);
     }
 
+    glm::vec2 res = renderer->GetResolution();
     commandBuffer->CmdUpdateBuffer(resolutionUniformBuffer, 0, sizeof(glm::vec2), (uint32_t *)&res);
 }
 

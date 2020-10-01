@@ -21,7 +21,6 @@ namespace GameModule
 enum class FrameStage {
     INPUT,
     TIME,
-    FENCE_WAIT,
     PHYSICS,
     TICK,
     RENDER,
@@ -37,7 +36,7 @@ Entity * GetMainCamera();
 // TODO:
 PhysicsWorld * GetPhysicsWorld();
 Scene * GetScene();
-void Init(RenderSystem * renderSystem);
+void Init();
 void LoadDLL(std::string const &);
 void LoadScene(std::string const &);
 void OnFrameStart(std::function<void()>);

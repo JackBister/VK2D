@@ -30,6 +30,7 @@ CameraComponent * mainCameraComponent;
 PhysicsWorld * physicsWorld;
 RenderSystem * renderSystem;
 Scene * scene = nullptr;
+UiRenderSystem * uiRenderSystem;
 
 std::vector<std::function<void()>> onFrameStart;
 
@@ -88,10 +89,10 @@ Scene * GetScene()
     return scene;
 }
 
-void Init(RenderSystem * inRenderSystem)
+void Init()
 {
-    // TODO: This is dumb
-    renderSystem = inRenderSystem;
+    renderSystem = RenderSystem::GetInstance();
+    uiRenderSystem = UiRenderSystem::GetInstance();
 
     Console::Init(renderSystem);
     Input::Init();
@@ -130,16 +131,6 @@ void OnFrameStart(std::function<void()> fun)
     onFrameStart.push_back(fun);
 }
 
-void PreRender(FrameContext & context)
-{
-    OPTICK_EVENT();
-    PreRenderCommands::Builder builder;
-    for (auto entity : entities) {
-        entity->FireEvent("PreRender", {{"commandBuilder", &builder}});
-    }
-    renderSystem->PreRenderFrame(context, builder.Build());
-}
-
 void RemoveEntity(Entity * entity)
 {
     for (auto it = entities.begin(); it != entities.end(); ++it) {
@@ -176,8 +167,7 @@ void Tick(FrameContext & context)
         Console::ToggleVisible();
     }
 
-    currFrameStage = FrameStage::FENCE_WAIT;
-    renderSystem->StartFrame(context);
+    uiRenderSystem->StartFrame();
 
     for (auto fun : onFrameStart) {
         fun();
@@ -194,9 +184,20 @@ void Tick(FrameContext & context)
     EditorSystem::OnGui();
     Console::OnGui();
 
-    PreRender(context);
+    uiRenderSystem->EndFrame(context);
+
+    PreRenderCommands preRenderCommands = []() {
+        OPTICK_EVENT("GatherPreRendercommands");
+        PreRenderCommands::Builder builder;
+        for (auto entity : entities) {
+            entity->FireEvent("PreRender", {{"commandBuilder", &builder}});
+        }
+        return builder.Build();
+    }();
 
     currFrameStage = FrameStage::RENDER;
+    renderSystem->StartFrame(context);
+    renderSystem->PreRenderFrame(context, preRenderCommands);
     renderSystem->RenderFrame(context);
 }
 
