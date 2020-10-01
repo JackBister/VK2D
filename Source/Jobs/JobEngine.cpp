@@ -101,10 +101,12 @@ JobEngine::JobEngine(uint32_t numThreads)
 JobId JobEngine::CreateJob(std::vector<JobId> dependsOn, std::function<void()> fn)
 {
     OPTICK_EVENT()
-    // TODO: This is really, REALLY not thread safe
-    auto id = jobs.size();
-    jobs.insert({id, Job(dependsOn, fn)});
-    return id;
+    {
+        std::lock_guard<std::mutex> lock(jobsLock);
+        auto id = jobs.size();
+        jobs.insert({id, Job(dependsOn, fn)});
+        return id;
+    }
 }
 
 void JobEngine::ScheduleJob(JobId id, JobPriority priority)
