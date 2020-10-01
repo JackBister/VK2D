@@ -112,7 +112,8 @@ BufferHandle * VulkanResourceContext::CreateBuffer(BufferCreateInfo const & ci)
     res = vkAllocateMemory(renderer->basics.device, &memInfo, nullptr, &ret->memory);
     assert(res == VK_SUCCESS);
 
-    vkBindBufferMemory(renderer->basics.device, ret->buffer, ret->memory, 0);
+    res = vkBindBufferMemory(renderer->basics.device, ret->buffer, ret->memory, 0);
+    assert(res == VK_SUCCESS);
     return ret;
 }
 
