@@ -910,11 +910,14 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
     auto threadIdx = JobEngine::GetInstance()->GetCurrentThreadIndex();
 
     VkDescriptorSetAllocateInfo ai{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, renderer->descriptorPools[threadIdx], 1, &layout};
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, renderer->descriptorPools[threadIdx].pool, 1, &layout};
 
     VkDescriptorSet set;
-    auto res = vkAllocateDescriptorSets(renderer->basics.device, &ai, &set);
-    assert(res == VK_SUCCESS);
+    {
+        std::lock_guard<std::mutex> lock(renderer->descriptorPools[threadIdx].poolLock);
+        auto res = vkAllocateDescriptorSets(renderer->basics.device, &ai, &set);
+        assert(res == VK_SUCCESS);
+    }
 
     std::unordered_map<uint32_t, size_t> bindingToIdx;
     std::vector<VkDescriptorBufferInfo> bufferInfos;
@@ -960,6 +963,7 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
     auto ret = (VulkanDescriptorSet *)allocator.allocate(sizeof(VulkanDescriptorSet));
     ret->layout = layout;
     ret->set = set;
+    ret->poolIdx = threadIdx;
 
     return ret;
 }
@@ -972,9 +976,14 @@ void VulkanResourceContext::DestroyDescriptorSet(DescriptorSet * set)
 
     auto threadIdx = JobEngine::GetInstance()->GetCurrentThreadIndex();
 
-    auto res = vkFreeDescriptorSets(
-        renderer->basics.device, renderer->descriptorPools[threadIdx], 1, &(nativeDescriptorSet->set));
-    assert(res == VK_SUCCESS);
+    {
+        std::lock_guard<std::mutex> lock(renderer->descriptorPools[nativeDescriptorSet->poolIdx].poolLock);
+        auto res = vkFreeDescriptorSets(renderer->basics.device,
+                                        renderer->descriptorPools[nativeDescriptorSet->poolIdx].pool,
+                                        1,
+                                        &(nativeDescriptorSet->set));
+        assert(res == VK_SUCCESS);
+    }
     allocator.deallocate((uint8_t *)nativeDescriptorSet, sizeof(VulkanDescriptorSet));
 }
 

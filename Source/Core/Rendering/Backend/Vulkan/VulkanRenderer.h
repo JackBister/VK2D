@@ -30,6 +30,11 @@ struct GuardedBufferHandle {
     size_t size;
 };
 
+struct GuardedDescriptorPool {
+    std::mutex poolLock;
+    VkDescriptorPool pool;
+};
+
 struct GuardedQueue {
     std::mutex queueLock;
     VkQueue queue;
@@ -159,7 +164,7 @@ private:
     VkPhysicalDeviceFeatures supportedFeatures;
 
     // length = NumWorkerThreads
-    std::vector<VkDescriptorPool> descriptorPools;
+    std::deque<GuardedDescriptorPool> descriptorPools;
 
     VkSurfaceKHR surface;
     VulkanSwapchain swapchain;

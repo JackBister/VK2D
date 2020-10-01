@@ -13,6 +13,7 @@ struct VulkanBufferHandle : BufferHandle {
 struct VulkanDescriptorSet : DescriptorSet {
     VkDescriptorSetLayout layout;
     VkDescriptorSet set;
+    uint32_t poolIdx;
 };
 
 struct VulkanDescriptorSetLayoutHandle : DescriptorSetLayoutHandle {

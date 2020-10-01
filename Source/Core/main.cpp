@@ -92,7 +92,6 @@ int main(int argc, char * argv[])
         context.currentGpuFrameIndex = currentGpuFrameIndex;
         GameModule::Tick(context);
         currentGpuFrameIndex = context.currentGpuFrameIndex;
-        FrameContext::Destroy(context);
         frameNumber++;
     }
     SDL_Quit();

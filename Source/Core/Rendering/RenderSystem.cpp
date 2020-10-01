@@ -415,6 +415,8 @@ void RenderSystem::RenderMeshes(FrameContext & context, CameraInstance const & c
             continue;
         }
 
+        context.renderStats.numMeshBatches++;
+
         if (batch.material->GetDescriptorSet() != currentMaterialDescriptorSet) {
             currentMaterialDescriptorSet = batch.material->GetDescriptorSet();
             currFrame.mainCommandBuffer->CmdBindDescriptorSets(
@@ -493,6 +495,8 @@ void RenderSystem::RenderTransparentMeshes(FrameContext & context, CameraInstanc
         if (!batch.material->GetAlbedo()->HasTransparency()) {
             continue;
         }
+
+        context.renderStats.numTransparentMeshBatches++;
 
         if (batch.material->GetDescriptorSet() != currentMaterialDescriptorSet) {
             currentMaterialDescriptorSet = batch.material->GetDescriptorSet();

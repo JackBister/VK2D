@@ -18,11 +18,13 @@
 #include "Core/dtime.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
+#include "Jobs/JobEngine.h"
 
 static const auto logger = Logger::Create("GameModule");
 
 namespace GameModule
 {
+Semaphore renderLock;
 FrameStage currFrameStage;
 std::vector<Entity *> entities;
 Entity * mainCameraEntity;
@@ -91,6 +93,7 @@ Scene * GetScene()
 
 void Init()
 {
+    renderLock.Signal();
     renderSystem = RenderSystem::GetInstance();
     uiRenderSystem = UiRenderSystem::GetInstance();
 
@@ -196,9 +199,22 @@ void Tick(FrameContext & context)
     }();
 
     currFrameStage = FrameStage::RENDER;
-    renderSystem->StartFrame(context);
-    renderSystem->PreRenderFrame(context, preRenderCommands);
-    renderSystem->RenderFrame(context);
+
+    // TODO: I feel like I must be doing something wrong here. But it does accomplish what I want, which is to have CPU
+    // frame N and GPU frame N-1 processing concurrently.
+    renderLock.Wait();
+    auto jobEngine = JobEngine::GetInstance();
+    auto renderJob = jobEngine->CreateJob({}, [context, preRenderCommands]() {
+        OPTICK_EVENT("GpuTick")
+        OPTICK_TAG("FrameNumber", context.frameNumber)
+        auto ctx = context;
+        renderSystem->StartFrame(ctx);
+        renderSystem->PreRenderFrame(ctx, preRenderCommands);
+        renderSystem->RenderFrame(ctx);
+        renderLock.Signal();
+        FrameContext::Destroy(ctx);
+    });
+    jobEngine->ScheduleJob(renderJob, JobPriority::HIGH);
 }
 
 void TickEntities()

@@ -4,6 +4,11 @@
 
 class ImDrawData;
 
+struct RenderStats {
+    uint32_t numMeshBatches = 0;
+    uint32_t numTransparentMeshBatches = 0;
+};
+
 /**
  * FrameContext is an object which lives for the duration of a frame, from the point where GameModule::Tick is called
  * to just after the frame is submitted to the swap chain. It contains values which may be useful for any part of the
@@ -23,6 +28,11 @@ struct FrameContext {
     // currentGpuFrameIndex is used by RenderSystem. It is valid at all points of the frame, but only RenderSystem
     // should use it before renderSystem->StartFrame is called
     uint32_t currentGpuFrameIndex = 0;
+
+    // renderStats contains statistics from rendering this frame. It will be fully filled after renderSystem->EndFrame
+    // is finished. In the future the stats should be shown graphically somewhere in the editor, but for now they are
+    // only available in the debugger.
+    RenderStats renderStats;
 
     // imguiDrawData contains a copy of the draw lists from Imgui for this frame. It is valid after
     // renderSystem->PreRenderFrame has been called.

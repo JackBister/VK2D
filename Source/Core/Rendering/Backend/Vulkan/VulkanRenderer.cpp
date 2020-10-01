@@ -523,11 +523,11 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
         ci.pPoolSizes = &poolSizes[0];
         ci.maxSets = 100;
 
-        // TODO: Maybe this should use locking instead, it's kinda weird to scale the number of available descriptors by
-        // the number of threads...
+        // TODO: Figure out a better way to scale this, it's kinda weird to scale the number of available descriptor
+        // sets by the number of threads...
         descriptorPools.resize(numThreads);
         for (int i = 0; i < numThreads; ++i) {
-            auto res = vkCreateDescriptorPool(basics.device, &ci, nullptr, &descriptorPools[i]);
+            auto res = vkCreateDescriptorPool(basics.device, &ci, nullptr, &descriptorPools[i].pool);
             if (res != VK_SUCCESS) {
                 logger->Severef("Couldn't create descriptor pool.");
                 assert(false);
