@@ -65,14 +65,10 @@ bool CheckForTransparency(std::vector<uint8_t> const & data)
     OPTICK_EVENT();
     auto size = data.size();
     if (size >= 4) {
-        size_t i = 4;
-        while (i < size) {
-            // This ends up being about twice as fast as naively looping over each u8 and comparing to 0xFF
-            auto asU64 = (uint64_t *)&data[0];
-            if (*asU64 & 0x000000FF000000FF) {
+        for (size_t i = 3; i < size; i += 4) {
+            if (data[i] != 0xFF) {
                 return true;
             }
-            i += 4;
         }
     }
     return false;
