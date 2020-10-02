@@ -16,7 +16,6 @@ void JobEngine::JobThread(uint32_t threadIdx, JobEngine * jobEngine, Queue<JobId
     threadName += std::to_string(threadIdx);
     SetThreadName(std::this_thread::get_id(), threadName);
 
-    logger->Infof("threadId %d", std::this_thread::get_id());
     OPTICK_THREAD(threadName.c_str());
 
     while (true) {
@@ -27,12 +26,10 @@ void JobEngine::JobThread(uint32_t threadIdx, JobEngine * jobEngine, Queue<JobId
             auto id = high.value();
             bool shouldRun = true;
             if (jobEngine->AnyDependenciesUnfinished(id)) {
-                jobEngine->ScheduleJob(id, JobPriority::HIGH);
+                jobEngine->EnqueueJob(id, JobPriority::HIGH);
                 shouldRun = false;
-                logger->Infof("Will not run jobId=%zu right now, dependency not satisfied", id);
             }
             if (shouldRun) {
-                logger->Infof("Running jobId=%zu", id);
                 jobEngine->RunJob(id);
             }
             continue;
@@ -42,12 +39,10 @@ void JobEngine::JobThread(uint32_t threadIdx, JobEngine * jobEngine, Queue<JobId
             auto id = medium.value();
             bool shouldRun = true;
             if (jobEngine->AnyDependenciesUnfinished(id)) {
-                jobEngine->ScheduleJob(id, JobPriority::MEDIUM);
+                jobEngine->EnqueueJob(id, JobPriority::HIGH);
                 shouldRun = false;
-                logger->Infof("Will not run jobId=%zu right now, dependency not satisfied", id);
             }
             if (shouldRun) {
-                logger->Infof("Running jobId=%zu", id);
                 jobEngine->RunJob(id);
             }
             continue;
@@ -57,12 +52,10 @@ void JobEngine::JobThread(uint32_t threadIdx, JobEngine * jobEngine, Queue<JobId
             auto id = low.value();
             bool shouldRun = true;
             if (jobEngine->AnyDependenciesUnfinished(id)) {
-                jobEngine->ScheduleJob(id, JobPriority::LOW);
+                jobEngine->EnqueueJob(id, JobPriority::HIGH);
                 shouldRun = false;
-                logger->Infof("Will not run jobId=%zu right now, dependency not satisfied", id);
             }
             if (shouldRun) {
-                logger->Infof("Running jobId=%zu", id);
                 jobEngine->RunJob(id);
             }
             continue;
@@ -120,15 +113,7 @@ void JobEngine::ScheduleJob(JobId id, JobPriority priority)
         }
     }
     job.state = JobState::WAITING;
-    auto threadIdx = GetCurrentThreadIndex();
-    if (priority == JobPriority::HIGH) {
-        highPriorityWriters[threadIdx].Push(std::move(id));
-    } else if (priority == JobPriority::MEDIUM) {
-        mediumPriorityWriters[threadIdx].Push(std::move(id));
-    } else {
-        lowPriorityWriters[threadIdx].Push(std::move(id));
-    }
-    jobsWaiting.Signal();
+    EnqueueJob(id, priority);
 }
 
 uint32_t JobEngine::GetCurrentThreadIndex()
@@ -162,6 +147,20 @@ bool JobEngine::AnyDependenciesUnfinished(JobId id)
         }
     }
     return false;
+}
+
+void JobEngine::EnqueueJob(JobId id, JobPriority priority)
+{
+    OPTICK_EVENT();
+    auto threadIdx = GetCurrentThreadIndex();
+    if (priority == JobPriority::HIGH) {
+        highPriorityWriters[threadIdx].Push(std::move(id));
+    } else if (priority == JobPriority::MEDIUM) {
+        mediumPriorityWriters[threadIdx].Push(std::move(id));
+    } else {
+        lowPriorityWriters[threadIdx].Push(std::move(id));
+    }
+    jobsWaiting.Signal();
 }
 
 void JobEngine::RunJob(JobId id)

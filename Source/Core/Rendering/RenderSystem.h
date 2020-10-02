@@ -15,6 +15,7 @@
 #include "Core/Rendering/StaticMeshInstance.h"
 #include "Core/Rendering/SubmeshInstance.h"
 #include "Core/Rendering/UiRenderSystem.h"
+#include "Jobs/JobEngine.h"
 
 struct FrameContext;
 class Image;
@@ -64,8 +65,8 @@ public:
 
     void Init();
 
-    void StartFrame(FrameContext & context);
-    void PreRenderFrame(FrameContext & context, PreRenderCommands);
+    void StartFrame(FrameContext & context, PreRenderCommands const &);
+    void PreRenderFrame(FrameContext & context, PreRenderCommands const &);
     void RenderFrame(FrameContext & context);
 
     void CreateResources(std::function<void(ResourceCreationContext &)> && fun);
@@ -115,6 +116,10 @@ private:
 
         CommandBufferAllocator * commandBufferAllocator;
 
+        std::vector<JobId> preRenderJobs;
+
+        std::vector<MeshBatch> meshBatches;
+
         // Contains per-mesh uniform info (such as localToWorld matrix)
         size_t meshUniformsSize = 0;
         BufferHandle * meshUniforms = nullptr;
@@ -159,24 +164,24 @@ private:
 
     void Prepass(FrameContext & context, std::vector<MeshBatch> const & batches);
 
-    void PreRenderCameras(FrameContext & context, std::vector<UpdateCamera> const & cameras);
+    void PreRenderCameras(FrameContext const & context, std::vector<UpdateCamera> const & cameras);
 
     void PreRenderLights(std::vector<UpdateLight> const & lights);
-    void UpdateLights(FrameContext & context);
+    void UpdateLights(FrameContext const & context);
 
     void PreRenderSkeletalMeshes(std::vector<UpdateSkeletalMeshInstance> const & meshes);
 
-    void PreRenderSprites(FrameContext & context, std::vector<UpdateSpriteInstance> const & sprites);
+    void PreRenderSprites(FrameContext const & context, std::vector<UpdateSpriteInstance> const & sprites);
     void RenderSprites(FrameContext & context, CameraInstance const & camera);
 
-    void PreRenderMeshes(FrameContext & context, std::vector<UpdateStaticMeshInstance> const & meshes);
+    void PreRenderMeshes(FrameContext const & context, std::vector<UpdateStaticMeshInstance> const & meshes);
     void RenderMeshes(FrameContext & context, CameraInstance const & camera, std::vector<MeshBatch> const & batches);
     void RenderTransparentMeshes(FrameContext & context, CameraInstance const & camera,
                                  std::vector<MeshBatch> const & batches);
 
     void RenderDebugDraws(FrameContext & context, CameraInstance const & camera);
 
-    std::vector<MeshBatch> CreateBatches(FrameContext & context);
+    void CreateBatches(FrameContext & context);
 
     std::vector<FrameInfo> frameInfo;
 
@@ -249,6 +254,7 @@ private:
     StaticMeshInstance * GetStaticMeshInstance(StaticMeshInstanceId);
 
     // Other systems
+    JobEngine * jobEngine;
     Renderer * renderer;
     RendererProperties const & rendererProperties;
     UiRenderSystem uiRenderSystem;

@@ -21,7 +21,7 @@ public:
     // Imgui calls must only be made between StartFrame and EndFrame on a given frame.
     void StartFrame();
     void EndFrame(FrameContext & context);
-    void PreRenderUi(FrameContext & context, CommandBuffer *);
+    void PreRenderUi(FrameContext const & context, CommandBuffer *);
     void RenderUi(FrameContext & context, CommandBuffer *);
 
 private:

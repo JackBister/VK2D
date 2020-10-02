@@ -8,7 +8,8 @@
 static const auto logger = Logger::Create("RenderSystem");
 
 RenderSystem::RenderSystem(Renderer * renderer)
-    : renderer(renderer), rendererProperties(renderer->GetProperties()), uiRenderSystem(renderer)
+    : jobEngine(JobEngine::GetInstance()), renderer(renderer), rendererProperties(renderer->GetProperties()),
+      uiRenderSystem(renderer)
 {
     CommandDefinition backbufferOverrideCommand(
         "render_override_backbuffer",

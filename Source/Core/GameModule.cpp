@@ -208,7 +208,7 @@ void Tick(FrameContext & context)
         OPTICK_EVENT("GpuTick")
         OPTICK_TAG("FrameNumber", context.frameNumber)
         auto ctx = context;
-        renderSystem->StartFrame(ctx);
+        renderSystem->StartFrame(ctx, preRenderCommands);
         renderSystem->PreRenderFrame(ctx, preRenderCommands);
         renderSystem->RenderFrame(ctx);
         renderLock.Signal();

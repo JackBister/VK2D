@@ -53,7 +53,7 @@ int main(int argc, char * argv[])
     ImGui::CreateContext();
     SDL_Init(SDL_INIT_EVERYTHING);
     Config::Init();
-    int numJobThreads = 6;
+    int numJobThreads = 5;
     JobEngine jobEngine(numJobThreads);
     jobEngine.RegisterMainThread();
     RendererConfig cfg;

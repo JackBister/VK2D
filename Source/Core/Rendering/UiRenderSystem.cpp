@@ -97,7 +97,7 @@ void UiRenderSystem::EndFrame(FrameContext & context)
     context.imguiDrawData = CopyDrawData(ImGui::GetDrawData());
 }
 
-void UiRenderSystem::PreRenderUi(FrameContext & context, CommandBuffer * commandBuffer)
+void UiRenderSystem::PreRenderUi(FrameContext const & context, CommandBuffer * commandBuffer)
 {
     OPTICK_EVENT();
     auto data = context.imguiDrawData;

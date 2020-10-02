@@ -33,9 +33,28 @@ RenderSystem * RenderSystem::GetInstance()
     return RenderSystem::instance;
 }
 
-void RenderSystem::StartFrame(FrameContext & context)
+void RenderSystem::StartFrame(FrameContext & context, PreRenderCommands const & preRenderCommands)
 {
     OPTICK_EVENT();
+    auto willBePreviousFrameIndex = context.currentGpuFrameIndex;
+    auto & willBePreviousFrame = frameInfo[willBePreviousFrameIndex];
+    auto updateAnimationsJob = jobEngine->CreateJob({}, [this, &preRenderCommands]() {
+        OPTICK_EVENT("UpdateAnimationsJob")
+        this->PreRenderSkeletalMeshes(preRenderCommands.skeletalMeshUpdates);
+        this->UpdateAnimations();
+    });
+    jobEngine->ScheduleJob(updateAnimationsJob, JobPriority::HIGH);
+    willBePreviousFrame.preRenderJobs.push_back(updateAnimationsJob);
+    auto otherUpdatesJob = jobEngine->CreateJob({}, [this, &context, &preRenderCommands]() {
+        OPTICK_EVENT("OtherUpdatesJob")
+        PreRenderLights(preRenderCommands.lightUpdates);
+        PreRenderMeshes(context, preRenderCommands.staticMeshUpdates);
+
+        CreateBatches(context);
+    });
+    jobEngine->ScheduleJob(otherUpdatesJob, JobPriority::HIGH);
+    willBePreviousFrame.preRenderJobs.push_back(otherUpdatesJob);
+
     for (auto & sc : scheduledDestroyers) {
         if (sc.remainingFrames == 0) {
             renderer->CreateResources(sc.fun);
@@ -65,12 +84,24 @@ void RenderSystem::StartFrame(FrameContext & context)
 
 void RenderSystem::RenderFrame(FrameContext & context)
 {
-    OPTICK_EVENT();
-
+    OPTICK_EVENT("RenderFrame")
+    auto & prevFrame = frameInfo[context.previousGpuFrameIndex];
+    // TODO: This is the wrong way to do it, but making this function async as well was a bit too messy for now.
+    Semaphore sem;
+    auto gatherJob = jobEngine->CreateJob(prevFrame.preRenderJobs, [&sem]() {
+        OPTICK_EVENT("GatherPreRenderJobs")
+        sem.Signal();
+    });
+    jobEngine->ScheduleJob(gatherJob, JobPriority::HIGH);
+    {
+        OPTICK_EVENT("WaitForPreRenderJobs")
+        sem.Wait();
+    }
     MainRenderFrame(context);
     PostProcessFrame(context);
 
     SubmitSwap(context);
+    prevFrame.preRenderJobs.clear();
 }
 
 void RenderSystem::CreateResources(std::function<void(ResourceCreationContext &)> && fun)
@@ -82,8 +113,8 @@ void RenderSystem::CreateResources(std::function<void(ResourceCreationContext &)
 void RenderSystem::DestroyResources(std::function<void(ResourceCreationContext &)> && fun)
 {
     OPTICK_EVENT();
-    // We wait for one "cycle" of frames before destroying. This should ensure that there is no rendering operation in
-    // flight that is still using the resource.
+    // We wait for one "cycle" of frames before destroying. This should ensure that there is no rendering operation
+    // in flight that is still using the resource.
     scheduledDestroyers.push_back({(int)frameInfo.size(), fun});
 }
 
@@ -146,37 +177,36 @@ uint32_t RenderSystem::AcquireNextFrame(FrameContext & context)
     return context.currentGpuFrameIndex;
 }
 
-void RenderSystem::PreRenderFrame(FrameContext & context, PreRenderCommands commands)
+void RenderSystem::PreRenderFrame(FrameContext & context, PreRenderCommands const & commands)
 {
-    OPTICK_EVENT();
-    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
-    currFrame.preRenderPassCommandBuffer->Reset();
-    currFrame.preRenderPassCommandBuffer->BeginRecording(nullptr);
+    OPTICK_EVENT("SchedulePreRenderFrame")
+    auto preRenderJob = jobEngine->CreateJob({}, [this, &context, commands]() {
+        OPTICK_EVENT("PreRenderFrame");
+        auto & currFrame = frameInfo[context.currentGpuFrameIndex];
+        currFrame.preRenderPassCommandBuffer->Reset();
+        currFrame.preRenderPassCommandBuffer->BeginRecording(nullptr);
+        PreRenderCameras(context, commands.cameraUpdates);
+        PreRenderSprites(context, commands.spriteUpdates);
+        uiRenderSystem.PreRenderUi(context, currFrame.preRenderPassCommandBuffer);
+        currFrame.preRenderPassCommandBuffer->EndRecording();
+        renderer->ExecuteCommandBuffer(currFrame.preRenderPassCommandBuffer, {}, {currFrame.preRenderPassFinished});
 
-    PreRenderCameras(context, commands.cameraUpdates);
-    PreRenderLights(commands.lightUpdates);
-    PreRenderSkeletalMeshes(commands.skeletalMeshUpdates);
-    PreRenderSprites(context, commands.spriteUpdates);
-    PreRenderMeshes(context, commands.staticMeshUpdates);
-
-    UpdateAnimations();
-    UpdateLights(context);
-
-    uiRenderSystem.PreRenderUi(context, currFrame.preRenderPassCommandBuffer);
-    currFrame.preRenderPassCommandBuffer->EndRecording();
-    renderer->ExecuteCommandBuffer(currFrame.preRenderPassCommandBuffer, {}, {currFrame.preRenderPassFinished});
+        UpdateLights(context);
+    });
+    jobEngine->ScheduleJob(preRenderJob, JobPriority::HIGH);
+    auto & prevFrame = frameInfo[context.previousGpuFrameIndex];
+    prevFrame.preRenderJobs.push_back(preRenderJob);
 }
 
 void RenderSystem::MainRenderFrame(FrameContext & context)
 {
-    OPTICK_EVENT();
+    OPTICK_EVENT("MainRenderFrame");
+
     auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     currFrame.mainCommandBuffer->Reset();
     currFrame.mainCommandBuffer->BeginRecording(nullptr);
 
-    auto meshBatches = CreateBatches(context);
-
-    Prepass(context, meshBatches);
+    Prepass(context, currFrame.meshBatches);
 
     auto res = renderer->GetResolution();
     CommandBuffer::RenderPassBeginInfo beginInfo = {
@@ -186,10 +216,10 @@ void RenderSystem::MainRenderFrame(FrameContext & context)
         if (!camera.isActive) {
             continue;
         }
-        RenderMeshes(context, camera, meshBatches);
+        RenderMeshes(context, camera, currFrame.meshBatches);
         RenderSprites(context, camera);
 
-        RenderTransparentMeshes(context, camera, meshBatches);
+        RenderTransparentMeshes(context, camera, currFrame.meshBatches);
     }
 
     currFrame.mainCommandBuffer->CmdEndRenderPass();
@@ -348,7 +378,7 @@ void RenderSystem::Prepass(FrameContext & context, std::vector<MeshBatch> const 
     currFrame.mainCommandBuffer->CmdEndRenderPass();
 }
 
-void RenderSystem::PreRenderCameras(FrameContext & context, std::vector<UpdateCamera> const & cameraUpdates)
+void RenderSystem::PreRenderCameras(FrameContext const & context, std::vector<UpdateCamera> const & cameraUpdates)
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[context.currentGpuFrameIndex];
@@ -364,7 +394,7 @@ void RenderSystem::PreRenderCameras(FrameContext & context, std::vector<UpdateCa
     }
 }
 
-void RenderSystem::PreRenderMeshes(FrameContext & context, std::vector<UpdateStaticMeshInstance> const & meshes)
+void RenderSystem::PreRenderMeshes(FrameContext const & context, std::vector<UpdateStaticMeshInstance> const & meshes)
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[context.currentGpuFrameIndex];
@@ -627,7 +657,7 @@ void RenderSystem::RenderDebugDraws(FrameContext & context, CameraInstance const
     }
 }
 
-std::vector<MeshBatch> RenderSystem::CreateBatches(FrameContext & context)
+void RenderSystem::CreateBatches(FrameContext & context)
 {
     OPTICK_EVENT();
 
@@ -700,7 +730,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(FrameContext & context)
         }
     }
 
-    std::vector<MeshBatch> batches;
+    currFrame.meshBatches.clear();
     size_t drawCommandsOffset = 0;
     std::vector<DrawIndirectCommand> drawCommands;
     size_t drawIndexedOffset = 0;
@@ -727,7 +757,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(FrameContext & context)
                     currentBatch.drawIndexedCommandsOffset = drawIndexedOffset;
                     currentBatch.drawIndexedCommandsCount = drawIndexedCommands.size() - drawIndexedOffset;
                     if (currentBatch.material != nullptr) {
-                        batches.push_back(currentBatch);
+                        currFrame.meshBatches.push_back(currentBatch);
                     }
                     drawCommandsOffset = drawCommands.size();
                     drawIndexedOffset = drawIndexedCommands.size();
@@ -761,7 +791,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(FrameContext & context)
         }
 
         if (currentBatch.material != nullptr) {
-            batches.push_back(currentBatch);
+            currFrame.meshBatches.push_back(currentBatch);
         }
         // Force new batch for static meshes since vertex size and shader program is different
         currentBatch.material = nullptr;
@@ -788,7 +818,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(FrameContext & context)
                     } else {
                         currentBatch.shaderProgram = meshProgram;
                     }
-                    batches.push_back(currentBatch);
+                    currFrame.meshBatches.push_back(currentBatch);
                 }
                 drawCommandsOffset = drawCommands.size();
                 drawIndexedOffset = drawIndexedCommands.size();
@@ -824,7 +854,7 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(FrameContext & context)
             currentBatch.drawCommandsCount = drawCommands.size() - drawCommandsOffset;
             currentBatch.drawIndexedCommandsOffset = drawIndexedOffset;
             currentBatch.drawIndexedCommandsCount = drawIndexedCommands.size() - drawIndexedOffset;
-            batches.push_back(currentBatch);
+            currFrame.meshBatches.push_back(currentBatch);
         }
     }
 
@@ -991,17 +1021,10 @@ std::vector<MeshBatch> RenderSystem::CreateBatches(FrameContext & context)
                    boneSplits[i] * sizeof(glm::mat4));
             currentNumberOfBones += boneSplits[i];
         }
-        /*
-        if (bones.size() > 0) {
-            memcpy(currFrame.boneTransformsMapped, bones.data(), bones.size() * sizeof(glm::mat4));
-        }
-        */
         // TODO: If this is moved up above the other memcpys the data in meshUniformsMapped somehow gets corrupted
         // and I don't understand why.
         memcpy(currFrame.meshUniformsMapped, localToWorlds.data(), localToWorlds.size() * sizeof(glm::mat4));
     }
-
-    return batches;
 }
 
 void RenderSystem::RenderSprites(FrameContext & context, CameraInstance const & cam)

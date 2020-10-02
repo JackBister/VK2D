@@ -42,7 +42,7 @@ void RenderSystem::PreRenderLights(std::vector<UpdateLight> const & updates)
     }
 }
 
-void RenderSystem::UpdateLights(FrameContext & context)
+void RenderSystem::UpdateLights(FrameContext const & context)
 {
     OPTICK_EVENT();
     if (lights.size() == 0) {

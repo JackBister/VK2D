@@ -60,7 +60,7 @@ SpriteInstance * RenderSystem::GetSpriteInstance(SpriteInstanceId id)
     return &sprites[id];
 }
 
-void RenderSystem::PreRenderSprites(FrameContext & context, std::vector<UpdateSpriteInstance> const & sprites)
+void RenderSystem::PreRenderSprites(FrameContext const & context, std::vector<UpdateSpriteInstance> const & sprites)
 {
     OPTICK_EVENT();
     auto & currFrame = frameInfo[context.currentGpuFrameIndex];

@@ -52,6 +52,7 @@ private:
                           Queue<JobId>::Reader mediumPriorityQueue, Queue<JobId>::Reader highPriorityQueue);
 
     bool AnyDependenciesUnfinished(JobId id);
+    void EnqueueJob(JobId id, JobPriority priority);
     void RunJob(JobId id);
 
     Semaphore jobsWaiting;
