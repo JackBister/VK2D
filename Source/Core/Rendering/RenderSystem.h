@@ -97,12 +97,15 @@ private:
         ImageViewHandle * prepassDepthImageView;
         FramebufferHandle * prepassFramebuffer;
 
+        ImageHandle * hdrColorBufferImage;
+        ImageViewHandle * hdrColorBufferImageView;
         ImageHandle * normalsGBufferImage;
         ImageViewHandle * normalsGBufferImageView;
-        ImageViewHandle * backbuffer;
         FramebufferHandle * framebuffer;
 
+        ImageViewHandle * backbuffer;
         FramebufferHandle * postprocessFramebuffer;
+        DescriptorSet * tonemapDescriptorSet;
 
         CommandBuffer * preRenderPassCommandBuffer;
         CommandBuffer * mainCommandBuffer;
@@ -213,6 +216,10 @@ private:
     ShaderProgram * skeletalMeshProgram;
 
     ShaderProgram * uiProgram;
+
+    DescriptorSetLayoutHandle * tonemapDescriptorSetLayout;
+    PipelineLayoutHandle * tonemapLayout;
+    ShaderProgram * tonemapProgram;
 
     SamplerHandle * postprocessSampler;
     DescriptorSetLayoutHandle * postprocessDescriptorSetLayout;

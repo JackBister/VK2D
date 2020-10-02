@@ -10,6 +10,7 @@ void ShaderProgramFactory::CreateResources()
     CreateMeshShaderProgram();
     CreateSkeletalMeshShaderProgram();
     CreateTransparentMeshShaderProgram();
+    CreateTonemapProgram();
     CreateUiShaderProgram();
     CreatePostprocessShaderProgram();
 }
@@ -160,6 +161,32 @@ void ShaderProgramFactory::CreateTransparentMeshShaderProgram()
             {true},
             // disabled for normals
             {false},
+        },
+        {
+            PrimitiveTopology::TRIANGLE_LIST,
+        },
+        depthStencil);
+}
+
+void ShaderProgramFactory::CreateTonemapProgram()
+{
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    depthStencil.depthCompareOp = CompareOp::ALWAYS;
+    depthStencil.depthTestEnable = false;
+    depthStencil.depthWriteEnable = false;
+    ShaderProgram::Create(
+        "_Primitives/ShaderPrograms/tonemap.program",
+        {"shaders/passthrough.vert", "shaders/tonemap.frag"},
+        ResourceManager::GetResource<VertexInputStateHandle>(
+            "_Primitives/VertexInputStates/passthrough-transform.state"),
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/tonemap.pipelinelayout"),
+        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
+        CullMode::NONE,
+        FrontFace::CLOCKWISE,
+        0,
+        {
+            // Blending enabled for color attachment
+            {true},
         },
         {
             PrimitiveTopology::TRIANGLE_LIST,

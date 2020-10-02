@@ -29,6 +29,7 @@ void RenderPrimitiveFactory::CreatePrimitives()
         CreateSkeletalMeshPipelineLayout(ctx);
         CreateSkeletalMeshVertexInputState(ctx);
 
+        CreateTonemapPipelineLayout(ctx);
         auto uiPipelineLayout = CreateUiPipelineLayout(ctx);
         auto uiVertexInputState = CreateUiVertexInputState(ctx);
 
@@ -102,7 +103,7 @@ RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreation
         // Main color buffer
         {
             0,
-            renderer->GetBackbufferFormat(),
+            Format::R32G32B32A32_SFLOAT,
             RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
             RenderPassHandle::AttachmentDescription::StoreOp::STORE,
             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
@@ -156,7 +157,7 @@ RenderPassHandle * RenderPrimitiveFactory::CreatePostprocessRenderpass(ResourceC
         {0,
          renderer->GetBackbufferFormat(),
          // TODO: Can probably be DONT_CARE once we're doing actual post processing
-         RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+         RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
          RenderPassHandle::AttachmentDescription::StoreOp::STORE,
          RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
          RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
@@ -334,6 +335,18 @@ void RenderPrimitiveFactory::CreateSkeletalMeshVertexInputState(ResourceCreation
     vertexInputStateCreateInfo.vertexBindingDescriptions = binding;
     auto meshInputState = ctx.CreateVertexInputState(vertexInputStateCreateInfo);
     ResourceManager::AddResource("_Primitives/VertexInputStates/mesh_skeletal.state", meshInputState);
+}
+
+PipelineLayoutHandle * RenderPrimitiveFactory::CreateTonemapPipelineLayout(ResourceCreationContext & ctx)
+{
+    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding fragBindings[] = {
+        {0, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
+    auto tonemapDescriptorSetLayout = ctx.CreateDescriptorSetLayout({1, fragBindings});
+    ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/tonemap.layout", tonemapDescriptorSetLayout);
+
+    auto tonemapLayout = ctx.CreatePipelineLayout({{tonemapDescriptorSetLayout}});
+    ResourceManager::AddResource("_Primitives/PipelineLayouts/tonemap.pipelinelayout", tonemapLayout);
+    return tonemapLayout;
 }
 
 PipelineLayoutHandle * RenderPrimitiveFactory::CreateUiPipelineLayout(ResourceCreationContext & ctx)

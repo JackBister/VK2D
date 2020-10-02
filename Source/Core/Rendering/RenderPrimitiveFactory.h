@@ -32,6 +32,8 @@ private:
     void CreateSkeletalMeshPipelineLayout(ResourceCreationContext &);
     void CreateSkeletalMeshVertexInputState(ResourceCreationContext &);
 
+    PipelineLayoutHandle * CreateTonemapPipelineLayout(ResourceCreationContext &);
+
     PipelineLayoutHandle * CreateUiPipelineLayout(ResourceCreationContext &);
     VertexInputStateHandle * CreateUiVertexInputState(ResourceCreationContext &);
 

@@ -49,8 +49,6 @@ void RenderSystem::StartFrame(FrameContext & context, PreRenderCommands const & 
         OPTICK_EVENT("OtherUpdatesJob")
         PreRenderLights(preRenderCommands.lightUpdates);
         PreRenderMeshes(context, preRenderCommands.staticMeshUpdates);
-
-        CreateBatches(context);
     });
     jobEngine->ScheduleJob(otherUpdatesJob, JobPriority::HIGH);
     willBePreviousFrame.preRenderJobs.push_back(otherUpdatesJob);
@@ -97,6 +95,7 @@ void RenderSystem::RenderFrame(FrameContext & context)
         OPTICK_EVENT("WaitForPreRenderJobs")
         sem.Wait();
     }
+    CreateBatches(context);
     MainRenderFrame(context);
     PostProcessFrame(context);
 
@@ -243,6 +242,17 @@ void RenderSystem::PostProcessFrame(FrameContext & context)
     CommandBuffer::RenderPassBeginInfo beginInfo = {
         postprocessRenderpass, currFrame.postprocessFramebuffer, {{0, 0}, {res.x, res.y}}, 0, nullptr};
     currFrame.postProcessCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::INLINE);
+
+    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    currFrame.postProcessCommandBuffer->CmdSetViewport(0, 1, &viewport);
+    CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
+    currFrame.postProcessCommandBuffer->CmdSetScissor(0, 1, &scissor);
+    currFrame.postProcessCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                        tonemapProgram->GetPipeline());
+    currFrame.postProcessCommandBuffer->CmdBindIndexBuffer(quadEbo, 0, CommandBuffer::IndexType::UINT32);
+    currFrame.postProcessCommandBuffer->CmdBindDescriptorSets(tonemapLayout, 0, {currFrame.tonemapDescriptorSet});
+    currFrame.postProcessCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, sizeof(VertexWithColorAndUv));
+    currFrame.postProcessCommandBuffer->CmdDrawIndexed(6, 1, 0, 0, 0);
 
     if (backbufferOverride != nullptr) {
         CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};

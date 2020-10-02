@@ -113,6 +113,12 @@ void RenderSystem::Init()
     skeletalMeshProgram =
         ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/mesh_skeletal.program");
 
+    tonemapDescriptorSetLayout =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/tonemap.layout");
+    tonemapLayout =
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/tonemap.pipelinelayout");
+    tonemapProgram = ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/tonemap.program");
+
     postprocessSampler = ResourceManager::GetResource<SamplerHandle>("_Primitives/Samplers/postprocess.sampler");
     postprocessDescriptorSetLayout =
         ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/postprocess.layout");
@@ -166,7 +172,7 @@ void RenderSystem::InitSwapchainResources()
         std::vector<RenderPassHandle::AttachmentDescription> attachments = {
             {
                 0,
-                renderer->GetBackbufferFormat(),
+                Format::R32G32B32A32_SFLOAT,
                 RenderPassHandle::AttachmentDescription::LoadOp::CLEAR,
                 RenderPassHandle::AttachmentDescription::StoreOp::STORE,
                 RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
@@ -217,11 +223,11 @@ void RenderSystem::InitSwapchainResources()
             {0,
              renderer->GetBackbufferFormat(),
              // TODO: Can probably be DONT_CARE once we're doing actual post processing
-             RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
              RenderPassHandle::AttachmentDescription::StoreOp::STORE,
              RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
              RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
-             ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+             ImageLayout::UNDEFINED,
              ImageLayout::PRESENT_SRC_KHR}};
 
         RenderPassHandle::AttachmentReference postprocessReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
@@ -250,11 +256,20 @@ void RenderSystem::InitSwapchainResources()
             if (fi.framebuffer) {
                 ctx.DestroyFramebuffer(fi.framebuffer);
             }
+            if (fi.hdrColorBufferImageView) {
+                ctx.DestroyImageView(fi.hdrColorBufferImageView);
+            }
+            if (fi.hdrColorBufferImage) {
+                ctx.DestroyImage(fi.hdrColorBufferImage);
+            }
             if (fi.normalsGBufferImageView) {
                 ctx.DestroyImageView(fi.normalsGBufferImageView);
             }
             if (fi.normalsGBufferImage) {
                 ctx.DestroyImage(fi.normalsGBufferImage);
+            }
+            if (fi.tonemapDescriptorSet) {
+                ctx.DestroyDescriptorSet(fi.tonemapDescriptorSet);
             }
             if (fi.postprocessFramebuffer) {
                 ctx.DestroyFramebuffer(fi.postprocessFramebuffer);
@@ -395,6 +410,33 @@ void RenderSystem::InitFramebuffers(ResourceCreationContext & ctx)
         prepassFramebufferCi.renderPass = this->prepass;
         frameInfo[i].prepassFramebuffer = ctx.CreateFramebuffer(prepassFramebufferCi);
 
+        ResourceCreationContext::ImageCreateInfo hdrColorBufferImageCi;
+        hdrColorBufferImageCi.depth = 1;
+        hdrColorBufferImageCi.width = res.x;
+        hdrColorBufferImageCi.height = res.y;
+        hdrColorBufferImageCi.format = Format::R32G32B32A32_SFLOAT;
+        hdrColorBufferImageCi.mipLevels = 1;
+        hdrColorBufferImageCi.type = ImageHandle::Type::TYPE_2D;
+        hdrColorBufferImageCi.usage =
+            IMAGE_USAGE_FLAG_COLOR_ATTACHMENT_BIT | ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT;
+        frameInfo[i].hdrColorBufferImage = ctx.CreateImage(hdrColorBufferImageCi);
+        ctx.AllocateImage(frameInfo[i].hdrColorBufferImage);
+
+        ResourceCreationContext::ImageViewCreateInfo hdrColorBufferImageViewCi;
+        hdrColorBufferImageViewCi.components = ImageViewHandle::ComponentMapping::IDENTITY;
+        hdrColorBufferImageViewCi.format = Format::R32G32B32A32_SFLOAT;
+        hdrColorBufferImageViewCi.image = frameInfo[i].hdrColorBufferImage;
+        hdrColorBufferImageViewCi.viewType = ImageViewHandle::Type::TYPE_2D;
+        hdrColorBufferImageViewCi.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+        hdrColorBufferImageViewCi.subresourceRange.baseArrayLayer = 0;
+        hdrColorBufferImageViewCi.subresourceRange.baseMipLevel = 0;
+        hdrColorBufferImageViewCi.subresourceRange.layerCount = 1;
+        hdrColorBufferImageViewCi.subresourceRange.levelCount = 1;
+        frameInfo[i].hdrColorBufferImageView = ctx.CreateImageView(hdrColorBufferImageViewCi);
+        ResourceManager::AddResource(std::string("/_RenderSystem/frameInfo/") + std::to_string(i) +
+                                         "/hdrColorBuffer.imageview",
+                                     frameInfo[i].hdrColorBufferImageView);
+
         ResourceCreationContext::ImageCreateInfo normalsGBufferImageCi;
         normalsGBufferImageCi.depth = 1;
         normalsGBufferImageCi.width = res.x;
@@ -423,8 +465,9 @@ void RenderSystem::InitFramebuffers(ResourceCreationContext & ctx)
                                      frameInfo[i].normalsGBufferImageView);
 
         ResourceCreationContext::FramebufferCreateInfo mainFramebufferCi;
-        mainFramebufferCi.attachments = {
-            frameInfo[i].backbuffer, frameInfo[i].normalsGBufferImageView, frameInfo[i].prepassDepthImageView};
+        mainFramebufferCi.attachments = {frameInfo[i].hdrColorBufferImageView,
+                                         frameInfo[i].normalsGBufferImageView,
+                                         frameInfo[i].prepassDepthImageView};
         mainFramebufferCi.width = res.x;
         mainFramebufferCi.height = res.y;
         mainFramebufferCi.layers = 1;
@@ -438,5 +481,16 @@ void RenderSystem::InitFramebuffers(ResourceCreationContext & ctx)
         postprocessFramebufferCi.layers = 1;
         postprocessFramebufferCi.renderPass = this->postprocessRenderpass;
         frameInfo[i].postprocessFramebuffer = ctx.CreateFramebuffer(postprocessFramebufferCi);
+
+        ResourceCreationContext::DescriptorSetCreateInfo tonemapDSCi;
+        ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor tonemapImgDesc;
+        tonemapImgDesc.imageView = frameInfo[i].hdrColorBufferImageView;
+        tonemapImgDesc.sampler = postprocessSampler;
+        ResourceCreationContext::DescriptorSetCreateInfo::Descriptor tonemapDesc[] = {
+            DescriptorType::COMBINED_IMAGE_SAMPLER, 0, tonemapImgDesc};
+        tonemapDSCi.descriptorCount = 1;
+        tonemapDSCi.layout = tonemapDescriptorSetLayout;
+        tonemapDSCi.descriptors = tonemapDesc;
+        frameInfo[i].tonemapDescriptorSet = ctx.CreateDescriptorSet(tonemapDSCi);
     }
 }

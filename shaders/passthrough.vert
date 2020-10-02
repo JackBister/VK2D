@@ -17,7 +17,6 @@ void main() {
 
 	//TODO: In the future this should be changed to be the other way around so OpenGL is the one getting penalized
 	if (gfxApi == GFX_API_VULKAN) {
-		gl_Position.y = -gl_Position.y;
 		gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
 	}
 }
