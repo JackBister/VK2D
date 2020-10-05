@@ -266,6 +266,9 @@ void OnGui()
                 Pause(resetOnPause);
             }
 
+            auto camPos = editorCamera->GetTransform()->GetPosition();
+            ImGui::Text("x: %f y: %f z: %f", camPos.x, camPos.y, camPos.z);
+
             ImGui::NextColumn();
             ImGui::NextColumn();
             // Hack for right alignment

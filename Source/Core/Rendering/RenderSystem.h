@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <array>
 #include <set>
 #include <vector>
 
@@ -20,6 +21,8 @@
 struct FrameContext;
 class Image;
 class ShaderProgram;
+
+int constexpr MAX_SSAO_SAMPLES = 64;
 
 struct DrawIndirectCommand {
     uint32_t vertexCount;
@@ -49,6 +52,14 @@ struct MeshBatch {
     size_t drawIndexedCommandsCount;
     std::vector<DrawIndirectCommand> drawCommands;
     std::vector<DrawIndexedIndirectCommand> drawIndexedCommands;
+};
+
+struct GpuSsaoParameters {
+    std::array<glm::vec4, MAX_SSAO_SAMPLES> samples;
+    glm::vec2 screenResolution;
+    float _padding[2];
+    glm::mat4 projection;
+    glm::mat4 view;
 };
 
 struct ScheduledDestroyer {
@@ -103,6 +114,8 @@ private:
         ImageViewHandle * normalsGBufferImageView;
         FramebufferHandle * framebuffer;
 
+        FramebufferHandle * ssaoFramebuffer;
+
         ImageViewHandle * backbuffer;
         FramebufferHandle * postprocessFramebuffer;
         DescriptorSet * tonemapDescriptorSet;
@@ -153,6 +166,15 @@ private:
         size_t debugPointsSize = 0;
         BufferHandle * debugPoints;
         glm::vec3 * debugPointsMapped = nullptr;
+
+        ImageHandle * ssaoOutputImage;
+        ImageViewHandle * ssaoOutputImageView;
+        DescriptorSet * ssaoDescriptorSet;
+        ImageHandle * ssaoBlurImage;
+        ImageViewHandle * ssaoBlurImageView;
+        DescriptorSet * ssaoBlurDescriptorSet;
+        BufferHandle * ssaoParameterBuffer;
+        GpuSsaoParameters * ssaoParameterBufferMapped;
     };
 
     static RenderSystem * instance;
@@ -181,6 +203,8 @@ private:
     void RenderMeshes(FrameContext & context, CameraInstance const & camera, std::vector<MeshBatch> const & batches);
     void RenderTransparentMeshes(FrameContext & context, CameraInstance const & camera,
                                  std::vector<MeshBatch> const & batches);
+
+    void PreRenderSSAO(FrameContext const & context);
 
     void RenderDebugDraws(FrameContext & context, CameraInstance const & camera);
 
@@ -216,6 +240,14 @@ private:
     ShaderProgram * skeletalMeshProgram;
 
     ShaderProgram * uiProgram;
+
+    DescriptorSetLayoutHandle * ambientOcclusionDescriptorSetLayout;
+    PipelineLayoutHandle * ambientOcclusionLayout;
+    ShaderProgram * ambientOcclusionProgram;
+
+    DescriptorSetLayoutHandle * ambientOcclusionBlurDescriptorSetLayout;
+    PipelineLayoutHandle * ambientOcclusionBlurLayout;
+    ShaderProgram * ambientOcclusionBlurProgram;
 
     DescriptorSetLayoutHandle * tonemapDescriptorSetLayout;
     PipelineLayoutHandle * tonemapLayout;
@@ -259,6 +291,11 @@ private:
     std::set<SubmeshInstance, SubmeshInstanceComparer> sortedSubmeshInstances;
     std::vector<StaticMeshInstance> staticMeshes;
     StaticMeshInstance * GetStaticMeshInstance(StaticMeshInstanceId);
+
+    // SSAO
+    ImageHandle * ssaoNoiseImage;
+    ImageViewHandle * ssaoNoiseImageView;
+    RenderPassHandle * ssaoPass;
 
     // Other systems
     JobEngine * jobEngine;

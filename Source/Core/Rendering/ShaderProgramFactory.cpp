@@ -10,6 +10,8 @@ void ShaderProgramFactory::CreateResources()
     CreateMeshShaderProgram();
     CreateSkeletalMeshShaderProgram();
     CreateTransparentMeshShaderProgram();
+    CreateAmbientOcclusionProgram();
+    CreateAmbientOcclusionBlurProgram();
     CreateTonemapProgram();
     CreateUiShaderProgram();
     CreatePostprocessShaderProgram();
@@ -168,6 +170,59 @@ void ShaderProgramFactory::CreateTransparentMeshShaderProgram()
         depthStencil);
 }
 
+void ShaderProgramFactory::CreateAmbientOcclusionProgram()
+{
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    depthStencil.depthCompareOp = CompareOp::ALWAYS;
+    depthStencil.depthTestEnable = false;
+    depthStencil.depthWriteEnable = false;
+    ShaderProgram::Create("_Primitives/ShaderPrograms/ambientOcclusion.program",
+                          {"shaders/passthrough.vert", "shaders/ambientOcclusion.frag"},
+                          ResourceManager::GetResource<VertexInputStateHandle>(
+                              "_Primitives/VertexInputStates/passthrough-transform.state"),
+                          ResourceManager::GetResource<PipelineLayoutHandle>(
+                              "_Primitives/PipelineLayouts/ambientOcclusion.pipelinelayout"),
+                          ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/ssao.pass"),
+                          CullMode::NONE,
+                          FrontFace::CLOCKWISE,
+                          0,
+                          {
+                              // Blending enabled for color attachment
+                              {true},
+                          },
+                          {
+                              PrimitiveTopology::TRIANGLE_LIST,
+                          },
+                          depthStencil);
+}
+
+void ShaderProgramFactory::CreateAmbientOcclusionBlurProgram()
+{
+
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    depthStencil.depthCompareOp = CompareOp::ALWAYS;
+    depthStencil.depthTestEnable = false;
+    depthStencil.depthWriteEnable = false;
+    ShaderProgram::Create("_Primitives/ShaderPrograms/ambientOcclusionBlur.program",
+                          {"shaders/passthrough.vert", "shaders/ambientOcclusionBlur.frag"},
+                          ResourceManager::GetResource<VertexInputStateHandle>(
+                              "_Primitives/VertexInputStates/passthrough-transform.state"),
+                          ResourceManager::GetResource<PipelineLayoutHandle>(
+                              "_Primitives/PipelineLayouts/ambientOcclusionBlur.pipelinelayout"),
+                          ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
+                          CullMode::NONE,
+                          FrontFace::CLOCKWISE,
+                          0,
+                          {
+                              // Blending enabled for color attachment
+                              {true},
+                          },
+                          {
+                              PrimitiveTopology::TRIANGLE_LIST,
+                          },
+                          depthStencil);
+}
+
 void ShaderProgramFactory::CreateTonemapProgram()
 {
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
@@ -183,10 +238,10 @@ void ShaderProgramFactory::CreateTonemapProgram()
         ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
         CullMode::NONE,
         FrontFace::CLOCKWISE,
-        0,
+        1,
         {
             // Blending enabled for color attachment
-            {true},
+            {false},
         },
         {
             PrimitiveTopology::TRIANGLE_LIST,
@@ -208,7 +263,7 @@ void ShaderProgramFactory::CreateUiShaderProgram()
         ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
         CullMode::NONE,
         FrontFace::COUNTER_CLOCKWISE,
-        0,
+        1,
         {
             // Blending enabled for color attachment
             {true},
@@ -234,7 +289,7 @@ void ShaderProgramFactory::CreatePostprocessShaderProgram()
         ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
         CullMode::BACK,
         FrontFace::CLOCKWISE,
-        0,
+        1,
         {
             // Blending disabled for color attachment
             {false},

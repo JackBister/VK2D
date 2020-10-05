@@ -107,6 +107,19 @@ VkCullModeFlagBits ToVulkanCullMode(CullMode cullMode)
     }
 }
 
+bool IsImageDescriptorType(DescriptorType descriptorType)
+{
+    switch (descriptorType) {
+    case DescriptorType::UNIFORM_BUFFER:
+        return false;
+    case DescriptorType::COMBINED_IMAGE_SAMPLER:
+    case DescriptorType::INPUT_ATTACHMENT:
+        return true;
+    }
+    return false;
+    ;
+}
+
 VkDescriptorType ToVulkanDescriptorType(DescriptorType descriptorType)
 {
     switch (descriptorType) {
@@ -114,6 +127,8 @@ VkDescriptorType ToVulkanDescriptorType(DescriptorType descriptorType)
         return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     case DescriptorType::UNIFORM_BUFFER:
         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    case DescriptorType::INPUT_ATTACHMENT:
+        return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
     }
     return VK_DESCRIPTOR_TYPE_SAMPLER;
 }
@@ -146,6 +161,8 @@ VkFormat ToVulkanFormat(Format const & format)
         return VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
     case Format::R16G16_SFLOAT:
         return VkFormat::VK_FORMAT_R16G16_SFLOAT;
+    case Format::R32_SFLOAT:
+        return VkFormat::VK_FORMAT_R32_SFLOAT;
     case Format::R32G32B32A32_SFLOAT:
         return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;
     case Format::D32_SFLOAT:

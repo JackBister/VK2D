@@ -11,6 +11,8 @@ private:
     static void CreateMeshShaderProgram();
     static void CreateSkeletalMeshShaderProgram();
     static void CreateTransparentMeshShaderProgram();
+    static void CreateAmbientOcclusionProgram();
+    static void CreateAmbientOcclusionBlurProgram();
     static void CreateTonemapProgram();
     static void CreateUiShaderProgram();
     static void CreatePostprocessShaderProgram();

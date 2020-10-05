@@ -191,6 +191,7 @@ void RenderSystem::PreRenderFrame(FrameContext & context, PreRenderCommands cons
         renderer->ExecuteCommandBuffer(currFrame.preRenderPassCommandBuffer, {}, {currFrame.preRenderPassFinished});
 
         UpdateLights(context);
+        PreRenderSSAO(context);
     });
     jobEngine->ScheduleJob(preRenderJob, JobPriority::HIGH);
     auto & prevFrame = frameInfo[context.previousGpuFrameIndex];
@@ -237,15 +238,46 @@ void RenderSystem::PostProcessFrame(FrameContext & context)
     auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     auto res = renderer->GetResolution();
 
+    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
+
     currFrame.postProcessCommandBuffer->Reset();
     currFrame.postProcessCommandBuffer->BeginRecording(nullptr);
+
+    {
+        CommandBuffer::RenderPassBeginInfo ssaoBeginInfo = {
+            ssaoPass, currFrame.ssaoFramebuffer, {{0, 0}, {res.x, res.y}}, 0, nullptr};
+        currFrame.postProcessCommandBuffer->CmdBeginRenderPass(&ssaoBeginInfo, CommandBuffer::SubpassContents::INLINE);
+        currFrame.postProcessCommandBuffer->CmdSetViewport(0, 1, &viewport);
+        currFrame.postProcessCommandBuffer->CmdSetScissor(0, 1, &scissor);
+        currFrame.postProcessCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                            ambientOcclusionProgram->GetPipeline());
+        currFrame.postProcessCommandBuffer->CmdBindIndexBuffer(quadEbo, 0, CommandBuffer::IndexType::UINT32);
+        currFrame.postProcessCommandBuffer->CmdBindDescriptorSets(
+            ambientOcclusionLayout, 0, {currFrame.ssaoDescriptorSet});
+        currFrame.postProcessCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, sizeof(VertexWithColorAndUv));
+        currFrame.postProcessCommandBuffer->CmdDrawIndexed(6, 1, 0, 0, 0);
+        currFrame.postProcessCommandBuffer->CmdEndRenderPass();
+    }
+
     CommandBuffer::RenderPassBeginInfo beginInfo = {
         postprocessRenderpass, currFrame.postprocessFramebuffer, {{0, 0}, {res.x, res.y}}, 0, nullptr};
     currFrame.postProcessCommandBuffer->CmdBeginRenderPass(&beginInfo, CommandBuffer::SubpassContents::INLINE);
 
-    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
     currFrame.postProcessCommandBuffer->CmdSetViewport(0, 1, &viewport);
-    CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
+    currFrame.postProcessCommandBuffer->CmdSetScissor(0, 1, &scissor);
+
+    currFrame.postProcessCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
+                                                        ambientOcclusionBlurProgram->GetPipeline());
+    currFrame.postProcessCommandBuffer->CmdBindIndexBuffer(quadEbo, 0, CommandBuffer::IndexType::UINT32);
+    currFrame.postProcessCommandBuffer->CmdBindDescriptorSets(
+        ambientOcclusionBlurLayout, 0, {currFrame.ssaoBlurDescriptorSet});
+    currFrame.postProcessCommandBuffer->CmdBindVertexBuffer(quadVbo, 0, 0, sizeof(VertexWithColorAndUv));
+    currFrame.postProcessCommandBuffer->CmdDrawIndexed(6, 1, 0, 0, 0);
+
+    currFrame.postProcessCommandBuffer->CmdNextSubpass(CommandBuffer::SubpassContents::INLINE);
+
+    currFrame.postProcessCommandBuffer->CmdSetViewport(0, 1, &viewport);
     currFrame.postProcessCommandBuffer->CmdSetScissor(0, 1, &scissor);
     currFrame.postProcessCommandBuffer->CmdBindPipeline(RenderPassHandle::PipelineBindPoint::GRAPHICS,
                                                         tonemapProgram->GetPipeline());
@@ -401,6 +433,12 @@ void RenderSystem::PreRenderCameras(FrameContext const & context, std::vector<Up
         } uniforms = {camera.projection * camera.view, camera.pos};
         currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
             cam->uniformBuffer, 0, sizeof(glm::mat4) + sizeof(glm::vec3), (uint32_t *)&uniforms);
+
+        // TODO: This is bad
+        if (camera.isActive) {
+            currFrame.ssaoParameterBufferMapped->projection = camera.projection;
+            currFrame.ssaoParameterBufferMapped->view = camera.view;
+        }
     }
 }
 
@@ -576,6 +614,14 @@ void RenderSystem::RenderTransparentMeshes(FrameContext & context, CameraInstanc
             }
         }
     }
+}
+
+void RenderSystem::PreRenderSSAO(FrameContext const & context)
+{
+    OPTICK_EVENT();
+    auto & currFrame = frameInfo[context.currentGpuFrameIndex];
+
+    currFrame.ssaoParameterBufferMapped->screenResolution = renderer->GetResolution();
 }
 
 void RenderSystem::RenderDebugDraws(FrameContext & context, CameraInstance const & camera)

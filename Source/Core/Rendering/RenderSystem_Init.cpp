@@ -1,11 +1,23 @@
 #include "RenderSystem.h"
 
+#include "BufferAllocator.h"
 #include "Core/Console/Console.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/ShaderProgram.h"
 
 static const auto logger = Logger::Create("RenderSystem");
+
+float Lerp(float a, float b, float f)
+{
+    return a + f * (b - a);
+}
+
+// Returns a float between 0.0 and 1.0
+float RandomFloat()
+{
+    return ((float)rand() / (float)RAND_MAX);
+}
 
 RenderSystem::RenderSystem(Renderer * renderer)
     : jobEngine(JobEngine::GetInstance()), renderer(renderer), rendererProperties(renderer->GetProperties()),
@@ -113,6 +125,20 @@ void RenderSystem::Init()
     skeletalMeshProgram =
         ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/mesh_skeletal.program");
 
+    ambientOcclusionDescriptorSetLayout = ResourceManager::GetResource<DescriptorSetLayoutHandle>(
+        "_Primitives/DescriptorSetLayouts/ambientOcclusion.layout");
+    ambientOcclusionLayout = ResourceManager::GetResource<PipelineLayoutHandle>(
+        "_Primitives/PipelineLayouts/ambientOcclusion.pipelinelayout");
+    ambientOcclusionProgram =
+        ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/ambientOcclusion.program");
+
+    ambientOcclusionBlurDescriptorSetLayout = ResourceManager::GetResource<DescriptorSetLayoutHandle>(
+        "_Primitives/DescriptorSetLayouts/ambientOcclusionBlur.layout");
+    ambientOcclusionBlurLayout = ResourceManager::GetResource<PipelineLayoutHandle>(
+        "_Primitives/PipelineLayouts/ambientOcclusionBlur.pipelinelayout");
+    ambientOcclusionBlurProgram =
+        ResourceManager::GetResource<ShaderProgram>("_Primitives/ShaderPrograms/ambientOcclusionBlur.program");
+
     tonemapDescriptorSetLayout =
         ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/tonemap.layout");
     tonemapLayout =
@@ -137,6 +163,46 @@ void RenderSystem::Init()
 
     quadEbo = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/QuadEBO.buffer");
     quadVbo = ResourceManager::GetResource<BufferHandle>("_Primitives/Buffers/QuadVBO.buffer");
+
+    ssaoPass = ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/ssao.pass");
+
+    Semaphore sem;
+    renderer->CreateResources([&](ResourceCreationContext & ctx) {
+        {
+            std::vector<uint8_t> noiseTexture(16 * sizeof(glm::vec4));
+            for (size_t j = 0; j < 16; ++j) {
+                glm::vec4 noise(RandomFloat() * 2.f - 1.f, RandomFloat() * 2.f - 1.f, 0.f, 1.f);
+                memcpy(&noiseTexture[j * sizeof(glm::vec4)], &noise, sizeof(glm::vec4));
+            }
+
+            ResourceCreationContext::ImageCreateInfo aoNoiseCi;
+            aoNoiseCi.depth = 1;
+            aoNoiseCi.width = 4;
+            aoNoiseCi.height = 4;
+            aoNoiseCi.format = Format::R32G32B32A32_SFLOAT;
+            aoNoiseCi.mipLevels = 1;
+            aoNoiseCi.type = ImageHandle::Type::TYPE_2D;
+            aoNoiseCi.usage = ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT |
+                              ImageUsageFlagBits::IMAGE_USAGE_FLAG_TRANSFER_DST_BIT;
+            ssaoNoiseImage = ctx.CreateImage(aoNoiseCi);
+            ctx.ImageData(ssaoNoiseImage, noiseTexture);
+
+            ResourceCreationContext::ImageViewCreateInfo aoNoiseImgViewCi;
+            aoNoiseImgViewCi.components = ImageViewHandle::ComponentMapping::IDENTITY;
+            aoNoiseImgViewCi.format = Format::R32G32B32A32_SFLOAT;
+            aoNoiseImgViewCi.image = ssaoNoiseImage;
+            aoNoiseImgViewCi.viewType = ImageViewHandle::Type::TYPE_2D;
+            aoNoiseImgViewCi.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+            aoNoiseImgViewCi.subresourceRange.baseArrayLayer = 0;
+            aoNoiseImgViewCi.subresourceRange.baseMipLevel = 0;
+            aoNoiseImgViewCi.subresourceRange.layerCount = 1;
+            aoNoiseImgViewCi.subresourceRange.levelCount = 1;
+            ssaoNoiseImageView = ctx.CreateImageView(aoNoiseImgViewCi);
+        }
+
+        sem.Signal();
+    });
+    sem.Wait();
 
     InitSwapchainResources();
 
@@ -194,7 +260,7 @@ void RenderSystem::InitSwapchainResources()
                 0,
                 Format::D32_SFLOAT,
                 RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
-                RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+                RenderPassHandle::AttachmentDescription::StoreOp::STORE,
                 RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
                 RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
                 ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL,
@@ -219,7 +285,32 @@ void RenderSystem::InitSwapchainResources()
         this->mainRenderpass = ctx.CreateRenderPass(passInfo);
         ResourceManager::AddResource("_Primitives/Renderpasses/main.pass", this->mainRenderpass);
 
+        {
+            std::vector<RenderPassHandle::AttachmentDescription> ssaoAttachments = {
+                {0,
+                 Format::R32_SFLOAT,
+                 RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+                 RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+                 RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+                 RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+                 ImageLayout::UNDEFINED,
+                 ImageLayout::SHADER_READ_ONLY_OPTIMAL},
+            };
+            RenderPassHandle::AttachmentReference outputReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+            RenderPassHandle::SubpassDescription subpass = {
+                RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {outputReference}, {}, {}, {}};
+            ResourceCreationContext::RenderPassCreateInfo ssaoRpCi;
+            ssaoRpCi.attachments = ssaoAttachments;
+            ssaoRpCi.subpasses = {subpass};
+            if (this->ssaoPass) {
+                ctx.DestroyRenderPass(this->ssaoPass);
+            }
+            this->ssaoPass = ctx.CreateRenderPass(ssaoRpCi);
+            ResourceManager::AddResource("_Primitives/Renderpasses/ssao.pass", ssaoPass);
+        }
+
         std::vector<RenderPassHandle::AttachmentDescription> postprocessAttachments = {
+            // Backbuffer
             {0,
              renderer->GetBackbufferFormat(),
              // TODO: Can probably be DONT_CARE once we're doing actual post processing
@@ -228,15 +319,33 @@ void RenderSystem::InitSwapchainResources()
              RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
              RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
              ImageLayout::UNDEFINED,
-             ImageLayout::PRESENT_SRC_KHR}};
+             ImageLayout::PRESENT_SRC_KHR},
+            // Blurred SSAO
+            {0,
+             Format::R32_SFLOAT,
+             RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+             RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+             RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+             ImageLayout::UNDEFINED,
+             ImageLayout::COLOR_ATTACHMENT_OPTIMAL}};
 
-        RenderPassHandle::AttachmentReference postprocessReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+        RenderPassHandle::AttachmentReference backbufferReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+        RenderPassHandle::AttachmentReference aoBlurColorRef = {1, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+        RenderPassHandle::AttachmentReference aoBlurInputRef = {1, ImageLayout::SHADER_READ_ONLY_OPTIMAL};
+
+        RenderPassHandle::SubpassDescription aoBlurSubpass = {
+            RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {aoBlurColorRef}, {}, {}, {}};
 
         RenderPassHandle::SubpassDescription postprocessSubpass = {
-            RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {postprocessReference}, {}, {}, {}};
+            RenderPassHandle::PipelineBindPoint::GRAPHICS, {aoBlurInputRef}, {backbufferReference}, {}, {}, {}};
+
+        RenderPassHandle::SubpassDependency aoBlurDependency = {
+            0, 1, PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT, PipelineStageFlagBits::TOP_OF_PIPE_BIT, 0, 0, 0};
 
         ResourceCreationContext::RenderPassCreateInfo postprocessPassInfo = {
-            postprocessAttachments, {postprocessSubpass}, {}};
+            postprocessAttachments, {aoBlurSubpass, postprocessSubpass}, {aoBlurDependency}};
+
         if (this->postprocessRenderpass) {
             ctx.DestroyRenderPass(this->postprocessRenderpass);
         }
@@ -267,6 +376,9 @@ void RenderSystem::InitSwapchainResources()
             }
             if (fi.normalsGBufferImage) {
                 ctx.DestroyImage(fi.normalsGBufferImage);
+            }
+            if (fi.ssaoDescriptorSet) {
+                ctx.DestroyDescriptorSet(fi.ssaoDescriptorSet);
             }
             if (fi.tonemapDescriptorSet) {
                 ctx.DestroyDescriptorSet(fi.tonemapDescriptorSet);
@@ -374,6 +486,22 @@ void RenderSystem::InitSwapchainResources()
 void RenderSystem::InitFramebuffers(ResourceCreationContext & ctx)
 {
     auto res = renderer->GetResolution();
+
+    std::vector<glm::vec4> ssaoSamples(MAX_SSAO_SAMPLES);
+    {
+        for (size_t j = 0; j < MAX_SSAO_SAMPLES; ++j) {
+            auto & sample = ssaoSamples[j];
+            auto v3 = glm::vec3(RandomFloat() * 2.f - 1.f, RandomFloat() * 2.f - 1.f, RandomFloat());
+            v3 = glm::normalize(v3);
+            v3 *= RandomFloat();
+            float scale = (float)j / 64.f;
+            scale = Lerp(0.1f, 1.f, scale * scale);
+            v3 *= scale;
+
+            sample = glm::vec4(v3, 1.f);
+        }
+    }
+
     for (size_t i = 0; i < frameInfo.size(); ++i) {
         ResourceCreationContext::ImageCreateInfo prepassDepthImageCi;
         prepassDepthImageCi.depth = 1;
@@ -474,23 +602,134 @@ void RenderSystem::InitFramebuffers(ResourceCreationContext & ctx)
         mainFramebufferCi.renderPass = this->mainRenderpass;
         frameInfo[i].framebuffer = ctx.CreateFramebuffer(mainFramebufferCi);
 
+        {
+            ResourceCreationContext::ImageCreateInfo aoImgCi;
+            aoImgCi.depth = 1;
+            aoImgCi.width = res.x;
+            aoImgCi.height = res.y;
+            aoImgCi.format = Format::R32_SFLOAT;
+            aoImgCi.mipLevels = 1;
+            aoImgCi.type = ImageHandle::Type::TYPE_2D;
+            aoImgCi.usage = ImageUsageFlagBits::IMAGE_USAGE_FLAG_COLOR_ATTACHMENT_BIT |
+                            ImageUsageFlagBits::IMAGE_USAGE_FLAG_SAMPLED_BIT;
+            frameInfo[i].ssaoOutputImage = ctx.CreateImage(aoImgCi);
+            ctx.AllocateImage(frameInfo[i].ssaoOutputImage);
+
+            ResourceCreationContext::ImageViewCreateInfo aoImgViewCi;
+            aoImgViewCi.components = ImageViewHandle::ComponentMapping::IDENTITY;
+            aoImgViewCi.format = Format::R32_SFLOAT;
+            aoImgViewCi.image = frameInfo[i].ssaoOutputImage;
+            aoImgViewCi.viewType = ImageViewHandle::Type::TYPE_2D;
+            aoImgViewCi.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+            aoImgViewCi.subresourceRange.baseArrayLayer = 0;
+            aoImgViewCi.subresourceRange.baseMipLevel = 0;
+            aoImgViewCi.subresourceRange.layerCount = 1;
+            aoImgViewCi.subresourceRange.levelCount = 1;
+            frameInfo[i].ssaoOutputImageView = ctx.CreateImageView(aoImgViewCi);
+        }
+
+        {
+            ResourceCreationContext::ImageCreateInfo aoBlurImgCi;
+            aoBlurImgCi.depth = 1;
+            aoBlurImgCi.width = res.x;
+            aoBlurImgCi.height = res.y;
+            aoBlurImgCi.format = Format::R32_SFLOAT;
+            aoBlurImgCi.mipLevels = 1;
+            aoBlurImgCi.type = ImageHandle::Type::TYPE_2D;
+            aoBlurImgCi.usage = ImageUsageFlagBits::IMAGE_USAGE_FLAG_COLOR_ATTACHMENT_BIT |
+                                ImageUsageFlagBits::IMAGE_USAGE_FLAG_INPUT_ATTACHMENT_BIT;
+            frameInfo[i].ssaoBlurImage = ctx.CreateImage(aoBlurImgCi);
+            ctx.AllocateImage(frameInfo[i].ssaoBlurImage);
+
+            ResourceCreationContext::ImageViewCreateInfo aoBlurImgViewCi;
+            aoBlurImgViewCi.components = ImageViewHandle::ComponentMapping::IDENTITY;
+            aoBlurImgViewCi.format = Format::R32_SFLOAT;
+            aoBlurImgViewCi.image = frameInfo[i].ssaoBlurImage;
+            aoBlurImgViewCi.viewType = ImageViewHandle::Type::TYPE_2D;
+            aoBlurImgViewCi.subresourceRange.aspectMask = ImageViewHandle::ImageAspectFlagBits::COLOR_BIT;
+            aoBlurImgViewCi.subresourceRange.baseArrayLayer = 0;
+            aoBlurImgViewCi.subresourceRange.baseMipLevel = 0;
+            aoBlurImgViewCi.subresourceRange.layerCount = 1;
+            aoBlurImgViewCi.subresourceRange.levelCount = 1;
+            frameInfo[i].ssaoBlurImageView = ctx.CreateImageView(aoBlurImgViewCi);
+        }
+
+        {
+            ResourceCreationContext::FramebufferCreateInfo ssaoFbCi;
+            ssaoFbCi.attachments = {frameInfo[i].ssaoOutputImageView};
+            ssaoFbCi.width = res.x;
+            ssaoFbCi.height = res.y;
+            ssaoFbCi.layers = 1;
+            ssaoFbCi.renderPass = this->ssaoPass;
+            frameInfo[i].ssaoFramebuffer = ctx.CreateFramebuffer(ssaoFbCi);
+        }
+
         ResourceCreationContext::FramebufferCreateInfo postprocessFramebufferCi;
-        postprocessFramebufferCi.attachments = {frameInfo[i].backbuffer};
+        postprocessFramebufferCi.attachments = {frameInfo[i].backbuffer, frameInfo[i].ssaoBlurImageView};
         postprocessFramebufferCi.width = res.x;
         postprocessFramebufferCi.height = res.y;
         postprocessFramebufferCi.layers = 1;
         postprocessFramebufferCi.renderPass = this->postprocessRenderpass;
         frameInfo[i].postprocessFramebuffer = ctx.CreateFramebuffer(postprocessFramebufferCi);
 
-        ResourceCreationContext::DescriptorSetCreateInfo tonemapDSCi;
-        ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor tonemapImgDesc;
-        tonemapImgDesc.imageView = frameInfo[i].hdrColorBufferImageView;
-        tonemapImgDesc.sampler = postprocessSampler;
-        ResourceCreationContext::DescriptorSetCreateInfo::Descriptor tonemapDesc[] = {
-            DescriptorType::COMBINED_IMAGE_SAMPLER, 0, tonemapImgDesc};
-        tonemapDSCi.descriptorCount = 1;
-        tonemapDSCi.layout = tonemapDescriptorSetLayout;
-        tonemapDSCi.descriptors = tonemapDesc;
-        frameInfo[i].tonemapDescriptorSet = ctx.CreateDescriptorSet(tonemapDSCi);
+        {
+            ResourceCreationContext::BufferCreateInfo ssaoParamBufferCi;
+            ssaoParamBufferCi.memoryProperties =
+                MemoryPropertyFlagBits::HOST_COHERENT_BIT | MemoryPropertyFlagBits::HOST_VISIBLE_BIT;
+            ssaoParamBufferCi.size = sizeof(GpuSsaoParameters);
+            ssaoParamBufferCi.usage = BufferUsageFlags::UNIFORM_BUFFER_BIT;
+            frameInfo[i].ssaoParameterBuffer = ctx.CreateBuffer(ssaoParamBufferCi);
+            frameInfo[i].ssaoParameterBufferMapped =
+                (GpuSsaoParameters *)ctx.MapBuffer(frameInfo[i].ssaoParameterBuffer, 0, sizeof(GpuSsaoParameters));
+            for (size_t j = 0; j < MAX_SSAO_SAMPLES; ++j) {
+                frameInfo[i].ssaoParameterBufferMapped->samples[j] = ssaoSamples[j];
+            }
+        }
+
+        {
+            ResourceCreationContext::DescriptorSetCreateInfo ambientOcclusionDSCi;
+            // TODO: Should use half resolution image views (mip?)
+            ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor ambientOcclusionImgDescs[] = {
+                {postprocessSampler, frameInfo[i].normalsGBufferImageView},
+                {postprocessSampler, frameInfo[i].prepassDepthImageView},
+                {postprocessSampler, ssaoNoiseImageView}};
+            ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor ambientOcclusionBufferDescs[] = {
+                {frameInfo[i].ssaoParameterBuffer, 0, sizeof(GpuSsaoParameters)}};
+            ResourceCreationContext::DescriptorSetCreateInfo::Descriptor ambientOcclusionDescs[] = {
+                {DescriptorType::COMBINED_IMAGE_SAMPLER, 0, ambientOcclusionImgDescs[0]},
+                {DescriptorType::COMBINED_IMAGE_SAMPLER, 1, ambientOcclusionImgDescs[1]},
+                {DescriptorType::COMBINED_IMAGE_SAMPLER, 2, ambientOcclusionImgDescs[2]},
+                {DescriptorType::UNIFORM_BUFFER, 3, ambientOcclusionBufferDescs[0]}};
+            ambientOcclusionDSCi.descriptorCount = 4;
+            ambientOcclusionDSCi.layout = ambientOcclusionDescriptorSetLayout;
+            ambientOcclusionDSCi.descriptors = ambientOcclusionDescs;
+            frameInfo[i].ssaoDescriptorSet = ctx.CreateDescriptorSet(ambientOcclusionDSCi);
+        }
+
+        {
+            ResourceCreationContext::DescriptorSetCreateInfo ambientOcclusionBlurDSCi;
+            // TODO: Should use half resolution image views (mip?)
+            ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor ambientOcclusionBlurImgDescs[] = {
+                {postprocessSampler, frameInfo[i].ssaoOutputImageView}};
+            ResourceCreationContext::DescriptorSetCreateInfo::Descriptor ambientOcclusionBlurDescs[] = {
+                {DescriptorType::COMBINED_IMAGE_SAMPLER, 0, ambientOcclusionBlurImgDescs[0]}};
+            ambientOcclusionBlurDSCi.descriptorCount = 1;
+            ambientOcclusionBlurDSCi.layout = ambientOcclusionBlurDescriptorSetLayout;
+            ambientOcclusionBlurDSCi.descriptors = ambientOcclusionBlurDescs;
+            frameInfo[i].ssaoBlurDescriptorSet = ctx.CreateDescriptorSet(ambientOcclusionBlurDSCi);
+        }
+
+        {
+            ResourceCreationContext::DescriptorSetCreateInfo tonemapDSCi;
+            ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor tonemapImgDescs[] = {
+                {postprocessSampler, frameInfo[i].hdrColorBufferImageView}, {nullptr, frameInfo[i].ssaoBlurImageView}};
+            ResourceCreationContext::DescriptorSetCreateInfo::Descriptor tonemapDescs[] = {
+                {DescriptorType::COMBINED_IMAGE_SAMPLER, 0, tonemapImgDescs[0]},
+                {DescriptorType::INPUT_ATTACHMENT, 1, tonemapImgDescs[1]}};
+            tonemapDSCi.descriptorCount = 2;
+            tonemapDSCi.layout = tonemapDescriptorSetLayout;
+            tonemapDSCi.descriptors = tonemapDescs;
+            frameInfo[i].tonemapDescriptorSet = ctx.CreateDescriptorSet(tonemapDSCi);
+        }
     }
 }

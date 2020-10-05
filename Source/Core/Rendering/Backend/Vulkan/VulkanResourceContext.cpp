@@ -388,30 +388,42 @@ RenderPassHandle * VulkanResourceContext::CreateRenderPass(ResourceCreationConte
     std::vector<VkAttachmentReference> depthStencilAttachments;
     std::vector<VkAttachmentReference> inputAttachments;
 
-    std::vector<VkSubpassDescription> subpassDescriptions(ci.subpasses.size());
     for (size_t i = 0; i < ci.subpasses.size(); ++i) {
         auto description = ci.subpasses[i];
+        size_t startColorIdx = colorAttachments.size();
         for (uint32_t i = 0; i < description.colorAttachments.size(); ++i) {
             colorAttachments.push_back(ToVulkanAttachmentReference(description.colorAttachments[i]));
         }
+        size_t startDepthIdx = depthStencilAttachments.size();
         if (description.depthStencilAttachment.has_value()) {
             depthStencilAttachments.push_back(ToVulkanAttachmentReference(description.depthStencilAttachment.value()));
         }
+        size_t startInputIdx = inputAttachments.size();
         for (uint32_t i = 0; i < description.inputAttachments.size(); ++i) {
             inputAttachments.push_back(ToVulkanAttachmentReference(description.inputAttachments[i]));
         }
-        subpassDescriptions[i] = {0,
-                                  ToVulkanPipelineBindPoint(description.pipelineBindPoint),
-                                  (uint32_t)inputAttachments.size(),
-                                  inputAttachments.size() > 0 ? &inputAttachments[0] : nullptr,
-                                  (uint32_t)colorAttachments.size(),
-                                  colorAttachments.size() > 0 ? &colorAttachments[0] : nullptr,
-                                  // TODO
-                                  nullptr,
-                                  depthStencilAttachments.size() > 0 ? &depthStencilAttachments[0] : nullptr,
-                                  (uint32_t)description.preserveAttachments.size(),
-                                  description.preserveAttachments.size() > 0 ? &description.preserveAttachments[0]
-                                                                             : nullptr};
+    }
+    std::vector<VkSubpassDescription> subpassDescriptions(ci.subpasses.size());
+    size_t currColorIdx = 0;
+    size_t currDepthIdx = 0;
+    size_t currInputIdx = 0;
+    for (size_t i = 0; i < ci.subpasses.size(); ++i) {
+        auto description = ci.subpasses[i];
+        subpassDescriptions[i] = {
+            0,
+            ToVulkanPipelineBindPoint(description.pipelineBindPoint),
+            (uint32_t)description.inputAttachments.size(),
+            description.inputAttachments.size() > 0 ? &inputAttachments[currInputIdx] : nullptr,
+            (uint32_t)description.colorAttachments.size(),
+            description.colorAttachments.size() > 0 ? &colorAttachments[currColorIdx] : nullptr,
+            // TODO
+            nullptr,
+            description.depthStencilAttachment.has_value() ? &depthStencilAttachments[currDepthIdx] : nullptr,
+            (uint32_t)description.preserveAttachments.size(),
+            description.preserveAttachments.size() > 0 ? &description.preserveAttachments[0] : nullptr};
+        currColorIdx += description.colorAttachments.size();
+        currDepthIdx += description.depthStencilAttachment.has_value() ? 1 : 0;
+        currInputIdx += description.inputAttachments.size();
     }
 
     std::vector<VkSubpassDependency> subpassDependencies(ci.subpassDependency.size());
@@ -938,6 +950,14 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
                                   // TODO: Add this to the createInfo?
                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
             bindingToIdx.insert_or_assign(descriptor.binding, imageInfos.size() - 1);
+        } else if (descriptor.type == DescriptorType::INPUT_ATTACHMENT) {
+            auto image =
+                std::get<ResourceCreationContext::DescriptorSetCreateInfo::ImageDescriptor>(descriptor.descriptor);
+            imageInfos.push_back({VK_NULL_HANDLE,
+                                  ((VulkanImageViewHandle *)image.imageView)->imageView,
+                                  // TODO: Add this to the createInfo?
+                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+            bindingToIdx.insert_or_assign(descriptor.binding, imageInfos.size() - 1);
         }
     }
 
@@ -952,7 +972,7 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
                      0,
                      1,
                      ToVulkanDescriptorType(descriptor.type),
-                     descriptor.type == DescriptorType::COMBINED_IMAGE_SAMPLER ? &imageInfos[idx] : nullptr,
+                     IsImageDescriptorType(descriptor.type) ? &imageInfos[idx] : nullptr,
                      descriptor.type == DescriptorType::UNIFORM_BUFFER ? &bufferInfos[idx] : nullptr,
                      // TODO: if UNIFORM_TEXEL_BUFFER/STORAGE_TEXEL_BUFFER uniforms become available
                      nullptr};

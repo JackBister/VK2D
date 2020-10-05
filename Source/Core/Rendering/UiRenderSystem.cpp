@@ -21,6 +21,7 @@ UiRenderSystem * UiRenderSystem::GetInstance()
 ImDrawData * CopyDrawData(ImDrawData * original)
 {
     auto ret = new ImDrawData(*original);
+    ret->CmdLists = (ImDrawList **)malloc(ret->CmdListsCount * sizeof(ImDrawList *));
     for (int i = 0; i < ret->CmdListsCount; ++i) {
         ret->CmdLists[i] = original->CmdLists[i]->CloneOutput();
     }

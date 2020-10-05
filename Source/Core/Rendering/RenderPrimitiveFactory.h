@@ -18,6 +18,7 @@ private:
     void CreateDebugDrawPipelineLayout(ResourceCreationContext &);
 
     RenderPassHandle * CreateMainRenderpass(ResourceCreationContext &);
+    RenderPassHandle * CreateSSAORenderpass(ResourceCreationContext &);
     RenderPassHandle * CreatePostprocessRenderpass(ResourceCreationContext &);
 
     void CreatePrepassPipelineLayout(ResourceCreationContext &);
@@ -32,6 +33,8 @@ private:
     void CreateSkeletalMeshPipelineLayout(ResourceCreationContext &);
     void CreateSkeletalMeshVertexInputState(ResourceCreationContext &);
 
+    PipelineLayoutHandle * CreateAmbientOcclusionPipelineLayout(ResourceCreationContext &);
+    PipelineLayoutHandle * CreateAmbientOcclusionBlurPipelineLayout(ResourceCreationContext &);
     PipelineLayoutHandle * CreateTonemapPipelineLayout(ResourceCreationContext &);
 
     PipelineLayoutHandle * CreateUiPipelineLayout(ResourceCreationContext &);

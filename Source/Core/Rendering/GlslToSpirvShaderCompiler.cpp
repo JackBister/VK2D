@@ -85,8 +85,9 @@ SpirvCompilationResult GlslToSpirvShaderCompiler::CompileGlslFile(std::string co
     auto result =
         compiler.CompileGlslToSpv(fileContent.data(), fileContent.size() - 1, shaderType, fileName.c_str(), options);
 
-    assert(result.GetNumErrors() == 0);
     if (result.GetNumErrors() > 0) {
+        logger->Errorf("Failed to compile shader %s: %s", fileName.c_str(), result.GetErrorMessage().c_str());
+        assert(false);
         return SpirvCompilationResult(std::vector<uint32_t>(), result.GetErrorMessage(), false);
     }
 

@@ -214,6 +214,23 @@ void VulkanCommandBuffer::CmdExecuteCommands(std::vector<CommandBuffer *> && com
     vkCmdExecuteCommands(this->buffer, (uint32_t)nativeCommandBuffers.size(), &nativeCommandBuffers[0]);
 }
 
+void VulkanCommandBuffer::CmdNextSubpass(SubpassContents contents)
+{
+    VkSubpassContents subpassContents;
+    switch (contents) {
+    case CommandBuffer::SubpassContents::INLINE:
+        subpassContents = VK_SUBPASS_CONTENTS_INLINE;
+        break;
+    case CommandBuffer::SubpassContents::SECONDARY_COMMAND_BUFFERS:
+        subpassContents = VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
+        break;
+    default:
+        assert(false);
+        subpassContents = VK_SUBPASS_CONTENTS_INLINE;
+    }
+    vkCmdNextSubpass(this->buffer, subpassContents);
+}
+
 void VulkanCommandBuffer::CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount,
                                         CommandBuffer::Rect2D const * pScissors)
 {

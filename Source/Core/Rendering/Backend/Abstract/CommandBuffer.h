@@ -86,6 +86,7 @@ public:
     virtual void CmdExecuteCommands(uint32_t commandBufferCount, CommandBuffer ** pCommandBuffers) = 0;
     // TODO:
     virtual void CmdExecuteCommands(std::vector<CommandBuffer *> && commandBuffers) = 0;
+    virtual void CmdNextSubpass(SubpassContents subpassContents) = 0;
     virtual void CmdSetScissor(uint32_t firstScissor, uint32_t scissorCount, Rect2D const * pScissors) = 0;
     virtual void CmdSetViewport(uint32_t firstViewport, uint32_t viewportCount, Viewport const * pViewports) = 0;
 

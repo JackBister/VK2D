@@ -66,8 +66,8 @@ enum class DescriptorType {
     STORAGE_BUFFER = 7,
     UNIFORM_BUFFER_DYNAMIC = 8,
     STORAGE_BUFFER_DYNAMIC = 9,
-    INPUT_ATTACHMENT = 10,
     */
+    INPUT_ATTACHMENT = 10,
 };
 
 enum class Format {
@@ -79,6 +79,8 @@ enum class Format {
     RGBA8,
 
     R16G16_SFLOAT,
+
+    R32_SFLOAT,
 
     R32G32B32A32_SFLOAT,
 

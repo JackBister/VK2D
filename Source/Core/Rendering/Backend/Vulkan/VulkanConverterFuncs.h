@@ -14,6 +14,7 @@ VkCompareOp ToVulkanCompareOp(CompareOp compareOp);
 VkComponentMapping ToVulkanComponentMapping(ImageViewHandle::ComponentMapping mapping);
 VkComponentSwizzle ToVulkanComponentSwizzle(ComponentSwizzle swizzle);
 VkCullModeFlagBits ToVulkanCullMode(CullMode cullMode);
+bool IsImageDescriptorType(DescriptorType descriptorType);
 VkDescriptorType ToVulkanDescriptorType(DescriptorType descriptorType);
 VkFilter ToVulkanFilter(Filter filter);
 VkFormat ToVulkanFormat(Format const & format);

@@ -50,6 +50,11 @@ int main(int argc, char * argv[])
     OPTICK_THREAD("Main Thread");
 
     std::string sceneFileName(argv[argc - 1]);
+#if _DEBUG
+    srand(0);
+#else
+    srand(time(0));
+#endif
     ImGui::CreateContext();
     SDL_Init(SDL_INIT_EVERYTHING);
     Config::Init();

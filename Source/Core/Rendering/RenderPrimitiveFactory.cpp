@@ -18,6 +18,7 @@ void RenderPrimitiveFactory::CreatePrimitives()
     Semaphore finishedCreating;
     renderer->CreateResources([this, &finishedCreating](ResourceCreationContext & ctx) {
         auto mainRenderpass = CreateMainRenderpass(ctx);
+        CreateSSAORenderpass(ctx);
         auto postprocessRenderpass = CreatePostprocessRenderpass(ctx);
 
         auto passthroughTransformPipelineLayout = CreatePassthroughTransformPipelineLayout(ctx);
@@ -29,6 +30,8 @@ void RenderPrimitiveFactory::CreatePrimitives()
         CreateSkeletalMeshPipelineLayout(ctx);
         CreateSkeletalMeshVertexInputState(ctx);
 
+        CreateAmbientOcclusionPipelineLayout(ctx);
+        CreateAmbientOcclusionBlurPipelineLayout(ctx);
         CreateTonemapPipelineLayout(ctx);
         auto uiPipelineLayout = CreateUiPipelineLayout(ctx);
         auto uiVertexInputState = CreateUiVertexInputState(ctx);
@@ -127,7 +130,7 @@ RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreation
             0,
             Format::D32_SFLOAT,
             RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
-            RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+            RenderPassHandle::AttachmentDescription::StoreOp::STORE,
             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
             RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
             ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL,
@@ -151,9 +154,33 @@ RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreation
     return mainRenderpass;
 }
 
+RenderPassHandle * RenderPrimitiveFactory::CreateSSAORenderpass(ResourceCreationContext & ctx)
+{
+    std::vector<RenderPassHandle::AttachmentDescription> ssaoAttachments = {
+        {0,
+         Format::R32_SFLOAT,
+         RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+         RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+         RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+         RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+         ImageLayout::UNDEFINED,
+         ImageLayout::COLOR_ATTACHMENT_OPTIMAL},
+    };
+    RenderPassHandle::AttachmentReference outputReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+    RenderPassHandle::SubpassDescription subpass = {
+        RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {outputReference}, {}, {}, {}};
+    ResourceCreationContext::RenderPassCreateInfo ci;
+    ci.attachments = ssaoAttachments;
+    ci.subpasses = {subpass};
+    auto renderpass = ctx.CreateRenderPass(ci);
+    ResourceManager::AddResource("_Primitives/Renderpasses/ssao.pass", renderpass);
+    return renderpass;
+}
+
 RenderPassHandle * RenderPrimitiveFactory::CreatePostprocessRenderpass(ResourceCreationContext & ctx)
 {
     std::vector<RenderPassHandle::AttachmentDescription> postprocessAttachments = {
+        // Backbuffer
         {0,
          renderer->GetBackbufferFormat(),
          // TODO: Can probably be DONT_CARE once we're doing actual post processing
@@ -161,16 +188,33 @@ RenderPassHandle * RenderPrimitiveFactory::CreatePostprocessRenderpass(ResourceC
          RenderPassHandle::AttachmentDescription::StoreOp::STORE,
          RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
          RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
-         ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-         ImageLayout::PRESENT_SRC_KHR}};
+         ImageLayout::UNDEFINED,
+         ImageLayout::PRESENT_SRC_KHR},
+        // Blurred SSAO
+        {0,
+         Format::R32_SFLOAT,
+         RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+         RenderPassHandle::AttachmentDescription::StoreOp::STORE,
+         RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
+         RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
+         ImageLayout::UNDEFINED,
+         ImageLayout::COLOR_ATTACHMENT_OPTIMAL}};
 
-    RenderPassHandle::AttachmentReference postprocessReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+    RenderPassHandle::AttachmentReference backbufferReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+    RenderPassHandle::AttachmentReference aoBlurColorRef = {1, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
+    RenderPassHandle::AttachmentReference aoBlurInputRef = {1, ImageLayout::SHADER_READ_ONLY_OPTIMAL};
+
+    RenderPassHandle::SubpassDescription aoBlurSubpass = {
+        RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {aoBlurColorRef}, {}, {}, {}};
 
     RenderPassHandle::SubpassDescription postprocessSubpass = {
-        RenderPassHandle::PipelineBindPoint::GRAPHICS, {}, {postprocessReference}, {}, {}, {}};
+        RenderPassHandle::PipelineBindPoint::GRAPHICS, {aoBlurInputRef}, {backbufferReference}, {}, {}, {}};
+
+    RenderPassHandle::SubpassDependency aoBlurDependency = {
+        0, 1, PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT, PipelineStageFlagBits::TOP_OF_PIPE_BIT, 0, 0, 0};
 
     ResourceCreationContext::RenderPassCreateInfo postprocessPassInfo = {
-        postprocessAttachments, {postprocessSubpass}, {}};
+        postprocessAttachments, {aoBlurSubpass, postprocessSubpass}, {aoBlurDependency}};
     auto postprocessRenderpass = ctx.CreateRenderPass(postprocessPassInfo);
     ResourceManager::AddResource("_Primitives/Renderpasses/postprocess.pass", postprocessRenderpass);
     return postprocessRenderpass;
@@ -337,11 +381,42 @@ void RenderPrimitiveFactory::CreateSkeletalMeshVertexInputState(ResourceCreation
     ResourceManager::AddResource("_Primitives/VertexInputStates/mesh_skeletal.state", meshInputState);
 }
 
-PipelineLayoutHandle * RenderPrimitiveFactory::CreateTonemapPipelineLayout(ResourceCreationContext & ctx)
+PipelineLayoutHandle * RenderPrimitiveFactory::CreateAmbientOcclusionPipelineLayout(ResourceCreationContext & ctx)
+{
+    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding fragBindings[] = {
+        {0, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT},
+        {1, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT},
+        {2, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT},
+        {3, DescriptorType::UNIFORM_BUFFER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT},
+    };
+    auto ambientOcclusionDSLayout = ctx.CreateDescriptorSetLayout({4, fragBindings});
+    ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/ambientOcclusion.layout", ambientOcclusionDSLayout);
+
+    auto ambientOcclusionLayout = ctx.CreatePipelineLayout({{ambientOcclusionDSLayout}});
+    ResourceManager::AddResource("_Primitives/PipelineLayouts/ambientOcclusion.pipelinelayout", ambientOcclusionLayout);
+    return ambientOcclusionLayout;
+}
+
+PipelineLayoutHandle * RenderPrimitiveFactory::CreateAmbientOcclusionBlurPipelineLayout(ResourceCreationContext & ctx)
 {
     ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding fragBindings[] = {
         {0, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
-    auto tonemapDescriptorSetLayout = ctx.CreateDescriptorSetLayout({1, fragBindings});
+    auto ambientOcclusionBlurDSLayout = ctx.CreateDescriptorSetLayout({1, fragBindings});
+    ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/ambientOcclusionBlur.layout",
+                                 ambientOcclusionBlurDSLayout);
+
+    auto ambientOcclusionBlurLayout = ctx.CreatePipelineLayout({{ambientOcclusionBlurDSLayout}});
+    ResourceManager::AddResource("_Primitives/PipelineLayouts/ambientOcclusionBlur.pipelinelayout",
+                                 ambientOcclusionBlurLayout);
+    return ambientOcclusionBlurLayout;
+}
+
+PipelineLayoutHandle * RenderPrimitiveFactory::CreateTonemapPipelineLayout(ResourceCreationContext & ctx)
+{
+    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding fragBindings[] = {
+        {0, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT},
+        {1, DescriptorType::INPUT_ATTACHMENT, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
+    auto tonemapDescriptorSetLayout = ctx.CreateDescriptorSetLayout({2, fragBindings});
     ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/tonemap.layout", tonemapDescriptorSetLayout);
 
     auto tonemapLayout = ctx.CreatePipelineLayout({{tonemapDescriptorSetLayout}});
