@@ -28,7 +28,6 @@ enum class FrameStage {
 
 void AddEntity(Entity *);
 void BeginPlay();
-void DeserializePhysics(DeserializationContext * deserializationContext, SerializedObject const &);
 Entity * GetEntityByIdx(size_t idx);
 Entity * GetEntityByName(std::string const &);
 size_t GetEntityCount();
@@ -42,6 +41,8 @@ void LoadScene(std::string const &);
 void OnFrameStart(std::function<void()>);
 void RemoveEntity(Entity *);
 SerializedObject SerializePhysics();
+void SetPhysicsWorld(PhysicsWorld *);
+void SetScene(Scene *);
 void TakeCameraFocus(Entity *);
 void Tick(FrameContext &);
 void TickEntities();

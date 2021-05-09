@@ -18,6 +18,8 @@ public:
     static Scene * FromFile(std::string const &);
     static std::unique_ptr<Scene> Create(std::string const & fileName);
 
+    Scene(std::string const & fileName, std::vector<std::string> dlls, std::vector<Entity *> entities);
+
     SerializedObject Serialize() const final override;
     void SerializeToFile(std::string const & filename);
     void Unload();
@@ -28,7 +30,6 @@ public:
     void RemoveEntity(Entity * entity);
 
 private:
-    Scene(std::string const & fileName, std::vector<std::string> dlls, std::vector<Entity *> entities);
     Scene(std::vector<std::string> dlls, std::vector<Entity *> entities);
 
     std::string fileName;

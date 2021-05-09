@@ -21,6 +21,7 @@
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/ShaderProgramFactory.h"
 #include "Core/Resources/ResourceManager.h"
+#include "Core/Resources/Scene.h"
 #include "Core/Semaphore.h"
 #include "Core/UI/EditorSystem.h"
 #include "Core/Util/DefaultFileSlurper.h"
@@ -40,16 +41,22 @@ int main(int argc, char * argv[])
         return 1;
     }
 
+    int filenameIndex = 0;
     bool startInEditor = false;
-    for (int i = 0; i < argc; ++i) {
+    for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-editor") == 0) {
             startInEditor = true;
+        } else {
+            filenameIndex = i;
         }
     }
     SetThreadName(std::this_thread::get_id(), "Main Thread");
     OPTICK_THREAD("Main Thread");
 
-    std::string sceneFileName(argv[argc - 1]);
+    std::optional<std::string> sceneFileName;
+    if (filenameIndex != 0) {
+        sceneFileName = argv[filenameIndex];
+    }
 #if _DEBUG
     srand(0);
 #else
@@ -62,8 +69,8 @@ int main(int argc, char * argv[])
     JobEngine jobEngine(numJobThreads);
     jobEngine.RegisterMainThread();
     RendererConfig cfg;
-    cfg.windowResolution.x = 1920;
-    cfg.windowResolution.y = 1080;
+    cfg.windowResolution.x = 1280;
+    cfg.windowResolution.y = 720;
     cfg.presentMode = PresentMode::FIFO;
     Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, cfg, numJobThreads + 1);
     RenderPrimitiveFactory renderPrimitiveFactory(&renderer);
@@ -77,7 +84,12 @@ int main(int argc, char * argv[])
 
     GameModule::Init();
 
-    GameModule::LoadScene(sceneFileName);
+    if (sceneFileName.has_value()) {
+        GameModule::LoadScene(sceneFileName.value());
+    } else {
+        GameModule::SetPhysicsWorld(new PhysicsWorld());
+        GameModule::SetScene(new Scene("Untitled scene", {}, {}));
+    }
 
     if (startInEditor) {
         EditorSystem::OpenEditor();

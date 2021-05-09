@@ -42,17 +42,6 @@ void AddEntity(Entity * e)
     e->FireEvent("BeginPlay");
 }
 
-void DeserializePhysics(DeserializationContext * deserializationContext, SerializedObject const & obj)
-{
-    if (physicsWorld == nullptr) {
-        physicsWorld = (PhysicsWorld *)Deserializable::Deserialize(deserializationContext, obj);
-        return;
-    }
-    auto grav = obj.GetObject("gravity").value();
-    physicsWorld->SetGravity(
-        glm::vec3(grav.GetNumber("x").value(), grav.GetNumber("y").value(), grav.GetNumber("z").value()));
-}
-
 Entity * GetEntityByIdx(size_t idx)
 {
     if (entities.size() <= idx) {
@@ -149,6 +138,21 @@ SerializedObject SerializePhysics()
     return physicsWorld->Serialize();
 }
 
+void SetPhysicsWorld(PhysicsWorld * pw)
+{
+    if (physicsWorld == nullptr) {
+        physicsWorld = pw;
+        return;
+    }
+    auto grav = pw->GetGravity();
+    physicsWorld->SetGravity(grav);
+}
+
+void SetScene(Scene * s)
+{
+    scene = s;
+}
+
 void TakeCameraFocus(Entity * camera)
 {
     mainCameraEntity = camera;
@@ -180,7 +184,7 @@ void Tick(FrameContext & context)
 
     currFrameStage = FrameStage::PHYSICS;
     // TODO: substeps
-    physicsWorld->world->stepSimulation(Time::GetDeltaTime());
+    physicsWorld->Tick(Time::GetDeltaTime());
     currFrameStage = FrameStage::TICK;
     TickEntities();
 

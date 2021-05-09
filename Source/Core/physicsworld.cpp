@@ -29,18 +29,10 @@ class PhysicsWorldDeserializer : public Deserializer
     void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
     {
         PhysicsWorld * ret = new PhysicsWorld();
-        ret->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
-        ret->dispatcher = std::make_unique<btCollisionDispatcher>(ret->collisionConfig.get());
-        ret->broadphase = std::make_unique<btDbvtBroadphase>();
-        ret->constraintSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
-        ret->world = std::make_unique<btDiscreteDynamicsWorld>(
-            ret->dispatcher.get(), ret->broadphase.get(), ret->constraintSolver.get(), ret->collisionConfig.get());
-        ret->world->setInternalTickCallback(PhysicsWorld::s_TickCallback);
-        ret->world->setWorldUserInfo(ret);
 
         auto grav = obj.GetObject("gravity").value();
-        ret->world->setGravity(
-            btVector3(grav.GetNumber("x").value(), grav.GetNumber("y").value(), grav.GetNumber("z").value()));
+        ret->SetGravity(
+            glm::vec3(grav.GetNumber("x").value(), grav.GetNumber("y").value(), grav.GetNumber("z").value()));
 
         return ret;
     }
@@ -63,6 +55,19 @@ class Vec3Deserializer : public Deserializer
 
 DESERIALIZABLE_IMPL(PhysicsWorld, new PhysicsWorldDeserializer());
 DESERIALIZABLE_IMPL(Vec3, new Vec3Deserializer());
+
+PhysicsWorld::PhysicsWorld()
+{
+    this->type = "PhysicsWorld";
+    this->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
+    this->dispatcher = std::make_unique<btCollisionDispatcher>(this->collisionConfig.get());
+    this->broadphase = std::make_unique<btDbvtBroadphase>();
+    this->constraintSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
+    this->world = std::make_unique<btDiscreteDynamicsWorld>(
+        this->dispatcher.get(), this->broadphase.get(), this->constraintSolver.get(), this->collisionConfig.get());
+    this->world->setInternalTickCallback(PhysicsWorld::s_TickCallback);
+    this->world->setWorldUserInfo(this);
+}
 
 void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 {
@@ -160,7 +165,18 @@ SerializedObject PhysicsWorld::Serialize() const
         .Build();
 }
 
+glm::vec3 PhysicsWorld::GetGravity() const
+{
+    auto grav = world->getGravity();
+    return glm::vec3(grav.x(), grav.y(), grav.z());
+}
+
 void PhysicsWorld::SetGravity(glm::vec3 const & grav)
 {
     world->setGravity(btVector3(grav.x, grav.y, grav.z));
+}
+
+void PhysicsWorld::Tick(float dt)
+{
+    world->stepSimulation(dt);
 }

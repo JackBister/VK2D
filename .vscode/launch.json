@@ -7,12 +7,12 @@
             "request": "launch",
             "program": "build/Debug/Main.exe",
             "args": [
-                "Examples/FlappyPong/main.scene"
+                "-editor"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": true,
+            "console": "newExternalWindow",
             "preLaunchTask": "build"
         }
     ]

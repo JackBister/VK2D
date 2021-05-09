@@ -277,13 +277,18 @@ void OnGui()
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - rightAlignedItemsSize -
                                  ImGui::GetScrollX() - 8 * ImGui::GetStyle().ItemSpacing.x);
             if (ImGui::MenuItem("Toggle Camera")) {
+                auto mainCamera = GameModule::GetMainCamera();
                 auto editorCameraComponent = (CameraComponent *)editorCamera->GetComponent("CameraComponent");
                 if (editorCameraComponent->IsActive()) {
                     editorCameraComponent->SetActive(false);
-                    ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(true);
+                    if (mainCamera) {
+                        ((CameraComponent *)mainCamera->GetComponent("CameraComponent"))->SetActive(true);
+                    }
                 } else {
                     editorCameraComponent->SetActive(true);
-                    ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(false);
+                    if (mainCamera) {
+                        ((CameraComponent *)mainCamera->GetComponent("CameraComponent"))->SetActive(false);
+                    }
                 }
             }
             if (ImGui::MenuItem("T")) {
@@ -489,7 +494,10 @@ void CloseEditor()
         return;
     }
     isEditorOpen = false;
-    ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(true);
+    auto mainCamera = GameModule::GetMainCamera();
+    if (mainCamera) {
+        ((CameraComponent *)mainCamera->GetComponent("CameraComponent"))->SetActive(true);
+    }
     ((CameraComponent *)editorCamera->GetComponent("CameraComponent"))->SetActive(false);
     Play();
 }
@@ -500,7 +508,10 @@ void OpenEditor()
         return;
     }
     isEditorOpen = true;
-    ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(false);
+    auto mainCamera = GameModule::GetMainCamera();
+    if (mainCamera) {
+        ((CameraComponent *)mainCamera->GetComponent("CameraComponent"))->SetActive(false);
+    }
     ((CameraComponent *)editorCamera->GetComponent("CameraComponent"))->SetActive(true);
     Pause(false);
 }
@@ -508,12 +519,15 @@ void OpenEditor()
 void Pause(bool reset)
 {
     auto scene = GameModule::GetScene();
-    auto tempSceneLocation = (std::filesystem::path(scene->GetFileName()).parent_path() / "_editor.scene").string();
+    std::optional<std::string> tempSceneLocation;
+    if (scene) {
+        tempSceneLocation = (std::filesystem::path(scene->GetFileName()).parent_path() / "_editor.scene").string();
+    }
     Time::SetTimeScale(0.f);
     isWorldPaused = true;
-    if (reset) {
+    if (reset && tempSceneLocation.has_value()) {
         logger->Infof("Reset on pause enabled, reloading scene");
-        GameModule::LoadScene(tempSceneLocation);
+        GameModule::LoadScene(tempSceneLocation.value());
         entityEditor.currEntity = GameModule::GetEntityByIdx(entityEditor.currEntityIndex);
         if (!entityEditor.currEntity) {
             entityEditor.currEntityIndex = GameModule::GetEntityCount() - 1;
@@ -571,6 +585,9 @@ void SaveScene()
 {
     auto scene = GameModule::GetScene();
     // Always save main camera as active, otherwise it may be saved as inactive if the editor camera is active
-    ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(true);
+    auto mainCamera = GameModule::GetMainCamera();
+    if (mainCamera) {
+        ((CameraComponent *)GameModule::GetMainCamera()->GetComponent("CameraComponent"))->SetActive(true);
+    }
     scene->SerializeToFile(scene->GetFileName());
 }

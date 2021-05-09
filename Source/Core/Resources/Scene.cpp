@@ -56,7 +56,8 @@ class SceneDeserializer : public Deserializer
 
         auto physicsOpt = obj.GetObject("physics");
         if (physicsOpt.has_value()) {
-            GameModule::DeserializePhysics(ctx, physicsOpt.value());
+            auto physicsWorld = (PhysicsWorld *)PhysicsWorld::Deserialize(ctx, physicsOpt.value());
+            GameModule::SetPhysicsWorld(physicsWorld);
         }
 
         auto serializedEntities = obj.GetArray("entities");

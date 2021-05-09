@@ -118,7 +118,7 @@ static std::optional<VkPhysicalDevice> ChoosePhysicalDevice(VkInstance instance)
     }
 
     VkPhysicalDevice chosenDevice = VK_NULL_HANDLE;
-    VkPhysicalDeviceType chosenType = VK_PHYSICAL_DEVICE_TYPE_BEGIN_RANGE;
+    VkPhysicalDeviceType chosenType = VK_PHYSICAL_DEVICE_TYPE_OTHER;
     for (auto const & pd : physicalDevices) {
         VkPhysicalDeviceProperties props;
         vkGetPhysicalDeviceProperties(pd, &props);
@@ -270,8 +270,8 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
 #endif
     std::vector<const char *> const instanceLayers = {
 #if defined(_DEBUG)
-        "VK_LAYER_LUNARG_assistant_layer",
-        "VK_LAYER_LUNARG_standard_validation",
+        // "VK_LAYER_LUNARG_assistant_layer",
+        // "VK_LAYER_LUNARG_standard_validation",
 #endif
 #if defined(VULKAN_API_DUMP)
         "VK_LAYER_LUNARG_api_dump"
@@ -620,6 +620,7 @@ VkPresentModeKHR Renderer::GetDesiredPresentMode(std::vector<VkPresentModeKHR> p
         desiredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
     }
     if (std::find(presentModes.begin(), presentModes.end(), desiredPresentMode) == presentModes.end()) {
+        logger->Warnf("Did not find desired present mode, will default to FIFO");
         return VK_PRESENT_MODE_FIFO_KHR;
     }
     return desiredPresentMode;
@@ -924,12 +925,6 @@ void Renderer::RecreateSwapchain()
     }
 
     VkPresentModeKHR desiredPresentMode = GetDesiredPresentMode(capabilities.presentModes);
-
-    if (desiredPresentMode == VK_PRESENT_MODE_END_RANGE_KHR) {
-        logger->Severef("Required present modes not supported.");
-        assert(false);
-        exit(1);
-    }
 
     // TODO: old swap chain
     auto oldSwapchain = swapchain.swapchain;
