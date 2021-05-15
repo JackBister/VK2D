@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <variant>
@@ -15,7 +16,7 @@ public:
     enum class ArrayEditorType { OBJECT = 0, VALUE = 1 };
 
     ArrayEditor(std::string name, ArrayEditorType type, std::optional<SerializedObjectSchema> schema,
-                std::optional<SerializedValueType> valueType);
+                std::optional<SerializedValueType> valueType, std::filesystem::path workingDirectory);
 
     void Draw();
     SerializedArray Build();
@@ -31,6 +32,8 @@ private:
     std::optional<SerializedObjectSchema> newMemberSchema;
     TypeChooser typeChooser;
     size_t typeChooserActiveForIndex;
+
+    std::filesystem::path workingDirectory;
 
     void Resize();
 };

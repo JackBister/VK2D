@@ -8,7 +8,7 @@ void FrameContext::Destroy(FrameContext & context)
 {
     if (context.imguiDrawData) {
         for (int i = 0; i < context.imguiDrawData->CmdListsCount; ++i) {
-            context.imguiDrawData->CmdLists[i]->ClearFreeMemory();
+            IM_DELETE(context.imguiDrawData->CmdLists[i]);
         }
         free(context.imguiDrawData->CmdLists);
         delete context.imguiDrawData;

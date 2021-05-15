@@ -9,6 +9,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <imfilebrowser.h>
 #include <optick/optick.h>
 
 #include "Core/Components/CameraComponent.h"
@@ -56,7 +57,7 @@ void DrawEditorNode(EditorNode * e)
         ImGui::Text(f.label.c_str());
         ImGui::SameLine();
         ImGui::PushID((int)f.v);
-        ImGui::InputFloat("##hidelabel", f.v, 0.f, 0.f, -1, f.extra_flags);
+        ImGui::InputFloat("##hidelabel", f.v, 0.f, 0.f, "%.3f", f.extra_flags);
         ImGui::PopID();
         break;
     }
@@ -122,11 +123,15 @@ ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
 
 bool isGamepadStateViewerOpen = false;
 
+std::string editorWorkingDirectory;
+ImGui::FileBrowser workingDirectoryBrowser(ImGuiFileBrowserFlags_SelectDirectory);
+
 void ToNextEntity();
 void ToPrevEntity();
 
 void Init()
 {
+    editorWorkingDirectory = std::filesystem::current_path().string();
     addComponentTypeChooser = TypeChooser("Choose type");
 
     entitySchema = Deserializable::GetSchema("Entity");
@@ -190,7 +195,7 @@ void OnGui()
                     glm::rotate(glm::mat4(1.f), dragDelta.y * Time::GetUnscaledDeltaTime(), glm::vec3(-1.f, 0.f, 0.f));
             }
 
-            if (!io.KeyCtrl && !io.KeyShift && !ImGui::IsAnyWindowFocused()) {
+            if (!io.KeyCtrl && !io.KeyShift && !ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow)) {
                 if (Input::GetKey(KC_w)) {
                     auto fwd = editorCamera->GetTransform()->GetLocalToWorld() * glm::vec4(0.f, 0.f, -1.f, 0.f);
                     fwd *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
@@ -234,14 +239,18 @@ void OnGui()
         if (ImGui::BeginMainMenuBar()) {
             ImGui::Columns(3);
             auto scene = GameModule::GetScene();
-            auto tempSceneLocation =
-                (std::filesystem::path(scene->GetFileName()).parent_path() / "_editor.scene").string();
+            auto tempSceneLocation = (std::filesystem::path(editorWorkingDirectory) / "_editor.scene").string();
             if (ImGui::BeginMenu("Scene")) {
                 if (ImGui::MenuItem("New Scene")) {
                     newSceneDialogOpened = true;
                 }
                 if (ImGui::MenuItem("Save Scene")) {
                     SaveScene();
+                }
+                if (ImGui::MenuItem("Set working directory")) {
+                    workingDirectoryBrowser.SetTitle("Set working directory");
+                    workingDirectoryBrowser.SetPwd(std::filesystem::path(editorWorkingDirectory));
+                    workingDirectoryBrowser.Open();
                 }
                 ImGui::MenuItem("Reset on pause", nullptr, &resetOnPause);
                 ImGui::EndMenu();
@@ -376,13 +385,13 @@ void OnGui()
         }
 
         if (serializedObjectEditorOpenedThisFrame) {
-            addComponentEditor.Open(serializedObjectEditorSchema.value());
+            addComponentEditor.Open(serializedObjectEditorSchema.value(),
+                                    std::filesystem::path(editorWorkingDirectory));
         }
 
         if (serializedObjectEditorSchema.has_value()) {
             if (addComponentEditor.Draw(&addComponentNewComponent)) {
-                DeserializationContext context = {
-                    std::filesystem::path(GameModule::GetScene()->GetFileName()).parent_path()};
+                DeserializationContext context = {std::filesystem::path(editorWorkingDirectory)};
                 auto newComponent = (Component *)Deserializable::Deserialize(&context, addComponentNewComponent);
                 if (!newComponent) {
                     logger->Errorf("Failed to deserialize new component");
@@ -397,12 +406,11 @@ void OnGui()
         }
 
         if (addEntityDialogOpened) {
-            newEntityEditor.Open(entitySchema.value());
+            newEntityEditor.Open(entitySchema.value(), std::filesystem::path(editorWorkingDirectory));
         }
 
         if (newEntityEditor.Draw(&addEntityNewEntity)) {
-            DeserializationContext context = {
-                std::filesystem::path(GameModule::GetScene()->GetFileName()).parent_path()};
+            DeserializationContext context = {std::filesystem::path(editorWorkingDirectory)};
 
             auto entity = (Entity *)Deserializable::Deserialize(&context, addEntityNewEntity);
             if (!entity) {
@@ -485,6 +493,12 @@ void OnGui()
             }
             ImGui::End();
         }
+
+        workingDirectoryBrowser.Display();
+        if (workingDirectoryBrowser.HasSelected()) {
+            editorWorkingDirectory = workingDirectoryBrowser.GetSelected().string();
+            workingDirectoryBrowser.Close();
+        }
     }
 }
 
@@ -521,7 +535,7 @@ void Pause(bool reset)
     auto scene = GameModule::GetScene();
     std::optional<std::string> tempSceneLocation;
     if (scene) {
-        tempSceneLocation = (std::filesystem::path(scene->GetFileName()).parent_path() / "_editor.scene").string();
+        tempSceneLocation = (std::filesystem::path(editorWorkingDirectory) / "_editor.scene").string();
     }
     Time::SetTimeScale(0.f);
     isWorldPaused = true;
@@ -540,7 +554,7 @@ void Pause(bool reset)
 void Play()
 {
     auto scene = GameModule::GetScene();
-    auto tempSceneLocation = (std::filesystem::path(scene->GetFileName()).parent_path() / "_editor.scene").string();
+    auto tempSceneLocation = (std::filesystem::path(editorWorkingDirectory) / "_editor.scene").string();
     Time::SetTimeScale(1.f);
     isWorldPaused = false;
     scene->SerializeToFile(tempSceneLocation);

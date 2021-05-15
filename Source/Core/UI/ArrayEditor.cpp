@@ -9,8 +9,9 @@
 static auto const logger = Logger::Create("ArrayEditor");
 
 ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<SerializedObjectSchema> schema,
-                         std::optional<SerializedValueType> valueType)
-    : name(name), type(type), schema(schema), valueType(valueType), typeChooser(name + ".type")
+                         std::optional<SerializedValueType> valueType, std::filesystem::path workingDirectory)
+    : name(name), type(type), schema(schema), valueType(valueType), typeChooser(name + ".type"),
+      workingDirectory(workingDirectory)
 {
     if (type == ArrayEditorType::OBJECT) {
         contents = std::vector<std::unique_ptr<EditorInstance>>();
@@ -85,7 +86,8 @@ void ArrayEditor::Draw()
 
         if (typeChooser.Draw(&newMemberSchema)) {
             auto & objects = std::get<0>(contents);
-            objects[typeChooserActiveForIndex] = std::make_unique<EditorInstance>(newMemberSchema.value());
+            objects[typeChooserActiveForIndex] =
+                std::make_unique<EditorInstance>(newMemberSchema.value(), workingDirectory);
         }
         ImGui::TreePop();
     }
@@ -122,7 +124,7 @@ void ArrayEditor::Resize()
         if (size > oldSize) {
             if (schema.has_value()) {
                 for (size_t i = oldSize; i < size; ++i) {
-                    objects[i] = std::make_unique<EditorInstance>(schema.value());
+                    objects[i] = std::make_unique<EditorInstance>(schema.value(), workingDirectory);
                 }
             } else {
                 for (size_t i = oldSize; i < size; ++i) {

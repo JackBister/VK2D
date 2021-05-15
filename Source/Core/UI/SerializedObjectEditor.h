@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <functional>
 #include <optional>
 #include <string>
@@ -13,7 +14,7 @@ public:
     SerializedObjectEditor(std::string title) : title(title) {}
 
     bool Draw(SerializedObject * obj);
-    void Open(SerializedObjectSchema schema);
+    void Open(SerializedObjectSchema schema, std::filesystem::path workingDirectory);
 
 private:
     std::string title;

@@ -4,9 +4,13 @@
 
 #include "ArrayEditor.h"
 #include "Core/Deserializable.h"
+#include "Core/Logging/Logger.h"
 #include "Core/Util/Imgui_InputText.h"
 
-EditorInstance::EditorInstance(SerializedObjectSchema schema) : schema(schema)
+static auto const logger = Logger::Create("EditorInstance");
+
+EditorInstance::EditorInstance(SerializedObjectSchema schema, std::filesystem::path workingDirectory)
+    : schema(schema), workingDirectory(workingDirectory)
 {
     auto const properties = schema.GetProperties();
     for (auto const & prop : properties) {
@@ -18,14 +22,15 @@ EditorInstance::EditorInstance(SerializedObjectSchema schema) : schema(schema)
         } else if (prop.GetType() == SerializedValueType::STRING) {
             values[prop.GetName()] = std::string("");
         } else if (prop.GetType() == SerializedValueType::OBJECT && objectSchemaOpt.has_value()) {
-            objects[prop.GetName()] = std::make_unique<EditorInstance>(objectSchemaOpt.value());
+            objects[prop.GetName()] = std::make_unique<EditorInstance>(objectSchemaOpt.value(), workingDirectory);
         } else if (prop.GetType() == SerializedValueType::ARRAY && prop.GetArrayType().has_value()) {
             arrays[prop.GetName()] = std::make_unique<ArrayEditor>(prop.GetName(),
                                                                    prop.GetArrayType() == SerializedValueType::OBJECT
                                                                        ? ArrayEditor::ArrayEditorType::OBJECT
                                                                        : ArrayEditor::ArrayEditorType::VALUE,
                                                                    objectSchemaOpt,
-                                                                   prop.GetArrayType());
+                                                                   prop.GetArrayType(),
+                                                                   workingDirectory);
         }
     }
 }
@@ -36,6 +41,21 @@ void EditorInstance::Draw()
 
     for (auto const & prop : properties) {
         DrawProperty(prop);
+    }
+
+    fileBrowser.Display();
+    if (fileBrowser.HasSelected()) {
+        if (currentFileProperty.has_value()) {
+            auto selected = fileBrowser.GetSelected();
+            selected = std::filesystem::relative(selected, workingDirectory);
+            values[currentFileProperty.value()] = selected.string();
+        } else {
+            logger->Warnf("Unexpected state, file browser was open and a file was selected but no property was "
+                          "currently being edited. Editing object with schema=%s",
+                          schema.GetName().c_str());
+        }
+        currentFileProperty = {};
+        fileBrowser.Close();
     }
 }
 
@@ -58,7 +78,16 @@ void EditorInstance::DrawProperty(SerializedPropertySchema const & prop)
         ImGui::Text(prop.GetName().c_str());
         ImGui::SameLine();
         ImGui::PushID((int)&values[prop.GetName()]);
-        ImGui_InputText("##hidelabel", &std::get<std::string>(values[prop.GetName()]));
+        if (prop.GetFlags().count(SerializedPropertyFlag::IS_FILE_PATH)) {
+            ImGui::Text(std::get<std::string>(values[prop.GetName()]).c_str());
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Pick")) {
+                fileBrowser.Open();
+                currentFileProperty = prop.GetName();
+            }
+        } else {
+            ImGui_InputText("##hidelabel", &std::get<std::string>(values[prop.GetName()]));
+        }
         ImGui::PopID();
     } else if (prop.GetType() == SerializedValueType::OBJECT && objectSchemaOpt.has_value()) {
         if (ImGui::TreeNode((prop.GetName() + " <" + objectSchemaOpt.value().GetName() + '>').c_str())) {

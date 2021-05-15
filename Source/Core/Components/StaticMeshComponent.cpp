@@ -18,7 +18,8 @@ REFLECT_STRUCT_END()
 
 static SerializedObjectSchema const STATIC_MESH_COMPONENT_SCHEMA = SerializedObjectSchema(
     "StaticMeshComponent", {
-                               SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true),
+                               SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true, {},
+                                                        {SerializedPropertyFlag::IS_FILE_PATH}),
                                SerializedPropertySchema("isActive", SerializedValueType::BOOL),
                            });
 

@@ -7,3 +7,6 @@
 [submodule "Assets/ThirdParty/gamecontrollerdb"]
 	path = Assets/ThirdParty/gamecontrollerdb
 	url = https://github.com/gabomdq/SDL_GameControllerDB.git
+[submodule "Source/ThirdParty/imgui-filebrowser"]
+	path = Source/ThirdParty/imgui-filebrowser
+	url = https://github.com/AirGuanZ/imgui-filebrowser.git

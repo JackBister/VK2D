@@ -39,9 +39,9 @@ bool SerializedObjectEditor::Draw(SerializedObject * obj)
     return false;
 }
 
-void SerializedObjectEditor::Open(SerializedObjectSchema schema)
+void SerializedObjectEditor::Open(SerializedObjectSchema schema, std::filesystem::path workingDirectory)
 {
     ImGui::OpenPopup(title.c_str());
-    editorInstance = EditorInstance(schema);
+    editorInstance = EditorInstance(schema, workingDirectory);
     hasSetSize = false;
 }

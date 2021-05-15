@@ -1,10 +1,15 @@
 #pragma once
 
 #include <string>
+#include <unordered_set>
 
 #include "SerializedValue.h"
 
 class SerializedObjectSchema;
+
+enum class EAPI SerializedPropertyFlag {
+    IS_FILE_PATH,
+};
 
 class EAPI SerializedPropertySchema
 {
@@ -12,8 +17,10 @@ public:
     inline SerializedPropertySchema(std::string name, SerializedValueType type,
                                     std::optional<SerializedValueType> arrayType = {},
                                     std::string objectSchemaName = "", bool isRequired = false,
-                                    std::vector<std::string> requiredIfAbsent = {})
-        : name(name), type(type), arrayType(arrayType), objectSchemaName(objectSchemaName), isRequired(isRequired)
+                                    std::vector<std::string> requiredIfAbsent = {},
+                                    std::unordered_set<SerializedPropertyFlag> flags = {})
+        : name(name), type(type), arrayType(arrayType), objectSchemaName(objectSchemaName), isRequired(isRequired),
+          flags(flags)
     {
     }
 
@@ -23,6 +30,7 @@ public:
     inline std::string GetObjectSchemaName() const { return objectSchemaName; }
     inline bool IsRequired() const { return isRequired; }
     inline std::vector<std::string> GetRequiredIfAbsent() const { return requiredIfAbsent; }
+    inline std::unordered_set<SerializedPropertyFlag> GetFlags() const { return flags; }
 
 private:
     std::string name;
@@ -37,6 +45,7 @@ private:
     // The field is required if all field names in this vector are absent. This is useful for union types.
     // See CameraComponent for an example
     std::vector<std::string> requiredIfAbsent;
+    std::unordered_set<SerializedPropertyFlag> flags;
 };
 
 class EAPI SerializedObjectSchema

@@ -76,7 +76,7 @@ find_path(MOODY_QUEUE_DIR concurrentqueue/concurrentqueue.h)
 find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.h)
 find_path(STB_IMAGE_INCLUDE_DIR stb_image.h)
 target_include_directories(Main PUBLIC Source)
-target_include_directories(Main SYSTEM PUBLIC Source/ThirdParty/imgui Source/ThirdParty/ImGuizmo ${BULLET_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${MOODY_QUEUE_DIR} ${SHADERC_INCLUDE_DIR} ${STB_IMAGE_INCLUDE_DIR})
+target_include_directories(Main SYSTEM PUBLIC Source/ThirdParty/imgui Source/ThirdParty/ImGuizmo Source/ThirdParty/imgui-filebrowser ${BULLET_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${MOODY_QUEUE_DIR} ${SHADERC_INCLUDE_DIR} ${STB_IMAGE_INCLUDE_DIR})
 
 find_library(BULLETDYNAMICS_LIBRARY BulletDynamics_Debug)
 find_library(BULLETCOLLISION_LIBRARY BulletCollision_Debug)
@@ -84,7 +84,10 @@ find_library(LINEARMATH_LIBRARY LinearMath_Debug)
 find_library(SDL2_LIBRARY SDL2)
 find_library(SHADERC_LIBRARY shaderc_combined)
 
-add_library(imgui Source/ThirdParty/imgui/imgui.cpp Source/ThirdParty/imgui/imgui_widgets.cpp Source/ThirdParty/imgui/imgui_draw.cpp)
+add_library(imgui
+    Source/ThirdParty/imgui/imgui.cpp
+    Source/ThirdParty/imgui/imgui_widgets.cpp
+    Source/ThirdParty/imgui/imgui_draw.cpp)
 add_library(ImGuizmo Source/ThirdParty/ImGuizmo/ImGuizmo.cpp)
 target_include_directories(ImGuizmo SYSTEM PRIVATE Source/ThirdParty/imgui)
 
