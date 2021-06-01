@@ -10,7 +10,7 @@
 #include <imgui.h>
 #include <optick/optick.h>
 
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("Input");
 

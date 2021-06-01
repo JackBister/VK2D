@@ -1,7 +1,7 @@
 #ifndef USE_OGL_RENDERER
 #include "VulkanConverterFuncs.h"
 
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("VulkanConverterFuncs");
 

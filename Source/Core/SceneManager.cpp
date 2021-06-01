@@ -1,9 +1,9 @@
 #include "SceneManager.h"
 
-#include "Core/Console/Console.h"
+#include "Console/Console.h"
 #include "Core/EntityManager.h"
-#include "Core/Logging/Logger.h"
 #include "Core/Serialization/JsonSerializer.h"
+#include "Logging/Logger.h"
 #include "Util/DefaultFileSlurper.h"
 
 static auto const logger = Logger::Create("SceneManager");

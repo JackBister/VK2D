@@ -3,8 +3,8 @@
 #include <cstdlib>
 #include <unordered_map>
 
-#include "Core/Console/Console.h"
-#include "Core/Logging/Logger.h"
+#include "Console/Console.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("Config");
 

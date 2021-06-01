@@ -1,10 +1,10 @@
 #include "RenderSystem.h"
 
 #include "BufferAllocator.h"
-#include "Core/Console/Console.h"
-#include "Core/Logging/Logger.h"
+#include "Console/Console.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/ShaderProgram.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("RenderSystem");
 

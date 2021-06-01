@@ -4,10 +4,10 @@
 #include <GL/glew.h>
 #include <cassert>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLCommandBufferAllocator.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLContextStructs.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLConverterFuncs.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("OpenGLResourceContext");
 

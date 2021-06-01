@@ -2,7 +2,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("JsonDeserializer");
 

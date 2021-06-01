@@ -3,7 +3,7 @@
 #include <chrono>
 #include <thread>
 
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("WatchFile");
 
@@ -57,7 +57,8 @@ void WatchFileCallback(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
 void WatchFile_Windows(std::wstring filename, std::function<void()> onChange)
 {
     std::filesystem::path path(filename);
-	// You cannot use FindFirstChangeNotification on an individual file, so we look at the parent path and then stat the file in the callback.
+    // You cannot use FindFirstChangeNotification on an individual file, so we look at the parent path and then stat the
+    // file in the callback.
     auto absolutePath = std::filesystem::absolute(path).parent_path();
 
     auto watchHandle = FindFirstChangeNotification(absolutePath.c_str(), false, FILE_NOTIFY_CHANGE_LAST_WRITE);

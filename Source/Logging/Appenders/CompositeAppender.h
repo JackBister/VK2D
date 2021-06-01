@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "Core/Logging/LogAppender.h"
+#include "../LogAppender.h"
 
 class CompositeAppender : public LogAppender
 {

@@ -4,11 +4,10 @@
 
 #include <optick/optick.h>
 
+#include "Console/Console.h"
 #include "Core/Components/CameraComponent.h"
-#include "Core/Console/Console.h"
 #include "Core/EntityManager.h"
 #include "Core/Input/Input.h"
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/DebugDrawSystem.h"
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/RenderSystem.h"
@@ -20,6 +19,7 @@
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
 #include "Jobs/JobEngine.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("GameModule");
 
@@ -84,7 +84,8 @@ void Tick(FrameContext & context)
     TickEntities();
 
     EditorSystem::OnGui();
-    Console::OnGui();
+    auto res = renderSystem->GetResolution();
+    Console::OnGui(res.x, res.y);
 
     uiRenderSystem->EndFrame(context);
 

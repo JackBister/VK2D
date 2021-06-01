@@ -3,12 +3,12 @@
 
 #include <optick/optick.h>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanCommandBufferAllocator.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanContextStructs.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanConverterFuncs.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanRenderer.h"
 #include "Jobs/JobEngine.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("VulkanResourceContext");
 

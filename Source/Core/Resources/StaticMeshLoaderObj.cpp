@@ -7,7 +7,6 @@
 #include <optick/optick.h>
 #include <tiny_obj_loader.h>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 #include "Core/Rendering/BufferAllocator.h"
 #include "Core/Rendering/Vertex.h"
@@ -17,6 +16,7 @@
 #include "Core/Resources/StaticMesh.h"
 #include "Core/Semaphore.h"
 #include "Jobs/JobEngine.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("StaticMeshLoaderObj");
 

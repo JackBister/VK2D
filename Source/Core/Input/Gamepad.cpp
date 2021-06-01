@@ -3,7 +3,7 @@
 #include <algorithm>
 
 #include "Core/Config/Config.h"
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 
 static auto const logger = Logger::Create("Gamepad");
 

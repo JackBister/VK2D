@@ -6,7 +6,7 @@
 
 #include "ArrayEditor.h"
 #include "Core/Deserializable.h"
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 #include "Util/Imgui_InputText.h"
 
 static auto const logger = Logger::Create("EditorInstance");

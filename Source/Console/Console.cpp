@@ -8,9 +8,8 @@
 #include <imgui.h>
 #include <optick/optick.h>
 
-#include "Core/Logging/LogAppender.h"
-#include "Core/Logging/Logger.h"
-#include "Core/Rendering/RenderSystem.h"
+#include "Logging/LogAppender.h"
+#include "Logging/Logger.h"
 #include "Util/Strings.h"
 
 static const auto logger = Logger::Create("Console");
@@ -84,12 +83,11 @@ void Init(RenderSystem * inRenderSystem)
     RegisterCommand(listCommand);
 }
 
-void OnGui()
+void OnGui(int windowWidth, int windowHeight)
 {
     OPTICK_EVENT();
     if (isConsoleOpen) {
-        auto res = renderSystem->GetResolution();
-        ImGui::SetNextWindowSize(ImVec2(res.x, res.y / 3));
+        ImGui::SetNextWindowSize(ImVec2(windowWidth, windowHeight / 3));
         ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::Begin("Console",
                      &isConsoleOpen,

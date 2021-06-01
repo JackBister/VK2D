@@ -2,12 +2,12 @@
 
 #include <optick/optick.h>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/SkeletalMeshLoaderAssimp.h"
 #include "Core/Serialization/DeserializationContext.h"
 #include "Core/entity.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("SkeletalMeshComponent");
 

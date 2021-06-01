@@ -1,7 +1,7 @@
 #include "EditProjectDialog.h"
 
-#include "Core/Logging/Logger.h"
 #include "Core/Resources/Scene.h"
+#include "Logging/Logger.h"
 
 static auto const logger = Logger::Create("EditProjectDialog");
 

@@ -5,10 +5,10 @@
 
 #include <imgui.h>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Serialization/JsonSerializer.h"
-#include "Util/Imgui_InputText.h"
+#include "Logging/Logger.h"
 #include "SerializedObjectEditorInstance.h"
+#include "Util/Imgui_InputText.h"
 
 static auto const logger = Logger::Create("SerializedObjectEditor");
 

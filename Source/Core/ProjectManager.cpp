@@ -2,10 +2,10 @@
 
 #include "Core/DllManager.h"
 #include "Core/Input/Input.h"
-#include "Core/Logging/Logger.h"
 #include "Core/SceneManager.h"
 #include "Core/Serialization/JsonSerializer.h"
 #include "Core/physicsworld.h"
+#include "Logging/Logger.h"
 #include "Util/DefaultFileSlurper.h"
 
 static auto const logger = Logger::Create("ProjectManager");

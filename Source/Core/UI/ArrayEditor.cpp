@@ -2,8 +2,8 @@
 
 #include <imgui.h>
 
-#include "Core/Logging/Logger.h"
 #include "Core/UI/SerializedObjectEditorInstance.h"
+#include "Logging/Logger.h"
 #include "Util/Imgui_InputText.h"
 
 static auto const logger = Logger::Create("ArrayEditor");

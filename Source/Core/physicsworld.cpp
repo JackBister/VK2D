@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "Core/Components/physicscomponent.h"
-#include "Core/Logging/Logger.h"
 #include "Core/entity.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("PhysicsWorld");
 

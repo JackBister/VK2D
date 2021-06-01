@@ -5,10 +5,10 @@
 
 #include "Core/EntityManager.h"
 #include "Core/GameModule.h"
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/entity.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("CameraComponent");
 

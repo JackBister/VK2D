@@ -17,8 +17,8 @@
 #include "Core/EntityManager.h"
 #include "Core/GameModule.h"
 #include "Core/Input/Input.h"
-#include "Core/Logging/Logger.h"
 #include "Core/entity.h"
+#include "Logging/Logger.h"
 #define REFLECT_IMPL
 #include "Core/Reflect.h"
 #undef REFLECT_IMPL

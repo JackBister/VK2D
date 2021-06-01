@@ -1,6 +1,6 @@
 #include "SkeletalMesh.h"
 
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 
 static auto const logger = Logger::Create("SkeletalMesh");
 

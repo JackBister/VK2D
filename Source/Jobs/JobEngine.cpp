@@ -2,7 +2,7 @@
 
 #include <optick/optick.h>
 
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 #include "Util/SetThreadName.h"
 
 static auto const logger = Logger::Create("JobEngine");

@@ -6,9 +6,9 @@
 #include <stb_image.h>
 #include <vulkan/vulkan.h>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanResourceContext.h"
 #include "Jobs/JobEngine.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("VulkanRenderer");
 static const auto vulkanLogger = Logger::Create("Vulkan");
@@ -270,8 +270,8 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
 #endif
     std::vector<const char *> const instanceLayers = {
 #if defined(_DEBUG)
-        // "VK_LAYER_LUNARG_assistant_layer",
-        // "VK_LAYER_LUNARG_standard_validation",
+    // "VK_LAYER_LUNARG_assistant_layer",
+    // "VK_LAYER_LUNARG_standard_validation",
 #endif
 #if defined(VULKAN_API_DUMP)
         "VK_LAYER_LUNARG_api_dump"

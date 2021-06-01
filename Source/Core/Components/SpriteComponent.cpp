@@ -5,10 +5,10 @@
 #include "glm/gtc/type_ptr.hpp"
 #include <optick/optick.h>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Resources/Image.h"
 #include "Core/entity.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("SpriteComponent");
 

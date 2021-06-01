@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Logging/LogAppender.h"
+#include "../LogAppender.h"
 
 class StdoutLogAppender : public LogAppender
 {

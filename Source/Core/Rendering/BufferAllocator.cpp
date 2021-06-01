@@ -4,8 +4,8 @@
 
 #include <optick/optick.h>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Semaphore.h"
+#include "Logging/Logger.h"
 #include "RenderSystem.h"
 
 auto const logger = Logger::Create("BufferAllocator");

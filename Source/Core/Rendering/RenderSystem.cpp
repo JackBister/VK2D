@@ -6,7 +6,6 @@
 #include <optick/optick.h>
 
 #include "Core/FrameContext.h"
-#include "Core/Logging/Logger.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ShaderProgram.h"
@@ -15,6 +14,7 @@
 #include "Core/Semaphore.h"
 #include "Core/entity.h"
 #include "DebugDrawSystem.h"
+#include "Logging/Logger.h"
 #include "Vertex.h"
 
 static const auto logger = Logger::Create("RenderSystem");

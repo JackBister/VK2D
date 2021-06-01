@@ -5,12 +5,12 @@
 #include <gl/glew.h>
 #include <unordered_map>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/OpenGL/DescriptorSetBindingMap.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLConverterFuncs.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLResourceContext.h"
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Semaphore.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("OpenGLCommandBuffer");
 

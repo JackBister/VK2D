@@ -3,10 +3,10 @@
 #include <cassert>
 #include <filesystem>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/GlslToSpirvShaderCompiler.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
+#include "Logging/Logger.h"
 #include "Util/DefaultFileSlurper.h"
 #include "Util/WatchFile.h"
 

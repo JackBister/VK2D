@@ -3,9 +3,9 @@
 #include "LogAppender.h"
 #include "Logger.h"
 
-#include "Core/Console/Console.h"
-#include "Core/Logging/Appenders/CompositeAppender.h"
-#include "Core/Logging/Appenders/StdoutLogAppender.h"
+#include "Appenders/CompositeAppender.h"
+#include "Appenders/StdoutLogAppender.h"
+#include "Console/Console.h"
 
 LoggerFactory::LoggerFactory(std::shared_ptr<LogAppender> appender) : appender(appender) {}
 

@@ -4,7 +4,7 @@
 
 #include "Core/CollisionInfo.h"
 #include "Core/Entity.h"
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("BallComponent");
 

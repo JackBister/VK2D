@@ -4,10 +4,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
+#include "Logging/Logger.h"
 
 #if HOT_RELOAD_RESOURCES
 #include "Util/WatchFile.h"

@@ -4,7 +4,7 @@
 #include <optick/optick.h>
 
 #include "Core/GameModule.h"
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
 

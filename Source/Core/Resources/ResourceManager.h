@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 
 class RenderSystem;
 class ResourceCreationContext;

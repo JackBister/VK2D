@@ -1,7 +1,7 @@
 #include "EntityManager.h"
 
 #include "Core/Components/Component.h"
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 
 static auto const logger = Logger::Create("EntityManager");
 

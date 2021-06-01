@@ -1,6 +1,6 @@
 #include "DllManager.h"
 
-#include "Core/Logging/Logger.h"
+#include "Logging/Logger.h"
 #include "Util/DlOpen.h"
 
 static auto const logger = Logger::Create("DllManager");

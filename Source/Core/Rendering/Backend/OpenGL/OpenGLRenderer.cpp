@@ -6,9 +6,9 @@
 #include <optick/optick.h>
 #include <stb_image.h>
 
-#include "Core/Logging/Logger.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLCommandBuffer.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLResourceContext.h"
+#include "Logging/Logger.h"
 #include "Util/SetThreadName.h"
 
 static const auto logger = Logger::Create("OpenGLRenderer");

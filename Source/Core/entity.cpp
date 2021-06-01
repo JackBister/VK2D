@@ -9,8 +9,8 @@
 
 #include "Core/Components/component.h"
 #include "Core/EntityManager.h"
-#include "Core/Logging/Logger.h"
 #include "Core/Serialization/SchemaValidator.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("Entity");
 

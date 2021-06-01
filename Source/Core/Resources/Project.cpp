@@ -1,10 +1,10 @@
 #include "Project.h"
 
 #include "Core/DllManager.h"
-#include "Core/Logging/Logger.h"
 #include "Core/SceneManager.h"
 #include "Core/Serialization/SchemaValidator.h"
 #include "Core/physicsworld.h"
+#include "Logging/Logger.h"
 
 static auto const logger = Logger::Create("Project");
 
