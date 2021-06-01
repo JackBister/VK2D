@@ -3,7 +3,7 @@
 #include "Core/Rendering/Backend/Abstract/RenderResources.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLResourceContext.h"
 
-#include "Core/Semaphore.h"
+#include "Util/Semaphore.h"
 
 struct OpenGLImageViewHandle;
 

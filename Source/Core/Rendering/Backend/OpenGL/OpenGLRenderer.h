@@ -8,11 +8,11 @@
 #include <gl/glew.h>
 #include <glm/glm.hpp>
 
-#include "Core/Queue.h"
 #include "Core/Rendering/Backend/Abstract/AbstractRenderer.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLContextStructs.h"
 #include "Core/Rendering/Backend/OpenGL/OpenGLResourceContext.h"
 #include "Core/Rendering/Backend/OpenGL/RenderCommand.h"
+#include "Util/Queue.h"
 
 class Renderer : public IRenderer
 {

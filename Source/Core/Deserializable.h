@@ -2,10 +2,10 @@
 #include <filesystem>
 #include <unordered_map>
 
-#include "Core/DllExport.h"
-#include "Core/HashedString.h"
 #include "Core/Serialization/Deserializer.h"
 #include "Core/Serialization/SerializedValue.h"
+#include "Util/DllExport.h"
+#include "Util/HashedString.h"
 
 struct DeserializationContext;
 

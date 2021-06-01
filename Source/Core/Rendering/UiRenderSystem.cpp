@@ -8,8 +8,8 @@
 #include "Core/FrameContext.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/ShaderProgram.h"
-#include "Core/Semaphore.h"
 #include "Core/dtime.h"
+#include "Util/Semaphore.h"
 
 UiRenderSystem * UiRenderSystem::instance = nullptr;
 

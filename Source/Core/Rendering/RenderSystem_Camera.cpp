@@ -1,7 +1,7 @@
 #include "RenderSystem.h"
 
 #include "Core/Resources/ResourceManager.h"
-#include "Core/Semaphore.h"
+#include "Util/Semaphore.h"
 
 CameraInstanceId RenderSystem::CreateCamera(bool isActive)
 {

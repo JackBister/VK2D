@@ -14,9 +14,9 @@
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/StaticMesh.h"
-#include "Core/Semaphore.h"
 #include "Jobs/JobEngine.h"
 #include "Logging/Logger.h"
+#include "Util/Semaphore.h"
 
 static const auto logger = Logger::Create("StaticMeshLoaderObj");
 

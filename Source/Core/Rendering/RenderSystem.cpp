@@ -11,10 +11,10 @@
 #include "Core/Resources/ShaderProgram.h"
 #include "Core/Resources/SkeletalMesh.h"
 #include "Core/Resources/StaticMesh.h"
-#include "Core/Semaphore.h"
 #include "Core/entity.h"
 #include "DebugDrawSystem.h"
 #include "Logging/Logger.h"
+#include "Util/Semaphore.h"
 #include "Vertex.h"
 
 static const auto logger = Logger::Create("RenderSystem");

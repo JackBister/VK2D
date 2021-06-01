@@ -3,10 +3,10 @@
 #include <functional>
 #include <glm/fwd.hpp>
 
-#include "Core/DllExport.h"
 #include "Core/FrameContext.h"
-#include "Core/Queue.h"
 #include "Core/Serialization/SerializedValue.h"
+#include "Util/DllExport.h"
+#include "Util/Queue.h"
 
 class CameraComponent;
 class CommandBuffer;

@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "Core/DllExport.h"
 #include "SerializedValueType.h"
+#include "Util/DllExport.h"
 
 class SerializedValue;
 

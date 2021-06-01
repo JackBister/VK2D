@@ -6,7 +6,7 @@
 #include "Core/FrameContext.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/ResourceManager.h"
-#include "Core/Semaphore.h"
+#include "Util/Semaphore.h"
 
 SpriteInstanceId RenderSystem::CreateSpriteInstance(Image * image, bool isActive)
 {

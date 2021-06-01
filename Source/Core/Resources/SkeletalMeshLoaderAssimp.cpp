@@ -15,10 +15,10 @@
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ResourceManager.h"
-#include "Core/Semaphore.h"
 #include "Logging/Logger.h"
 #include "SkeletalMesh.h"
 #include "SkeletalMeshAnimation.h"
+#include "Util/Semaphore.h"
 
 static auto const logger = Logger::Create("SkeletalMeshLoaderAssimp");
 

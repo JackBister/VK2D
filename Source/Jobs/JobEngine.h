@@ -7,8 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "Core/Queue.h"
-#include "Core/Semaphore.h"
+#include "Util/Queue.h"
+#include "Util/Semaphore.h"
 
 using JobId = size_t;
 

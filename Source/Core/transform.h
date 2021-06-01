@@ -7,9 +7,9 @@
 #include "glm/gtc/quaternion.hpp"
 
 #include "Core/Deserializable.h"
-#include "Core/DllExport.h"
 #include "Core/Reflect.h"
 #include "Core/Serialization/SerializedValue.h"
+#include "Util/DllExport.h"
 
 class TransformDeserializer;
 

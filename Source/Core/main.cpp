@@ -14,7 +14,6 @@
 #include "Core/GameModule.h"
 #include "Core/Input/Input.h"
 #include "Core/ProjectManager.h"
-#include "Core/Queue.h"
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Rendering/BufferAllocator.h"
 #include "Core/Rendering/RenderPrimitiveFactory.h"
@@ -24,7 +23,6 @@
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/Scene.h"
 #include "Core/SceneManager.h"
-#include "Core/Semaphore.h"
 #include "Core/Serialization/JsonSerializer.h"
 #include "Core/UI/EditorSystem.h"
 #include "Core/entity.h"
@@ -35,6 +33,8 @@
 #include "Logging/Logger.h"
 #include "Logging/LoggerFactory.h"
 #include "Util/DefaultFileSlurper.h"
+#include "Util/Queue.h"
+#include "Util/Semaphore.h"
 #include "Util/SetThreadName.h"
 
 static const auto logger = Logger::Create("main");

@@ -6,8 +6,8 @@
 
 #include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 #include "Core/Resources/ResourceManager.h"
-#include "Core/Semaphore.h"
 #include "Logging/Logger.h"
+#include "Util/Semaphore.h"
 
 #if HOT_RELOAD_RESOURCES
 #include "Util/WatchFile.h"

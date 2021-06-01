@@ -9,8 +9,11 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(vk2d C CXX)
 
-file(GLOB_RECURSE SOURCES Source/Core/*.c Source/Core/*.cpp Source/Core/*.h
+file(GLOB_RECURSE SOURCES
+    Source/Console/*.c Source/Console/*.cpp Source/Console/*.h
+    Source/Core/*.c Source/Core/*.cpp Source/Core/*.h
     Source/Jobs/*.c Source/Jobs/*.cpp Source/Jobs/*.h
+    Source/Logging/*.c Source/Logging/*.cpp Source/Logging/*.h
     Source/Util/*.c Source/Util/*.cpp Source/Util/*.h
 )
 add_executable(Main ${SOURCES})

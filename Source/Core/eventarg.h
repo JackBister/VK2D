@@ -3,8 +3,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "Core/DllExport.h"
 #include "Core/EntityPtr.h"
+#include "Util/DllExport.h"
 
 class EventArg;
 

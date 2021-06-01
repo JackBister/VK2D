@@ -9,7 +9,7 @@
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/StaticMesh.h"
-#include "Core/Semaphore.h"
+#include "Util/Semaphore.h"
 
 RenderPrimitiveFactory::RenderPrimitiveFactory(Renderer * renderer) : renderer(renderer) {}
 

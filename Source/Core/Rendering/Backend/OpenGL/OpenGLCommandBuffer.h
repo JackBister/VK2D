@@ -8,7 +8,7 @@
 #include <SDL2/SDL.h>
 #include <gl/glew.h>
 
-#include "Core/Semaphore.h"
+#include "Util/Semaphore.h"
 
 class OpenGLCommandBuffer : public CommandBuffer
 {

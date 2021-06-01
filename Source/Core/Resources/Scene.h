@@ -5,8 +5,8 @@
 
 #include "Core/Deserializable.h"
 #include "Core/EntityPtr.h"
-#include "Core/HashedString.h"
 #include "Core/eventarg.h"
+#include "Util/HashedString.h"
 
 class Entity;
 class EntityManager;

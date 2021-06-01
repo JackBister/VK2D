@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Core/Deserializable.h"
-#include "Core/DllExport.h"
 #include "Core/EntityPtr.h"
-#include "Core/HashedString.h"
 #include "Core/Reflect.h"
 #include "Core/eventarg.h"
+#include "Util/DllExport.h"
+#include "Util/HashedString.h"
 
 class EntityManager;
 

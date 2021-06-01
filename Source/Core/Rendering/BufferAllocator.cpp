@@ -4,9 +4,9 @@
 
 #include <optick/optick.h>
 
-#include "Core/Semaphore.h"
 #include "Logging/Logger.h"
 #include "RenderSystem.h"
+#include "Util/Semaphore.h"
 
 auto const logger = Logger::Create("BufferAllocator");
 

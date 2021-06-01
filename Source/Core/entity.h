@@ -6,7 +6,7 @@
 
 #include "Core/Deserializable.h"
 #include "Core/EntityId.h"
-#include "Core/HashedString.h"
+#include "Util/HashedString.h"
 #include "Core/eventarg.h"
 #include "Core/transform.h"
 

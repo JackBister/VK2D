@@ -4,7 +4,7 @@
 
 #include <SDL2/SDL.h>
 
-#include "Core/DllExport.h"
+#include "Util/DllExport.h"
 
 enum class GamepadAxis { AXIS_LEFTX, AXIS_LEFTY, AXIS_RIGHTX, AXIS_RIGHTY, AXIS_TRIGGERLEFT, AXIS_TRIGGERRIGHT };
 

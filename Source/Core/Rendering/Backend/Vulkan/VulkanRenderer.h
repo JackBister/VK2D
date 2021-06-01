@@ -15,9 +15,9 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
-#include "Core/Queue.h"
 #include "Core/Rendering/Backend/Abstract/AbstractRenderer.h"
 #include "Core/Rendering/Backend/Vulkan/VulkanContextStructs.h"
+#include "Util/Queue.h"
 
 struct CommandBufferAndFence {
     VkCommandBuffer commandBuffer;

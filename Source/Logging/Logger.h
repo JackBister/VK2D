@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "Core/DllExport.h"
+#include "Util/DllExport.h"
 
 class LogAppender;
 
