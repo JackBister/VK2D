@@ -18,7 +18,10 @@ public:
     void Open();
 
 private:
+    void UpdateAvailableTypes();
+
     std::string title;
+    TypeFilter typeFilter;
 
     int selection = 0;
     std::vector<char *> typeNames;

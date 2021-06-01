@@ -8,19 +8,9 @@ TypeChooser::TypeFilter TypeChooser::COMPONENT_TYPE_FILTER = [](SerializedObject
     return schema.GetFlags().count(SerializedObjectFlag::IS_COMPONENT) > 0;
 };
 
-TypeChooser::TypeChooser(std::string title, TypeFilter typeFilter) : title(title)
+TypeChooser::TypeChooser(std::string title, TypeFilter typeFilter) : title(title), typeFilter(typeFilter)
 {
-    auto const & deserialzables = Deserializable::Map();
-
-    for (auto const & kv : Deserializable::Map()) {
-        bool includeSchema = true;
-        if (typeFilter) {
-            includeSchema = typeFilter(kv.second->GetSchema());
-        }
-        if (includeSchema) {
-            typeNames.push_back((char *)kv.first.c_str());
-        }
-    }
+    UpdateAvailableTypes();
 }
 
 bool TypeChooser::Draw(std::optional<SerializedObjectSchema> * result)
@@ -49,5 +39,22 @@ bool TypeChooser::Draw(std::optional<SerializedObjectSchema> * result)
 
 void TypeChooser::Open()
 {
+    UpdateAvailableTypes();
     ImGui::OpenPopup(title.c_str());
+}
+
+void TypeChooser::UpdateAvailableTypes()
+{
+    auto const & deserialzables = Deserializable::Map();
+
+    typeNames.clear();
+    for (auto const & kv : Deserializable::Map()) {
+        bool includeSchema = true;
+        if (typeFilter) {
+            includeSchema = typeFilter(kv.second->GetSchema());
+        }
+        if (includeSchema) {
+            typeNames.push_back((char *)kv.first.c_str());
+        }
+    }
 }
