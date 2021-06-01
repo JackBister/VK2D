@@ -9,7 +9,7 @@
 #include <unordered_map>
 #endif
 
-#include "Core/Rendering/Backend/Abstract/RenderResources.h"
+#include "RenderingBackend/Abstract/RenderResources.h"
 
 class Image
 {

@@ -2,13 +2,13 @@
 
 #include <imgui.h>
 
-#include "Core/Rendering/Backend/Abstract/RenderResources.h"
-#include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Rendering/Vertex.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/StaticMesh.h"
+#include "RenderingBackend/Abstract/RenderResources.h"
+#include "RenderingBackend/Renderer.h"
 #include "Util/Semaphore.h"
 
 RenderPrimitiveFactory::RenderPrimitiveFactory(Renderer * renderer) : renderer(renderer) {}

@@ -10,12 +10,12 @@
 #include <assimp/scene.h>
 #include <optick/optick.h>
 
-#include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 #include "Core/Rendering/BufferAllocator.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Logging/Logger.h"
+#include "RenderingBackend/Abstract/ResourceCreationContext.h"
 #include "SkeletalMesh.h"
 #include "SkeletalMeshAnimation.h"
 #include "Util/Semaphore.h"

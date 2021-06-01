@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "Core/Rendering/Backend/Abstract/RenderResources.h"
-#include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
+#include "RenderingBackend/Abstract/RenderResources.h"
+#include "RenderingBackend/Abstract/ResourceCreationContext.h"
 
 class ShaderProgram
 {

@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/Rendering/Backend/Abstract/RenderResources.h"
+#include "RenderingBackend/Abstract/RenderResources.h"
 
 class Renderer;
 class ResourceCreationContext;

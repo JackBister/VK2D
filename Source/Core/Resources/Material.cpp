@@ -1,8 +1,8 @@
 #include "Material.h"
 
-#include "Core/Rendering/Backend/Abstract/ResourceCreationContext.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/ResourceManager.h"
+#include "RenderingBackend/Abstract/ResourceCreationContext.h"
 
 Material::Material(Image * albedo, Image * normals, Image * roughness, Image * metallic)
     : albedo(albedo), normals(normals), roughness(roughness), metallic(metallic)

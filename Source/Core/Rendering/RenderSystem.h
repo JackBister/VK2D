@@ -6,8 +6,6 @@
 
 #include <glm/glm.hpp>
 
-#include "Core/Rendering/Backend/Abstract/RendererConfig.h"
-#include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Rendering/CameraInstance.h"
 #include "Core/Rendering/LightInstance.h"
 #include "Core/Rendering/PreRenderCommands.h"
@@ -17,6 +15,8 @@
 #include "Core/Rendering/SubmeshInstance.h"
 #include "Core/Rendering/UiRenderSystem.h"
 #include "Jobs/JobEngine.h"
+#include "RenderingBackend/Abstract/RendererConfig.h"
+#include "RenderingBackend/Renderer.h"
 
 struct FrameContext;
 class Image;
