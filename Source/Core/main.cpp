@@ -9,20 +9,26 @@
 #include "Core/Components/CameraComponent.h"
 #include "Core/Components/component.h"
 #include "Core/Config/Config.h"
+#include "Core/DllManager.h"
+#include "Core/EntityManager.h"
 #include "Core/GameModule.h"
 #include "Core/Input/Input.h"
 #include "Core/Logging/Appenders/StdoutLogAppender.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Logging/LoggerFactory.h"
+#include "Core/ProjectManager.h"
 #include "Core/Queue.h"
 #include "Core/Rendering/Backend/Renderer.h"
 #include "Core/Rendering/BufferAllocator.h"
 #include "Core/Rendering/RenderPrimitiveFactory.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/ShaderProgramFactory.h"
+#include "Core/Resources/Project.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/Scene.h"
+#include "Core/SceneManager.h"
 #include "Core/Semaphore.h"
+#include "Core/Serialization/JsonSerializer.h"
 #include "Core/UI/EditorSystem.h"
 #include "Core/Util/DefaultFileSlurper.h"
 #include "Core/Util/SetThreadName.h"
@@ -37,7 +43,7 @@ static const auto logger = Logger::Create("main");
 int main(int argc, char * argv[])
 {
     if (argc < 2) {
-        printf("Usage: %s <scene file>\n", argv[0]);
+        printf("Usage: %s <project file>\n", argv[0]);
         return 1;
     }
 
@@ -53,9 +59,11 @@ int main(int argc, char * argv[])
     SetThreadName(std::this_thread::get_id(), "Main Thread");
     OPTICK_THREAD("Main Thread");
 
-    std::optional<std::string> sceneFileName;
+    std::optional<std::string> projectFileName;
     if (filenameIndex != 0) {
-        sceneFileName = argv[filenameIndex];
+        projectFileName = argv[filenameIndex];
+    } else {
+        startInEditor = true;
     }
 #if _DEBUG
     srand(0);
@@ -84,11 +92,13 @@ int main(int argc, char * argv[])
 
     GameModule::Init();
 
-    if (sceneFileName.has_value()) {
-        GameModule::LoadScene(sceneFileName.value());
-    } else {
-        GameModule::SetPhysicsWorld(new PhysicsWorld());
-        GameModule::SetScene(new Scene("Untitled scene", {}, {}));
+    auto projectManager = ProjectManager::GetInstance();
+
+    if (projectFileName.has_value()) {
+        if (!projectManager->ChangeProject(projectFileName.value())) {
+            logger->Severef("Failed to load initial project with name=%s", projectFileName.value().c_str());
+            return 1000;
+        }
     }
 
     if (startInEditor) {

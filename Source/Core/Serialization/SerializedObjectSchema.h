@@ -14,6 +14,50 @@ enum class EAPI SerializedPropertyFlag {
 class EAPI SerializedPropertySchema
 {
 public:
+    static SerializedPropertySchema Optional(std::string name, SerializedValueType type,
+                                             std::unordered_set<SerializedPropertyFlag> flags = {})
+    {
+        return SerializedPropertySchema(name, type, {}, "", false, {}, flags);
+    }
+    static SerializedPropertySchema OptionalArray(std::string name, SerializedValueType arrayType,
+                                                  std::unordered_set<SerializedPropertyFlag> flags = {})
+    {
+        return SerializedPropertySchema(name, SerializedValueType::ARRAY, arrayType, "", false, {}, flags);
+    }
+    static SerializedPropertySchema OptionalObject(std::string name, std::string objectSchemaName,
+                                                   std::unordered_set<SerializedPropertyFlag> flags = {})
+    {
+        return SerializedPropertySchema(name, SerializedValueType::OBJECT, {}, objectSchemaName, false, {}, flags);
+    }
+    static SerializedPropertySchema OptionalObjectArray(std::string name, std::string objectSchemaName,
+                                                        std::unordered_set<SerializedPropertyFlag> flags = {})
+    {
+        return SerializedPropertySchema(
+            name, SerializedValueType::ARRAY, SerializedValueType::OBJECT, objectSchemaName, false, {}, flags);
+    }
+
+    static SerializedPropertySchema Required(std::string name, SerializedValueType type,
+                                             std::unordered_set<SerializedPropertyFlag> flags = {})
+    {
+        return SerializedPropertySchema(name, type, {}, "", true, {}, flags);
+    }
+    static SerializedPropertySchema RequiredArray(std::string name, SerializedValueType arrayType,
+                                                  std::unordered_set<SerializedPropertyFlag> flags = {})
+    {
+        return SerializedPropertySchema(name, SerializedValueType::ARRAY, arrayType, "", true, {}, flags);
+    }
+    static SerializedPropertySchema RequiredObject(std::string name, std::string objectSchemaName,
+                                                   std::unordered_set<SerializedPropertyFlag> flags = {})
+    {
+        return SerializedPropertySchema(name, SerializedValueType::OBJECT, {}, objectSchemaName, true, {}, flags);
+    }
+    static SerializedPropertySchema RequiredObjectArray(std::string name, std::string objectSchemaName,
+                                                        std::unordered_set<SerializedPropertyFlag> flags = {})
+    {
+        return SerializedPropertySchema(
+            name, SerializedValueType::ARRAY, SerializedValueType::OBJECT, objectSchemaName, true, {}, flags);
+    }
+
     inline SerializedPropertySchema(std::string name, SerializedValueType type,
                                     std::optional<SerializedValueType> arrayType = {},
                                     std::string objectSchemaName = "", bool isRequired = false,

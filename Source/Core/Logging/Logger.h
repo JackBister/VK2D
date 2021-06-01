@@ -13,9 +13,9 @@ class EAPI Logger
 public:
     Logger(std::string name, std::shared_ptr<LogAppender> appender);
 
-	static std::unique_ptr<Logger> Create(std::string const & name);
+    static std::unique_ptr<Logger> Create(std::string const & name);
 
-	void Tracef(char const * format, ...);
+    void Tracef(char const * format, ...);
     void Infof(char const * format, ...);
     void Warnf(char const * format, ...);
     void Errorf(char const * format, ...);

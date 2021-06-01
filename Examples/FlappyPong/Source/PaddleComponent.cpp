@@ -43,8 +43,13 @@ SerializedObject PaddleComponent::Serialize() const
 void PaddleComponent::OnEvent(HashedString name, EventArgs args)
 {
     if (name == "Tick") {
-        auto position = entity->GetTransform()->GetPosition();
-        auto scale = entity->GetTransform()->GetScale();
+        auto e = entity.Get();
+        if (!e) {
+            LogMissingEntity();
+            return;
+        }
+        auto position = e->GetTransform()->GetPosition();
+        auto scale = e->GetTransform()->GetScale();
         if (Input::GetButtonDown("Flap")) {
             if (velocityY < 0.f) {
                 velocityY = 0.f;
@@ -61,7 +66,7 @@ void PaddleComponent::OnEvent(HashedString name, EventArgs args)
             position.y += velocityY * args["deltaTime"].asFloat;
             velocityY = velocityY - gravity * args["deltaTime"].asFloat;
         }
-        entity->GetTransform()->SetPosition(position);
+        e->GetTransform()->SetPosition(position);
     } else if (name == "OnCollisionStart") {
         isColliding = true;
     } else if (name == "OnCollisionEnd") {

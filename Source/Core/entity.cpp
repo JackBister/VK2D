@@ -8,22 +8,24 @@
 #include <optick/optick.h>
 
 #include "Core/Components/component.h"
+#include "Core/EntityManager.h"
 #include "Core/Logging/Logger.h"
+#include "Core/Serialization/SchemaValidator.h"
 
 static const auto logger = Logger::Create("Entity");
 
 REFLECT_STRUCT_BEGIN(Entity)
+REFLECT_STRUCT_MEMBER(id)
+REFLECT_STRUCT_MEMBER(name)
 REFLECT_STRUCT_MEMBER(transform)
 REFLECT_STRUCT_MEMBER(components)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const ENTITY_SCHEMA = SerializedObjectSchema(
-    "Entity",
-    {
-        SerializedPropertySchema("name", SerializedValueType::STRING, {}, {}, true),
-        SerializedPropertySchema("transform", SerializedValueType::OBJECT, {}, "Transform", true),
-        SerializedPropertySchema("components", SerializedValueType::ARRAY, SerializedValueType::OBJECT, "", true),
-    });
+static SerializedObjectSchema const ENTITY_SCHEMA =
+    SerializedObjectSchema("Entity", {SerializedPropertySchema::Required("id", SerializedValueType::STRING),
+                                      SerializedPropertySchema::Required("name", SerializedValueType::STRING),
+                                      SerializedPropertySchema::RequiredObject("transform", "Transform"),
+                                      SerializedPropertySchema::RequiredObjectArray("components", "")});
 
 class EntityDeserializer : public Deserializer
 {
@@ -31,28 +33,46 @@ class EntityDeserializer : public Deserializer
 
     void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
     {
-        auto name = obj.GetString("name").value();
-        auto transform = Transform::Deserialize(obj.GetObject("transform").value());
-        Entity * const ret = new Entity(name, transform);
-        auto serializedComponents = obj.GetArray("components");
-        std::vector<std::unique_ptr<Component>> components;
-        for (auto const & component : serializedComponents.value()) {
-            Component * const c =
-                static_cast<Component *>(Deserializable::Deserialize(ctx, std::get<SerializedObject>(component)));
-            if (!c) {
-                logger->Errorf("Not adding component to entity=%s because deserialization failed. See earlier errors.",
-                               ret->GetName().c_str());
-                continue;
-            }
-            c->entity = ret;
-            ret->AddComponent(std::unique_ptr<Component>(c));
+        auto entity = Entity::Deserialize(ctx, obj);
+        if (!entity.has_value()) {
+            return nullptr;
         }
-
-        return ret;
+        return new Entity(entity.value());
     }
 };
 
 DESERIALIZABLE_IMPL(Entity, new EntityDeserializer())
+
+std::optional<Entity> Entity::Deserialize(DeserializationContext * deserializationContext, SerializedObject const & obj)
+{
+    auto validationResult = SchemaValidator::Validate(ENTITY_SCHEMA, obj);
+    if (!validationResult.isValid) {
+        logger->Warnf("Failed to deserialize Entity from SerializedObject, validation failed. Errors:");
+        for (auto const & err : validationResult.propertyErrors) {
+            logger->Warnf("\t%s: %s", err.first, err.second);
+        }
+        return std::nullopt;
+    }
+    auto id = obj.GetString("id").value();
+    auto name = obj.GetString("name").value();
+    auto transform = Transform::Deserialize(obj.GetObject("transform").value());
+    auto serializedComponents = obj.GetArray("components");
+    std::vector<Component *> components;
+    for (auto const & component : serializedComponents.value()) {
+        Component * c = static_cast<Component *>(
+            Deserializable::Deserialize(deserializationContext, std::get<SerializedObject>(component)));
+        if (!c) {
+            logger->Errorf("Not adding component to entity with name=%s, id=%s because deserialization failed. See "
+                           "earlier errors.",
+                           name.c_str(),
+                           id.c_str());
+            continue;
+        }
+        components.emplace_back(c);
+    }
+
+    return Entity(id, name, transform, components);
+}
 
 void Entity::FireEvent(HashedString ename, EventArgs args)
 {
@@ -74,17 +94,19 @@ void Entity::FireEvent(HashedString ename, EventArgs args)
     }
 }
 
-void Entity::AddComponent(std::unique_ptr<Component> component)
+void Entity::AddComponent(Component * component)
 {
-    component->entity = this;
-    components.push_back(std::move(component));
+    // TODO: This is really weird
+    auto ptr = entityManager->GetEntityById(id);
+    component->entity = ptr;
+    components.push_back(component);
 }
 
 Component * Entity::GetComponent(std::string const & type) const
 {
     for (auto const & c : components) {
         if (c->type == type) {
-            return c.get();
+            return c;
         }
     }
     return nullptr;
@@ -104,6 +126,7 @@ SerializedObject Entity::Serialize() const
 {
     SerializedObject::Builder builder;
     builder.WithString("type", this->Reflection.name)
+        .WithString("id", std::string(id.ToString()))
         .WithString("name", name)
         .WithObject("transform", transform.Serialize());
 

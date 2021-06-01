@@ -4,7 +4,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "btBulletDynamicsCommon.h"
+#include <btBulletDynamicsCommon.h>
+#include <glm/glm.hpp>
 
 #include "Core/Deserializable.h"
 #include "Core/collisioninfo.h"
@@ -13,15 +14,15 @@ class Entity;
 class PhysicsComponent;
 class PhysicsWorldDeserializer;
 
-class PhysicsWorld : public Deserializable
+class PhysicsWorld
 {
 public:
     friend class PhysicsComponent;
-    friend class PhysicsWorldDeserializer;
+
+    static PhysicsWorld * GetInstance();
 
     PhysicsWorld();
 
-    SerializedObject Serialize() const override;
     glm::vec3 GetGravity() const;
     void SetGravity(glm::vec3 const &);
 
@@ -30,7 +31,7 @@ public:
 private:
     static void s_TickCallback(btDynamicsWorld * world, btScalar timestep);
 
-    std::unordered_map<Entity *, std::unordered_map<Entity *, CollisionInfo>> collisionsLastFrame;
+    std::unordered_map<EntityPtr, std::unordered_map<EntityPtr, CollisionInfo>> collisionsLastFrame;
 
     std::unique_ptr<btBroadphaseInterface> broadphase;
     std::unique_ptr<btCollisionConfiguration> collisionConfig;

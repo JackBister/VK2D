@@ -35,6 +35,7 @@ public:
     std::optional<bool> GetBool(std::string const &) const;
     std::optional<double> GetNumber(std::string const &) const;
     std::optional<std::string> GetString(std::string const &) const;
+#undef GetObject
     std::optional<SerializedObject> GetObject(std::string const &) const;
     std::optional<std::vector<SerializedValue>> GetArray(std::string const &) const;
 

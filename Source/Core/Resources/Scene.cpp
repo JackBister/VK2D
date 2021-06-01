@@ -6,22 +6,22 @@
 #include <fstream>
 #include <sstream>
 
+#include "Core/EntityManager.h"
 #include "Core/GameModule.h"
 #include "Core/Input/Input.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Serialization/JsonSerializer.h"
+#include "Core/Serialization/SchemaValidator.h"
 #include "Core/Util/WatchFile.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
 
 static const auto logger = Logger::Create("Scene");
 
-static SerializedObjectSchema const SCENE_SCHEMA = SerializedObjectSchema(
-    "Scene", {
-                 SerializedPropertySchema("dlls", SerializedValueType::ARRAY, SerializedValueType::STRING),
-                 SerializedPropertySchema("entities", SerializedValueType::ARRAY, SerializedValueType::OBJECT),
-             });
+static SerializedObjectSchema const SCENE_SCHEMA =
+    SerializedObjectSchema("Scene", {SerializedPropertySchema::Required("name", SerializedValueType::STRING),
+                                     SerializedPropertySchema::RequiredObjectArray("entities", "Entity")});
 
 class SceneDeserializer : public Deserializer
 {
@@ -29,45 +29,7 @@ class SceneDeserializer : public Deserializer
 
     void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
     {
-        std::vector<std::string> dlls;
-        std::vector<Entity *> entities;
-
-        auto dllsOpt = obj.GetArray("dlls");
-        if (dllsOpt.has_value()) {
-            for (auto dll : dllsOpt.value()) {
-                auto dllStr = std::get<std::string>(dll);
-                dlls.push_back(dllStr);
-                GameModule::LoadDLL((ctx->workingDirectory / dllStr).string());
-            }
-        }
-
-        auto inputOpt = obj.GetObject("input");
-        if (inputOpt.has_value()) {
-            auto input = inputOpt.value();
-            auto keybindsOpt = input.GetArray("keybinds");
-            for (auto kb : keybindsOpt.value()) {
-                auto keybind = std::get<SerializedObject>(kb);
-                auto keys = keybind.GetArray("keys");
-                for (auto k : keys.value()) {
-                    Input::AddKeybind(keybind.GetString("name").value(), strToKeycode[std::get<std::string>(k)]);
-                }
-            }
-        }
-
-        auto physicsOpt = obj.GetObject("physics");
-        if (physicsOpt.has_value()) {
-            auto physicsWorld = (PhysicsWorld *)PhysicsWorld::Deserialize(ctx, physicsOpt.value());
-            GameModule::SetPhysicsWorld(physicsWorld);
-        }
-
-        auto serializedEntities = obj.GetArray("entities");
-        for (auto & e : serializedEntities.value()) {
-            Entity * entity = static_cast<Entity *>(Deserializable::Deserialize(ctx, std::get<SerializedObject>(e)));
-            entities.push_back(entity);
-            GameModule::AddEntity(entity);
-        }
-
-        return new Scene(dlls, entities);
+        return new Scene(obj.GetString("name").value(), obj.GetArray("entities").value(), {}, *ctx);
     }
 };
 
@@ -96,19 +58,31 @@ static Scene * ReadFile(std::string const & fileName)
     return (Scene *)Deserializable::Deserialize(&context, serializedScene);
 }
 
-Scene * Scene::FromFile(std::string const & fileName)
+std::optional<Scene> Scene::Deserialize(DeserializationContext * deserializationContext, SerializedObject const & obj)
+{
+    auto validationResult = SchemaValidator::Validate(SCENE_SCHEMA, obj);
+    if (!validationResult.isValid) {
+        logger->Warnf("Failed to deserialize Scene from SerializedObject, validation failed. Errors:");
+        for (auto const & err : validationResult.propertyErrors) {
+            logger->Warnf("\t%s: %s", err.first, err.second);
+        }
+        return std::nullopt;
+    }
+    return Scene(obj.GetString("name").value(), obj.GetArray("entities").value(), {}, *deserializationContext);
+}
+
+Scene * Scene::FromFile(std::string const & fileName, EntityManager * entityManager)
 {
 
     auto ret = ReadFile(fileName);
     if (!ret) {
         return nullptr;
     }
-    ret->fileName = fileName;
     ResourceManager::AddResource(fileName, ret);
 #if HOT_RELOAD_RESOURCES
-    WatchFile(fileName, [fileName]() {
+    WatchFile(fileName, [fileName, entityManager]() {
         logger->Infof("Scene file '%s' changed, will reload on next frame start", fileName.c_str());
-        GameModule::OnFrameStart([fileName]() {
+        GameModule::OnFrameStart([fileName, entityManager]() {
             auto scene = ResourceManager::GetResource<Scene>(fileName);
             if (scene == nullptr) {
                 logger->Warnf("Scene file '%s' was changed but ResourceManager had no reference for it.",
@@ -123,10 +97,12 @@ Scene * Scene::FromFile(std::string const & fileName)
                               fileName.c_str());
                 return;
             }
-            newScene->fileName = fileName;
-            scene->Unload();
-            scene->dlls = newScene->dlls;
-            scene->entities = newScene->entities;
+            // TODO: This is really dumb
+            scene->Unload(entityManager);
+            scene->name = newScene->name;
+            scene->serializedEntities = newScene->serializedEntities;
+            scene->liveEntities = newScene->liveEntities;
+            scene->Load(entityManager);
             delete newScene;
         });
     });
@@ -134,16 +110,16 @@ Scene * Scene::FromFile(std::string const & fileName)
     return ret;
 }
 
-std::unique_ptr<Scene> Scene::Create(std::string const & fileName)
+std::unique_ptr<Scene> Scene::CreateNew(std::string const & name, DeserializationContext deserializationContext)
 {
-    return std::unique_ptr<Scene>(new Scene(fileName, std::vector<std::string>(), std::vector<Entity *>()));
+    return std::unique_ptr<Scene>(new Scene(name, {}, {}, deserializationContext));
 }
 
-void Scene::RemoveEntity(Entity * entity)
+void Scene::RemoveEntity(EntityPtr entity)
 {
-    for (auto it = entities.begin(); it != entities.end(); ++it) {
+    for (auto it = liveEntities.begin(); it != liveEntities.end(); ++it) {
         if (*it == entity) {
-            entities.erase(it);
+            liveEntities.erase(it);
             return;
         }
     }
@@ -151,24 +127,18 @@ void Scene::RemoveEntity(Entity * entity)
 
 SerializedObject Scene::Serialize() const
 {
-    // TODO: input
     SerializedObject::Builder builder;
-    builder.WithString("type", "Scene");
-    builder.WithObject("physics", GameModule::SerializePhysics());
+    builder.WithString("type", "Scene").WithString("name", name);
 
-    std::vector<SerializedValue> serializedDlls;
-    serializedDlls.reserve(dlls.size());
-    for (auto const & dll : dlls) {
-        serializedDlls.push_back(dll);
+    std::vector<SerializedValue> newSerializedEntities;
+    newSerializedEntities.reserve(liveEntities.size());
+    for (auto const e : liveEntities) {
+        auto entity = e.Get();
+        if (entity) {
+            newSerializedEntities.push_back(entity->Serialize());
+        }
     }
-    builder.WithArray("dlls", serializedDlls);
-
-    std::vector<SerializedValue> serializedEntities;
-    serializedEntities.reserve(entities.size());
-    for (auto const e : entities) {
-        serializedEntities.push_back(e->Serialize());
-    }
-    builder.WithArray("entities", serializedEntities);
+    builder.WithArray("entities", newSerializedEntities);
     return builder.Build();
 }
 
@@ -179,22 +149,27 @@ void Scene::SerializeToFile(std::string const & filename)
     out << JsonSerializer().Serialize(serialized);
 }
 
-void Scene::Unload()
+void Scene::Load(EntityManager * entityManager)
 {
-    for (auto const e : entities) {
-        GameModule::RemoveEntity(e);
-        delete e;
+    for (auto const e : serializedEntities) {
+        if (e.GetType() != SerializedValueType::OBJECT) {
+            logger->Errorf("Failed to load entity from scene with name=%s, value in entities array was not an object",
+                           name.c_str());
+            continue;
+        }
+        auto entityOpt = Entity::Deserialize(&deserializationContext, std::get<SerializedObject>(e));
+        if (!entityOpt.has_value()) {
+            logger->Errorf("Failed to load entity from scene with name=%s, deserialization failed", name.c_str());
+        } else {
+            liveEntities.push_back(entityManager->AddEntity(entityOpt.value()));
+        }
     }
-    entities.clear();
-    for (auto const & dll : dlls) {
-        GameModule::UnloadDLL(dll);
-    }
-    dlls.clear();
 }
 
-Scene::Scene(std::string const & fileName, std::vector<std::string> dlls, std::vector<Entity *> entities)
-    : fileName(fileName), dlls(dlls), entities(entities)
+void Scene::Unload(EntityManager * entityManager)
 {
+    for (auto const e : liveEntities) {
+        entityManager->RemoveEntity(e);
+    }
+    liveEntities.clear();
 }
-
-Scene::Scene(std::vector<std::string> dlls, std::vector<Entity *> entities) : dlls(dlls), entities(entities) {}

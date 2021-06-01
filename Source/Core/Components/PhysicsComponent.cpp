@@ -98,7 +98,7 @@ std::string SerializeShapeType(BroadphaseNativeTypes i)
 
 PhysicsComponent::~PhysicsComponent()
 {
-    GameModule::GetPhysicsWorld()->world->removeRigidBody(rigidBody.get());
+    PhysicsWorld::GetInstance()->world->removeRigidBody(rigidBody.get());
 }
 
 SerializedObject PhysicsComponent::Serialize() const
@@ -153,7 +153,7 @@ void PhysicsComponent::OnEvent(HashedString name, EventArgs args)
         if (isKinematic) {
             rigidBody->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
         }
-        GameModule::GetPhysicsWorld()->world->addRigidBody(rigidBody.get());
+        PhysicsWorld::GetInstance()->world->addRigidBody(rigidBody.get());
         // Needed for kinematics to register collision events
         btBroadphaseProxy * bproxy = rigidBody->getBroadphaseHandle();
         if (bproxy) {
@@ -164,16 +164,21 @@ void PhysicsComponent::OnEvent(HashedString name, EventArgs args)
 
     if (name == "EndPlay") {
         if (rigidBody != nullptr) {
-            GameModule::GetPhysicsWorld()->world->removeCollisionObject(rigidBody.get());
+            PhysicsWorld::GetInstance()->world->removeCollisionObject(rigidBody.get());
         }
     }
 }
 
 void PhysicsComponent::getWorldTransform(btTransform & worldTransform) const
 {
-    glm::vec3 const & pos = entity->GetTransform()->GetPosition();
+    auto e = entity.Get();
+    if (!e) {
+        LogMissingEntity();
+        return;
+    }
+    glm::vec3 const & pos = e->GetTransform()->GetPosition();
     worldTransform.setOrigin(btVector3(pos.x, pos.y, pos.z));
-    glm::quat const & rot = entity->GetTransform()->GetRotation();
+    glm::quat const & rot = e->GetTransform()->GetRotation();
     worldTransform.setRotation(btQuaternion(rot.x, rot.y, rot.z, rot.w));
     // TODO:
     // const Vec3& scale = entity->transform.scale;
@@ -183,9 +188,14 @@ void PhysicsComponent::getWorldTransform(btTransform & worldTransform) const
 void PhysicsComponent::setWorldTransform(btTransform const & worldTransform)
 {
     auto const & pos = worldTransform.getOrigin();
-    entity->GetTransform()->SetPosition(glm::vec3(pos.x(), pos.y(), pos.z()));
+    auto e = entity.Get();
+    if (!e) {
+        LogMissingEntity();
+        return;
+    }
+    e->GetTransform()->SetPosition(glm::vec3(pos.x(), pos.y(), pos.z()));
     auto const & rot = worldTransform.getRotation();
     // I don't know why, but for some reason the components of the rotation are shifted one step when they're returned
     // here, which is why x = w, etc.
-    entity->GetTransform()->SetRotation(glm::quat(rot.w(), rot.x(), rot.y(), rot.z()));
+    e->GetTransform()->SetRotation(glm::quat(rot.w(), rot.x(), rot.y(), rot.z()));
 }

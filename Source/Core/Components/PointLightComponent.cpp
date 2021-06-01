@@ -66,7 +66,12 @@ void PointLightComponent::OnEvent(HashedString name, EventArgs args)
     OPTICK_TAG("EventName", name.c_str());
 #endif
     if (name == "PreRender") {
+        auto e = entity.Get();
+        if (!e) {
+            LogMissingEntity();
+            return;
+        }
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
-        builder->WithLightUpdate({instanceId, isActive, entity->GetTransform()->GetLocalToWorld(), color});
+        builder->WithLightUpdate({instanceId, isActive, e->GetTransform()->GetLocalToWorld(), color});
     }
 }

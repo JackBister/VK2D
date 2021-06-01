@@ -245,4 +245,9 @@ void EAPI RemoveKeybind(HashedString s, Keycode keycode)
         buttonMap[s].erase(keycode);
     }
 }
+
+void EAPI RemoveAllKeybindings()
+{
+    buttonMap.clear();
+}
 };

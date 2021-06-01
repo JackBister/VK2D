@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#undef GetObject
+
 #include "ArrayEditor.h"
 #include "Core/Deserializable.h"
 #include "Core/Logging/Logger.h"
@@ -30,7 +32,45 @@ EditorInstance::EditorInstance(SerializedObjectSchema schema, std::filesystem::p
                                                                        : ArrayEditor::ArrayEditorType::VALUE,
                                                                    objectSchemaOpt,
                                                                    prop.GetArrayType(),
-                                                                   workingDirectory);
+                                                                   workingDirectory,
+                                                                   prop.GetFlags());
+        }
+    }
+
+    fileBrowser.SetPwd(workingDirectory);
+}
+
+EditorInstance::EditorInstance(SerializedObjectSchema schema, std::filesystem::path workingDirectory,
+                               SerializedObject object)
+    : EditorInstance(schema, workingDirectory)
+{
+    auto const properties = schema.GetProperties();
+    for (auto const & prop : properties) {
+        auto key = prop.GetName();
+        auto objectSchemaOpt = Deserializable::GetSchema(prop.GetObjectSchemaName());
+        auto type = prop.GetType();
+
+        if (type == SerializedValueType::BOOL && object.GetBool(key).has_value()) {
+            values[key] = object.GetBool(key).value();
+        } else if (type == SerializedValueType::DOUBLE && object.GetNumber(key).has_value()) {
+            values[key] = object.GetNumber(key).value();
+        } else if (type == SerializedValueType::STRING && object.GetString(key).has_value()) {
+            values[key] = object.GetString(key).value();
+        } else if (type == SerializedValueType::OBJECT && objectSchemaOpt.has_value() &&
+                   object.GetObject(key).has_value()) {
+            objects[key] = std::make_unique<EditorInstance>(
+                objectSchemaOpt.value(), workingDirectory, object.GetObject(key).value());
+        } else if (type == SerializedValueType::ARRAY && prop.GetArrayType().has_value() &&
+                   object.GetArray(key).has_value()) {
+            arrays[key] = std::make_unique<ArrayEditor>(prop.GetName(),
+                                                        prop.GetArrayType() == SerializedValueType::OBJECT
+                                                            ? ArrayEditor::ArrayEditorType::OBJECT
+                                                            : ArrayEditor::ArrayEditorType::VALUE,
+                                                        objectSchemaOpt,
+                                                        prop.GetArrayType(),
+                                                        workingDirectory,
+                                                        object.GetArray(key).value(),
+                                                        prop.GetFlags());
         }
     }
 }

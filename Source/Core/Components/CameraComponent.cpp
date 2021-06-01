@@ -3,6 +3,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include <optick/optick.h>
 
+#include "Core/EntityManager.h"
 #include "Core/GameModule.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/PreRenderCommands.h"
@@ -149,7 +150,12 @@ glm::mat4 const & CameraComponent::GetProjection()
 glm::mat4 const & CameraComponent::GetView()
 {
     if (isViewDirty) {
-        view = glm::inverse(entity->GetTransform()->GetLocalToWorld());
+        auto e = entity.Get();
+        if (!e) {
+            LogMissingEntity();
+            return view;
+        }
+        view = glm::inverse(e->GetTransform()->GetLocalToWorld());
     }
     return view;
 }
@@ -178,10 +184,11 @@ SerializedObject CameraComponent::Serialize() const
                                .WithNumber("zNear", perspective.zNear)
                                .Build());
     } else {
+        auto e = entity.Get();
         logger->Errorf(
             "Unknown cameraData.index() %zu, will not be able to serialize CameraComponent on Entity='%s' fully.",
             cameraData.index(),
-            entity->GetName().c_str());
+            e->GetName().c_str());
     }
 
     return builder.Build();
@@ -195,12 +202,23 @@ void CameraComponent::OnEvent(HashedString name, EventArgs args)
 #endif
 
     if (name == "BeginPlay" && defaultsToMain) {
-        GameModule::TakeCameraFocus(entity);
+        auto entityManager = entity.GetManager();
+        if (!entityManager) {
+            logger->Errorf("entityManager was null when trying to set main camera in BeginPlay");
+            return;
+        }
+        entityManager->SetSingletonTag(EntityManager::IS_MAIN_CAMERA_TAG, entity);
     } else if (name == "TakeCameraFocus") {
-        GameModule::TakeCameraFocus(entity);
+        auto entityManager = entity.GetManager();
+        if (!entityManager) {
+            logger->Errorf("entityManager was null when trying to set main camera in TakeCameraFocus");
+            return;
+        }
+        entityManager->SetSingletonTag(EntityManager::IS_MAIN_CAMERA_TAG, entity);
     } else if (name == "PreRender") {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
+        auto e = entity.Get();
         builder->WithCameraUpdate(
-            {cameraHandle, entity->GetTransform()->GetPosition(), GetView(), GetProjection(), isActive});
+            {cameraHandle, e->GetTransform()->GetPosition(), GetView(), GetProjection(), isActive});
     }
 }

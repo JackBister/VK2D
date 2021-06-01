@@ -1,189 +1,171 @@
 {
-	"type": "Scene",
-	"dlls": [
-		"FlappyPong.dll"
-	],
-	"input": {
-		"type": "Input",
-		"keybinds": [
-			{
-				"name": "Flap",
-				"keys": [
-					"KC_MOUSE_LEFT",
-					"KC_UP"
-				]
-			}
-		]
-	},
-	"physics": {
-		"type": "PhysicsWorld",
-		"gravity": {
-			"x": 0.0,
-			"y": 0.0,
-			"z": 0.0
-		}
-	},
-	"entities": [
-		{
-			"type": "Entity",
-			"name": "MainCamera",
-			"isActive": true,
-			"transform": {
-				"position": {
-					"x": 0.0,
-					"y": 0.0,
-					"z": 0.0
-				},
-				"rotation": {
-					"x": 0.0,
-					"y": 0.0,
-					"z": 0.0,
-					"w": 1.0
-				},
-				"scale": {
-					"x": 1.0,
-					"y": 1.0,
-					"z": 1.0
-				}
-			},
-			"components": [
-				{
-					"type": "CameraComponent",
-					"defaultsToMain": true,
-					"ortho": {
-						"aspect": 0.75,
-						"viewSize": 60
-					}
-				}
-			]
-		},
-		{
-			"type": "Entity",
-			"name": "Ball",
-			"transform": {
-				"position": {
-					"x": 0.0,
-					"y": 0.0,
-					"z": -1.0
-				},
-				"rotation": {
-					"x": 0.0,
-					"y": 0.0,
-					"z": 0.0,
-					"w": 1.0
-				},
-				"scale": {
-					"x": 4.0,
-					"y": 4.0,
-					"z": 1.0
-				}
-			},
-			"components": [
-				{
-					"type": "SpriteComponent",
-					"file": "white_pixel.png"
-				},
-				{
-					"type": "BallComponent",
-					"moveSpeed": 100.0
-				},
-				{
-					"type": "PhysicsComponent",
-					"isKinematic": true,
-					"mass": 1.0,
-					"shapeType": "BOX_2D_SHAPE_PROXYTYPE",
-					"shapeInfo": {
-						"x": 4.0,
-						"y": 4.0
-					}
-				}
-			]
-		},
-		{
-			"type": "Entity",
-			"name": "Left Paddle",
-			"transform": {
-				"position": {
-					"x": -70.0,
-					"y": 0.0,
-					"z": -1.0
-				},
-				"rotation": {
-					"x": 0.0,
-					"y": 0.0,
-					"z": 0.0,
-					"w": 1.0
-				},
-				"scale": {
-					"x": 2.0,
-					"y": 18.0,
-					"z": 1.0
-				}
-			},
-			"components": [
-				{
-					"type": "SpriteComponent",
-					"file": "white_pixel.png"
-				},
-				{
-					"type": "PaddleComponent",
-					"flapSpeed": 60.0,
-					"gravity": 60.0
-				},
-				{
-					"type": "PhysicsComponent",
-					"isKinematic": true,
-					"mass": 1.0,
-					"shapeType": "BOX_2D_SHAPE_PROXYTYPE",
-					"shapeInfo": {
-						"x": 2.0,
-						"y": 18.0
-					}
-				}
-			]
-		},
-		{
-			"type": "Entity",
-			"name": "Right Paddle",
-			"transform": {
-				"position": {
-					"x": 70.0,
-					"y": 0.0,
-					"z": -1.0
-				},
-				"rotation": {
-					"x": 0.0,
-					"y": 0.0,
-					"z": 0.0,
-					"w": 1.0
-				},
-				"scale": {
-					"x": 2.0,
-					"y": 18.0,
-					"z": 1.0
-				}
-			},
-			"components": [
-				{
-					"type": "SpriteComponent",
-					"file": "white_pixel.png"
-				},
-				{
-					"type": "PaddleComponent",
-					"flapSpeed": 60.0,
-					"gravity": 60.0
-				},
-				{
-					"type": "PhysicsComponent",
-					"isKinematic": true,
-					"mass": 1.0,
-					"shapeType": "BOX_2D_SHAPE_PROXYTYPE",
-					"shapeInfo": {
-						"x": 2.0,
-						"y": 18.0
-					}
-				}
-			]
-		}
-	]
+  "type": "Scene",
+  "name": "main",
+  "entities": [
+    {
+      "type": "Entity",
+      "id": "1",
+      "name": "MainCamera",
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        }
+      },
+      "components": [
+        {
+          "type": "CameraComponent",
+          "isActive": true,
+          "defaultsToMain": true,
+          "ortho": {
+            "aspect": 0.75,
+            "viewSize": 60
+          }
+        }
+      ]
+    },
+    {
+      "type": "Entity",
+      "id": "2",
+      "name": "Ball",
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": -1
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 4,
+          "y": 4,
+          "z": 1
+        }
+      },
+      "components": [
+        {
+          "type": "SpriteComponent",
+          "file": "white_pixel.png"
+        },
+        {
+          "type": "BallComponent",
+          "moveSpeed": 100
+        },
+        {
+          "type": "PhysicsComponent",
+          "isKinematic": true,
+          "mass": 1,
+          "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
+          "shapeInfo": {
+            "x": 4,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "type": "Entity",
+      "id": "3",
+      "name": "Left Paddle",
+      "transform": {
+        "position": {
+          "x": -70,
+          "y": 0,
+          "z": -1
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 2,
+          "y": 18,
+          "z": 1
+        }
+      },
+      "components": [
+        {
+          "type": "SpriteComponent",
+          "file": "white_pixel.png"
+        },
+        {
+          "type": "PaddleComponent",
+          "flapSpeed": 60,
+          "gravity": 60
+        },
+        {
+          "type": "PhysicsComponent",
+          "isKinematic": true,
+          "mass": 1,
+          "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
+          "shapeInfo": {
+            "x": 2,
+            "y": 18
+          }
+        }
+      ]
+    },
+    {
+      "type": "Entity",
+      "id": "4",
+      "name": "Right Paddle",
+      "transform": {
+        "position": {
+          "x": 70,
+          "y": 0,
+          "z": -1
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 2,
+          "y": 18,
+          "z": 1
+        }
+      },
+      "components": [
+        {
+          "type": "SpriteComponent",
+          "file": "white_pixel.png"
+        },
+        {
+          "type": "PaddleComponent",
+          "flapSpeed": 60,
+          "gravity": 60
+        },
+        {
+          "type": "PhysicsComponent",
+          "isKinematic": true,
+          "mass": 1,
+          "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
+          "shapeInfo": {
+            "x": 2,
+            "y": 18
+          }
+        }
+      ]
+    }
+  ]
 }

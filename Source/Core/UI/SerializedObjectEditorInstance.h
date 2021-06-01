@@ -17,6 +17,7 @@ class EditorInstance
 {
 public:
     EditorInstance(SerializedObjectSchema schema, std::filesystem::path workingDirectory);
+    EditorInstance(SerializedObjectSchema schema, std::filesystem::path workingDirectory, SerializedObject object);
 
     inline std::string GetTypeName() const { return schema.GetName(); }
 

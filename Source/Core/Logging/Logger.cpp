@@ -5,8 +5,8 @@
 #include <vector>
 
 #include "LogAppender.h"
-#include "LoggerFactory.h"
 #include "LogMessage.h"
+#include "LoggerFactory.h"
 
 Logger::Logger(std::string name, std::shared_ptr<LogAppender> appender) : appender(appender), name(name) {}
 
@@ -30,7 +30,7 @@ void Logger::Infof(char const * format, ...)
     va_list args;
     va_start(args, format);
     auto messageString = Sprintf(format, args);
-	va_end(args);
+    va_end(args);
 
     appender->Append(LogMessage(name, LogLevel::INFO, messageString));
 }

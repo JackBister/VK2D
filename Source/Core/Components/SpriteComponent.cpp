@@ -81,7 +81,12 @@ void SpriteComponent::OnEvent(HashedString name, EventArgs args)
             newImage = this->image;
             refreshImageNextFrame = false;
         }
+        auto e = entity.Get();
+        if (!e) {
+            LogMissingEntity();
+            return;
+        }
         builder->WithSpriteInstanceUpdate(
-            {spriteInstance, entity->GetTransform()->GetLocalToWorld(), isActive, newImage});
+            {spriteInstance, e->GetTransform()->GetLocalToWorld(), isActive, newImage});
     }
 }

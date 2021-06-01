@@ -6,6 +6,7 @@
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/Console/Console.h"
+#include "Core/EntityManager.h"
 #include "Core/Input/Input.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/DebugDrawSystem.h"
@@ -26,63 +27,19 @@ namespace GameModule
 {
 Semaphore renderLock;
 FrameStage currFrameStage;
-std::vector<Entity *> entities;
-Entity * mainCameraEntity;
+EntityManager * entityManager;
 CameraComponent * mainCameraComponent;
 PhysicsWorld * physicsWorld;
 RenderSystem * renderSystem;
-Scene * scene = nullptr;
 UiRenderSystem * uiRenderSystem;
 
 std::vector<std::function<void()>> onFrameStart;
 
-void AddEntity(Entity * e)
-{
-    entities.push_back(e);
-    e->FireEvent("BeginPlay");
-}
-
-Entity * GetEntityByIdx(size_t idx)
-{
-    if (entities.size() <= idx) {
-        return nullptr;
-    }
-    return entities[idx];
-}
-
-Entity * GetEntityByName(std::string const & name)
-{
-    for (auto entity : entities) {
-        if (entity->GetName() == name) {
-            return entity;
-        }
-    }
-    return nullptr;
-}
-
-size_t GetEntityCount()
-{
-    return entities.size();
-}
-
-Entity * GetMainCamera()
-{
-    return mainCameraEntity;
-}
-
-PhysicsWorld * GetPhysicsWorld()
-{
-    return physicsWorld;
-}
-
-Scene * GetScene()
-{
-    return scene;
-}
-
 void Init()
 {
     renderLock.Signal();
+    entityManager = EntityManager::GetInstance();
+    physicsWorld = PhysicsWorld::GetInstance();
     renderSystem = RenderSystem::GetInstance();
     uiRenderSystem = UiRenderSystem::GetInstance();
 
@@ -90,73 +47,11 @@ void Init()
     Input::Init();
     Time::Start();
     EditorSystem::Init();
-
-    CommandDefinition dumpSceneCommand(
-        "scene_dump", "scene_dump <to_file> - Dumps the scene into <to_file>", 1, [](auto args) {
-            auto toFile = args[0];
-            scene->SerializeToFile(toFile);
-        });
-    Console::RegisterCommand(dumpSceneCommand);
-
-    CommandDefinition loadSceneCommand(
-        "scene_load", "scene_load <filename> - Loads the scene defined in the given file.", 1, [](auto args) {
-            auto fileName = args[0];
-            LoadScene(fileName);
-        });
-    Console::RegisterCommand(loadSceneCommand);
-
-    CommandDefinition unloadSceneCommand(
-        "scene_unload", "scene_unload - Unloads the scene.", 0, [](auto args) { scene->Unload(); });
-    Console::RegisterCommand(unloadSceneCommand);
-}
-
-void LoadScene(std::string const & fileName)
-{
-    if (scene) {
-        scene->Unload();
-    }
-    scene = Scene::FromFile(fileName);
 }
 
 void OnFrameStart(std::function<void()> fun)
 {
     onFrameStart.push_back(fun);
-}
-
-void RemoveEntity(Entity * entity)
-{
-    for (auto it = entities.begin(); it != entities.end(); ++it) {
-        if (*it == entity) {
-            entities.erase(it);
-            return;
-        }
-    }
-}
-
-SerializedObject SerializePhysics()
-{
-    return physicsWorld->Serialize();
-}
-
-void SetPhysicsWorld(PhysicsWorld * pw)
-{
-    if (physicsWorld == nullptr) {
-        physicsWorld = pw;
-        return;
-    }
-    auto grav = pw->GetGravity();
-    physicsWorld->SetGravity(grav);
-}
-
-void SetScene(Scene * s)
-{
-    scene = s;
-}
-
-void TakeCameraFocus(Entity * camera)
-{
-    mainCameraEntity = camera;
-    mainCameraComponent = (CameraComponent *)camera->GetComponent("CameraComponent");
 }
 
 void Tick(FrameContext & context)
@@ -196,9 +91,7 @@ void Tick(FrameContext & context)
     PreRenderCommands preRenderCommands = []() {
         OPTICK_EVENT("GatherPreRendercommands");
         PreRenderCommands::Builder builder;
-        for (auto entity : entities) {
-            entity->FireEvent("PreRender", {{"commandBuilder", &builder}});
-        }
+        entityManager->BroadcastEvent("PreRender", {{"commandBuilder", &builder}});
         return builder.Build();
     }();
 
@@ -224,16 +117,6 @@ void Tick(FrameContext & context)
 void TickEntities()
 {
     OPTICK_EVENT();
-    for (auto entity : entities) {
-        entity->FireEvent("Tick", {{"deltaTime", Time::GetDeltaTime()}});
-    }
-}
-
-void UnloadScene()
-{
-    OPTICK_EVENT();
-
-    scene->Unload();
-    scene = nullptr;
+    entityManager->BroadcastEvent("Tick", {{"deltaTime", Time::GetDeltaTime()}});
 }
 };

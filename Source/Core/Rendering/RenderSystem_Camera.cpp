@@ -35,6 +35,7 @@ CameraInstanceId RenderSystem::CreateCamera(bool isActive)
 void RenderSystem::DestroyCamera(CameraInstanceId cameraHandle)
 {
     auto cam = GetCamera(cameraHandle);
+    cam->isActive = false;
     auto descriptorSet = cam->descriptorSet;
     auto uniforms = cam->uniformBuffer;
     this->DestroyResources([descriptorSet, uniforms](ResourceCreationContext & ctx) {

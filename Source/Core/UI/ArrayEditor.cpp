@@ -9,15 +9,45 @@
 static auto const logger = Logger::Create("ArrayEditor");
 
 ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<SerializedObjectSchema> schema,
-                         std::optional<SerializedValueType> valueType, std::filesystem::path workingDirectory)
+                         std::optional<SerializedValueType> valueType, std::filesystem::path workingDirectory,
+                         std::unordered_set<SerializedPropertyFlag> flags)
     : name(name), type(type), schema(schema), valueType(valueType), typeChooser(name + ".type"),
-      workingDirectory(workingDirectory)
+      workingDirectory(workingDirectory), flags(flags)
 {
     if (type == ArrayEditorType::OBJECT) {
         contents = std::vector<std::unique_ptr<EditorInstance>>();
     } else {
         contents = std::vector<SerializedValue>();
     }
+
+    fileBrowser.SetPwd(workingDirectory);
+}
+
+ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<SerializedObjectSchema> schema,
+                         std::optional<SerializedValueType> valueType, std::filesystem::path workingDirectory,
+                         SerializedArray arr, std::unordered_set<SerializedPropertyFlag> flags)
+    : name(name), type(type), schema(schema), valueType(valueType), typeChooser(name + ".type"),
+      workingDirectory(workingDirectory), flags(flags)
+{
+    if (type == ArrayEditorType::OBJECT) {
+        contents = std::vector<std::unique_ptr<EditorInstance>>();
+        if (schema.has_value()) {
+            for (auto const & obj : arr) {
+                // Absolutely disgusting.
+                std::get<std::vector<std::unique_ptr<EditorInstance>>>(contents).emplace_back(
+                    std::make_unique<EditorInstance>(
+                        schema.value(), workingDirectory, std::get<SerializedObject>(obj)));
+            }
+        } else {
+            logger->Warnf("Creating ArrayEditor with name=%s, type was OBJECT but no schema was provided. The original "
+                          "values in the array will be lost.",
+                          name.c_str());
+        }
+    } else {
+        contents = arr;
+    }
+
+    fileBrowser.SetPwd(workingDirectory);
 }
 
 void ArrayEditor::Draw()
@@ -40,15 +70,13 @@ void ArrayEditor::Draw()
                 if (objects[i]) {
                     label += " <" + objects[i]->GetTypeName() + '>';
                     if (ImGui::TreeNode(label.c_str())) {
-                        if (!schema.has_value()) {
-                            ImGui::SameLine();
-                            if (ImGui::SmallButton("Change type")) {
-                                typeChooser.Open();
-                                typeChooserActiveForIndex = i;
-                            }
-                            objects[i]->Draw();
-                            ImGui::TreePop();
+                        ImGui::SameLine();
+                        if (ImGui::SmallButton("Change type")) {
+                            typeChooser.Open();
+                            typeChooserActiveForIndex = i;
                         }
+                        objects[i]->Draw();
+                        ImGui::TreePop();
                     } else {
                         if (!schema.has_value()) {
                             ImGui::SameLine();
@@ -78,7 +106,16 @@ void ArrayEditor::Draw()
                 } else if (valueType.value() == SerializedValueType::DOUBLE) {
                     ImGui::InputDouble("##hidelabel", &std::get<double>(values[i]));
                 } else if (valueType.value() == SerializedValueType::STRING) {
-                    ImGui_InputText("##hidelabel", &std::get<std::string>(values[i]));
+                    if (flags.count(SerializedPropertyFlag::IS_FILE_PATH)) {
+                        ImGui::Text("%s", std::get<std::string>(values[i]).c_str());
+                        ImGui::SameLine();
+                        if (ImGui::SmallButton("Pick")) {
+                            fileBrowser.Open();
+                            fileBrowserActiveForIndex = i;
+                        }
+                    } else {
+                        ImGui_InputText("##hidelabel", &std::get<std::string>(values[i]));
+                    }
                 }
                 ImGui::PopID();
             }
@@ -90,6 +127,31 @@ void ArrayEditor::Draw()
                 std::make_unique<EditorInstance>(newMemberSchema.value(), workingDirectory);
         }
         ImGui::TreePop();
+    }
+
+    DrawFileBrowser();
+}
+
+void ArrayEditor::DrawFileBrowser()
+{
+
+    fileBrowser.Display();
+    if (fileBrowser.HasSelected()) {
+        if (!fileBrowserActiveForIndex.has_value()) {
+            logger->Warnf("Unexpected state when editing array with name=%s, fileBrowser was used but "
+                          "fileBrowserActiveForIndex was not set",
+                          name.c_str());
+        } else if (valueType != SerializedValueType::STRING) {
+            logger->Warnf("Unexpected state when editing array with name=%s, fileBrowser was used but valueType "
+                          "was not STRING. valueType was=%zu",
+                          name.c_str(),
+                          valueType);
+        } else {
+            auto relativePath = std::filesystem::relative(fileBrowser.GetSelected(), workingDirectory);
+            std::get<1>(contents)[fileBrowserActiveForIndex.value()] = relativePath.string();
+        }
+        fileBrowserActiveForIndex = std::nullopt;
+        fileBrowser.Close();
     }
 }
 
@@ -156,7 +218,7 @@ void ArrayEditor::Resize()
                 break;
             case SerializedValueType::STRING:
                 for (size_t i = oldSize; i < size; ++i) {
-                    values[i] = "";
+                    values[i] = std::string("");
                 }
                 break;
             default:

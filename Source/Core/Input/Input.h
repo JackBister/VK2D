@@ -26,8 +26,9 @@ Gamepad const * GetGamepad(size_t idx);
 // Returns the number of unique controllers that have been connected since the engine was started.
 // That is, if two controllers were connected and one was disconnected, this would return 2. If the controller was then
 // connected this would still return 2.
-size_t GetGamepadCount();
+size_t EAPI GetGamepadCount();
 
 void EAPI AddKeybind(HashedString, Keycode);
 void EAPI RemoveKeybind(HashedString, Keycode);
+void EAPI RemoveAllKeybindings();
 };

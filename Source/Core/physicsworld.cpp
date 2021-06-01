@@ -9,34 +9,12 @@
 
 static const auto logger = Logger::Create("PhysicsWorld");
 
-static SerializedObjectSchema const PHYSICS_WORLD_SCHEMA = SerializedObjectSchema(
-    "PhysicsWorld", {
-                        SerializedPropertySchema("gravity", SerializedValueType::OBJECT, {}, "Vec3", true),
-                    });
-
 static SerializedObjectSchema const VEC3_SCHEMA =
     SerializedObjectSchema("Vec3", {
                                        SerializedPropertySchema("x", SerializedValueType::DOUBLE, {}, "", true),
                                        SerializedPropertySchema("y", SerializedValueType::DOUBLE, {}, "", true),
                                        SerializedPropertySchema("z", SerializedValueType::DOUBLE, {}, "", true),
                                    });
-
-class PhysicsWorldDeserializer : public Deserializer
-{
-
-    SerializedObjectSchema GetSchema() { return PHYSICS_WORLD_SCHEMA; }
-
-    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
-    {
-        PhysicsWorld * ret = new PhysicsWorld();
-
-        auto grav = obj.GetObject("gravity").value();
-        ret->SetGravity(
-            glm::vec3(grav.GetNumber("x").value(), grav.GetNumber("y").value(), grav.GetNumber("z").value()));
-
-        return ret;
-    }
-};
 
 // TODO: Move this somewhere else
 class Vec3Deserializer : public Deserializer
@@ -53,12 +31,16 @@ class Vec3Deserializer : public Deserializer
     }
 };
 
-DESERIALIZABLE_IMPL(PhysicsWorld, new PhysicsWorldDeserializer());
 DESERIALIZABLE_IMPL(Vec3, new Vec3Deserializer());
+
+PhysicsWorld * PhysicsWorld::GetInstance()
+{
+    static PhysicsWorld singletonPhysicsWorld;
+    return &singletonPhysicsWorld;
+}
 
 PhysicsWorld::PhysicsWorld()
 {
-    this->type = "PhysicsWorld";
     this->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
     this->dispatcher = std::make_unique<btCollisionDispatcher>(this->collisionConfig.get());
     this->broadphase = std::make_unique<btDbvtBroadphase>();
@@ -72,7 +54,7 @@ PhysicsWorld::PhysicsWorld()
 void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 {
     auto & collisionsLastFrame = static_cast<PhysicsWorld *>(world->getWorldUserInfo())->collisionsLastFrame;
-    std::unordered_map<Entity *, std::unordered_map<Entity *, CollisionInfo>> collisionsThisFrame;
+    std::unordered_map<EntityPtr, std::unordered_map<EntityPtr, CollisionInfo>> collisionsThisFrame;
     int numManifolds = world->getDispatcher()->getNumManifolds();
     for (int i = 0; i < numManifolds; ++i) {
         btPersistentManifold * contactManifold = world->getDispatcher()->getManifoldByIndexInternal(i);
@@ -130,39 +112,36 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
         }
     }
     for (auto & collisions : collisionsThisFrame) {
+        auto firstEntity = collisions.first.Get();
+        if (!firstEntity) {
+            logger->Warnf("Got null entity entityPtr=%s", collisions.first.ToString().c_str());
+            continue;
+        }
         for (auto & collisionInfo : collisions.second) {
             if (collisionInfo.second.collisionStart &&
                 collisionsLastFrame[collisions.first].find(collisionInfo.first) ==
                     collisionsLastFrame[collisions.first].end()) {
-                collisions.first->FireEvent("OnCollisionStart", {{"info", &collisionInfo.second}});
+                firstEntity->FireEvent("OnCollisionStart", {{"info", &collisionInfo.second}});
+
             } else {
                 collisionsLastFrame[collisions.first].erase(
                     collisionsLastFrame[collisions.first].find(collisionInfo.first));
-                collisions.first->FireEvent("OnCollision", {{"info", &collisionInfo.second}});
+                firstEntity->FireEvent("OnCollision", {{"info", &collisionInfo.second}});
             }
         }
     }
     for (auto & collisions : collisionsLastFrame) {
+        auto e = collisions.first.Get();
+        if (!e) {
+            logger->Warnf("Got null entity for entityPtr=%s", collisions.first.ToString().c_str());
+            continue;
+        }
         for (auto & collisionInfo : collisions.second) {
-            collisions.first->FireEvent("OnCollisionEnd", {{"entity", collisionInfo.first}});
+            e->FireEvent("OnCollisionEnd", {{"entity", collisionInfo.first}});
         }
     }
 
     collisionsLastFrame = collisionsThisFrame;
-}
-
-SerializedObject PhysicsWorld::Serialize() const
-{
-    auto grav = world->getGravity();
-    return SerializedObject::Builder()
-        .WithString("type", this->type)
-        .WithObject("gravity",
-                    SerializedObject::Builder()
-                        .WithNumber("x", grav.getX())
-                        .WithNumber("y", grav.getY())
-                        .WithNumber("z", grav.getZ())
-                        .Build())
-        .Build();
 }
 
 glm::vec3 PhysicsWorld::GetGravity() const

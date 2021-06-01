@@ -4,32 +4,47 @@
 #include <unordered_map>
 #include <vector>
 
-#include "Core/Components/Component.h"
 #include "Core/Deserializable.h"
+#include "Core/EntityId.h"
 #include "Core/HashedString.h"
 #include "Core/eventarg.h"
 #include "Core/transform.h"
 
+class Component;
+class EntityManager;
+
 class Entity final : public Deserializable
 {
 public:
-    Entity(std::string const & name, Transform transform) : name(name), transform(transform) { type = "Entity"; }
+    friend class EntityManager;
+
+    static std::optional<Entity> Deserialize(DeserializationContext * deserializationContext,
+                                             SerializedObject const & obj);
+
+    Entity(std::string const & id, std::string const & name, Transform transform, std::vector<Component *> components)
+        : id(id), name(name), transform(transform), components(components)
+    {
+        type = "Entity";
+    }
 
     SerializedObject Serialize() const override;
     void FireEvent(HashedString name, EventArgs args = {});
 
-    void AddComponent(std::unique_ptr<Component> component);
+    void AddComponent(Component * component);
     Component * GetComponent(std::string const & type) const;
     bool HasComponent(std::string const & type) const;
 
-    inline std::string GetName() { return name; }
-
+    inline EntityId GetId() const { return id; }
+    inline std::string GetName() const { return name; }
     inline Transform * GetTransform() { return &transform; }
 
     REFLECT();
 
 private:
+    EntityManager * entityManager;
+
+    EntityId id;
     std::string name;
     Transform transform;
-    std::vector<std::unique_ptr<Component>> components;
+    std::vector<Component *> components;
 };

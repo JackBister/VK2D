@@ -12,14 +12,15 @@
 static const auto logger = Logger::Create("SkeletalMeshComponent");
 
 REFLECT_STRUCT_BEGIN(SkeletalMeshComponent)
+REFLECT_STRUCT_MEMBER(file)
 REFLECT_STRUCT_MEMBER(isActive)
 REFLECT_STRUCT_END()
 
 static SerializedObjectSchema const SKELETAL_MESH_COMPONENT_SCHEMA = SerializedObjectSchema(
-    "SkeletalMeshComponent", {SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true, {},
-                                                       {SerializedPropertyFlag::IS_FILE_PATH}),
-                              SerializedPropertySchema("isActive", SerializedValueType::BOOL),
-                              SerializedPropertySchema("startingAnimation", SerializedValueType::STRING)});
+    "SkeletalMeshComponent",
+    {SerializedPropertySchema::Required("file", SerializedValueType::STRING, {SerializedPropertyFlag::IS_FILE_PATH}),
+     SerializedPropertySchema::Required("isActive", SerializedValueType::BOOL),
+     SerializedPropertySchema::Optional("startingAnimation", SerializedValueType::STRING)});
 
 class SkeletalMeshComponentDeserializer : public Deserializer
 {
@@ -47,7 +48,7 @@ COMPONENT_IMPL(SkeletalMeshComponent, new SkeletalMeshComponentDeserializer());
 
 SkeletalMeshComponent::~SkeletalMeshComponent()
 {
-    RenderSystem::GetInstance()->DestroyStaticMeshInstance(SkeletalMeshInstance);
+    RenderSystem::GetInstance()->DestroySkeletalMeshInstance(SkeletalMeshInstance);
 }
 
 SkeletalMeshComponent::SkeletalMeshComponent(std::string file, SkeletalMesh * mesh, bool isActive,
@@ -63,11 +64,14 @@ SkeletalMeshComponent::SkeletalMeshComponent(std::string file, SkeletalMesh * me
 
 SerializedObject SkeletalMeshComponent::Serialize() const
 {
-    return SerializedObject::Builder()
-        .WithString("type", this->Reflection.name)
+    SerializedObject::Builder builder;
+    builder.WithString("type", this->Reflection.name)
         .WithString("file", this->file)
-        .WithBool("isActive", this->isActive)
-        .Build();
+        .WithBool("isActive", this->isActive);
+    if (startingAnimation.has_value()) {
+        builder.WithString("startingAnimation", startingAnimation.value());
+    }
+    return builder.Build();
 }
 
 void SkeletalMeshComponent::OnEvent(HashedString name, EventArgs args)
@@ -79,8 +83,13 @@ void SkeletalMeshComponent::OnEvent(HashedString name, EventArgs args)
 
     if (name == "PreRender") {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
+        auto e = entity.Get();
+        if (!e) {
+            LogMissingEntity();
+            return;
+        }
         builder->WithSkeletalMeshUpdate(
-            {SkeletalMeshInstance, entity->GetTransform()->GetLocalToWorld(), isActive, queuedAnimationChange});
+            {SkeletalMeshInstance, e->GetTransform()->GetLocalToWorld(), isActive, queuedAnimationChange});
         queuedAnimationChange = std::nullopt;
     }
 }

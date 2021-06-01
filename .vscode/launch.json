@@ -1,19 +1,17 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "(Windows) Launch",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "build/Debug/Main.exe",
-            "args": [
-                "-editor"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "newExternalWindow",
-            "preLaunchTask": "build"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "(Windows) Launch",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "build/Debug/Main.exe",
+      "args": ["-editor", "./Examples/FlappyPong/FlappyPong.project"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "console": "newExternalWindow",
+      "preLaunchTask": "build"
+    }
+  ]
 }

@@ -87,8 +87,13 @@ void StaticMeshComponent::OnEvent(HashedString name, EventArgs args)
 
     if (name == "PreRender" && staticMeshInstance.has_value()) {
         auto builder = (PreRenderCommands::Builder *)args.at("commandBuilder").asPointer;
+        auto e = entity.Get();
+        if (!e) {
+            LogMissingEntity();
+            return;
+        }
         builder->WithStaticMeshInstanceUpdate(
-            {staticMeshInstance.value(), entity->GetTransform()->GetLocalToWorld(), isActive});
+            {staticMeshInstance.value(), e->GetTransform()->GetLocalToWorld(), isActive});
     }
 }
 

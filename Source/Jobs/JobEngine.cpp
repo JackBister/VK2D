@@ -20,6 +20,7 @@ void JobEngine::JobThread(uint32_t threadIdx, JobEngine * jobEngine, Queue<JobId
 
     while (true) {
         // Did I just make a lock free queue into a locked queue?
+        // TODO: There is some kind of deadlock here where jobs are available in the queue but Wait() never returns
         jobEngine->jobsWaiting.Wait();
         auto high = highPriorityQueue.Pop();
         if (high.has_value()) {

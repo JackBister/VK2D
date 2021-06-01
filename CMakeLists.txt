@@ -11,14 +11,15 @@ project(vk2d C CXX)
 
 file(GLOB_RECURSE SOURCES Source/Core/*.c Source/Core/*.cpp Source/Core/*.h
     Source/Jobs/*.c Source/Jobs/*.cpp Source/Jobs/*.h
+    Source/Util/*.c Source/Util/*.cpp Source/Util/*.h
 )
 add_executable(Main ${SOURCES})
 
-set_property(TARGET Main PROPERTY CXX_STANDARD 17)
+set_property(TARGET Main PROPERTY CXX_STANDARD 23)
 set_property(TARGET Main PROPERTY ENABLE_EXPORTS 1)
 
 if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /UMBCS /D_UNICODE /DUNICODE /std:c++17")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /UMBCS /D_UNICODE /DUNICODE /std:c++latest")
     set_property(TARGET Main PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 else()
     # I don't trust CMake to properly set std=c++17

@@ -1,0 +1,5 @@
+#include "EntityId.h"
+
+REFLECT_STRUCT_BEGIN(EntityId)
+REFLECT_STRUCT_MEMBER(id)
+REFLECT_STRUCT_END()
