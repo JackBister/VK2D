@@ -190,7 +190,7 @@ void Init()
             activeScene = std::nullopt;
         }
     });
-    addComponentTypeChooser = TypeChooser("Choose type");
+    addComponentTypeChooser = TypeChooser("Choose type", TypeChooser::COMPONENT_TYPE_FILTER);
 
     entitySchema = Deserializable::GetSchema("Entity");
     if (!entitySchema.has_value()) {

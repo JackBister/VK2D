@@ -9,7 +9,10 @@
 class TypeChooser
 {
 public:
-    TypeChooser(std::string title);
+    using TypeFilter = std::function<bool(SerializedObjectSchema)>;
+    static TypeFilter COMPONENT_TYPE_FILTER;
+
+    TypeChooser(std::string title, TypeFilter typeFilter = nullptr);
 
     bool Draw(std::optional<SerializedObjectSchema> * result);
     void Open();

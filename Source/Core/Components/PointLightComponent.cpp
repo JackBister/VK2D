@@ -10,12 +10,14 @@ REFLECT_STRUCT_MEMBER(color)
 REFLECT_STRUCT_MEMBER(isActive)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const POINT_LIGHT_COMPONENT_SCHEMA = SerializedObjectSchema(
-    "PointLightComponent", {
+static SerializedObjectSchema const POINT_LIGHT_COMPONENT_SCHEMA =
+    SerializedObjectSchema("PointLightComponent",
+                           {
                                SerializedPropertySchema("color", SerializedValueType::OBJECT, {}, "Vec3", true),
                                SerializedPropertySchema("isActive", SerializedValueType::BOOL),
 
-                           });
+                           },
+                           {SerializedObjectFlag::IS_COMPONENT});
 
 class PointLightComponentDeserializer : public Deserializer
 {

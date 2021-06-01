@@ -16,12 +16,14 @@ REFLECT_STRUCT_BEGIN(StaticMeshComponent)
 REFLECT_STRUCT_MEMBER(isActive)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const STATIC_MESH_COMPONENT_SCHEMA = SerializedObjectSchema(
-    "StaticMeshComponent", {
+static SerializedObjectSchema const STATIC_MESH_COMPONENT_SCHEMA =
+    SerializedObjectSchema("StaticMeshComponent",
+                           {
                                SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true, {},
                                                         {SerializedPropertyFlag::IS_FILE_PATH}),
                                SerializedPropertySchema("isActive", SerializedValueType::BOOL),
-                           });
+                           },
+                           {SerializedObjectFlag::IS_COMPONENT});
 
 class StaticMeshComponentDeserializer : public Deserializer
 {

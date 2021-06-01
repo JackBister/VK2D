@@ -27,7 +27,8 @@ static SerializedObjectSchema CAMERA_COMPONENT_SCHEMA = SerializedObjectSchema(
         SerializedPropertySchema("perspective", SerializedValueType::OBJECT, {}, "PerspectiveCamera", false, {"ortho"}),
         SerializedPropertySchema("defaultsToMain", SerializedValueType::BOOL),
         SerializedPropertySchema("isActive", SerializedValueType::BOOL, {}, "", true),
-    });
+    },
+    {SerializedObjectFlag::IS_COMPONENT});
 
 static SerializedObjectSchema
     ORTHO_CAMERA_SCHEMA("OrthoCamera",

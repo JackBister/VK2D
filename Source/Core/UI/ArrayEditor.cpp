@@ -11,7 +11,9 @@ static auto const logger = Logger::Create("ArrayEditor");
 ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<SerializedObjectSchema> schema,
                          std::optional<SerializedValueType> valueType, std::filesystem::path workingDirectory,
                          std::unordered_set<SerializedPropertyFlag> flags)
-    : name(name), type(type), schema(schema), valueType(valueType), typeChooser(name + ".type"),
+    : name(name), type(type), schema(schema), valueType(valueType),
+      typeChooser(name + ".type",
+                  flags.count(SerializedPropertyFlag::IS_COMPONENT) ? TypeChooser::COMPONENT_TYPE_FILTER : nullptr),
       workingDirectory(workingDirectory), flags(flags)
 {
     if (type == ArrayEditorType::OBJECT) {
@@ -26,7 +28,9 @@ ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<S
 ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<SerializedObjectSchema> schema,
                          std::optional<SerializedValueType> valueType, std::filesystem::path workingDirectory,
                          SerializedArray arr, std::unordered_set<SerializedPropertyFlag> flags)
-    : name(name), type(type), schema(schema), valueType(valueType), typeChooser(name + ".type"),
+    : name(name), type(type), schema(schema), valueType(valueType),
+      typeChooser(name + ".type",
+                  flags.count(SerializedPropertyFlag::IS_COMPONENT) ? TypeChooser::COMPONENT_TYPE_FILTER : nullptr),
       workingDirectory(workingDirectory), flags(flags)
 {
     if (type == ArrayEditorType::OBJECT) {

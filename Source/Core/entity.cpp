@@ -21,11 +21,12 @@ REFLECT_STRUCT_MEMBER(transform)
 REFLECT_STRUCT_MEMBER(components)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const ENTITY_SCHEMA =
-    SerializedObjectSchema("Entity", {SerializedPropertySchema::Required("id", SerializedValueType::STRING),
-                                      SerializedPropertySchema::Required("name", SerializedValueType::STRING),
-                                      SerializedPropertySchema::RequiredObject("transform", "Transform"),
-                                      SerializedPropertySchema::RequiredObjectArray("components", "")});
+static SerializedObjectSchema const ENTITY_SCHEMA = SerializedObjectSchema(
+    "Entity",
+    {SerializedPropertySchema::Required("id", SerializedValueType::STRING),
+     SerializedPropertySchema::Required("name", SerializedValueType::STRING),
+     SerializedPropertySchema::RequiredObject("transform", "Transform"),
+     SerializedPropertySchema::RequiredObjectArray("components", "", {SerializedPropertyFlag::IS_COMPONENT})});
 
 class EntityDeserializer : public Deserializer
 {

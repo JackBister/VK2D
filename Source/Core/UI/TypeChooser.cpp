@@ -4,12 +4,22 @@
 
 #include "Core/Deserializable.h"
 
-TypeChooser::TypeChooser(std::string title) : title(title)
+TypeChooser::TypeFilter TypeChooser::COMPONENT_TYPE_FILTER = [](SerializedObjectSchema schema) {
+    return schema.GetFlags().count(SerializedObjectFlag::IS_COMPONENT) > 0;
+};
+
+TypeChooser::TypeChooser(std::string title, TypeFilter typeFilter) : title(title)
 {
     auto const & deserialzables = Deserializable::Map();
 
     for (auto const & kv : Deserializable::Map()) {
-        typeNames.push_back((char *)kv.first.c_str());
+        bool includeSchema = true;
+        if (typeFilter) {
+            includeSchema = typeFilter(kv.second->GetSchema());
+        }
+        if (includeSchema) {
+            typeNames.push_back((char *)kv.first.c_str());
+        }
     }
 }
 

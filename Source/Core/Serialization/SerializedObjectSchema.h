@@ -8,6 +8,7 @@
 class SerializedObjectSchema;
 
 enum class EAPI SerializedPropertyFlag {
+    IS_COMPONENT,
     IS_FILE_PATH,
 };
 
@@ -92,18 +93,25 @@ private:
     std::unordered_set<SerializedPropertyFlag> flags;
 };
 
+enum class SerializedObjectFlag {
+    IS_COMPONENT,
+};
+
 class EAPI SerializedObjectSchema
 {
 public:
-    inline SerializedObjectSchema(std::string name, std::vector<SerializedPropertySchema> properties)
-        : name(name), properties(properties)
+    inline SerializedObjectSchema(std::string name, std::vector<SerializedPropertySchema> properties,
+                                  std::unordered_set<SerializedObjectFlag> flags = {})
+        : name(name), properties(properties), flags(flags)
     {
     }
 
     inline std::string GetName() const { return name; }
     inline std::vector<SerializedPropertySchema> GetProperties() const { return properties; }
+    inline std::unordered_set<SerializedObjectFlag> GetFlags() const { return flags; }
 
 private:
     std::string name;
     std::vector<SerializedPropertySchema> properties;
+    std::unordered_set<SerializedObjectFlag> flags;
 };

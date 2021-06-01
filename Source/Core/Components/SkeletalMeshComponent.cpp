@@ -20,7 +20,8 @@ static SerializedObjectSchema const SKELETAL_MESH_COMPONENT_SCHEMA = SerializedO
     "SkeletalMeshComponent",
     {SerializedPropertySchema::Required("file", SerializedValueType::STRING, {SerializedPropertyFlag::IS_FILE_PATH}),
      SerializedPropertySchema::Required("isActive", SerializedValueType::BOOL),
-     SerializedPropertySchema::Optional("startingAnimation", SerializedValueType::STRING)});
+     SerializedPropertySchema::Optional("startingAnimation", SerializedValueType::STRING)},
+    {SerializedObjectFlag::IS_COMPONENT});
 
 class SkeletalMeshComponentDeserializer : public Deserializer
 {

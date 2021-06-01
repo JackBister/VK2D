@@ -16,12 +16,14 @@ REFLECT_STRUCT_BEGIN(SpriteComponent)
 REFLECT_STRUCT_MEMBER(isActive)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const SPRITE_COMPONENT_SCHEMA = SerializedObjectSchema(
-    "SpriteComponent", {
-                           SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true, {},
-                                                    {SerializedPropertyFlag::IS_FILE_PATH}),
-                           SerializedPropertySchema("isActive", SerializedValueType::BOOL, {}, "", false),
-                       });
+static SerializedObjectSchema const SPRITE_COMPONENT_SCHEMA =
+    SerializedObjectSchema("SpriteComponent",
+                           {
+                               SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true, {},
+                                                        {SerializedPropertyFlag::IS_FILE_PATH}),
+                               SerializedPropertySchema("isActive", SerializedValueType::BOOL, {}, "", false),
+                           },
+                           {SerializedObjectFlag::IS_COMPONENT});
 
 class SpriteComponentDeserializer : public Deserializer
 {
@@ -86,7 +88,6 @@ void SpriteComponent::OnEvent(HashedString name, EventArgs args)
             LogMissingEntity();
             return;
         }
-        builder->WithSpriteInstanceUpdate(
-            {spriteInstance, e->GetTransform()->GetLocalToWorld(), isActive, newImage});
+        builder->WithSpriteInstanceUpdate({spriteInstance, e->GetTransform()->GetLocalToWorld(), isActive, newImage});
     }
 }
