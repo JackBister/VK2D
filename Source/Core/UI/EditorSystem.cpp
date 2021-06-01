@@ -27,12 +27,12 @@
 #include "Core/Resources/Scene.h"
 #include "Core/SceneManager.h"
 #include "Core/Serialization/JsonSerializer.h"
-#include "Core/Util/DefaultFileSlurper.h"
-#include "Core/Util/Imgui_InputText.h"
 #include "Core/dtime.h"
 #include "EditProjectDialog.h"
 #include "SerializedObjectEditor.h"
 #include "TypeChooser.h"
+#include "Util/DefaultFileSlurper.h"
+#include "Util/Imgui_InputText.h"
 #include "Util/WriteToFile.h"
 
 static const auto logger = Logger::Create("EditorSystem");

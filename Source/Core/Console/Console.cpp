@@ -11,7 +11,7 @@
 #include "Core/Logging/LogAppender.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Rendering/RenderSystem.h"
-#include "Core/Util/Strings.h"
+#include "Util/Strings.h"
 
 static const auto logger = Logger::Create("Console");
 

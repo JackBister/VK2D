@@ -30,12 +30,12 @@
 #include "Core/Semaphore.h"
 #include "Core/Serialization/JsonSerializer.h"
 #include "Core/UI/EditorSystem.h"
-#include "Core/Util/DefaultFileSlurper.h"
-#include "Core/Util/SetThreadName.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
 #include "Core/transform.h"
 #include "Jobs/JobEngine.h"
+#include "Util/DefaultFileSlurper.h"
+#include "Util/SetThreadName.h"
 
 static const auto logger = Logger::Create("main");
 

@@ -7,7 +7,7 @@
 
 #include "Core/Logging/Logger.h"
 #include "Core/Serialization/JsonSerializer.h"
-#include "Core/Util/Imgui_InputText.h"
+#include "Util/Imgui_InputText.h"
 #include "SerializedObjectEditorInstance.h"
 
 static auto const logger = Logger::Create("SerializedObjectEditor");

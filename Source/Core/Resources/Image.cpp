@@ -10,7 +10,7 @@
 #include "Core/Semaphore.h"
 
 #if HOT_RELOAD_RESOURCES
-#include "Core/Util/WatchFile.h"
+#include "Util/WatchFile.h"
 #endif
 
 static const auto logger = Logger::Create("Image");

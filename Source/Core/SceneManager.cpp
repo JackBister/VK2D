@@ -4,7 +4,7 @@
 #include "Core/EntityManager.h"
 #include "Core/Logging/Logger.h"
 #include "Core/Serialization/JsonSerializer.h"
-#include "Core/Util/DefaultFileSlurper.h"
+#include "Util/DefaultFileSlurper.h"
 
 static auto const logger = Logger::Create("SceneManager");
 

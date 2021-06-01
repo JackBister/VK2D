@@ -6,7 +6,7 @@
 #include <string>
 
 #include "Core/Config/Config.h"
-#include "Core/Util/FileSlurper.h"
+#include "Util/FileSlurper.h"
 
 class SpirvCompilationResult
 {

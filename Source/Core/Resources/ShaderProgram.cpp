@@ -7,8 +7,8 @@
 #include "Core/Rendering/GlslToSpirvShaderCompiler.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Semaphore.h"
-#include "Core/Util/DefaultFileSlurper.h"
-#include "Core/Util/WatchFile.h"
+#include "Util/DefaultFileSlurper.h"
+#include "Util/WatchFile.h"
 
 static const auto logger = Logger::Create("ShaderProgram");
 
