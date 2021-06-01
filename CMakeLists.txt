@@ -26,8 +26,7 @@ if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /UMBCS /D_UNICODE /DUNICODE /std:c++latest")
     set_property(TARGET Main PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 else()
-    # I don't trust CMake to properly set std=c++17
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -lstdc++fs")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2b -lstdc++fs")
 endif()
 
 option(ENABLE_PROFILER "Enable Optick profiler" ON)
