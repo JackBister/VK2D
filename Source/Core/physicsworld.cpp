@@ -8,6 +8,7 @@
 #include "Core/Rendering/DebugDrawSystem.h"
 #include "Core/entity.h"
 #include "Logging/Logger.h"
+#include "Util/Strings.h"
 
 static const auto logger = Logger::Create("PhysicsWorld");
 
@@ -137,27 +138,43 @@ PhysicsWorld::PhysicsWorld() : debugDraw(new DebugDrawBulletAdapter(DebugDrawSys
             auto x2s = args[3];
             auto y2s = args[4];
             auto z2s = args[5];
-            auto x = std::stod(xs);
-            auto y = std::stod(ys);
-            auto z = std::stod(zs);
-            auto x2 = std::stod(x2s);
-            auto y2 = std::stod(y2s);
-            auto z2 = std::stod(z2s);
-            btVector3 from(x, y, z);
-            btVector3 to(x2, y2, z2);
+
+            auto x = Strings::Strtod(xs);
+            auto y = Strings::Strtod(ys);
+            auto z = Strings::Strtod(zs);
+            auto x2 = Strings::Strtod(x2s);
+            auto y2 = Strings::Strtod(y2s);
+            auto z2 = Strings::Strtod(z2s);
+            if (!x.has_value() || !y.has_value() || !z.has_value() || !x2.has_value() || !y2.has_value() ||
+                !z2.has_value()) {
+                logger->Warnf("Could not perform raytest: input was invalid: one of the values was not a number");
+                return;
+            }
+            btVector3 from(x.value(), y.value(), z.value());
+            btVector3 to(x2.value(), y2.value(), z2.value());
             if (this->raytestCallback) {
                 delete this->raytestCallback;
+                this->raytestCallback = nullptr;
             }
             this->raytestCallback = new btCollisionWorld::AllHitsRayResultCallback(from, to);
+            logger->Infof("Performing ray test with from=(%f, %f, %f), to=(%f, %f, %f)",
+                          from.x(),
+                          from.y(),
+                          from.z(),
+                          to.x(),
+                          to.y(),
+                          to.z());
             world->rayTest(from, to, *this->raytestCallback);
             if (this->raytestCallback->m_collisionObject) {
                 auto userPointer = (PhysicsComponent *)this->raytestCallback->m_collisionObject->getUserPointer();
                 if (userPointer && userPointer->entity) {
                     auto entity = userPointer->entity.Get();
-                    logger->Infof("ray hit entity with id=%s, name=%s",
+                    logger->Infof("Ray hit entity with id=%s, name=%s",
                                   entity->GetId().ToString().data(),
                                   entity->GetName().c_str());
                 }
+            } else {
+                logger->Infof("Ray did not hit anything");
             }
         });
     Console::RegisterCommand(raytestCommand);

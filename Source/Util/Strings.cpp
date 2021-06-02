@@ -19,6 +19,21 @@ std::vector<std::string> Split(std::string const & str)
     return std::vector(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
 }
 
+std::optional<double> Strtod(std::string const & s)
+{
+    char * endPtr = nullptr;
+    double ret = strtod(s.c_str(), &endPtr);
+    if (endPtr != nullptr && (endPtr - s.c_str()) != s.size()) {
+        return std::nullopt;
+    }
+
+    if (errno != 0) {
+        errno = 0;
+        return std::nullopt;
+    }
+    return ret;
+}
+
 std::string Trim(std::string str)
 {
     size_t start = str.find_first_not_of(WHITESPACE);
