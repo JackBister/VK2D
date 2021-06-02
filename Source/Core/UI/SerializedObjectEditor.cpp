@@ -22,17 +22,27 @@ bool SerializedObjectEditor::Draw(SerializedObject * obj)
             ImGui::SetWindowSize(title.c_str(), ImVec2(500, 400));
             hasSetSize = true;
         }
+
         editorInstance.value().Draw();
 
-        if (ImGui::Button("ok")) {
+        if (errorMessage.has_value()) {
+            ImGui::TextColored(ImVec4(1.0, 0.0, 0.0, 1.0), "%s", errorMessage.value().c_str());
+        }
+
+        if (ImGui::Button("OK")) {
             *obj = editorInstance.value().Build();
-            ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
             return true;
         }
+        ImGui::SameLine();
+
+        if (closeOnNextFrame) {
+            closeOnNextFrame = false;
+            ImGui::CloseCurrentPopup();
+        }
 
         if (ImGui::Button("Close")) {
-            ImGui::CloseCurrentPopup();
+            closeOnNextFrame = true;
         }
         ImGui::EndPopup();
     }

@@ -9,12 +9,30 @@
 
 static const auto logger = Logger::Create("PhysicsWorld");
 
+// TODO: Move this somewhere else
+static SerializedObjectSchema const VEC2_SCHEMA =
+    SerializedObjectSchema("Vec2", {SerializedPropertySchema::Required("x", SerializedValueType::DOUBLE),
+                                    SerializedPropertySchema::Required("y", SerializedValueType::DOUBLE)});
+
+class Vec2Deserializer : public Deserializer
+{
+    SerializedObjectSchema GetSchema() final override { return VEC2_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
+    {
+        auto ret = new glm::vec2();
+        ret->x = obj.GetNumber("x").value();
+        ret->y = obj.GetNumber("y").value();
+        return ret;
+    }
+};
+
+DESERIALIZABLE_IMPL(Vec2, new Vec2Deserializer());
+
 static SerializedObjectSchema const VEC3_SCHEMA =
-    SerializedObjectSchema("Vec3", {
-                                       SerializedPropertySchema("x", SerializedValueType::DOUBLE, {}, "", true),
-                                       SerializedPropertySchema("y", SerializedValueType::DOUBLE, {}, "", true),
-                                       SerializedPropertySchema("z", SerializedValueType::DOUBLE, {}, "", true),
-                                   });
+    SerializedObjectSchema("Vec3", {SerializedPropertySchema::Required("x", SerializedValueType::DOUBLE),
+                                    SerializedPropertySchema::Required("y", SerializedValueType::DOUBLE),
+                                    SerializedPropertySchema::Required("z", SerializedValueType::DOUBLE)});
 
 // TODO: Move this somewhere else
 class Vec3Deserializer : public Deserializer

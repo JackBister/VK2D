@@ -63,11 +63,13 @@ std::optional<Entity> Entity::Deserialize(DeserializationContext * deserializati
         Component * c = static_cast<Component *>(
             Deserializable::Deserialize(deserializationContext, std::get<SerializedObject>(component)));
         if (!c) {
-            logger->Errorf("Not adding component to entity with name=%s, id=%s because deserialization failed. See "
-                           "earlier errors.",
+            logger->Errorf("Failed to deserialize component for entity with name=%s, id=%s. See earlier errors.",
                            name.c_str(),
                            id.c_str());
-            continue;
+            for (auto c2 : components) {
+                delete c2;
+            }
+            return std::nullopt;
         }
         components.emplace_back(c);
     }
@@ -101,6 +103,7 @@ void Entity::AddComponent(Component * component)
     auto ptr = entityManager->GetEntityById(id);
     component->entity = ptr;
     components.push_back(component);
+    component->OnEvent("BeginPlay");
 }
 
 Component * Entity::GetComponent(std::string const & type) const

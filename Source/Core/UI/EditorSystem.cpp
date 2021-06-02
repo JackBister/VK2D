@@ -290,18 +290,23 @@ void OnGui()
 
         if (addComponentEditorSchema.has_value()) {
             if (addComponentEditor.Draw(&addComponentNewComponent)) {
+                addComponentEditor.ClearErrorMessage();
                 DeserializationContext context = {GetSceneWorkingDirectory()};
                 auto newComponent = (Component *)Deserializable::Deserialize(&context, addComponentNewComponent);
                 if (!newComponent) {
                     logger->Errorf("Failed to deserialize new component");
+                    addComponentEditor.SetErrorMessage("Failed to deserialize component, check console for errors.");
                     return;
                 }
                 auto currEntity = entityEditor.currEntity.Get();
                 if (!currEntity) {
                     logger->Errorf("Cannot add new component because currEntity is null");
+                    addComponentEditor.SetErrorMessage(
+                        "Failed to add component because the selected entity does not exist.");
                     return;
                 }
                 currEntity->AddComponent(newComponent);
+                addComponentEditor.Close();
             }
         }
 
@@ -310,16 +315,19 @@ void OnGui()
         }
 
         if (newEntityEditor.Draw(&addEntityNewEntity)) {
+            newEntityEditor.ClearErrorMessage();
             DeserializationContext context = {GetSceneWorkingDirectory()};
 
             auto entityOpt = Entity::Deserialize(&context, addEntityNewEntity);
             if (!entityOpt.has_value()) {
                 logger->Errorf("Failed to deserialize new entity");
+                newEntityEditor.SetErrorMessage("Failed to deserialize entity, check console for errors.");
                 return;
             }
 
             auto entityPtr = entityManager->AddEntity(entityOpt.value());
             sceneManager->GetCurrentScene()->AddEntity(entityPtr);
+            newEntityEditor.Close();
         }
 
         // TODO: Make this work with transforms that have parents

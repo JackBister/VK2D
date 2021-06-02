@@ -15,6 +15,10 @@ public:
 
     bool Draw(SerializedObject * obj);
     void Open(SerializedObjectSchema schema, std::filesystem::path workingDirectory);
+    void Close() { closeOnNextFrame = true; }
+
+    void SetErrorMessage(std::string newMessage) { this->errorMessage = newMessage; }
+    void ClearErrorMessage() { errorMessage.reset(); }
 
 private:
     std::string title;
@@ -22,4 +26,7 @@ private:
     std::optional<EditorInstance> editorInstance;
 
     bool hasSetSize = false;
+
+    bool closeOnNextFrame = false;
+    std::optional<std::string> errorMessage;
 };

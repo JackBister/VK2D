@@ -4,9 +4,9 @@
 #include <optick/optick.h>
 
 #include "Core/GameModule.h"
-#include "Logging/Logger.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
+#include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("PhysicsComponent");
 
@@ -15,15 +15,15 @@ BroadphaseNativeTypes DeserializeShapeType(std::string s);
 REFLECT_STRUCT_BEGIN(PhysicsComponent)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const PHYSICS_COMPONENT_SCHEMA =
-    SerializedObjectSchema("PhysicsComponent",
-                           {
-                               SerializedPropertySchema("mass", SerializedValueType::DOUBLE, {}, "", true),
-                               SerializedPropertySchema("shapeType", SerializedValueType::STRING, {}, "", true),
-                               SerializedPropertySchema("shapeInfo", SerializedValueType::OBJECT, {}, "", true),
-                               SerializedPropertySchema("isKinematic", SerializedValueType::BOOL),
-                           },
-                           {SerializedObjectFlag::IS_COMPONENT});
+static SerializedObjectSchema const PHYSICS_COMPONENT_SCHEMA = SerializedObjectSchema(
+    "PhysicsComponent",
+    {SerializedPropertySchema::Required("mass", SerializedValueType::DOUBLE),
+     SerializedPropertySchema::Required("shapeType", SerializedValueType::STRING),
+     SerializedPropertySchema::Optional("isKinematic", SerializedValueType::BOOL),
+     // TODO: This is actually a variant type but I don't have a good way of expressing that in the schema right now
+     SerializedPropertySchema::OptionalObject("shapeInfoBox", "Vec3"),
+     SerializedPropertySchema::OptionalObject("shapeInfoBox2d", "Vec2")},
+    {SerializedObjectFlag::IS_COMPONENT});
 
 class PhysicsComponentDeserializer : public Deserializer
 {
@@ -31,21 +31,33 @@ class PhysicsComponentDeserializer : public Deserializer
 
     void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override
     {
-        PhysicsComponent * ret = new PhysicsComponent();
-        ret->mass = obj.GetNumber("mass").value();
-        ret->shapeType = DeserializeShapeType(obj.GetString("shapeType").value());
-
-        auto shapeInfo = obj.GetObject("shapeInfo").value();
-        switch (ret->shapeType) {
+        float mass = obj.GetNumber("mass").value();
+        BroadphaseNativeTypes shapeType = DeserializeShapeType(obj.GetString("shapeType").value());
+        std::unique_ptr<btCollisionShape> shape;
+        switch (shapeType) {
         case BOX_2D_SHAPE_PROXYTYPE: {
-            btVector3 shape_info(shapeInfo.GetNumber("x").value(), shapeInfo.GetNumber("y").value(), 1.f);
-            ret->shape = std::make_unique<btBox2dShape>(shape_info);
+            auto shapeInfoOpt = obj.GetObject("shapeInfoBox2d");
+            if (!shapeInfoOpt.has_value()) {
+                logger->Errorf("Failed to deserialize physics component, shapeType was BOX_2D_SHAPE_PROXYTYPE but "
+                               "shapeInfoBox2d was not set");
+                return nullptr;
+            }
+            btVector3 shapeInfo(
+                shapeInfoOpt.value().GetNumber("x").value(), shapeInfoOpt.value().GetNumber("y").value(), 1.f);
+            shape = std::make_unique<btBox2dShape>(shapeInfo);
             break;
         }
         case BOX_SHAPE_PROXYTYPE: {
-            btVector3 shape_info(
-                shapeInfo.GetNumber("x").value(), shapeInfo.GetNumber("y").value(), shapeInfo.GetNumber("z").value());
-            ret->shape = std::make_unique<btBoxShape>(shape_info);
+            auto shapeInfoOpt = obj.GetObject("shapeInfoBox");
+            if (!shapeInfoOpt.has_value()) {
+                logger->Errorf("Failed to deserialize physics component, shapeType was BOX_2D_SHAPE_PROXYTYPE but "
+                               "shapeInfoBox was not set");
+                return nullptr;
+            }
+            btVector3 shapeInfo(shapeInfoOpt.value().GetNumber("x").value(),
+                                shapeInfoOpt.value().GetNumber("y").value(),
+                                shapeInfoOpt.value().GetNumber("z").value());
+            shape = std::make_unique<btBoxShape>(shapeInfo);
             break;
         }
         case INVALID_SHAPE_PROXYTYPE:
@@ -58,10 +70,11 @@ class PhysicsComponentDeserializer : public Deserializer
             return nullptr;
         }
         auto isKinematicOpt = obj.GetBool("isKinematic");
+        bool isKinematic = false;
         if (isKinematicOpt.has_value()) {
-            ret->isKinematic = isKinematicOpt.value();
+            isKinematic = isKinematicOpt.value();
         }
-        return ret;
+        return new PhysicsComponent(isKinematic, mass, std::move(shape), shapeType);
     }
 };
 
@@ -110,18 +123,22 @@ SerializedObject PhysicsComponent::Serialize() const
         .WithNumber("mass", mass)
         .WithString("shapeType", SerializeShapeType(shapeType));
 
-    SerializedObject::Builder shapeInfoBuilder;
     switch (shapeType) {
     case BOX_2D_SHAPE_PROXYTYPE: {
         auto shapeInfo = ((btBox2dShape *)shape.get())->getHalfExtentsWithoutMargin();
-        shapeInfoBuilder.WithNumber("x", shapeInfo.getX()).WithNumber("y", shapeInfo.getY()).WithNumber("z", 1.f);
+        builder.WithObject(
+            "shapeInfoBox2d",
+            SerializedObject::Builder().WithNumber("x", shapeInfo.getX()).WithNumber("y", shapeInfo.getY()).Build());
         break;
     }
     case BOX_SHAPE_PROXYTYPE: {
         auto shapeInfo = ((btBoxShape *)shape.get())->getHalfExtentsWithoutMargin();
-        shapeInfoBuilder.WithNumber("x", shapeInfo.getX())
-            .WithNumber("y", shapeInfo.getY())
-            .WithNumber("z", shapeInfo.getZ());
+        builder.WithObject("shapeInfoBox",
+                           SerializedObject::Builder()
+                               .WithNumber("x", shapeInfo.getX())
+                               .WithNumber("y", shapeInfo.getY())
+                               .WithNumber("z", shapeInfo.getY())
+                               .Build());
         break;
     }
     case INVALID_SHAPE_PROXYTYPE:
@@ -132,7 +149,6 @@ SerializedObject PhysicsComponent::Serialize() const
         break;
     }
 
-    builder.WithObject("shapeInfo", shapeInfoBuilder.Build());
     builder.WithBool("isKinematic", isKinematic);
 
     return builder.Build();
@@ -145,6 +161,7 @@ void PhysicsComponent::OnEvent(HashedString name, EventArgs args)
     OPTICK_TAG("EventName", name.c_str());
 #endif
     if (name == "BeginPlay") {
+        logger->Infof("PhysicsComponent::BeginPlay, entity=%s", entity.Get()->GetName().c_str());
         btVector3 localInertia;
         shape->calculateLocalInertia(mass, localInertia);
         btRigidBody::btRigidBodyConstructionInfo constructionInfo(mass, this, shape.get(), localInertia);

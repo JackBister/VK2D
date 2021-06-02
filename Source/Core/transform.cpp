@@ -182,6 +182,10 @@ Transform Transform::Deserialize(SerializedObject const & obj)
     ret.rotation.z = rotation.GetNumber("z").value();
     ret.rotation.w = rotation.GetNumber("w").value();
 
+    if (glm::length(ret.rotation) == 0.f) {
+        ret.rotation.w = 1.f;
+    }
+
     auto scale = obj.GetObject("scale").value();
     ret.scale.x = scale.GetNumber("x").value();
     ret.scale.y = scale.GetNumber("y").value();

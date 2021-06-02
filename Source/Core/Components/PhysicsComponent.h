@@ -12,7 +12,9 @@ class PhysicsComponent : public Component, public btMotionState
 public:
     friend class PhysicsComponentDeserializer;
 
-    PhysicsComponent()
+    PhysicsComponent(bool isKinematic, float mass, std::unique_ptr<btCollisionShape> && shape,
+                     BroadphaseNativeTypes shapeType)
+        : isKinematic(isKinematic), mass(mass), shape(std::move(shape)), shapeType(shapeType)
     {
         receiveTicks = false;
         type = "PhysicsComponent";
