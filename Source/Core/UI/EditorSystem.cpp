@@ -749,6 +749,7 @@ std::filesystem::path GetSceneWorkingDirectory()
 void SaveScene()
 {
     // Always save main camera as active, otherwise it may be saved as inactive if the editor camera is active
+    logger->Infof("Saving scene=%s", activeScene.value().path.c_str());
     auto mainCamera = entityManager->GetEntityBySingletonTag(EntityManager::IS_MAIN_CAMERA_TAG);
     if (mainCamera.has_value()) {
         auto mainCamEntity = mainCamera.value().Get();

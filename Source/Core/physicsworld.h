@@ -39,4 +39,6 @@ private:
     std::unique_ptr<btCollisionDispatcher> dispatcher;
     std::unique_ptr<btDiscreteDynamicsWorld> world;
     std::unique_ptr<btIDebugDraw> debugDraw;
+
+    btCollisionWorld::RayResultCallback * raytestCallback = nullptr;
 };

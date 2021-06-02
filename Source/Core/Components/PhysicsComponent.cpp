@@ -15,6 +15,28 @@ BroadphaseNativeTypes DeserializeShapeType(std::string s);
 REFLECT_STRUCT_BEGIN(PhysicsComponent)
 REFLECT_STRUCT_END()
 
+// TODO: Move this somewhere else
+static SerializedObjectSchema const PLANE_SHAPE_INFO_SCHEMA = SerializedObjectSchema(
+    "PlaneShapeInfo", {SerializedPropertySchema::RequiredObject("normal", "Vec3"),
+                       SerializedPropertySchema::Required("planeConstant", SerializedValueType::DOUBLE)});
+
+class PlaneShapeInfoDeserializer : public Deserializer
+{
+    SerializedObjectSchema GetSchema() final override { return PLANE_SHAPE_INFO_SCHEMA; }
+
+    void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj)
+    {
+        auto normalOpt = obj.GetObject("normal");
+        btVector3 normal(normalOpt.value().GetNumber("x").value(),
+                         normalOpt.value().GetNumber("y").value(),
+                         normalOpt.value().GetNumber("z").value());
+        btScalar planeConstant = obj.GetNumber("planeConstant").value();
+        return new btStaticPlaneShape(normal, planeConstant);
+    }
+};
+
+DESERIALIZABLE_IMPL(PlaneShapeInfo, new PlaneShapeInfoDeserializer());
+
 static SerializedObjectSchema const PHYSICS_COMPONENT_SCHEMA = SerializedObjectSchema(
     "PhysicsComponent",
     {SerializedPropertySchema::Required("mass", SerializedValueType::DOUBLE),
@@ -22,7 +44,8 @@ static SerializedObjectSchema const PHYSICS_COMPONENT_SCHEMA = SerializedObjectS
      SerializedPropertySchema::Optional("isKinematic", SerializedValueType::BOOL),
      // TODO: This is actually a variant type but I don't have a good way of expressing that in the schema right now
      SerializedPropertySchema::OptionalObject("shapeInfoBox", "Vec3"),
-     SerializedPropertySchema::OptionalObject("shapeInfoBox2d", "Vec2")},
+     SerializedPropertySchema::OptionalObject("shapeInfoBox2d", "Vec2"),
+     SerializedPropertySchema::OptionalObject("shapeInfoStaticPlane", "PlaneShapeInfo")},
     {SerializedObjectFlag::IS_COMPONENT});
 
 class PhysicsComponentDeserializer : public Deserializer
@@ -58,6 +81,26 @@ class PhysicsComponentDeserializer : public Deserializer
                                 shapeInfoOpt.value().GetNumber("y").value(),
                                 shapeInfoOpt.value().GetNumber("z").value());
             shape = std::make_unique<btBoxShape>(shapeInfo);
+            break;
+        }
+        case STATIC_PLANE_PROXYTYPE: {
+            auto shapeInfoOpt = obj.GetObject("shapeInfoStaticPlane");
+            if (!shapeInfoOpt.has_value()) {
+                logger->Errorf("Failed to deserialize physics component, shapeType was STATIC_PLANE_PROXYTYPE but "
+                               "shapeInfoStaticPlane was not set");
+                return nullptr;
+            }
+            auto normalOpt = shapeInfoOpt.value().GetObject("normal");
+            if (!normalOpt.has_value()) {
+                logger->Errorf("Failed to deserialize physics component, shapeType was STATIC_PLANE_PROXYTYPE but "
+                               "shapeInfoStaticPlane.normal was not set");
+                return nullptr;
+            }
+            btVector3 normal(normalOpt.value().GetNumber("x").value(),
+                             normalOpt.value().GetNumber("y").value(),
+                             normalOpt.value().GetNumber("z").value());
+            btScalar planeConstant = shapeInfoOpt.value().GetNumber("planeConstant").value();
+            shape = std::make_unique<btStaticPlaneShape>(normal, planeConstant);
             break;
         }
         case INVALID_SHAPE_PROXYTYPE:
@@ -138,6 +181,20 @@ SerializedObject PhysicsComponent::Serialize() const
                                .WithNumber("x", shapeInfo.getX())
                                .WithNumber("y", shapeInfo.getY())
                                .WithNumber("z", shapeInfo.getY())
+                               .Build());
+        break;
+    }
+    case STATIC_PLANE_PROXYTYPE: {
+        auto shapeInfo = ((btStaticPlaneShape *)shape.get());
+        builder.WithObject("shapeInfoStaticPlane",
+                           SerializedObject::Builder()
+                               .WithObject("normal",
+                                           SerializedObject::Builder()
+                                               .WithNumber("x", shapeInfo->getPlaneNormal().x())
+                                               .WithNumber("y", shapeInfo->getPlaneNormal().y())
+                                               .WithNumber("z", shapeInfo->getPlaneNormal().z())
+                                               .Build())
+                               .WithNumber("planeConstant", shapeInfo->getPlaneConstant())
                                .Build());
         break;
     }

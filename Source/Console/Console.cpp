@@ -281,6 +281,10 @@ static void AutoCompleteHistory(ImGuiInputTextCallbackData * data)
         }
     }
 
+    if (commandHistoryPos >= commandHistory.size()) {
+        commandHistoryPos = 0;
+    }
+
     if (commandHistoryPos != previousPos && commandHistory.size() > 0) {
         auto historyEntry = commandHistory[commandHistoryPos];
         data->DeleteChars(0, data->BufTextLen);

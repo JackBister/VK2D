@@ -124,6 +124,43 @@ PhysicsWorld::PhysicsWorld() : debugDraw(new DebugDrawBulletAdapter(DebugDrawSys
             }
         });
     Console::RegisterCommand(debugPhysicsCommand);
+
+    CommandDefinition raytestCommand(
+        "physics_raytest",
+        "physics_raytest x y z x2 y2 z2 - casts a ray from (x, y, z) to (x2, y2, z2) in "
+        "the physics world and logs the result.",
+        6,
+        [this](auto args) {
+            auto xs = args[0];
+            auto ys = args[1];
+            auto zs = args[2];
+            auto x2s = args[3];
+            auto y2s = args[4];
+            auto z2s = args[5];
+            auto x = std::stod(xs);
+            auto y = std::stod(ys);
+            auto z = std::stod(zs);
+            auto x2 = std::stod(x2s);
+            auto y2 = std::stod(y2s);
+            auto z2 = std::stod(z2s);
+            btVector3 from(x, y, z);
+            btVector3 to(x2, y2, z2);
+            if (this->raytestCallback) {
+                delete this->raytestCallback;
+            }
+            this->raytestCallback = new btCollisionWorld::AllHitsRayResultCallback(from, to);
+            world->rayTest(from, to, *this->raytestCallback);
+            if (this->raytestCallback->m_collisionObject) {
+                auto userPointer = (PhysicsComponent *)this->raytestCallback->m_collisionObject->getUserPointer();
+                if (userPointer && userPointer->entity) {
+                    auto entity = userPointer->entity.Get();
+                    logger->Infof("ray hit entity with id=%s, name=%s",
+                                  entity->GetId().ToString().data(),
+                                  entity->GetName().c_str());
+                }
+            }
+        });
+    Console::RegisterCommand(raytestCommand);
 }
 
 void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)

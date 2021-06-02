@@ -15,6 +15,7 @@ extern "C" void __declspec(dllexport) LoadComponents() {}
 
 extern "C" void __declspec(dllexport) UnloadComponents()
 {
-    Deserializable::Map()["BallComponent"] = nullptr;
-    Deserializable::Map()["PaddleComponent"] = nullptr;
+    auto & m = Deserializable::Map();
+    m.erase("BallComponent");
+    m.erase("PaddleComponent");
 }
