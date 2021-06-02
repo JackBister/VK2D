@@ -53,6 +53,7 @@ EventArg::EventArg(EventArg const & ea) : type(ea.type)
         break;
     case Type::ENTITY_POINTER:
         asEntityPtr = ea.asEntityPtr;
+        break;
     default:
         logger->Errorf("Unknown EventArg::type %d", type);
     }
@@ -88,6 +89,7 @@ EventArg::EventArg(EventArg && ea) : type(ea.type)
     case Type::ENTITY_POINTER:
         asEntityPtr = ea.asEntityPtr;
         ea.asEntityPtr = EntityPtr();
+        break;
     default:
         logger->Errorf("Unknown EventArg::type %d", type);
     }
@@ -132,6 +134,7 @@ EventArg & EventArg::operator=(EventArg && ea)
     case Type::ENTITY_POINTER:
         asEntityPtr = ea.asEntityPtr;
         ea.asEntityPtr = EntityPtr();
+        break;
     default:
         logger->Errorf("Unknown EventArg::type %d", type);
     }
