@@ -214,7 +214,5 @@ void PhysicsComponent::setWorldTransform(btTransform const & worldTransform)
     }
     e->GetTransform()->SetPosition(glm::vec3(pos.x(), pos.y(), pos.z()));
     auto const & rot = worldTransform.getRotation();
-    // I don't know why, but for some reason the components of the rotation are shifted one step when they're returned
-    // here, which is why x = w, etc.
     e->GetTransform()->SetRotation(glm::quat(rot.w(), rot.x(), rot.y(), rot.z()));
 }

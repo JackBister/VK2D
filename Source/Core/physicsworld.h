@@ -38,4 +38,5 @@ private:
     std::unique_ptr<btConstraintSolver> constraintSolver;
     std::unique_ptr<btCollisionDispatcher> dispatcher;
     std::unique_ptr<btDiscreteDynamicsWorld> world;
+    std::unique_ptr<btIDebugDraw> debugDraw;
 };

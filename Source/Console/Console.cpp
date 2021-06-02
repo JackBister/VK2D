@@ -238,7 +238,9 @@ static void AutoComplete(ImGuiInputTextCallbackData * data)
     } else if (candidates.size() > 1) {
         size_t commonMatchLength = currentInput.size();
 
-        logger->Infof("candidatesSize=%d", candidates.size());
+        for (auto & c : candidates) {
+            logger->Infof("%s", c.c_str());
+        }
 
         while (true) {
             if (candidates[0].size() == commonMatchLength) {

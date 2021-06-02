@@ -3,11 +3,51 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Console/Console.h"
 #include "Core/Components/physicscomponent.h"
+#include "Core/Rendering/DebugDrawSystem.h"
 #include "Core/entity.h"
 #include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("PhysicsWorld");
+
+class DebugDrawBulletAdapter : public btIDebugDraw
+{
+public:
+    DebugDrawBulletAdapter(DebugDrawSystem * debugDrawSystem) : debugDrawSystem(debugDrawSystem) {}
+
+    virtual void drawLine(const btVector3 & from, const btVector3 & to, const btVector3 & color) override
+    {
+        debugDrawSystem->DrawLine(glm::vec3(from.x(), from.y(), from.z()),
+                                  glm::vec3(to.x(), to.y(), to.z()),
+                                  glm::vec3(color.x(), color.y(), color.z()),
+                                  0.f);
+    }
+
+    virtual void drawContactPoint(const btVector3 & PointOnB, const btVector3 & normalOnB, btScalar distance,
+                                  int lifeTime, const btVector3 & color) override
+    {
+        logger->Tracef("STUB: DebugDrawBulletAdapter::drawContactPoint");
+    }
+
+    virtual void reportErrorWarning(const char * warningString) override
+    {
+        logger->Warnf("Warning from Bullet debug draw: %s", warningString);
+    }
+
+    virtual void draw3dText(const btVector3 & location, const char * textString) override
+    {
+        logger->Tracef("STUB: DebugDrawBulletAdapter::draw3dText");
+    }
+
+    virtual void setDebugMode(int newDebugMode) override { debugMode = newDebugMode; }
+
+    virtual int getDebugMode() const override { return debugMode; }
+
+private:
+    DebugDrawSystem * debugDrawSystem;
+    int debugMode = DBG_NoDebug;
+};
 
 // TODO: Move this somewhere else
 static SerializedObjectSchema const VEC2_SCHEMA =
@@ -57,7 +97,7 @@ PhysicsWorld * PhysicsWorld::GetInstance()
     return &singletonPhysicsWorld;
 }
 
-PhysicsWorld::PhysicsWorld()
+PhysicsWorld::PhysicsWorld() : debugDraw(new DebugDrawBulletAdapter(DebugDrawSystem::GetInstance()))
 {
     this->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
     this->dispatcher = std::make_unique<btCollisionDispatcher>(this->collisionConfig.get());
@@ -67,6 +107,23 @@ PhysicsWorld::PhysicsWorld()
         this->dispatcher.get(), this->broadphase.get(), this->constraintSolver.get(), this->collisionConfig.get());
     this->world->setInternalTickCallback(PhysicsWorld::s_TickCallback);
     this->world->setWorldUserInfo(this);
+    this->world->setDebugDrawer(debugDraw.get());
+
+    CommandDefinition debugPhysicsCommand(
+        "debug_physics",
+        "debug_physics <0 or 1> - enables or disables drawing physics wireframes",
+        1,
+        [this](auto args) {
+            auto arg = args[0];
+            if (arg == "0") {
+                this->debugDraw->setDebugMode(btIDebugDraw::DBG_NoDebug);
+            } else if (arg == "1") {
+                this->debugDraw->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb |
+                                              btIDebugDraw::DBG_DrawNormals | btIDebugDraw::DBG_DrawConstraints |
+                                              btIDebugDraw::DBG_DrawConstraintLimits);
+            }
+        });
+    Console::RegisterCommand(debugPhysicsCommand);
 }
 
 void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
@@ -176,4 +233,5 @@ void PhysicsWorld::SetGravity(glm::vec3 const & grav)
 void PhysicsWorld::Tick(float dt)
 {
     world->stepSimulation(dt);
+    world->debugDrawWorld();
 }
