@@ -39,7 +39,7 @@ private:
     Transform * parent = nullptr;
 
     glm::vec3 position = glm::vec3(0.f, 0.f, 0.f);
-    glm::quat rotation = glm::quat(0.f, 0.f, 0.f, 0.f);
+    glm::quat rotation = glm::quat(1.f, 0.f, 0.f, 0.f);
     glm::vec3 scale = glm::vec3(1.f, 1.f, 1.f);
 
     bool isParentDirty = true;

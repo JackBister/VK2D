@@ -375,10 +375,12 @@ void HandleCameraMovement(ImGuiIO & io)
         if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
             auto dragDelta = ImGui::GetMouseDragDelta();
             ImGui::ResetMouseDragDelta();
-            glm::vec2 delta(-dragDelta.x * cameraDragMultiplier, dragDelta.y * cameraDragMultiplier);
-            delta *= Time::GetUnscaledDeltaTime();
-            cameraPos.x += delta.x;
-            cameraPos.y += delta.y;
+            glm::vec2 delta(-dragDelta.x, dragDelta.y);
+            auto dir = editorCamEntity->GetTransform()->GetLocalToWorld() * glm::vec4(delta.x, delta.y, 0.f, 0.f);
+            dir *= cameraDragMultiplier * Time::GetUnscaledDeltaTime();
+            cameraPos.x += dir.x;
+            cameraPos.y += dir.y;
+            cameraPos.z += dir.z;
         }
     } else if (ImGui::IsMouseDragging(ImGuiMouseButton_Right)) {
         auto dragDelta = ImGui::GetMouseDragDelta(1);
@@ -419,9 +421,13 @@ void HandleCameraMovement(ImGuiIO & io)
             cameraPos.z += right.z;
         }
     }
-
-    editorCamEntity->GetTransform()->SetPosition(cameraPos);
-    editorCamEntity->GetTransform()->SetRotation(cameraRot);
+    // I'm too stupid to understand why this happens sometimes when dragging
+    if (!glm::any(glm::isnan(cameraPos)) && !glm::any(glm::isinf(cameraPos))) {
+        editorCamEntity->GetTransform()->SetPosition(cameraPos);
+    }
+    if (!glm::any(glm::isnan(cameraRot)) && !glm::any(glm::isinf(cameraRot))) {
+        editorCamEntity->GetTransform()->SetRotation(cameraRot);
+    }
 }
 
 MenuBarResult DrawMenuBar()
