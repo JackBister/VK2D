@@ -4,7 +4,7 @@
 #include <glm/fwd.hpp>
 
 #include "Core/FrameContext.h"
-#include "Core/Serialization/SerializedValue.h"
+#include "Serialization/SerializedValue.h"
 #include "Util/DllExport.h"
 #include "Util/Queue.h"
 

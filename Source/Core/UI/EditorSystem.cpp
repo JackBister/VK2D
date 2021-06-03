@@ -26,9 +26,9 @@
 #include "Core/ProjectManager.h"
 #include "Core/Resources/Scene.h"
 #include "Core/SceneManager.h"
-#include "Core/Serialization/JsonSerializer.h"
 #include "Core/dtime.h"
 #include "EditProjectDialog.h"
+#include "Serialization/JsonSerializer.h"
 #include "SerializedObjectEditor.h"
 #include "TypeChooser.h"
 #include "Util/DefaultFileSlurper.h"
@@ -442,6 +442,9 @@ MenuBarResult DrawMenuBar()
             }
             if (ImGui::MenuItem("Open Project")) {
                 result.openProjectDialogOpened = true;
+            }
+            if (ImGui::MenuItem("Reload Project", nullptr, nullptr, activeProject.has_value())) {
+                projectManager->ChangeProject(activeProject.value().path);
             }
             ImGui::Separator();
             if (ImGui::MenuItem("New Scene", nullptr, nullptr, activeProject.has_value())) {

@@ -1,8 +1,8 @@
 #include "Keybinding.h"
 
-#include "Core/Deserializable.h"
-#include "Core/Serialization/Deserializer.h"
-#include "Core/Serialization/SerializedObjectSchema.h"
+#include "Serialization/Deserializable.h"
+#include "Serialization/Deserializer.h"
+#include "Serialization/SerializedObjectSchema.h"
 
 static SerializedObjectSchema const KEYBINDING_SCHEMA = SerializedObjectSchema(
     "Keybinding", {SerializedPropertySchema::Required("name", SerializedValueType::STRING),

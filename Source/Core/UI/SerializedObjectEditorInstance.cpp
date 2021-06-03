@@ -5,8 +5,8 @@
 #undef GetObject
 
 #include "ArrayEditor.h"
-#include "Core/Deserializable.h"
 #include "Logging/Logger.h"
+#include "Serialization/Deserializable.h"
 #include "Util/Imgui_InputText.h"
 
 static auto const logger = Logger::Create("EditorInstance");

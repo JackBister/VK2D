@@ -152,11 +152,7 @@ PhysicsWorld::PhysicsWorld() : debugDraw(new DebugDrawBulletAdapter(DebugDrawSys
             }
             btVector3 from(x.value(), y.value(), z.value());
             btVector3 to(x2.value(), y2.value(), z2.value());
-            if (this->raytestCallback) {
-                delete this->raytestCallback;
-                this->raytestCallback = nullptr;
-            }
-            this->raytestCallback = new btCollisionWorld::AllHitsRayResultCallback(from, to);
+            btCollisionWorld::AllHitsRayResultCallback raytestCallback(from, to);
             logger->Infof("Performing ray test with from=(%f, %f, %f), to=(%f, %f, %f)",
                           from.x(),
                           from.y(),
@@ -164,9 +160,9 @@ PhysicsWorld::PhysicsWorld() : debugDraw(new DebugDrawBulletAdapter(DebugDrawSys
                           to.x(),
                           to.y(),
                           to.z());
-            world->rayTest(from, to, *this->raytestCallback);
-            if (this->raytestCallback->m_collisionObject) {
-                auto userPointer = (PhysicsComponent *)this->raytestCallback->m_collisionObject->getUserPointer();
+            world->rayTest(from, to, raytestCallback);
+            if (raytestCallback.m_collisionObject) {
+                auto userPointer = (PhysicsComponent *)raytestCallback.m_collisionObject->getUserPointer();
                 if (userPointer && userPointer->entity) {
                     auto entity = userPointer->entity.Get();
                     logger->Infof("Ray hit entity with id=%s, name=%s",

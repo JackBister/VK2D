@@ -5,7 +5,7 @@
 #include <optional>
 #include <string>
 
-#include "Core/Serialization/SerializedObjectSchema.h"
+#include "Serialization/SerializedObjectSchema.h"
 #include "SerializedObjectEditorInstance.h"
 
 class SerializedObjectEditor

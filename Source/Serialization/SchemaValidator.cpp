@@ -1,6 +1,6 @@
 #include "SchemaValidator.h"
 
-#include "Core/Deserializable.h"
+#include "Deserializable.h"
 
 // TODO: Additional details in error messages, like what index of the array is wrong
 // TODO: Merge error messages from recursive calls

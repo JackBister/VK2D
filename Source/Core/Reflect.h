@@ -15,9 +15,9 @@
 #include <variant>
 #include <vector>
 
+#include <ThirdParty/imgui/imgui.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <imgui.h>
 
 class EditorNode
 {

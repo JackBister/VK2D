@@ -5,10 +5,10 @@
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/StaticMeshLoaderObj.h"
-#include "Core/Serialization/DeserializationContext.h"
 #include "Core/entity.h"
 #include "Jobs/JobEngine.h"
 #include "Logging/Logger.h"
+#include "Serialization/DeserializationContext.h"
 
 static const auto logger = Logger::Create("StaticMeshComponent");
 

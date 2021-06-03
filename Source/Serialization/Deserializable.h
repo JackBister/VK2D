@@ -2,8 +2,8 @@
 #include <filesystem>
 #include <unordered_map>
 
-#include "Core/Serialization/Deserializer.h"
-#include "Core/Serialization/SerializedValue.h"
+#include "Deserializer.h"
+#include "SerializedValue.h"
 #include "Util/DllExport.h"
 #include "Util/HashedString.h"
 

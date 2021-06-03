@@ -7,12 +7,27 @@
 #include <btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
 
-#include "Core/Deserializable.h"
 #include "Core/collisioninfo.h"
+#include "Serialization/Deserializable.h"
 
-class Entity;
 class PhysicsComponent;
 class PhysicsWorldDeserializer;
+
+class RaytestResult
+{
+public:
+    class Hit
+    {
+        EntityPtr entity;
+    };
+
+    RaytestResult(std::optional<Hit> hit) : hit(hit) {}
+
+    std::optional<Hit> const & GetClosestHit() const { return hit; }
+
+private:
+    std::optional<Hit> hit;
+};
 
 class PhysicsWorld
 {
@@ -39,6 +54,4 @@ private:
     std::unique_ptr<btCollisionDispatcher> dispatcher;
     std::unique_ptr<btDiscreteDynamicsWorld> world;
     std::unique_ptr<btIDebugDraw> debugDraw;
-
-    btCollisionWorld::RayResultCallback * raytestCallback = nullptr;
 };

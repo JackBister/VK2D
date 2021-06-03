@@ -10,8 +10,8 @@
 #include <imfilebrowser.h>
 
 #include "ArrayEditor.h"
-#include "Core/Serialization/SerializedObjectSchema.h"
-#include "Core/Serialization/SerializedValue.h"
+#include "Serialization/SerializedObjectSchema.h"
+#include "Serialization/SerializedValue.h"
 
 class EditorInstance
 {

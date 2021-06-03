@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-#include "Core/Serialization/SerializedObjectSchema.h"
+#include "Serialization/SerializedObjectSchema.h"
 
 class TypeChooser
 {

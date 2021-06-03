@@ -9,7 +9,7 @@
 
 #include <imfilebrowser.h>
 
-#include "Core/Serialization/SerializedObjectSchema.h"
+#include "Serialization/SerializedObjectSchema.h"
 #include "TypeChooser.h"
 
 class EditorInstance;

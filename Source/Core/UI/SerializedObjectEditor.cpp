@@ -5,8 +5,8 @@
 
 #include <imgui.h>
 
-#include "Core/Serialization/JsonSerializer.h"
 #include "Logging/Logger.h"
+#include "Serialization/JsonSerializer.h"
 #include "SerializedObjectEditorInstance.h"
 #include "Util/Imgui_InputText.h"
 

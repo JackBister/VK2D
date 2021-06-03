@@ -2,7 +2,7 @@
 
 #include <imgui.h>
 
-#include "Core/Deserializable.h"
+#include "Serialization/Deserializable.h"
 
 TypeChooser::TypeFilter TypeChooser::COMPONENT_TYPE_FILTER = [](SerializedObjectSchema schema) {
     return schema.GetFlags().count(SerializedObjectFlag::IS_COMPONENT) > 0;

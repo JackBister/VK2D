@@ -15,6 +15,7 @@ file(GLOB_RECURSE SOURCES
     Source/Jobs/*.c Source/Jobs/*.cpp Source/Jobs/*.h
     Source/Logging/*.c Source/Logging/*.cpp Source/Logging/*.h
     Source/RenderingBackend/*.c Source/RenderingBackend/*.cpp Source/RenderingBackend/*.h
+    Source/Serialization/*.c Source/Serialization/*.cpp Source/Serialization/*.h
     Source/Util/*.c Source/Util/*.cpp Source/Util/*.h
 )
 add_executable(Main ${SOURCES})

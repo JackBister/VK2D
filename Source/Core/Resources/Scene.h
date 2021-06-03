@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
-#include "Core/Deserializable.h"
 #include "Core/EntityPtr.h"
 #include "Core/eventarg.h"
+#include "Serialization/Deserializable.h"
 #include "Util/HashedString.h"
 
 class Entity;

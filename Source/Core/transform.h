@@ -6,9 +6,9 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/quaternion.hpp"
 
-#include "Core/Deserializable.h"
 #include "Core/Reflect.h"
-#include "Core/Serialization/SerializedValue.h"
+#include "Serialization/Deserializable.h"
+#include "Serialization/SerializedValue.h"
 #include "Util/DllExport.h"
 
 class TransformDeserializer;

@@ -10,11 +10,11 @@
 #include "Core/GameModule.h"
 #include "Core/Input/Input.h"
 #include "Core/Resources/ResourceManager.h"
-#include "Core/Serialization/JsonSerializer.h"
-#include "Core/Serialization/SchemaValidator.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
 #include "Logging/Logger.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/SchemaValidator.h"
 #include "Util/WatchFile.h"
 
 static const auto logger = Logger::Create("Scene");
