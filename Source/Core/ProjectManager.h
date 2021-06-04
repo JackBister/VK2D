@@ -9,10 +9,18 @@ class DllManager;
 class PhysicsWorld;
 class SceneManager;
 
+struct ProjectChangeEvent {
+    enum class Type { PROJECT_LOADED };
+
+    Type type;
+
+    std::optional<std::pair<std::filesystem::path, Project>> newProject;
+};
+
 class ProjectManager
 {
 public:
-    using ProjectChangeListener = std::function<void(std::filesystem::path newScene)>;
+    using ProjectChangeListener = std::function<void(ProjectChangeEvent)>;
 
     static ProjectManager * GetInstance();
 

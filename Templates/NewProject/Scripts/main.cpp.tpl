@@ -11,6 +11,5 @@ extern "C" void __declspec(dllexport) LoadComponents() {}
 
 extern "C" void __declspec(dllexport) UnloadComponents()
 {
-    auto & m = Deserializable::Map();
-    m.erase("MyComponent");
+    Deserializable::RemoveByOwner("{% projectName %}");
 }

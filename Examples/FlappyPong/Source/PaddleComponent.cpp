@@ -20,6 +20,8 @@ static SerializedObjectSchema const PADDLE_COMPONENT_SCHEMA =
 
 class PaddleComponentDeserializer : public Deserializer
 {
+    std::string constexpr GetOwner() final override { return "FlappyPong"; }
+
     SerializedObjectSchema GetSchema() final override { return PADDLE_COMPONENT_SCHEMA; }
 
     void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override

@@ -24,6 +24,8 @@ public:
 
     static std::unordered_map<std::string, Deserializer *> & Map();
 
+    static void RemoveByOwner(std::string const & owner);
+
     std::string type;
 };
 

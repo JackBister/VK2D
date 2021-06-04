@@ -22,6 +22,8 @@ static SerializedObjectSchema const BALL_COMPONENT_SCHEMA =
 
 class BallComponentDeserializer : public Deserializer
 {
+    std::string constexpr GetOwner() final override { return "FlappyPong"; }
+
     SerializedObjectSchema GetSchema() final override { return BALL_COMPONENT_SCHEMA; }
 
     void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override

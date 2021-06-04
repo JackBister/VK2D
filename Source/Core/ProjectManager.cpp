@@ -45,7 +45,8 @@ bool ProjectManager::ChangeProject(std::filesystem::path newProjectPath)
                   .physicsWorld = physicsWorld});
 
     for (auto & kv : changeListeners) {
-        kv.second(newProjectPath);
+        kv.second(
+            {.type = ProjectChangeEvent::Type::PROJECT_LOADED, .newProject = std::make_pair(newProjectPath, project)});
     }
     return true;
 }

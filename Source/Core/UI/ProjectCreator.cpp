@@ -70,7 +70,7 @@ bool ProjectCreator::CreateProject(std::filesystem::path projectPath, Serialized
         return false;
     }
 
-    bool writeComponentSuccess = WriteComponentFiles(projectParentPath);
+    bool writeComponentSuccess = WriteComponentFiles(projectParentPath, project.GetName());
     if (!writeComponentSuccess) {
         return false;
     }
@@ -111,13 +111,13 @@ bool ProjectCreator::WriteProjectFile(std::filesystem::path projectPath, Project
     return true;
 }
 
-bool ProjectCreator::WriteComponentFiles(std::filesystem::path projectParentPath)
+bool ProjectCreator::WriteComponentFiles(std::filesystem::path projectParentPath, std::string projectName)
 {
     auto scriptPath = projectParentPath / "Scripts";
     logger->Infof("Writing component files to path=%ls", scriptPath.c_str());
     std::filesystem::create_directories(scriptPath);
     bool componentSuccess = componentCreator->CreateComponentCode(
-        scriptPath, "MyComponent", {{.type = SerializedValueType::DOUBLE, .name = "myProperty"}});
+        scriptPath, projectName, "MyComponent", {{.type = SerializedValueType::DOUBLE, .name = "myProperty"}});
     if (!componentSuccess) {
         logger->Errorf("Failed to generate template component at path=%ls", projectParentPath.c_str());
         return false;

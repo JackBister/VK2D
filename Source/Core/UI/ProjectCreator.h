@@ -26,7 +26,7 @@ public:
 
 private:
     bool WriteProjectFile(std::filesystem::path projectPath, Project p);
-    bool WriteComponentFiles(std::filesystem::path projectParentPath);
+    bool WriteComponentFiles(std::filesystem::path projectParentPath, std::string projectName);
     bool WriteTemplateFile(std::string templateFileName, std::filesystem::path projectParentPath,
                            SerializedObject & templateCtx);
 

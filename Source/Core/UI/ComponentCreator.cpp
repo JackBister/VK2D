@@ -6,8 +6,8 @@
 
 static auto const logger = Logger::Create("ComponentCreator");
 
-bool ComponentCreator::CreateComponentCode(std::filesystem::path directory, std::string componentName,
-                                           std::vector<ComponentProperty> properties)
+bool ComponentCreator::CreateComponentCode(std::filesystem::path directory, std::string projectName,
+                                           std::string componentName, std::vector<ComponentProperty> properties)
 {
     logger->Infof("Generating component code in directory=%ls for component with name=%s",
                   directory.c_str(),
@@ -20,6 +20,7 @@ bool ComponentCreator::CreateComponentCode(std::filesystem::path directory, std:
                                            .Build());
     }
     auto templateCtx = SerializedObject::Builder()
+                           .WithString("projectName", projectName)
                            .WithString("componentName", componentName)
                            .WithArray("properties", serializedProperties)
                            .Build();

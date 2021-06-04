@@ -23,7 +23,7 @@ public:
     {
     }
 
-    bool CreateComponentCode(std::filesystem::path directory, std::string componentName,
+    bool CreateComponentCode(std::filesystem::path directory, std::string projectName, std::string componentName,
                              std::vector<ComponentProperty> properties);
 
 private:

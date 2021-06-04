@@ -34,6 +34,8 @@ static SerializedObjectSchema const {% componentName %}_SCHEMA =
 
 class {% componentName %}Deserializer : public Deserializer
 {
+    std::string constexpr GetOwner() final override { return "{% projectName %}"; }
+
     SerializedObjectSchema GetSchema() final override { return {% componentName %}_SCHEMA; }
 
     void *Deserialize(DeserializationContext *ctx, SerializedObject const &obj) final override

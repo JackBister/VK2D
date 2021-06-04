@@ -48,3 +48,22 @@ std::unordered_map<std::string, Deserializer *> & Deserializable::Map()
     static auto map = std::unordered_map<std::string, Deserializer *>();
     return map;
 }
+
+void Deserializable::RemoveByOwner(std::string const & owner)
+{
+    if (owner == "Core") {
+        logger->Errorf("Attempt to RemoveByOwner with owner=Core. Will not do that.");
+        return;
+    }
+    auto & m = Map();
+    std::vector<std::string> toRemove;
+    for (auto & kv : m) {
+        if (kv.second->GetOwner() == owner) {
+            toRemove.push_back(kv.first);
+        }
+    }
+
+    for (auto & k : toRemove) {
+        m.erase(k);
+    }
+}

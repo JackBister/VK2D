@@ -142,6 +142,7 @@ EntityPtr editorCamera;
 
 struct ActiveProject {
     std::filesystem::path path;
+    std::string name;
 };
 
 struct ActiveScene {
@@ -202,8 +203,13 @@ void Init()
 {
     entityManager = EntityManager::GetInstance();
     projectManager = ProjectManager::GetInstance();
-    projectManager->AddChangeListener("EditorSystemActiveProject",
-                                      [](std::filesystem::path newPath) { activeProject = {.path = newPath}; });
+    projectManager->AddChangeListener("EditorSystemActiveProject", [](ProjectChangeEvent e) {
+        if (e.newProject.has_value()) {
+            activeProject = {.path = e.newProject.value().first, .name = e.newProject.value().second.GetName()};
+        } else {
+            activeProject = std::nullopt;
+        }
+    });
     sceneManager = SceneManager::GetInstance();
     sceneManager->AddChangeListener("EditorSystemActiveScene", [](SceneChangeEvent e) {
         if (e.type == SceneChangeEvent::Type::SCENE_LOADED && e.newScene.has_value()) {
@@ -381,7 +387,7 @@ void OnGui()
             }
 
             bool success = componentCreator.CreateComponentCode(
-                std::filesystem::path(directory), componentName, componentProperties);
+                std::filesystem::path(directory), activeProject.value().name, componentName, componentProperties);
             if (!success) {
                 logger->Errorf("Failed to create code for component with name=%s", componentName.c_str());
             }
