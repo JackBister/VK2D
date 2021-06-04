@@ -22,7 +22,16 @@ EditorInstance::EditorInstance(SerializedObjectSchema schema, std::filesystem::p
         } else if (prop.GetType() == SerializedValueType::DOUBLE) {
             values[prop.GetName()] = 0.0;
         } else if (prop.GetType() == SerializedValueType::STRING) {
-            values[prop.GetName()] = std::string("");
+            auto key = prop.GetName();
+            values[key] = std::string("");
+            auto enumOpt = prop.GetFlags().GetFlag<StringEnumFlag>();
+            if (enumOpt.has_value()) {
+                auto options = enumOpt.value().GetValues();
+                enumSelections[key] = 0;
+                if (!options.empty()) {
+                    values[key] = options[0];
+                }
+            }
         } else if (prop.GetType() == SerializedValueType::OBJECT && objectSchemaOpt.has_value()) {
             objects[prop.GetName()] = std::make_unique<EditorInstance>(objectSchemaOpt.value(), workingDirectory);
         } else if (prop.GetType() == SerializedValueType::ARRAY && prop.GetArrayType().has_value()) {
@@ -56,6 +65,9 @@ EditorInstance::EditorInstance(SerializedObjectSchema schema, std::filesystem::p
             values[key] = object.GetNumber(key).value();
         } else if (type == SerializedValueType::STRING && object.GetString(key).has_value()) {
             values[key] = object.GetString(key).value();
+            if (prop.GetFlags().HasFlag(SerializedPropertyFlagType::IS_STRING_ENUM)) {
+                enumSelections[key] = 0;
+            }
         } else if (type == SerializedValueType::OBJECT && objectSchemaOpt.has_value() &&
                    object.GetObject(key).has_value()) {
             objects[key] = std::make_unique<EditorInstance>(
@@ -118,12 +130,45 @@ void EditorInstance::DrawProperty(SerializedPropertySchema const & prop)
         ImGui::Text(prop.GetName().c_str());
         ImGui::SameLine();
         ImGui::PushID((int)&values[prop.GetName()]);
-        if (prop.GetFlags().count(SerializedPropertyFlag::IS_FILE_PATH)) {
+        if (prop.GetFlags().HasFlag(SerializedPropertyFlagType::IS_FILE_PATH)) {
             ImGui::Text(std::get<std::string>(values[prop.GetName()]).c_str());
             ImGui::SameLine();
             if (ImGui::SmallButton("Pick")) {
                 fileBrowser.Open();
                 currentFileProperty = prop.GetName();
+            }
+        } else if (prop.GetFlags().HasFlag(SerializedPropertyFlagType::IS_STRING_ENUM)) {
+            auto key = prop.GetName();
+            auto enumOpt = prop.GetFlags().GetFlag<StringEnumFlag>();
+            if (enumOpt.has_value()) {
+                auto selected = enumSelections[key];
+                auto options = enumOpt.value().GetValues();
+                if (!options.empty()) {
+                    if (selected > options.size()) {
+                        enumSelections[key] = selected = 0;
+                        values[key] = options[0];
+                    }
+                    auto selectedString = options[selected];
+                    if (ImGui::BeginCombo("##hidelabel", selectedString.c_str())) {
+                        for (int i = 0; i < options.size(); ++i) {
+                            bool isSelected = i == selected;
+                            if (ImGui::Selectable(options[i].c_str(), isSelected)) {
+                                enumSelections[key] = i;
+                                values[key] = options[i];
+                            }
+                            if (isSelected) {
+                                ImGui::SetItemDefaultFocus();
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                } else {
+                    logger->Warnf("Property with key=%s, there are no available enum options.", key.c_str());
+                }
+            } else {
+                logger->Warnf("Weird state, property with key=%s HasFlag(IS_STRING_ENUM) but "
+                              "GetFlag<StringEnumFlag> failed. Bug in SerializedPropertyFlags?",
+                              key.c_str());
             }
         } else {
             ImGui_InputText("##hidelabel", &std::get<std::string>(values[prop.GetName()]));

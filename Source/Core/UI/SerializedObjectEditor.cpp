@@ -12,10 +12,10 @@
 
 static auto const logger = Logger::Create("SerializedObjectEditor");
 
-bool SerializedObjectEditor::Draw(SerializedObject * obj)
+std::optional<SerializedObject> SerializedObjectEditor::Draw()
 {
     if (!editorInstance.has_value()) {
-        return false;
+        return std::nullopt;
     }
     if (ImGui::BeginPopupModal(title.c_str())) {
         if (!hasSetSize) {
@@ -30,9 +30,8 @@ bool SerializedObjectEditor::Draw(SerializedObject * obj)
         }
 
         if (ImGui::Button("OK")) {
-            *obj = editorInstance.value().Build();
             ImGui::EndPopup();
-            return true;
+            return editorInstance.value().Build();
         }
         ImGui::SameLine();
 
@@ -46,12 +45,20 @@ bool SerializedObjectEditor::Draw(SerializedObject * obj)
         }
         ImGui::EndPopup();
     }
-    return false;
+    return std::nullopt;
 }
 
 void SerializedObjectEditor::Open(SerializedObjectSchema schema, std::filesystem::path workingDirectory)
 {
     ImGui::OpenPopup(title.c_str());
     editorInstance = EditorInstance(schema, workingDirectory);
+    hasSetSize = false;
+}
+
+void SerializedObjectEditor::Open(SerializedObjectSchema schema, std::filesystem::path workingDirectory,
+                                  SerializedObject startingObject)
+{
+    ImGui::OpenPopup(title.c_str());
+    editorInstance = EditorInstance(schema, workingDirectory, startingObject);
     hasSetSize = false;
 }

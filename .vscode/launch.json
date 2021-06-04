@@ -5,7 +5,7 @@
       "name": "(Windows) Launch",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "build/Debug/Main.exe",
+      "program": "build/bin/Main.exe",
       "args": ["-editor", "./Examples/FlappyPong/FlappyPong.project"],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",

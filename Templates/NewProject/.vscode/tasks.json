@@ -1,0 +1,86 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build_folder",
+      "type": "shell",
+      "windows": {
+        "command": "mkdir",
+        "args": ["-Force", "build"]
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "remove_build_folder",
+      "type": "shell",
+      "windows": {
+        "command": "Remove-Item",
+        "args": ["-Recurse", "-Force", "build"]
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "cmake",
+      "dependsOn": "build_folder",
+      "type": "shell",
+      "windows": {
+        "command": "cmake",
+        "args": ["-G", "Visual Studio 16 2019", "-A", "x64", ".."],
+        "options": {
+          "cwd": "${workspaceFolder}/build"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "cmake_release",
+      "dependsOn": "build_folder",
+      "type": "shell",
+      "windows": {
+        "command": "cmake",
+        "args": [
+          "-DCMAKE_BUILD_TYPE=Release",
+          "-G",
+          "Visual Studio 16 2019",
+          "-A",
+          "x64",
+          ".."
+        ],
+        "options": {
+          "cwd": "${workspaceFolder}/build"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "clean",
+      "type": "shell",
+      "windows": {
+        "command": "msbuild",
+        "args": ["ALL_BUILD.vcxproj", "-target:Clean"],
+        "options": {
+          "cwd": "${workspaceFolder}/build"
+        },
+        "problemMatcher": ["$msCompile"]
+      }
+    },
+    {
+      "label": "msbuild",
+      "type": "shell",
+      "windows": {
+        "command": "msbuild",
+        "args": ["ALL_BUILD.vcxproj"],
+        "options": {
+          "cwd": "${workspaceFolder}/build"
+        },
+        "problemMatcher": ["$msCompile"]
+      }
+    }
+  ]
+}

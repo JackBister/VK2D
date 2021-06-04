@@ -20,7 +20,7 @@ static SerializedObjectSchema const STATIC_MESH_COMPONENT_SCHEMA =
     SerializedObjectSchema("StaticMeshComponent",
                            {
                                SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true, {},
-                                                        {SerializedPropertyFlag::IS_FILE_PATH}),
+                                                        SerializedPropertyFlags({IsFilePathFlag()})),
                                SerializedPropertySchema("isActive", SerializedValueType::BOOL),
                            },
                            {SerializedObjectFlag::IS_COMPONENT});

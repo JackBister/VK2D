@@ -41,6 +41,8 @@ public:
 
     std::optional<SerializedValueType> GetType(std::string const &) const;
 
+    Builder ToBuilder() const;
+
     ValueMap GetValues() const;
 
 private:

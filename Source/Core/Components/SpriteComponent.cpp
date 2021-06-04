@@ -20,7 +20,7 @@ static SerializedObjectSchema const SPRITE_COMPONENT_SCHEMA =
     SerializedObjectSchema("SpriteComponent",
                            {
                                SerializedPropertySchema("file", SerializedValueType::STRING, {}, "", true, {},
-                                                        {SerializedPropertyFlag::IS_FILE_PATH}),
+                                                        SerializedPropertyFlags({IsFilePathFlag()})),
                                SerializedPropertySchema("isActive", SerializedValueType::BOOL, {}, "", false),
                            },
                            {SerializedObjectFlag::IS_COMPONENT});

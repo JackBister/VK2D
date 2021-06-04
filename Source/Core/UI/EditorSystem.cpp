@@ -22,14 +22,18 @@
 #define REFLECT_IMPL
 #include "Core/Reflect.h"
 #undef REFLECT_IMPL
+#include "ComponentCreator.h"
 #include "Core/DllManager.h"
 #include "Core/ProjectManager.h"
 #include "Core/Resources/Scene.h"
 #include "Core/SceneManager.h"
 #include "Core/dtime.h"
 #include "EditProjectDialog.h"
+#include "NewComponentTypeEditor.h"
+#include "ProjectCreator.h"
 #include "Serialization/JsonSerializer.h"
 #include "SerializedObjectEditor.h"
+#include "Templates/DefaultTemplateRenderer.h"
 #include "TypeChooser.h"
 #include "Util/DefaultFileSlurper.h"
 #include "Util/Imgui_InputText.h"
@@ -64,7 +68,18 @@ void DrawEditorNode(EditorNode * e)
         ImGui::Text(f.label.c_str());
         ImGui::SameLine();
         ImGui::PushID((int)f.v);
-        ImGui::InputFloat("##hidelabel", f.v, 0.f, 0.f, "%.3f", f.extra_flags);
+        int convertedFlags = f.extra_flags & EditorNode::Flags::READONLY ? ImGuiInputTextFlags_ReadOnly : 0;
+        ImGui::InputFloat("##hidelabel", f.v, 0.f, 0.f, "%.3f", convertedFlags);
+        ImGui::PopID();
+        break;
+    }
+    case EditorNode::DOUBLE: {
+        auto f = std::move(std::get<EditorNode::Double>(e->node));
+        ImGui::Text(f.label.c_str());
+        ImGui::SameLine();
+        ImGui::PushID((int)f.v);
+        int convertedFlags = f.extra_flags & EditorNode::Flags::READONLY ? ImGuiInputTextFlags_ReadOnly : 0;
+        ImGui::InputDouble("##hidelabel", f.v, 0.f, 0.f, "%.3f", convertedFlags);
         ImGui::PopID();
         break;
     }
@@ -73,7 +88,8 @@ void DrawEditorNode(EditorNode * e)
         ImGui::Text(i.label.c_str());
         ImGui::SameLine();
         ImGui::PushID((int)i.v);
-        ImGui::InputInt("##hidelabel", i.v, 1, 100, i.extra_flags);
+        int convertedFlags = i.extra_flags & EditorNode::Flags::READONLY ? ImGuiInputTextFlags_ReadOnly : 0;
+        ImGui::InputInt("##hidelabel", i.v, 1, 100, convertedFlags);
         ImGui::PopID();
         break;
     }
@@ -105,6 +121,13 @@ EntityManager * entityManager;
 ProjectManager * projectManager;
 SceneManager * sceneManager;
 
+DefaultFileSlurper fileSlurper;
+DefaultTemplateRenderer templateRenderer(&fileSlurper);
+ComponentCreator componentCreator(&templateRenderer);
+JsonSerializer jsonSerializer;
+ProjectCreator projectCreator(&componentCreator, &fileSlurper, &jsonSerializer, &templateRenderer);
+NewComponentTypeEditor newComponentTypeEditor;
+
 bool isEditorOpen = false;
 bool isWorldPaused = false;
 
@@ -133,10 +156,8 @@ char newSceneFilename[256];
 size_t newSceneFilenameLen = sizeof(newSceneFilename);
 
 std::optional<TypeChooser> addComponentTypeChooser;
-SerializedObject addComponentNewComponent;
 SerializedObjectEditor addComponentEditor("Add component");
 
-SerializedObject addEntityNewEntity;
 SerializedObjectEditor newEntityEditor("Add entity");
 std::optional<SerializedObjectSchema> entitySchema;
 
@@ -155,6 +176,7 @@ struct MenuBarResult {
     bool newSceneDialogOpened = false;
     bool openSceneDialogOpened = false;
     bool newEntityDialogOpened = false;
+    bool newComponentTypeDialogOpened = false;
 };
 
 ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
@@ -239,14 +261,14 @@ void OnGui()
         auto newProjectOpt = editProjectDialog.Draw();
         if (newProjectOpt.has_value()) {
             auto newProjectAndPath = newProjectOpt.value();
-            logger->Infof("Creating new project with name=%s, path=%s",
-                          newProjectAndPath.second.GetName().c_str(),
+            logger->Infof("Creating new project with name=%s, path=%ls",
+                          newProjectAndPath.second.GetString("name").value().c_str(),
                           newProjectAndPath.first.c_str());
-            auto serializedNewProject = newProjectAndPath.second.Serialize();
-            auto serializedNewProjectString = JsonSerializer().Serialize(serializedNewProject);
-            std::filesystem::create_directories(newProjectAndPath.first.parent_path());
-            WriteToFile(newProjectAndPath.first, serializedNewProjectString);
-            projectManager->ChangeProject(newProjectAndPath.first);
+            bool success = projectCreator.CreateProject(newProjectAndPath.first, newProjectAndPath.second);
+            if (success) {
+                projectManager->ChangeProject(newProjectAndPath.first);
+            } else {
+            }
         }
 
         DrawNewSceneDialog(menuBarResult.newSceneDialogOpened);
@@ -289,10 +311,11 @@ void OnGui()
         }
 
         if (addComponentEditorSchema.has_value()) {
-            if (addComponentEditor.Draw(&addComponentNewComponent)) {
+            auto newComponentOpt = addComponentEditor.Draw();
+            if (newComponentOpt.has_value()) {
                 addComponentEditor.ClearErrorMessage();
                 DeserializationContext context = {GetSceneWorkingDirectory()};
-                auto newComponent = (Component *)Deserializable::Deserialize(&context, addComponentNewComponent);
+                auto newComponent = (Component *)Deserializable::Deserialize(&context, newComponentOpt.value());
                 if (!newComponent) {
                     logger->Errorf("Failed to deserialize new component");
                     addComponentEditor.SetErrorMessage("Failed to deserialize component, check console for errors.");
@@ -313,12 +336,12 @@ void OnGui()
         if (menuBarResult.newEntityDialogOpened) {
             newEntityEditor.Open(entitySchema.value(), GetSceneWorkingDirectory());
         }
-
-        if (newEntityEditor.Draw(&addEntityNewEntity)) {
+        auto newEntityOpt = newEntityEditor.Draw();
+        if (newEntityOpt.has_value()) {
             newEntityEditor.ClearErrorMessage();
             DeserializationContext context = {GetSceneWorkingDirectory()};
 
-            auto entityOpt = Entity::Deserialize(&context, addEntityNewEntity);
+            auto entityOpt = Entity::Deserialize(&context, newEntityOpt.value());
             if (!entityOpt.has_value()) {
                 logger->Errorf("Failed to deserialize new entity");
                 newEntityEditor.SetErrorMessage("Failed to deserialize entity, check console for errors.");
@@ -328,6 +351,41 @@ void OnGui()
             auto entityPtr = entityManager->AddEntity(entityOpt.value());
             sceneManager->GetCurrentScene()->AddEntity(entityPtr);
             newEntityEditor.Close();
+        }
+
+        if (menuBarResult.newComponentTypeDialogOpened) {
+            newComponentTypeEditor.Open(activeProject.value().path.parent_path());
+        }
+        auto newComponentTypeOpt = newComponentTypeEditor.Draw();
+        if (newComponentTypeOpt.has_value()) {
+            logger->Infof("Creating new component type %s",
+                          newComponentTypeOpt.value().GetString("name").value().c_str());
+
+            auto componentTypeObj = newComponentTypeOpt.value();
+            auto componentName = componentTypeObj.GetString("name").value();
+            auto directory = componentTypeObj.GetString("directory").value();
+            auto properties = componentTypeObj.GetArray("properties").value();
+
+            std::vector<ComponentProperty> componentProperties;
+            componentProperties.reserve(properties.size());
+            for (auto & prop : properties) {
+                auto propObj = std::get<SerializedObject>(prop);
+                auto name = propObj.GetString("name").value();
+                auto typeString = propObj.GetString("type").value();
+                auto type = SerializedValueTypeFromString(typeString);
+                if (!type.has_value()) {
+                    logger->Errorf("Failed to convert type=%s for property=%s", typeString.c_str(), name.c_str());
+                    continue;
+                }
+                componentProperties.push_back(ComponentProperty{.type = type.value(), .name = name});
+            }
+
+            bool success = componentCreator.CreateComponentCode(
+                std::filesystem::path(directory), componentName, componentProperties);
+            if (!success) {
+                logger->Errorf("Failed to create code for component with name=%s", componentName.c_str());
+            }
+            newComponentTypeEditor.Close();
         }
 
         // TODO: Make this work with transforms that have parents
@@ -447,6 +505,14 @@ MenuBarResult DrawMenuBar()
                 projectManager->ChangeProject(activeProject.value().path);
             }
             ImGui::Separator();
+            if (ImGui::MenuItem("Create Component type", nullptr, nullptr, activeProject.has_value())) {
+                result.newComponentTypeDialogOpened = true;
+            }
+            if (ImGui::MenuItem("Copy library files", nullptr, nullptr, activeProject.has_value())) {
+                projectCreator.CopyLibraryFiles(activeProject.value().path.parent_path());
+                logger->Infof("Updated library files at path=%ls", activeProject.value().path.parent_path());
+            }
+            ImGui::Separator();
             if (ImGui::MenuItem("New Scene", nullptr, nullptr, activeProject.has_value())) {
                 result.newSceneDialogOpened = true;
             }
@@ -473,7 +539,6 @@ MenuBarResult DrawMenuBar()
                 }
             }
             if (ImGui::MenuItem("New Entity", nullptr, nullptr, activeScene.has_value())) {
-                addEntityNewEntity = SerializedObject();
                 result.newEntityDialogOpened = true;
             }
             ImGui::EndMenu();

@@ -16,9 +16,15 @@ file(GLOB_RECURSE SOURCES
     Source/Logging/*.c Source/Logging/*.cpp Source/Logging/*.h
     Source/RenderingBackend/*.c Source/RenderingBackend/*.cpp Source/RenderingBackend/*.h
     Source/Serialization/*.c Source/Serialization/*.cpp Source/Serialization/*.h
+    Source/Templates/*.c Source/Templates/*.cpp Source/Templates/*.h
     Source/Util/*.c Source/Util/*.cpp Source/Util/*.h
 )
 add_executable(Main ${SOURCES})
+
+set_target_properties(Main PROPERTIES
+                      ARCHIVE_OUTPUT_DIRECTORY bin/$<0:>
+                      LIBRARY_OUTPUT_DIRECTORY bin/$<0:>
+                      RUNTIME_OUTPUT_DIRECTORY bin/$<0:>)
 
 set_property(TARGET Main PROPERTY CXX_STANDARD 23)
 set_property(TARGET Main PROPERTY ENABLE_EXPORTS 1)
@@ -113,6 +119,27 @@ source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/Source FILES ${SOURCES})
 
 add_definitions(-DGLM_FORCE_DEPTH_ZERO_TO_ONE=1)
 
+file(REAL_PATH Source SOURCE_ABSPATH)
+file(GLOB_RECURSE INCLUDE_HEADERS Source/*.h)
+list(FILTER INCLUDE_HEADERS EXCLUDE REGEX ".*Source/ThirdParty/.*")
+foreach (INCLUDE_HEADER ${INCLUDE_HEADERS})
+    file(RELATIVE_PATH DEST_HEADER ${SOURCE_ABSPATH} ${INCLUDE_HEADER})
+    file(REAL_PATH ./Templates/NewProject/Include/${DEST_HEADER} DEST_ABSPATH)
+    add_custom_command(
+        OUTPUT ${DEST_ABSPATH}
+        COMMAND ${CMAKE_COMMAND} -E copy ${INCLUDE_HEADER} ${DEST_ABSPATH}
+        MAIN_DEPENDENCY ${INCLUDE_HEADER})
+endforeach()
+
+file(REAL_PATH build/bin/Main.lib BUILD_LIB_ABSPATH)
+file(REAL_PATH Templates/NewProject/Bin/VK2D.lib TEMPLATE_LIB_ABSPATH)
+add_custom_command(
+    TARGET Main POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${BUILD_LIB_ABSPATH} ${TEMPLATE_LIB_ABSPATH}
+    MAIN_DEPENDENCY ${BUILD_LIB_ABSPATH}
+)
+
+# FLAPPYPONG
 
 file(GLOB_RECURSE FLAPPYPONG_SOURCES Examples/FlappyPong/Source/*.c Examples/FlappyPong/Source/*.cpp Examples/FlappyPong/Source/*.h)
 add_library(FlappyPong SHARED ${FLAPPYPONG_SOURCES})

@@ -26,7 +26,7 @@ static SerializedObjectSchema const ENTITY_SCHEMA = SerializedObjectSchema(
     {SerializedPropertySchema::Required("id", SerializedValueType::STRING),
      SerializedPropertySchema::Required("name", SerializedValueType::STRING),
      SerializedPropertySchema::RequiredObject("transform", "Transform"),
-     SerializedPropertySchema::RequiredObjectArray("components", "", {SerializedPropertyFlag::IS_COMPONENT})});
+     SerializedPropertySchema::RequiredObjectArray("components", "", SerializedPropertyFlags({IsComponentFlag()}))});
 
 class EntityDeserializer : public Deserializer
 {

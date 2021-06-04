@@ -10,10 +10,11 @@ static auto const logger = Logger::Create("ArrayEditor");
 
 ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<SerializedObjectSchema> schema,
                          std::optional<SerializedValueType> valueType, std::filesystem::path workingDirectory,
-                         std::unordered_set<SerializedPropertyFlag> flags)
+                         SerializedPropertyFlags flags)
     : name(name), type(type), schema(schema), valueType(valueType),
-      typeChooser(name + ".type",
-                  flags.count(SerializedPropertyFlag::IS_COMPONENT) ? TypeChooser::COMPONENT_TYPE_FILTER : nullptr),
+      typeChooser(name + ".type", flags.HasFlag(SerializedPropertyFlagType::IS_COMPONENT)
+                                      ? TypeChooser::COMPONENT_TYPE_FILTER
+                                      : nullptr),
       workingDirectory(workingDirectory), flags(flags)
 {
     if (type == ArrayEditorType::OBJECT) {
@@ -27,10 +28,11 @@ ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<S
 
 ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<SerializedObjectSchema> schema,
                          std::optional<SerializedValueType> valueType, std::filesystem::path workingDirectory,
-                         SerializedArray arr, std::unordered_set<SerializedPropertyFlag> flags)
+                         SerializedArray arr, SerializedPropertyFlags flags)
     : name(name), type(type), schema(schema), valueType(valueType),
-      typeChooser(name + ".type",
-                  flags.count(SerializedPropertyFlag::IS_COMPONENT) ? TypeChooser::COMPONENT_TYPE_FILTER : nullptr),
+      typeChooser(name + ".type", flags.HasFlag(SerializedPropertyFlagType::IS_COMPONENT)
+                                      ? TypeChooser::COMPONENT_TYPE_FILTER
+                                      : nullptr),
       workingDirectory(workingDirectory), flags(flags)
 {
     if (type == ArrayEditorType::OBJECT) {
@@ -110,7 +112,7 @@ void ArrayEditor::Draw()
                 } else if (valueType.value() == SerializedValueType::DOUBLE) {
                     ImGui::InputDouble("##hidelabel", &std::get<double>(values[i]));
                 } else if (valueType.value() == SerializedValueType::STRING) {
-                    if (flags.count(SerializedPropertyFlag::IS_FILE_PATH)) {
+                    if (flags.HasFlag(SerializedPropertyFlagType::IS_FILE_PATH)) {
                         ImGui::Text("%s", std::get<std::string>(values[i]).c_str());
                         ImGui::SameLine();
                         if (ImGui::SmallButton("Pick")) {

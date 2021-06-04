@@ -21,10 +21,10 @@ public:
 
     ArrayEditor(std::string name, ArrayEditorType type, std::optional<SerializedObjectSchema> schema,
                 std::optional<SerializedValueType> valueType, std::filesystem::path workingDirectory,
-                std::unordered_set<SerializedPropertyFlag> flags = {});
+                SerializedPropertyFlags flags = SerializedPropertyFlags({}));
     ArrayEditor(std::string name, ArrayEditorType type, std::optional<SerializedObjectSchema> schema,
                 std::optional<SerializedValueType> valueType, std::filesystem::path workingDirectory,
-                SerializedArray arr, std::unordered_set<SerializedPropertyFlag> flags = {});
+                SerializedArray arr, SerializedPropertyFlags flags = SerializedPropertyFlags({}));
 
     void Draw();
     SerializedArray Build();
@@ -36,7 +36,7 @@ private:
     std::variant<std::vector<std::unique_ptr<EditorInstance>>, std::vector<SerializedValue>> contents;
     std::optional<SerializedObjectSchema> schema;
     std::optional<SerializedValueType> valueType;
-    std::unordered_set<SerializedPropertyFlag> flags;
+    SerializedPropertyFlags flags;
 
     std::optional<SerializedObjectSchema> newMemberSchema;
     TypeChooser typeChooser;

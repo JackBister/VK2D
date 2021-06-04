@@ -14,10 +14,10 @@ REFLECT_STRUCT_END()
 static SerializedObjectSchema const PROJECT_SCHEMA = SerializedObjectSchema(
     "Project", {SerializedPropertySchema::Required("name", SerializedValueType::STRING),
                 SerializedPropertySchema::Required("startingScene", SerializedValueType::STRING,
-                                                   {SerializedPropertyFlag::IS_FILE_PATH}),
+                                                   SerializedPropertyFlags({IsFilePathFlag()})),
                 SerializedPropertySchema::RequiredObject("startingGravity", "Vec3"),
                 SerializedPropertySchema::RequiredArray("dlls", SerializedValueType::STRING,
-                                                        {SerializedPropertyFlag::IS_FILE_PATH}),
+                                                        SerializedPropertyFlags({IsFilePathFlag()})),
                 SerializedPropertySchema::RequiredObjectArray("defaultKeybindings", "Keybinding")});
 
 class ProjectDeserializer : public Deserializer

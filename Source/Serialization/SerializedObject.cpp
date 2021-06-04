@@ -100,6 +100,17 @@ std::optional<SerializedValueType> SerializedObject::GetType(std::string const &
     return it->second.GetType();
 }
 
+SerializedObject::Builder SerializedObject::ToBuilder() const
+{
+    Builder builder;
+
+    for (auto & kv : values) {
+        builder.WithValue(kv.first, kv.second);
+    }
+
+    return builder;
+}
+
 ValueMap SerializedObject::GetValues() const
 {
     return values;

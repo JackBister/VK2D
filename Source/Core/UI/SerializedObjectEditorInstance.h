@@ -30,6 +30,7 @@ private:
     std::unordered_map<std::string, std::unique_ptr<ArrayEditor>> arrays;
     std::unordered_map<std::string, std::unique_ptr<EditorInstance>> objects;
     std::unordered_map<std::string, SerializedValue> values;
+    std::unordered_map<std::string, int> enumSelections;
 
     std::filesystem::path workingDirectory;
     ImGui::FileBrowser fileBrowser;

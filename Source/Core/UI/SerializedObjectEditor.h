@@ -13,8 +13,9 @@ class SerializedObjectEditor
 public:
     SerializedObjectEditor(std::string title) : title(title) {}
 
-    bool Draw(SerializedObject * obj);
+    std::optional<SerializedObject> Draw();
     void Open(SerializedObjectSchema schema, std::filesystem::path workingDirectory);
+    void Open(SerializedObjectSchema schema, std::filesystem::path workingDirectory, SerializedObject startingObject);
     void Close() { closeOnNextFrame = true; }
 
     void SetErrorMessage(std::string newMessage) { this->errorMessage = newMessage; }

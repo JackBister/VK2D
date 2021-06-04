@@ -16,12 +16,13 @@ REFLECT_STRUCT_MEMBER(file)
 REFLECT_STRUCT_MEMBER(isActive)
 REFLECT_STRUCT_END()
 
-static SerializedObjectSchema const SKELETAL_MESH_COMPONENT_SCHEMA = SerializedObjectSchema(
-    "SkeletalMeshComponent",
-    {SerializedPropertySchema::Required("file", SerializedValueType::STRING, {SerializedPropertyFlag::IS_FILE_PATH}),
-     SerializedPropertySchema::Required("isActive", SerializedValueType::BOOL),
-     SerializedPropertySchema::Optional("startingAnimation", SerializedValueType::STRING)},
-    {SerializedObjectFlag::IS_COMPONENT});
+static SerializedObjectSchema const SKELETAL_MESH_COMPONENT_SCHEMA =
+    SerializedObjectSchema("SkeletalMeshComponent",
+                           {SerializedPropertySchema::Required("file", SerializedValueType::STRING,
+                                                               SerializedPropertyFlags({IsFilePathFlag()})),
+                            SerializedPropertySchema::Required("isActive", SerializedValueType::BOOL),
+                            SerializedPropertySchema::Optional("startingAnimation", SerializedValueType::STRING)},
+                           {SerializedObjectFlag::IS_COMPONENT});
 
 class SkeletalMeshComponentDeserializer : public Deserializer
 {

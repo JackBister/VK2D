@@ -4,8 +4,6 @@
 #ifndef REFLECT_H
 #define REFLECT_H
 
-#ifdef _DEBUG
-
 #include <cstddef>
 #include <iostream>
 #include <memory>
@@ -15,14 +13,15 @@
 #include <variant>
 #include <vector>
 
-#include <ThirdParty/imgui/imgui.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 class EditorNode
 {
 public:
-    enum Type { NULLPTR, TREE, BOOL, FLOAT, INT, STRING };
+    enum Flags { READONLY = 1 };
+
+    enum Type { NULLPTR, TREE, BOOL, FLOAT, DOUBLE, INT, STRING };
 
     struct NullPtr {
         std::string label;
@@ -44,6 +43,12 @@ public:
         int extra_flags;
     };
 
+    struct Double {
+        std::string label;
+        double * v;
+        int extra_flags;
+    };
+
     struct Int {
         std::string label;
         int * v;
@@ -55,13 +60,13 @@ public:
         std::string * v;
     };
 
-    EditorNode(std::variant<NullPtr, Tree, Bool, Float, Int, String> && node)
+    EditorNode(std::variant<NullPtr, Tree, Bool, Float, Double, Int, String> && node)
         : type(node.index()), node(std::move(node))
     {
     }
 
     size_t type;
-    std::variant<NullPtr, Tree, Bool, Float, Int, String> node;
+    std::variant<NullPtr, Tree, Bool, Float, Double, Int, String> node;
 };
 
 namespace reflect
@@ -602,14 +607,6 @@ public:
     }
 }; // namespace reflect
 
-#else //_DEBUG
-#define REFLECT_INHERITANCE()
-#define REFLECT()
-#define REFLECT_STRUCT_BEGIN(type)
-#define REFLECT_STRUCT_MEMBER(name)
-#define REFLECT_STRUCT_END()
-#endif //_DEBUG
-
 #endif // REFLECT_H
 
 #ifdef REFLECT_IMPL
@@ -643,7 +640,7 @@ struct TypeDescriptor_Float : TypeDescriptor {
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
     {
         return std::make_unique<EditorNode>(
-            EditorNode::Float{name, (float *)obj, isLocked ? ImGuiInputTextFlags_ReadOnly : 0});
+            EditorNode::Float{name, (float *)obj, isLocked ? EditorNode::Flags::READONLY : 0});
     }
 };
 
@@ -654,6 +651,24 @@ TypeDescriptor * getPrimitiveDescriptor<float>()
     return &typeDesc;
 }
 
+struct TypeDescriptor_Double : TypeDescriptor {
+    TypeDescriptor_Double() : TypeDescriptor{"double", sizeof(double)} {}
+    virtual void dump(const void * obj, int) const override { std::cout << "double{" << *(double *)obj << "}"; }
+
+    virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
+    {
+        return std::make_unique<EditorNode>(
+            EditorNode::Double{name, (double *)obj, isLocked ? EditorNode::Flags::READONLY : 0});
+    }
+};
+
+template <>
+TypeDescriptor * getPrimitiveDescriptor<double>()
+{
+    static TypeDescriptor_Double typeDesc;
+    return &typeDesc;
+}
+
 struct TypeDescriptor_Int : TypeDescriptor {
     TypeDescriptor_Int() : TypeDescriptor{"int", sizeof(int)} {}
     virtual void dump(const void * obj, int) const override { std::cout << "int{" << *(int *)obj << "}"; }
@@ -661,7 +676,7 @@ struct TypeDescriptor_Int : TypeDescriptor {
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
     {
         return std::make_unique<EditorNode>(
-            EditorNode::Int{name, (int *)obj, isLocked ? ImGuiInputTextFlags_ReadOnly : 0});
+            EditorNode::Int{name, (int *)obj, isLocked ? EditorNode::Flags::READONLY : 0});
     }
 };
 

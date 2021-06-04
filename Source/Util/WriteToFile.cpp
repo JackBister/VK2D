@@ -2,9 +2,9 @@
 
 #include <fstream>
 
-bool WriteToFile(std::filesystem::path path, std::string const & str)
+bool WriteToFile(std::filesystem::path path, std::string str)
 {
-    auto outStream = std::ofstream(path);
+    auto outStream = std::ofstream(path, std::ios::binary);
     outStream << str;
     return true;
 }

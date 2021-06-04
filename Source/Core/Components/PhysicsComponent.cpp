@@ -40,7 +40,10 @@ DESERIALIZABLE_IMPL(PlaneShapeInfo, new PlaneShapeInfoDeserializer());
 static SerializedObjectSchema const PHYSICS_COMPONENT_SCHEMA = SerializedObjectSchema(
     "PhysicsComponent",
     {SerializedPropertySchema::Required("mass", SerializedValueType::DOUBLE),
-     SerializedPropertySchema::Required("shapeType", SerializedValueType::STRING),
+     SerializedPropertySchema::Required(
+         "shapeType", SerializedValueType::STRING,
+         SerializedPropertyFlags(
+             {StringEnumFlag({"BOX_2D_SHAPE_PROXYTYPE", "BOX_SHAPE_PROXYTYPE", "STATIC_PLANE_PROXYTYPE"})})),
      SerializedPropertySchema::Optional("isKinematic", SerializedValueType::BOOL),
      // TODO: This is actually a variant type but I don't have a good way of expressing that in the schema right now
      SerializedPropertySchema::OptionalObject("shapeInfoBox", "Vec3"),

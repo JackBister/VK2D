@@ -15,7 +15,10 @@ std::string DefaultFileSlurper::SlurpFile(std::string const & fileName)
         fseek(f, 0, SEEK_END);
         size_t length = ftell(f);
         fseek(f, 0, SEEK_SET);
-        std::vector<char> buf(length + 1);
+        if (length == 0) {
+            return "";
+        }
+        std::vector<char> buf(length);
         fread(&buf[0], 1, length, f);
         return std::string(buf.begin(), buf.end());
     } else {
