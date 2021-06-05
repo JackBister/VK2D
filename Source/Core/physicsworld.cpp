@@ -94,11 +94,12 @@ DESERIALIZABLE_IMPL(Vec3, new Vec3Deserializer());
 
 PhysicsWorld * PhysicsWorld::GetInstance()
 {
-    static PhysicsWorld singletonPhysicsWorld;
+    static PhysicsWorld singletonPhysicsWorld(DebugDrawSystem::GetInstance());
     return &singletonPhysicsWorld;
 }
 
-PhysicsWorld::PhysicsWorld() : debugDraw(new DebugDrawBulletAdapter(DebugDrawSystem::GetInstance()))
+PhysicsWorld::PhysicsWorld(DebugDrawSystem * debugDrawSystem)
+    : debugDrawSystem(debugDrawSystem), debugDraw(new DebugDrawBulletAdapter(debugDrawSystem))
 {
     this->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
     this->dispatcher = std::make_unique<btCollisionDispatcher>(this->collisionConfig.get());
@@ -110,20 +111,17 @@ PhysicsWorld::PhysicsWorld() : debugDraw(new DebugDrawBulletAdapter(DebugDrawSys
     this->world->setWorldUserInfo(this);
     this->world->setDebugDrawer(debugDraw.get());
 
-    CommandDefinition debugPhysicsCommand(
-        "debug_physics",
-        "debug_physics <0 or 1> - enables or disables drawing physics wireframes",
-        1,
-        [this](auto args) {
-            auto arg = args[0];
-            if (arg == "0") {
-                this->debugDraw->setDebugMode(btIDebugDraw::DBG_NoDebug);
-            } else if (arg == "1") {
-                this->debugDraw->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb |
-                                              btIDebugDraw::DBG_DrawNormals | btIDebugDraw::DBG_DrawConstraints |
-                                              btIDebugDraw::DBG_DrawConstraintLimits);
-            }
-        });
+    CommandDefinition debugPhysicsCommand("debug_physics",
+                                          "debug_physics <0 or 1> - enables or disables drawing physics wireframes",
+                                          1,
+                                          [this](auto args) {
+                                              auto arg = args[0];
+                                              if (arg == "0") {
+                                                  this->SetDebugDrawEnabled(false);
+                                              } else if (arg == "1") {
+                                                  this->SetDebugDrawEnabled(true);
+                                              }
+                                          });
     Console::RegisterCommand(debugPhysicsCommand);
 
     CommandDefinition raytestCommand(
@@ -276,6 +274,49 @@ glm::vec3 PhysicsWorld::GetGravity() const
 void PhysicsWorld::SetGravity(glm::vec3 const & grav)
 {
     world->setGravity(btVector3(grav.x, grav.y, grav.z));
+}
+
+void PhysicsWorld::SetDebugDrawEnabled(bool enabled)
+{
+    isDebugDrawEnabled = enabled;
+    if (enabled) {
+        this->debugDraw->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb |
+                                      btIDebugDraw::DBG_DrawNormals | btIDebugDraw::DBG_DrawConstraints |
+                                      btIDebugDraw::DBG_DrawConstraintLimits);
+    } else {
+        this->debugDraw->setDebugMode(btIDebugDraw::DBG_NoDebug);
+    }
+}
+
+RaytestResult PhysicsWorld::Raytest(Line line)
+{
+    btVector3 worldFrom(line.from.x, line.from.y, line.from.z);
+    btVector3 worldTo(line.to.x, line.to.y, line.to.z);
+    if (isDebugDrawEnabled) {
+        debugDrawSystem->DrawPoint(line.from, glm::vec3(0.f, 1.f, 0.f), 5.f);
+        debugDrawSystem->DrawPoint(line.to, glm::vec3(0.f, 0.f, 1.f), 5.f);
+        debugDrawSystem->DrawLine(line.from, line.to, glm::vec3(1.f, 1.f, 1.f), 5.f);
+    }
+    btDynamicsWorld::ClosestRayResultCallback callback(worldFrom, worldTo);
+    world->rayTest(worldFrom, worldTo, callback);
+    if (!callback.hasHit()) {
+        return RaytestResult(std::nullopt);
+    }
+    if (!callback.m_collisionObject) {
+        logger.Warn("When raytesting: callback.hasHit() but m_collisionObject was null. Will treat it as a non-hit.");
+        return RaytestResult(std::nullopt);
+    }
+    if (!callback.m_collisionObject->getUserPointer()) {
+        logger.Warn("When raytesting: callback.hasHit() but user pointer was null. Will treat it as a non-hit.");
+        return RaytestResult(std::nullopt);
+    }
+    PhysicsComponent * hitComponent = (PhysicsComponent *)callback.m_collisionObject->getUserPointer();
+    auto hitFraction = callback.m_closestHitFraction;
+    auto hitPoint = (line.from + line.to) * hitFraction;
+    if (isDebugDrawEnabled) {
+        debugDrawSystem->DrawPoint(hitPoint, glm::vec3(1.f, 0.f, 0.f), 5.f);
+    }
+    return RaytestResult(RaytestResult::Hit(hitComponent->entity, hitPoint));
 }
 
 void PhysicsWorld::Tick(float dt)

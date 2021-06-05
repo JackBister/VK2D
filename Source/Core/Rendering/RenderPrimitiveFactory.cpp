@@ -80,7 +80,7 @@ void RenderPrimitiveFactory::CreateDebugDrawPointVertexInputState(ResourceCreati
 
     std::vector<ResourceCreationContext::VertexInputStateCreateInfo::VertexAttributeDescription> attributes = {
         {0, 0, VertexComponentType::FLOAT, 3, false, 0},
-        {0, 1, VertexComponentType::FLOAT, 3, false, 3 * sizeof(float)},
+        {0, 1, VertexComponentType::FLOAT, 3, true, 3 * sizeof(float)},
     };
 
     ci.vertexBindingDescriptions = binding;

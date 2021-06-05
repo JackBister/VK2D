@@ -16,6 +16,7 @@ project({% projectName %} C CXX)
 
 find_package(glm CONFIG REQUIRED)
 find_path(GLM_INCLUDE_DIR glm/glm.hpp)
+find_path(BULLET_INCLUDE_DIR btBulletCollisionCommon.h PATH_SUFFIXES bullet)
 
 file(GLOB_RECURSE PROJECT_SOURCES Scripts/*.cpp Scripts/*.h)
 add_library({% projectName %} SHARED ${PROJECT_SOURCES})
@@ -24,7 +25,7 @@ set_target_properties({% projectName %} PROPERTIES
                       LIBRARY_OUTPUT_DIRECTORY bin/$<0:>
                       RUNTIME_OUTPUT_DIRECTORY bin/$<0:>)
 set_property(TARGET {% projectName %} PROPERTY CXX_STANDARD 23)
-target_include_directories({% projectName %} SYSTEM PUBLIC include "Include" ${GLM_INCLUDE_DIR})
+target_include_directories({% projectName %} SYSTEM PUBLIC include "Include" ${GLM_INCLUDE_DIR} ${BULLET_INCLUDE_DIR})
 target_compile_definitions({% projectName %} PRIVATE VK2D_DLL=1)
 
 if (MSVC)

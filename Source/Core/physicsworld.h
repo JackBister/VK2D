@@ -9,16 +9,20 @@
 
 #include "Core/collisioninfo.h"
 #include "Serialization/Deserializable.h"
+#include "Util/Line.h"
 
+class DebugDrawSystem;
 class PhysicsComponent;
 class PhysicsWorldDeserializer;
 
 class RaytestResult
 {
 public:
-    class Hit
-    {
-        EntityPtr entity;
+    struct Hit {
+        Hit(EntityPtr entity, glm::vec3 collisionPoint) : entity(entity), collisionPoint(collisionPoint) {}
+
+        EntityPtr const entity;
+        glm::vec3 const collisionPoint;
     };
 
     RaytestResult(std::optional<Hit> hit) : hit(hit) {}
@@ -29,22 +33,29 @@ private:
     std::optional<Hit> hit;
 };
 
-class PhysicsWorld
+class EAPI PhysicsWorld
 {
 public:
     friend class PhysicsComponent;
 
     static PhysicsWorld * GetInstance();
 
-    PhysicsWorld();
+    PhysicsWorld(DebugDrawSystem * debugDrawSystem);
 
     glm::vec3 GetGravity() const;
     void SetGravity(glm::vec3 const &);
+
+    bool GetDebugDrawEnabled() const { return isDebugDrawEnabled; }
+    void SetDebugDrawEnabled(bool enabled);
+
+    RaytestResult Raytest(Line line);
 
     void Tick(float dt);
 
 private:
     static void s_TickCallback(btDynamicsWorld * world, btScalar timestep);
+
+    DebugDrawSystem * debugDrawSystem;
 
     std::unordered_map<EntityPtr, std::unordered_map<EntityPtr, CollisionInfo>> collisionsLastFrame;
 
@@ -54,4 +65,6 @@ private:
     std::unique_ptr<btCollisionDispatcher> dispatcher;
     std::unique_ptr<btDiscreteDynamicsWorld> world;
     std::unique_ptr<btIDebugDraw> debugDraw;
+
+    bool isDebugDrawEnabled = false;
 };

@@ -31,9 +31,9 @@ void ShaderProgramFactory::CreateDebugDrawShaderProgram()
         ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
         CullMode::BACK,
         FrontFace::CLOCKWISE,
-        0,
+        1,
         {
-            {true},
+            {false},
         },
         {
             PrimitiveTopology::LINE_LIST,
@@ -48,9 +48,9 @@ void ShaderProgramFactory::CreateDebugDrawShaderProgram()
         ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
         CullMode::BACK,
         FrontFace::CLOCKWISE,
-        0,
+        1,
         {
-            {true},
+            {false},
         },
         {
             PrimitiveTopology::POINT_LIST,
