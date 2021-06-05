@@ -100,7 +100,7 @@ bool ProjectCreator::WriteProjectFile(std::filesystem::path projectPath, Project
 {
     logger.Info("Writing project file to path={} for project with name={}", projectPath, p.GetName());
     auto serializedProject = p.Serialize();
-    auto serializedProjectString = serializer->Serialize(serializedProject);
+    auto serializedProjectString = serializer->Serialize(serializedProject, {.prettyPrint = true});
 
     bool projectWriteSuccess = WriteToFile(projectPath, serializedProjectString);
     if (!projectWriteSuccess) {

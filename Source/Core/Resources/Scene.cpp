@@ -144,7 +144,7 @@ void Scene::SerializeToFile(std::string const & filename)
 {
     SerializedObject serialized = Serialize();
     std::ofstream out(filename);
-    out << JsonSerializer().Serialize(serialized);
+    out << JsonSerializer().Serialize(serialized, {.prettyPrint = true});
 }
 
 void Scene::Load(EntityManager * entityManager)

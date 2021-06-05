@@ -113,7 +113,7 @@ static nlohmann::json SerializeObject(SerializedObject const & obj)
     return j;
 }
 
-std::string JsonSerializer::Serialize(SerializedObject const & obj)
+std::string JsonSerializer::Serialize(SerializedObject const & obj, SerializeOptions options)
 {
-    return SerializeObject(obj).dump();
+    return SerializeObject(obj).dump(options.prettyPrint ? 2 : -1);
 }
