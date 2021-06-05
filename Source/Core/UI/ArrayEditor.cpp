@@ -33,7 +33,7 @@ ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<S
       typeChooser(name + ".type", flags.HasFlag(SerializedPropertyFlagType::IS_COMPONENT)
                                       ? TypeChooser::COMPONENT_TYPE_FILTER
                                       : nullptr),
-      workingDirectory(workingDirectory), flags(flags)
+      workingDirectory(workingDirectory), flags(flags), size(arr.size())
 {
     if (type == ArrayEditorType::OBJECT) {
         contents = std::vector<std::unique_ptr<EditorInstance>>();
@@ -52,7 +52,6 @@ ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<S
     } else {
         contents = arr;
     }
-
     fileBrowser.SetPwd(workingDirectory);
 }
 

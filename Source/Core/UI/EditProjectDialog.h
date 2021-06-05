@@ -11,10 +11,16 @@
 #include "Core/Resources/Project.h"
 #include "SerializedObjectEditorInstance.h"
 
+struct EditProjectDialogResult {
+    bool isNewProject;
+    std::filesystem::path path;
+    SerializedObject project;
+};
+
 class EditProjectDialog
 {
 public:
-    std::optional<std::pair<std::filesystem::path, SerializedObject>> Draw();
+    std::optional<EditProjectDialogResult> Draw();
     void Open(std::filesystem::path location, Project project);
     void OpenNew(std::filesystem::path startingPath);
 

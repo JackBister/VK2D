@@ -6,7 +6,7 @@
 
 static auto const logger = Logger::Create("EditProjectDialog");
 
-std::optional<std::pair<std::filesystem::path, SerializedObject>> EditProjectDialog::Draw()
+std::optional<EditProjectDialogResult> EditProjectDialog::Draw()
 {
     if (ImGui::BeginPopupModal("Project")) {
         ImGui::SetWindowSize("Project", ImVec2(800, 600), ImGuiCond_Once);
@@ -62,7 +62,8 @@ std::optional<std::pair<std::filesystem::path, SerializedObject>> EditProjectDia
                 } else {
                     ImGui::CloseCurrentPopup();
                     ImGui::EndPopup();
-                    return std::make_pair(location.value(), obj);
+                    return EditProjectDialogResult{
+                        .isNewProject = isPartialProject, .path = location.value(), .project = obj};
                 }
             }
         }

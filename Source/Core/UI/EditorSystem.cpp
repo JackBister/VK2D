@@ -142,7 +142,7 @@ EntityPtr editorCamera;
 
 struct ActiveProject {
     std::filesystem::path path;
-    std::string name;
+    Project project;
 };
 
 struct ActiveScene {
@@ -174,6 +174,7 @@ struct {
 struct MenuBarResult {
     bool newProjectDialogOpened = false;
     bool openProjectDialogOpened = false;
+    bool editProjectDialogOpened = false;
     bool newSceneDialogOpened = false;
     bool openSceneDialogOpened = false;
     bool newEntityDialogOpened = false;
@@ -205,7 +206,7 @@ void Init()
     projectManager = ProjectManager::GetInstance();
     projectManager->AddChangeListener("EditorSystemActiveProject", [](ProjectChangeEvent e) {
         if (e.newProject.has_value()) {
-            activeProject = {.path = e.newProject.value().first, .name = e.newProject.value().second.GetName()};
+            activeProject = {.path = e.newProject.value().first, .project = e.newProject.value().second};
         } else {
             activeProject = std::nullopt;
         }
@@ -264,16 +265,35 @@ void OnGui()
         if (menuBarResult.newProjectDialogOpened) {
             editProjectDialog.OpenNew(std::filesystem::current_path());
         }
-        auto newProjectOpt = editProjectDialog.Draw();
-        if (newProjectOpt.has_value()) {
-            auto newProjectAndPath = newProjectOpt.value();
-            logger.Info("Creating new project with name={}, path={}",
-                        newProjectAndPath.second.GetString("name").value(),
-                        newProjectAndPath.first);
-            bool success = projectCreator.CreateProject(newProjectAndPath.first, newProjectAndPath.second);
-            if (success) {
-                projectManager->ChangeProject(newProjectAndPath.first);
+        if (menuBarResult.editProjectDialogOpened) {
+            editProjectDialog.Open(activeProject.value().path, activeProject.value().project);
+        }
+        auto projectResultOpt = editProjectDialog.Draw();
+        if (projectResultOpt.has_value()) {
+            auto projectResult = projectResultOpt.value();
+            if (projectResult.isNewProject) {
+                logger.Info("Creating new project with name={}, path={}",
+                            projectResult.project.GetString("name"),
+                            projectResult.path);
+                bool success = projectCreator.CreateProject(projectResult.path, projectResult.project);
+                if (success) {
+                    projectManager->ChangeProject(projectResult.path);
+                } else {
+                    logger.Error("Failed to create new project with name={}, check earlier logging.",
+                                 projectResult.project.GetString("name"));
+                }
             } else {
+                logger.Info("Saving modified project to path={}", projectResult.path);
+                DeserializationContext ctx{.workingDirectory = projectResult.path.parent_path()};
+                std::optional<Project> p = Project::Deserialize(&ctx, projectResult.project);
+                bool writeSuccess = WriteToFile(projectResult.path,
+                                                jsonSerializer.Serialize(projectResult.project, {.prettyPrint = true}));
+                if (writeSuccess) {
+                    logger.Info("Successfully saved modified project to path={}", projectResult.path);
+                    projectManager->ChangeProject(projectResult.path);
+                } else {
+                    logger.Error("Failed to save modified project to path={}", projectResult.path);
+                }
             }
         }
 
@@ -385,8 +405,10 @@ void OnGui()
                 componentProperties.push_back(ComponentProperty{.type = type.value(), .name = name});
             }
 
-            bool success = componentCreator.CreateComponentCode(
-                std::filesystem::path(directory), activeProject.value().name, componentName, componentProperties);
+            bool success = componentCreator.CreateComponentCode(std::filesystem::path(directory),
+                                                                activeProject.value().project.GetName(),
+                                                                componentName,
+                                                                componentProperties);
             if (!success) {
                 logger.Error("Failed to create code for component with name={}", componentName);
             }
@@ -508,6 +530,9 @@ MenuBarResult DrawMenuBar()
             }
             if (ImGui::MenuItem("Reload Project", nullptr, nullptr, activeProject.has_value())) {
                 projectManager->ChangeProject(activeProject.value().path);
+            }
+            if (ImGui::MenuItem("Edit Project", nullptr, nullptr, activeProject.has_value())) {
+                result.editProjectDialogOpened = true;
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Create Component type", nullptr, nullptr, activeProject.has_value())) {
