@@ -42,9 +42,9 @@ std::optional<Project> Project::Deserialize(DeserializationContext * deserializa
 {
     auto validationResult = SchemaValidator::Validate(PROJECT_SCHEMA, obj);
     if (!validationResult.isValid) {
-        logger->Warnf("Failed to deserialize Project from SerializedObject, validation failed. Errors:");
+        logger.Warn("Failed to deserialize Project from SerializedObject, validation failed. Errors:");
         for (auto const & err : validationResult.propertyErrors) {
-            logger->Warnf("\t%s: %s", err.first, err.second);
+            logger.Warn("\t{}: {}", err.first, err.second);
         }
         return std::nullopt;
     }

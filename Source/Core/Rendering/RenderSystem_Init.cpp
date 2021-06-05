@@ -37,7 +37,7 @@ RenderSystem::RenderSystem(Renderer * renderer)
             }
             auto imageView = ResourceManager::GetResource<ImageViewHandle>(imageViewName);
             if (!imageView) {
-                logger->Errorf("Could not find resource '%s'", imageView);
+                logger.Error("Could not find resource '{}'", imageView);
                 return;
             }
             this->DebugOverrideBackbuffer(imageView);
@@ -53,12 +53,12 @@ RenderSystem::RenderSystem(Renderer * renderer)
 
                                         auto widthInt = std::strtol(width.c_str(), nullptr, 0);
                                         if (widthInt == 0 && width != "0") {
-                                            logger->Errorf("width %s is not a number", width.c_str());
+                                            logger.Error("width {} is not a number", width);
                                         }
 
                                         auto heightInt = std::strtol(height.c_str(), nullptr, 0);
                                         if (heightInt == 0 && height != "0") {
-                                            logger->Errorf("height %s is not a number", height.c_str());
+                                            logger.Error("height {} is not a number", height);
                                         }
                                         auto config = this->renderer->GetConfig();
                                         config.windowResolution.x = widthInt;
@@ -81,7 +81,7 @@ RenderSystem::RenderSystem(Renderer * renderer)
             } else if (modeString == "mailbox") {
                 config.presentMode = PresentMode::MAILBOX;
             } else {
-                logger->Errorf("Unknown present mode '%s'", modeString.c_str());
+                logger.Error("Unknown present mode '{}'", modeString);
                 return;
             }
             this->queuedConfigUpdate = config;
@@ -211,7 +211,7 @@ void RenderSystem::Init()
 
 void RenderSystem::InitSwapchainResources()
 {
-    logger->Infof("InitSwapchainResources");
+    logger.Info("InitSwapchainResources");
     Semaphore sem;
     renderer->CreateResources([&](ResourceCreationContext & ctx) {
         std::vector<RenderPassHandle::AttachmentDescription> prepassDepthAttachments = {

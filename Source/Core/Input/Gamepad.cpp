@@ -29,7 +29,7 @@ SDL_GameControllerAxis ConvertAxis(GamepadAxis axis)
     case GamepadAxis::AXIS_TRIGGERRIGHT:
         return SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_TRIGGERRIGHT;
     default:
-        logger->Errorf("Unhandled GamepadAxis=%zu, defaulting to LEFTX", axis);
+        logger.Error("Unhandled GamepadAxis={}, defaulting to LEFTX", axis);
         return SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_LEFTX;
     }
 }
@@ -68,7 +68,7 @@ SDL_GameControllerButton ConvertButton(GamepadButton button)
     case GamepadButton::BUTTON_DPAD_RIGHT:
         return SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_DPAD_RIGHT;
     default:
-        logger->Errorf("Unhandled GamepadButton=%zu, defaulting to BUTTON_A", button);
+        logger.Error("Unhandled GamepadButton={}, defaulting to BUTTON_A", button);
         return SDL_GameControllerButton::SDL_CONTROLLER_BUTTON_A;
     }
 }

@@ -19,17 +19,17 @@ void DllManager::LoadDll(std::filesystem::path dllPath)
 {
     auto handle = DlOpen(dllPath.string());
     if (handle == nullptr) {
-        logger->Errorf("LoadDLL: DlOpen failed.");
+        logger.Error("LoadDLL: DlOpen failed.");
         return;
     }
     auto loadComponents = (LoadComponentsFunc)DlSym(handle, "LoadComponents");
     if (loadComponents == nullptr) {
-        logger->Errorf("LoadDLL: LoadComponents not found.");
+        logger.Error("LoadDLL: LoadComponents not found.");
         return;
     }
     auto unloadComponents = (UnloadComponentsFunc)DlSym(handle, "UnloadComponents");
     if (unloadComponents == nullptr) {
-        logger->Errorf("UnloadDLL: UnloadComponents not found.");
+        logger.Error("UnloadDLL: UnloadComponents not found.");
         return;
     }
     loadComponents();

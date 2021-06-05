@@ -20,7 +20,7 @@ static ResourceCreationContext::ShaderModuleCreateInfo::Type GetShaderStage(std:
     } else if (extension == ".frag") {
         return ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER;
     } else {
-        logger->Errorf("Unknown shader file extension '%s'", extension.c_str());
+        logger.Error("Unknown shader file extension '{}'", extension);
         assert(false);
         return ResourceCreationContext::ShaderModuleCreateInfo::Type::VERTEX_SHADER;
     }
@@ -34,7 +34,7 @@ static ShaderStageFlagBits ToFlagBit(ResourceCreationContext::ShaderModuleCreate
     case ResourceCreationContext::ShaderModuleCreateInfo::Type::FRAGMENT_SHADER:
         return ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT;
     default:
-        logger->Errorf("Unknown shader stage %d", stage);
+        logger.Error("Unknown shader stage {}", stage);
         assert(false);
         return ShaderStageFlagBits::SHADER_STAGE_ALL_GRAPHICS;
     }
@@ -50,8 +50,7 @@ std::vector<ShaderProgram::ShaderStage> ShaderProgram::ReadShaderStages(std::vec
         stages[i].fileName = fileNames[i];
         auto compileResult = glslCompiler.CompileGlslFile(fileNames[i]);
         if (!compileResult.IsSuccessful()) {
-            logger->Errorf("GLSL compilation failed, error message: %s",
-                           compileResult.GetErrorMessage().value().c_str());
+            logger.Error("GLSL compilation failed, error message: {}", compileResult.GetErrorMessage().value());
             stages[i].compiledSuccessfully = false;
             continue;
         }
@@ -155,10 +154,10 @@ ShaderProgram * ShaderProgram::Create(
         for (size_t i = 0; i < stages.size(); ++i) {
             auto const & stage = stages[i];
             if (!stage.compiledSuccessfully) {
-                logger->Errorf("Shader stage %zu (%s) failed to compile for shader program '%s', will return null.",
-                               i,
-                               stage.fileName,
-                               name);
+                logger.Error("Shader stage {} ({}) failed to compile for shader program '{}', will return null.",
+                             i,
+                             stage.fileName,
+                             name);
                 ret = nullptr;
                 sem.Signal();
                 return;
@@ -196,12 +195,11 @@ ShaderProgram * ShaderProgram::Create(
 #if HOT_RELOAD_RESOURCES
     for (auto fileName : fileNames) {
         WatchFile(fileName, [name, fileName]() {
-            logger->Infof("fileName='%s' changed, will reload program '%s'", fileName.c_str(), name.c_str());
+            logger.Info("fileName='{}' changed, will reload program '{}'", fileName, name);
             auto program = ResourceManager::GetResource<ShaderProgram>(name);
             if (!program) {
-                logger->Warnf("fileName='%s' changed, but ResourceManager had no reference to program '%s'",
-                              fileName.c_str(),
-                              name.c_str());
+                logger.Warn(
+                    "fileName='{}' changed, but ResourceManager had no reference to program '{}'", fileName, name);
                 return;
             }
             ResourceManager::CreateResources([program](ResourceCreationContext & ctx) {
@@ -213,11 +211,10 @@ ShaderProgram * ShaderProgram::Create(
                 auto newStages = ReadShaderStages(fileNames, ctx);
                 for (size_t i = 0; i < newStages.size(); ++i) {
                     if (!newStages[i].compiledSuccessfully) {
-                        logger->Errorf(
-                            "Shader stage %zu (%s) failed to compile for shader program '%s', will not reload.",
-                            i + 1,
-                            newStages[i].fileName.c_str(),
-                            program->name.c_str());
+                        logger.Error("Shader stage {} ({}) failed to compile for shader program '{}', will not reload.",
+                                     i + 1,
+                                     newStages[i].fileName,
+                                     program->name);
                         ResourceManager::DestroyResources([newStages](ResourceCreationContext & ctx) {
                             for (auto const & stage : newStages) {
                                 if (stage.compiledSuccessfully) {

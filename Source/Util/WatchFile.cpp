@@ -72,7 +72,7 @@ void WatchFile_Windows(std::wstring filename, std::function<void()> onChange)
         &newWaitObject, watchHandle, WatchFileCallback, callbackArgs, INFINITE, WT_EXECUTEDEFAULT);
 
     if (registerResult == 0) {
-        logger->Errorf("Couldn't register file watcher, error code %x", GetLastError());
+        logger.Error("Couldn't register file watcher, error code {}", GetLastError());
     }
 }
 

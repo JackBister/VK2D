@@ -96,7 +96,7 @@ int main(int argc, char * argv[])
 
     if (projectFileName.has_value()) {
         if (!projectManager->ChangeProject(projectFileName.value())) {
-            logger->Severef("Failed to load initial project with name=%s", projectFileName.value().c_str());
+            logger.Severe("Failed to load initial project with name={}", projectFileName.value());
             return 1000;
         }
     }
@@ -111,7 +111,7 @@ int main(int argc, char * argv[])
         OPTICK_FRAME("MainThread");
         char const * sdlErr = SDL_GetError();
         if (*sdlErr != '\0') {
-            logger->Errorf("SDL_GetError returned an error when ticking: %s", sdlErr);
+            logger.Error("SDL_GetError returned an error when ticking: {}", sdlErr);
             SDL_ClearError();
         }
         FrameContext context = {};

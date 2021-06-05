@@ -24,7 +24,7 @@ static SerializedArray DeserializeArray(nlohmann::json j)
         } else if (element.is_array()) {
             ret.push_back(DeserializeArray(element));
         } else {
-            logger->Warnf("Unknown element type in JSON array. arrayString='%s'", j.dump().c_str());
+            logger.Warn("Unknown element type in JSON array. arrayString='{}'", j.dump());
         }
     }
     return ret;
@@ -45,7 +45,7 @@ static SerializedObject DeserializeObject(nlohmann::json j)
         } else if (element.value().is_array()) {
             builder.WithArray(element.key(), DeserializeArray(element.value()));
         } else {
-            logger->Warnf("Unknown element type in JSON object. objectString='%s'", j.dump().c_str());
+            logger.Warn("Unknown element type in JSON object. objectString='{}'", j.dump());
         }
     }
     return builder.Build();
@@ -56,7 +56,7 @@ std::optional<SerializedObject> JsonSerializer::Deserialize(std::string const & 
     auto j = nlohmann::json::parse(str);
 
     if (!j.is_object()) {
-        logger->Warnf("Attempt to deserialize non-object, will return empty optional. jsonString='%s'", str.c_str());
+        logger.Warn("Attempt to deserialize non-object, will return empty optional. jsonString='{}'", str);
         return {};
     }
 
@@ -82,7 +82,7 @@ static nlohmann::json SerializeArray(SerializedArray const & arr)
         } else if (element.GetType() == SerializedValueType::ARRAY) {
             ret.push_back(SerializeArray(std::get<SerializedArray>(element)));
         } else {
-            logger->Warnf("Unknown value type (index=%d) for idx=%zu when serializing object.", element.index(), i);
+            logger.Warn("Unknown value type (index={}) for idx={} when serializing object.", element.index(), i);
         };
     }
 
@@ -105,9 +105,8 @@ static nlohmann::json SerializeObject(SerializedObject const & obj)
         } else if (kv.second.GetType() == SerializedValueType::ARRAY) {
             j[kv.first] = SerializeArray(std::get<SerializedArray>(kv.second));
         } else {
-            logger->Warnf("Unknown value type (index=%d) for key=%s when serializing object.",
-                          kv.second.index(),
-                          kv.first.c_str());
+            logger.Warn(
+                "Unknown value type (index={}) for key={} when serializing object.", kv.second.index(), kv.first);
         };
     }
 

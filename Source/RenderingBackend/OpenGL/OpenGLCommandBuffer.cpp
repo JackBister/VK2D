@@ -75,7 +75,7 @@ void OpenGLCommandBuffer::CmdBindDescriptorSets(PipelineLayoutHandle * layout, u
                 break;
             }
             default:
-                logger->Errorf("Unknown descriptor type.");
+                logger.Error("Unknown descriptor type.");
                 break;
             }
         }
@@ -98,7 +98,7 @@ void OpenGLCommandBuffer::CmdBindIndexBuffer(BufferHandle * buffer, size_t offse
         type = GL_UNSIGNED_INT;
         break;
     default:
-        logger->Errorf("Unknown index buffer index type");
+        logger.Error("Unknown index buffer index type");
     }
 
     commandList.push_back(BindIndexBufferArgs{nativeBuffer->nativeHandle, offset, type});
@@ -323,12 +323,12 @@ void OpenGLCommandBuffer::Execute(Renderer * renderer, std::vector<SemaphoreHand
             break;
         }
         default:
-            logger->Errorf("Unknown render command type %zd", rc.index());
+            logger.Error("Unknown render command type {}", rc.index());
             break;
         }
         auto err = glGetError();
         if (err) {
-            logger->Errorf("commandList error %u, commandType %zu", err, rc.index());
+            logger.Error("commandList error {}, commandType {}", err, rc.index());
         }
     }
     commandList.clear();

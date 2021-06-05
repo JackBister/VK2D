@@ -51,22 +51,21 @@ void SceneManager::UnloadCurrentScene()
 
 bool SceneManager::ChangeScene(std::filesystem::path newScenePath)
 {
-    logger->Infof("Changing scene to new scene with path=%ls", newScenePath.c_str());
+    logger.Info("Changing scene to new scene with path={}", newScenePath);
     DefaultFileSlurper slurper;
     JsonSerializer jsonSerializer;
     auto fileContent = slurper.SlurpFile(newScenePath.string());
     auto serializedSceneOpt = jsonSerializer.Deserialize(fileContent);
     if (!serializedSceneOpt.has_value()) {
-        logger->Errorf("Failed to deserialize JSON from new Scene with path=%ls. Will not change scene",
-                       newScenePath.c_str());
+        logger.Error("Failed to deserialize JSON from new Scene with path={}. Will not change scene", newScenePath);
         return false;
     }
     DeserializationContext ctx{.workingDirectory = newScenePath.parent_path()};
     auto newSceneOpt = Scene::Deserialize(&ctx, serializedSceneOpt.value());
     if (!newSceneOpt.has_value()) {
-        logger->Errorf(
-            "Failed to deserialize from SerializedObject to Scene for Scene with path=%ls. Will not change scene",
-            newScenePath.c_str());
+        logger.Error(
+            "Failed to deserialize from SerializedObject to Scene for Scene with path={}. Will not change scene",
+            newScenePath);
         return false;
     }
     if (currentScene.has_value()) {

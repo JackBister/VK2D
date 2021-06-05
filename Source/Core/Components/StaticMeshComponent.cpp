@@ -39,7 +39,7 @@ class StaticMeshComponentDeserializer : public Deserializer
         if (!mesh) {
             StaticMeshLoaderObj().LoadFile(path.string(), [path, ret](StaticMesh * mesh) {
                 if (!mesh) {
-                    logger->Errorf("Failed to load file='%s' when deserializing StaticMeshComponent", path.c_str());
+                    logger.Error("Failed to load file='{}' when deserializing StaticMeshComponent");
                     return;
                 }
                 ret->SetMesh(mesh);

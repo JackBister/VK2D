@@ -19,11 +19,11 @@ static void DbgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, 
                         void const * userParam)
 {
     if (severity == GL_DEBUG_SEVERITY_HIGH) {
-        openGlLogger->Errorf("%s", message);
+        openGllogger.Error("{}", message);
     } else if (severity == GL_DEBUG_SEVERITY_MEDIUM || severity == GL_DEBUG_SEVERITY_LOW) {
-        openGlLogger->Warnf("%s", message);
+        openGllogger.Warn("{}", message);
     } else {
-        openGlLogger->Infof("%s", message);
+        openGllogger.Info("{}", message);
     }
 }
 #endif
@@ -52,9 +52,9 @@ Renderer::Renderer(char const * title, int const winX, int const winY, uint32_t 
     glewExperimental = GL_TRUE;
     GLenum err = glewInit();
     if (GLEW_OK != err) {
-        logger->Errorf("GLEW Error: %s", glewGetErrorString(err));
+        logger.Error("GLEW Error: {}", glewGetErrorString(err));
     }
-    logger->Infof("Program start glGetError(Expected 1280): %d", glGetError());
+    logger.Info("Program start glGetError(Expected 1280): {}", glGetError());
 
     stbi_set_flip_vertically_on_load(true);
 
@@ -144,7 +144,7 @@ void Renderer::UpdatePresentMode()
     } else if (config.presentMode == PresentMode::FIFO) {
         SDL_GL_SetSwapInterval(1);
     } else if (config.presentMode == PresentMode::MAILBOX) {
-        logger->Warnf("Mailbox present mode is not supported on OpenGL");
+        logger.Warn("Mailbox present mode is not supported on OpenGL");
     }
 }
 
@@ -168,11 +168,11 @@ void Renderer::DrainQueue()
         break;
     }
     default:
-        logger->Warnf("Unimplemented render command: %zu", command.params.index());
+        logger.Warn("Unimplemented render command: {}", command.params.index());
     }
     GLenum err = glGetError();
     if (err) {
-        logger->Errorf("RenderQueue pop error %u. RenderCommand %zu.", err, command.params.index());
+        logger.Error("RenderQueue pop error {}. RenderCommand {}.", err, command.params.index());
     }
 }
 

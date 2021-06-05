@@ -22,18 +22,18 @@ void Init()
             auto property = args[0];
             if (Config::boolValues.find(property) != Config::boolValues.end()) {
                 if (boolValues.at(property)) {
-                    logger->Infof("true");
+                    logger.Info("true");
                 } else {
-                    logger->Infof("false");
+                    logger.Info("false");
                 }
             } else if (Config::floatValues.find(property) != Config::floatValues.end()) {
-                logger->Infof("%f", floatValues.at(property));
+                logger.Info("{}", floatValues.at(property));
             } else if (Config::intValues.find(property) != Config::intValues.end()) {
-                logger->Infof("%d", intValues.at(property));
+                logger.Info("{}", intValues.at(property));
             } else if (Config::stringValues.find(property) != Config::stringValues.end()) {
-                logger->Infof("%s", stringValues.at(property).c_str());
+                logger.Info("{}", stringValues.at(property));
             } else {
-                logger->Errorf("Property '%s' not found", property.c_str());
+                logger.Error("Property '{}' not found", property);
             }
         });
     Console::RegisterCommand(cfgGetDefinition);
@@ -43,7 +43,7 @@ void Init()
             auto value = args[1];
             if (boolValues.find(property) != boolValues.end()) {
                 if (value != "false" && value != "true") {
-                    logger->Errorf("Property '%s' is a bool, but given value '%s' is not a bool", property, value);
+                    logger.Error("Property '{}' is a bool, but given value '{}' is not a bool", property, value);
                     return;
                 }
                 boolValues.at(property) = value == "true";
@@ -53,13 +53,13 @@ void Init()
             } else if (intValues.find(property) != intValues.end()) {
                 auto convertedValue = std::strtol(value.c_str(), nullptr, 0);
                 if (convertedValue == 0 && value != "0") {
-                    logger->Errorf("Invalid int value %s for property '%s'", value.c_str(), property.c_str());
+                    logger.Error("Invalid int value {} for property '{}'", value, property);
                 }
                 intValues.at(property) = convertedValue;
             } else if (stringValues.find(property) != stringValues.end()) {
                 stringValues.at(property) = value;
             } else {
-                logger->Errorf("Property '%s' not found", property.c_str());
+                logger.Error("Property '{}' not found", property);
             }
         });
     Console::RegisterCommand(cfgSetDefinition);

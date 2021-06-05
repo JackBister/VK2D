@@ -28,17 +28,17 @@ public:
     virtual void drawContactPoint(const btVector3 & PointOnB, const btVector3 & normalOnB, btScalar distance,
                                   int lifeTime, const btVector3 & color) override
     {
-        logger->Tracef("STUB: DebugDrawBulletAdapter::drawContactPoint");
+        logger.Trace("STUB: DebugDrawBulletAdapter::drawContactPoint");
     }
 
     virtual void reportErrorWarning(const char * warningString) override
     {
-        logger->Warnf("Warning from Bullet debug draw: %s", warningString);
+        logger.Warn("Warning from Bullet debug draw: {}", warningString);
     }
 
     virtual void draw3dText(const btVector3 & location, const char * textString) override
     {
-        logger->Tracef("STUB: DebugDrawBulletAdapter::draw3dText");
+        logger.Trace("STUB: DebugDrawBulletAdapter::draw3dText");
     }
 
     virtual void setDebugMode(int newDebugMode) override { debugMode = newDebugMode; }
@@ -147,30 +147,28 @@ PhysicsWorld::PhysicsWorld() : debugDraw(new DebugDrawBulletAdapter(DebugDrawSys
             auto z2 = Strings::Strtod(z2s);
             if (!x.has_value() || !y.has_value() || !z.has_value() || !x2.has_value() || !y2.has_value() ||
                 !z2.has_value()) {
-                logger->Warnf("Could not perform raytest: input was invalid: one of the values was not a number");
+                logger.Warn("Could not perform raytest: input was invalid: one of the values was not a number");
                 return;
             }
             btVector3 from(x.value(), y.value(), z.value());
             btVector3 to(x2.value(), y2.value(), z2.value());
             btCollisionWorld::AllHitsRayResultCallback raytestCallback(from, to);
-            logger->Infof("Performing ray test with from=(%f, %f, %f), to=(%f, %f, %f)",
-                          from.x(),
-                          from.y(),
-                          from.z(),
-                          to.x(),
-                          to.y(),
-                          to.z());
+            logger.Info("Performing ray test with from=({}, {}, {}), to=({}, {}, {})",
+                        from.x(),
+                        from.y(),
+                        from.z(),
+                        to.x(),
+                        to.y(),
+                        to.z());
             world->rayTest(from, to, raytestCallback);
             if (raytestCallback.m_collisionObject) {
                 auto userPointer = (PhysicsComponent *)raytestCallback.m_collisionObject->getUserPointer();
                 if (userPointer && userPointer->entity) {
                     auto entity = userPointer->entity.Get();
-                    logger->Infof("Ray hit entity with id=%s, name=%s",
-                                  entity->GetId().ToString().data(),
-                                  entity->GetName().c_str());
+                    logger.Info("Ray hit entity with id={}, name={}", entity->GetId().ToString(), entity->GetName());
                 }
             } else {
-                logger->Infof("Ray did not hit anything");
+                logger.Info("Ray did not hit anything");
             }
         });
     Console::RegisterCommand(raytestCommand);
@@ -239,7 +237,7 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
     for (auto & collisions : collisionsThisFrame) {
         auto firstEntity = collisions.first.Get();
         if (!firstEntity) {
-            logger->Warnf("Got null entity entityPtr=%s", collisions.first.ToString().c_str());
+            logger.Warn("Got null entity entityPtr={}", collisions.first.ToString());
             continue;
         }
         for (auto & collisionInfo : collisions.second) {
@@ -258,7 +256,7 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
     for (auto & collisions : collisionsLastFrame) {
         auto e = collisions.first.Get();
         if (!e) {
-            logger->Warnf("Got null entity for entityPtr=%s", collisions.first.ToString().c_str());
+            logger.Warn("Got null entity for entityPtr={}", collisions.first.ToString());
             continue;
         }
         for (auto & collisionInfo : collisions.second) {

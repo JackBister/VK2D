@@ -67,17 +67,17 @@ void Init(RenderSystem * inRenderSystem)
         "doc", "doc <command> - Returns the docString for the given command.", 1, [](auto args) {
             auto commandName = args[0];
             if (commands.find(commandName) == commands.end()) {
-                logger->Errorf("Command '%s' not found", commandName.c_str());
+                logger.Error("Command '{}' not found", commandName);
                 return;
             }
             auto command = commands.at(commandName);
-            logger->Infof("%s", command.GetDocString().c_str());
+            logger.Info("{}", command.GetDocString());
         });
     RegisterCommand(docCommand);
 
     CommandDefinition listCommand("list_commands", "list_commands - Lists all available commands.", 0, [](auto args) {
         for (auto const & command : commands) {
-            logger->Infof("%s", command.first.c_str());
+            logger.Info("{}", command.first);
         }
     });
     RegisterCommand(listCommand);
@@ -176,16 +176,16 @@ static void Execute(std::string const & input)
 
     auto commandName = split[0];
     if (commands.find(commandName) == commands.end()) {
-        logger->Errorf("Command '%s' not found", commandName.c_str());
+        logger.Error("Command '{}' not found", commandName);
         return;
     }
 
     auto command = commands.at(commandName);
     if (command.GetNumParameters() != split.size() - 1) {
-        logger->Errorf("Wrong number of arguments for command '%s', requires %d arguments but got %d",
-                       commandName.c_str(),
-                       command.GetNumParameters(),
-                       split.size() - 1);
+        logger.Error("Wrong number of arguments for command '{}', requires {} arguments but got {}",
+                     commandName,
+                     command.GetNumParameters(),
+                     split.size() - 1);
         return;
     }
 
@@ -239,7 +239,7 @@ static void AutoComplete(ImGuiInputTextCallbackData * data)
         size_t commonMatchLength = currentInput.size();
 
         for (auto & c : candidates) {
-            logger->Infof("%s", c.c_str());
+            logger.Info("{}", c);
         }
 
         while (true) {

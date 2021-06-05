@@ -64,8 +64,8 @@ class PhysicsComponentDeserializer : public Deserializer
         case BOX_2D_SHAPE_PROXYTYPE: {
             auto shapeInfoOpt = obj.GetObject("shapeInfoBox2d");
             if (!shapeInfoOpt.has_value()) {
-                logger->Errorf("Failed to deserialize physics component, shapeType was BOX_2D_SHAPE_PROXYTYPE but "
-                               "shapeInfoBox2d was not set");
+                logger.Error("Failed to deserialize physics component, shapeType was BOX_2D_SHAPE_PROXYTYPE but "
+                             "shapeInfoBox2d was not set");
                 return nullptr;
             }
             btVector3 shapeInfo(
@@ -76,8 +76,8 @@ class PhysicsComponentDeserializer : public Deserializer
         case BOX_SHAPE_PROXYTYPE: {
             auto shapeInfoOpt = obj.GetObject("shapeInfoBox");
             if (!shapeInfoOpt.has_value()) {
-                logger->Errorf("Failed to deserialize physics component, shapeType was BOX_2D_SHAPE_PROXYTYPE but "
-                               "shapeInfoBox was not set");
+                logger.Error("Failed to deserialize physics component, shapeType was BOX_2D_SHAPE_PROXYTYPE but "
+                             "shapeInfoBox was not set");
                 return nullptr;
             }
             btVector3 shapeInfo(shapeInfoOpt.value().GetNumber("x").value(),
@@ -89,14 +89,14 @@ class PhysicsComponentDeserializer : public Deserializer
         case STATIC_PLANE_PROXYTYPE: {
             auto shapeInfoOpt = obj.GetObject("shapeInfoStaticPlane");
             if (!shapeInfoOpt.has_value()) {
-                logger->Errorf("Failed to deserialize physics component, shapeType was STATIC_PLANE_PROXYTYPE but "
-                               "shapeInfoStaticPlane was not set");
+                logger.Error("Failed to deserialize physics component, shapeType was STATIC_PLANE_PROXYTYPE but "
+                             "shapeInfoStaticPlane was not set");
                 return nullptr;
             }
             auto normalOpt = shapeInfoOpt.value().GetObject("normal");
             if (!normalOpt.has_value()) {
-                logger->Errorf("Failed to deserialize physics component, shapeType was STATIC_PLANE_PROXYTYPE but "
-                               "shapeInfoStaticPlane.normal was not set");
+                logger.Error("Failed to deserialize physics component, shapeType was STATIC_PLANE_PROXYTYPE but "
+                             "shapeInfoStaticPlane.normal was not set");
                 return nullptr;
             }
             btVector3 normal(normalOpt.value().GetNumber("x").value(),
@@ -109,10 +109,10 @@ class PhysicsComponentDeserializer : public Deserializer
         case INVALID_SHAPE_PROXYTYPE:
             // TODO: Error handling. I mean, the engine's going to crash sooner or later anyway but this isn't very
             // clean.
-            logger->Errorf("Invalid shapeType %s.", obj.GetString("shapeType").value().c_str());
+            logger.Error("Invalid shapeType {}.", obj.GetString("shapeType").value());
             return nullptr;
         default:
-            logger->Errorf("Unhandled shapeType %s.", obj.GetString("shapeType").value().c_str());
+            logger.Error("Unhandled shapeType {}.", obj.GetString("shapeType").value());
             return nullptr;
         }
         auto isKinematicOpt = obj.GetBool("isKinematic");
@@ -202,10 +202,10 @@ SerializedObject PhysicsComponent::Serialize() const
         break;
     }
     case INVALID_SHAPE_PROXYTYPE:
-        logger->Errorf("Invalid shapeType %s.", SerializeShapeType(shapeType).c_str());
+        logger.Error("Invalid shapeType {}.", SerializeShapeType(shapeType));
         break;
     default:
-        logger->Errorf("Unhandled shapeType %s.", SerializeShapeType(shapeType).c_str());
+        logger.Error("Unhandled shapeType {}.", SerializeShapeType(shapeType));
         break;
     }
 
@@ -221,7 +221,7 @@ void PhysicsComponent::OnEvent(HashedString name, EventArgs args)
     OPTICK_TAG("EventName", name.c_str());
 #endif
     if (name == "BeginPlay") {
-        logger->Infof("PhysicsComponent::BeginPlay, entity=%s", entity.Get()->GetName().c_str());
+        logger.Info("PhysicsComponent::BeginPlay, entity={}", entity.Get()->GetName());
         btVector3 localInertia;
         shape->calculateLocalInertia(mass, localInertia);
         btRigidBody::btRigidBodyConstructionInfo constructionInfo(mass, this, shape.get(), localInertia);

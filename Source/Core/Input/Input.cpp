@@ -53,13 +53,13 @@ void Frame()
             break;
         }
         case SDL_CONTROLLERDEVICEADDED: {
-            logger->Infof("New controller connected, id=%d", e.cdevice.which);
+            logger.Info("New controller connected, id={}", e.cdevice.which);
             auto gameController = SDL_GameControllerOpen(e.cdevice.which);
             if (!gameController) {
-                logger->Errorf("Failed to open game controller with id=%d", e.cdevice.which);
+                logger.Error("Failed to open game controller with id={}", e.cdevice.which);
                 break;
             }
-            logger->Infof("New controller name='%s'", SDL_GameControllerName(gameController));
+            logger.Info("New controller name='{}'", SDL_GameControllerName(gameController));
             auto instanceId = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gameController));
             // TODO: This may be wonky, what I'm trying to accomplish is if I plug in two controllers and then unplug
             // and replug the first one, the first one should still be considered idx 0. This is likely completely wrong
@@ -78,7 +78,7 @@ void Frame()
             break;
         }
         case SDL_CONTROLLERDEVICEREMOVED: {
-            logger->Infof("Controller disconnected, id=%d", e.cdevice.which);
+            logger.Info("Controller disconnected, id={}", e.cdevice.which);
             for (size_t i = 0; i < gamepads.size(); ++i) {
                 if (gamepads[i].has_value() && gamepads[i].value().GetId() == e.cdevice.which) {
                     gamepads[i] = {};
@@ -161,7 +161,7 @@ void Init()
 
     auto numMappings = SDL_GameControllerAddMappingsFromFile("Assets/ThirdParty/gamecontrollerdb/gamecontrollerdb.txt");
     if (numMappings < 0) {
-        logger->Warnf("Error loading controller mappings %s", SDL_GetError());
+        logger.Warn("Error loading controller mappings {}", SDL_GetError());
     }
 }
 

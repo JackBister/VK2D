@@ -80,7 +80,7 @@ static std::vector<uint8_t> ReadImageFile(std::string fileName, int * width, int
     int n;
     FILE * file = fopen(fileName.c_str(), "rb");
     if (!file) {
-        logger->Errorf("Got error when opening fileName='%s'", fileName.c_str());
+        logger.Error("Got error when opening fileName='{}'", fileName);
         *width = 0;
         *height = 0;
         return {};
@@ -98,7 +98,7 @@ Image::Image(std::string const & fileName, uint32_t width, uint32_t height, bool
     : fileName(fileName), width(width), height(height), hasTransparency(hasTransparency), img(img),
       defaultView(defaultView)
 {
-    logger->Infof("Image %s hasTransparency %d", fileName.c_str(), hasTransparency);
+    logger.Info("Image {} hasTransparency {}", fileName, hasTransparency);
 }
 
 Image::~Image()
@@ -133,8 +133,7 @@ Image * Image::FromFile(std::string const & fileName, bool forceReload)
     auto data = ReadImageFile(fileName, &width, &height);
 
     auto imageAndView = CreateImageResources(data, width, height);
-    logger->Infof(
-        "Initial load '%s' image=%p, imageView=%p", fileName.c_str(), imageAndView.image, imageAndView.imageView);
+    logger.Info("Initial load '{}' image={}, imageView={}", fileName, imageAndView.image, imageAndView.imageView);
     auto ret =
         new Image(fileName, width, height, CheckForTransparency(data), imageAndView.image, imageAndView.imageView);
     ResourceManager::AddResource(fileName, ret);
@@ -142,10 +141,10 @@ Image * Image::FromFile(std::string const & fileName, bool forceReload)
 
 #if HOT_RELOAD_RESOURCES
     WatchFile(fileName, [fileName]() {
-        logger->Infof("Image file '%s' changed, will reload", fileName.c_str());
+        logger.Info("Image file '{}' changed, will reload", fileName);
         auto image = ResourceManager::GetResource<Image>(fileName);
         if (image == nullptr) {
-            logger->Warnf("Image file '%s' was changed but ResourceManager had no reference for it.", fileName.c_str());
+            logger.Warn("Image file '{}' was changed but ResourceManager had no reference for it.", fileName);
             return;
         }
         int width, height;
@@ -157,8 +156,7 @@ Image * Image::FromFile(std::string const & fileName, bool forceReload)
         image->height = height;
         image->img = imageAndView.image;
         image->defaultView = imageAndView.imageView;
-        logger->Infof(
-            "Reload '%s' image=%p, imageView=%p", fileName.c_str(), imageAndView.image, imageAndView.imageView);
+        logger.Info("Reload '{}' image={}, imageView={}", fileName, imageAndView.image, imageAndView.imageView);
         for (auto cb : image->hotReloadCallbacks) {
             cb.second(image);
         }

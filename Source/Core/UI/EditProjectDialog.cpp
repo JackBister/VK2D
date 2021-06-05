@@ -34,7 +34,7 @@ std::optional<std::pair<std::filesystem::path, SerializedObject>> EditProjectDia
             if (editor.has_value()) {
                 editor = EditorInstance(schema, locationBrowser.GetSelected().parent_path(), editor.value().Build());
             } else {
-                logger->Warnf(
+                logger.Warn(
                     "Unexpected state, editor was nullopt when setting location. Previous values will be lost.");
                 editor = EditorInstance(schema, locationBrowser.GetSelected().parent_path());
             }
@@ -55,9 +55,9 @@ std::optional<std::pair<std::filesystem::path, SerializedObject>> EditProjectDia
                 auto validationResult = SchemaValidator::Validate(schema, obj);
                 if (!validationResult.isValid) {
                     errorMessage = "Schema validation failed, check console for details.";
-                    logger->Errorf("Schema validation failed for PartialProject schema, errors:");
+                    logger.Error("Schema validation failed for PartialProject schema, errors:");
                     for (auto const & err : validationResult.propertyErrors) {
-                        logger->Errorf("\t%s: %s", err.first.c_str(), err.second.c_str());
+                        logger.Error("\t{}: {}", err.first, err.second);
                     }
                 } else {
                     ImGui::CloseCurrentPopup();

@@ -53,7 +53,7 @@ VkCompareOp ToVulkanCompareOp(CompareOp compareOp)
     case CompareOp::ALWAYS:
         return VK_COMPARE_OP_ALWAYS;
     default:
-        logger->Warnf("Unknown compareOp %d", compareOp);
+        logger.Warn("Unknown compareOp {}", compareOp);
         return VK_COMPARE_OP_LESS;
     }
 }
@@ -209,7 +209,7 @@ VkImageLayout ToVulkanImageLayout(ImageLayout layout)
     case ImageLayout::PRESENT_SRC_KHR:
         return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     }
-    logger->Errorf("Unknown image layout %d", layout);
+    logger.Error("Unknown image layout {}", layout);
     return VK_IMAGE_LAYOUT_UNDEFINED;
 }
 

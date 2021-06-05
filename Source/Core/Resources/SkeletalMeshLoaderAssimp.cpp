@@ -259,7 +259,7 @@ SkeletalMesh * SkeletalMeshLoaderAssimp::LoadFile(std::string const & filename)
 
             auto n = Find(hierarchy.get(), bone->mName.C_Str());
             if (!n) {
-                logger->Warnf("Did not find bone with name='%s' in node hierarchy", bone->mName.C_Str());
+                logger.Warn("Did not find bone with name='{}' in node hierarchy", bone->mName.C_Str());
                 continue;
             }
             std::optional<std::string> parent;

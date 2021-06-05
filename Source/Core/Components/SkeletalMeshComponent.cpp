@@ -36,7 +36,7 @@ class SkeletalMeshComponentDeserializer : public Deserializer
         if (!mesh) {
             mesh = SkeletalMeshLoaderAssimp().LoadFile(path.string());
             if (!mesh) {
-                logger->Errorf("Failed to load file='%s' when deserializing StaticMeshComponent", file.c_str());
+                logger.Error("Failed to load file='{}' when deserializing StaticMeshComponent");
                 return nullptr;
             }
         }

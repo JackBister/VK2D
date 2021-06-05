@@ -45,9 +45,9 @@ ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<S
                         schema.value(), workingDirectory, std::get<SerializedObject>(obj)));
             }
         } else {
-            logger->Warnf("Creating ArrayEditor with name=%s, type was OBJECT but no schema was provided. The original "
-                          "values in the array will be lost.",
-                          name.c_str());
+            logger.Warn("Creating ArrayEditor with name={}, type was OBJECT but no schema was provided. The original "
+                        "values in the array will be lost.",
+                        name);
         }
     } else {
         contents = arr;
@@ -144,14 +144,14 @@ void ArrayEditor::DrawFileBrowser()
     fileBrowser.Display();
     if (fileBrowser.HasSelected()) {
         if (!fileBrowserActiveForIndex.has_value()) {
-            logger->Warnf("Unexpected state when editing array with name=%s, fileBrowser was used but "
-                          "fileBrowserActiveForIndex was not set",
-                          name.c_str());
+            logger.Warn("Unexpected state when editing array with name={}, fileBrowser was used but "
+                        "fileBrowserActiveForIndex was not set",
+                        name);
         } else if (valueType != SerializedValueType::STRING) {
-            logger->Warnf("Unexpected state when editing array with name=%s, fileBrowser was used but valueType "
-                          "was not STRING. valueType was=%zu",
-                          name.c_str(),
-                          valueType);
+            logger.Warn("Unexpected state when editing array with name={}, fileBrowser was used but valueType "
+                        "was not STRING. valueType was={}",
+                        name,
+                        valueType);
         } else {
             auto relativePath = std::filesystem::relative(fileBrowser.GetSelected(), workingDirectory);
             std::get<1>(contents)[fileBrowserActiveForIndex.value()] = relativePath.string();
@@ -168,7 +168,7 @@ SerializedArray ArrayEditor::Build()
         auto & objects = std::get<0>(contents);
         for (size_t i = 0; i < objects.size(); ++i) {
             if (!objects[i]) {
-                logger->Warnf("Object at index=%zu in array was not initialized, this index will be skipped.", i);
+                logger.Warn("Object at index={} in array was not initialized, this index will be skipped.", i);
             } else {
                 ret.push_back(objects[i]->Build());
             }
@@ -202,9 +202,9 @@ void ArrayEditor::Resize()
         }
     } else {
         if (!valueType.has_value()) {
-            logger->Errorf("Cannot resize array with name=%s because valueType was not present. The schema may have "
-                           "been incorrectly created.",
-                           name.c_str());
+            logger.Error("Cannot resize array with name={} because valueType was not present. The schema may have "
+                         "been incorrectly created.",
+                         name);
             return;
         }
         auto & values = std::get<1>(contents);
@@ -228,7 +228,7 @@ void ArrayEditor::Resize()
                 }
                 break;
             default:
-                logger->Errorf("ArrayEditor does not support this type of array. valueType=%zu", valueType.value());
+                logger.Error("ArrayEditor does not support this type of array. valueType={}", valueType.value());
                 values.resize(oldSize);
                 break;
             }

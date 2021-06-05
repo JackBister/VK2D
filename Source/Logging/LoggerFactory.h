@@ -11,9 +11,9 @@ class LoggerFactory
 public:
     LoggerFactory(std::shared_ptr<LogAppender> appender);
 
-	static LoggerFactory * GetInstance();
+    static LoggerFactory * GetInstance();
 
-    std::unique_ptr<Logger> CreateLogger(std::string name);
+    Logger CreateLogger(std::string name);
 
 private:
     std::shared_ptr<LogAppender> appender;

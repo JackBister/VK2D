@@ -32,7 +32,7 @@ class PartialProjectDeserializer : public Deserializer
 
     void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) override
     {
-        logger->Errorf("STUB: PartialProjectDeserializer::Deserialize");
+        logger.Error("STUB: PartialProjectDeserializer::Deserialize");
         return nullptr;
     }
 };
@@ -46,9 +46,9 @@ bool ProjectCreator::CreateProject(std::filesystem::path projectPath, Serialized
 
     auto validationResult = SchemaValidator::Validate(PARTIAL_PROJECT_SCHEMA, partialProject);
     if (!validationResult.isValid) {
-        logger->Errorf("Failed to create project: given object does not match the PartialProject schema. Errors:");
+        logger.Error("Failed to create project: given object does not match the PartialProject schema. Errors:");
         for (auto const & err : validationResult.propertyErrors) {
-            logger->Errorf("\t%s: %s", err.first.c_str(), err.second.c_str());
+            logger.Error("\t{}: {}", err.first, err.second);
         }
         return false;
     }
@@ -60,7 +60,7 @@ bool ProjectCreator::CreateProject(std::filesystem::path projectPath, Serialized
     DeserializationContext ctx{.workingDirectory = projectParentPath};
     auto projectOpt = Project::Deserialize(&ctx, projectObj);
     if (!projectOpt.has_value()) {
-        logger->Errorf("Failed to create project: failed to deserialize project after adding DLL and startingScene");
+        logger.Error("Failed to create project: failed to deserialize project after adding DLL and startingScene");
         return false;
     }
     auto project = projectOpt.value();
@@ -89,7 +89,7 @@ bool ProjectCreator::CreateProject(std::filesystem::path projectPath, Serialized
     auto renderedBuildPath = projectParentPath / "build";
     bool createBuildSuccess = std::filesystem::create_directories(renderedBuildPath);
     if (!createBuildSuccess) {
-        logger->Errorf("Failed to create build directory at path=%ls", renderedBuildPath.c_str());
+        logger.Error("Failed to create build directory at path={}", renderedBuildPath);
         return false;
     }
 
@@ -98,14 +98,13 @@ bool ProjectCreator::CreateProject(std::filesystem::path projectPath, Serialized
 
 bool ProjectCreator::WriteProjectFile(std::filesystem::path projectPath, Project p)
 {
-    logger->Infof(
-        "Writing project file to path=%ls for project with name=%s", projectPath.c_str(), p.GetName().c_str());
+    logger.Info("Writing project file to path={} for project with name={}", projectPath, p.GetName());
     auto serializedProject = p.Serialize();
     auto serializedProjectString = serializer->Serialize(serializedProject);
 
     bool projectWriteSuccess = WriteToFile(projectPath, serializedProjectString);
     if (!projectWriteSuccess) {
-        logger->Errorf("Failed to write project with name=%s to path=%ls", p.GetName().c_str(), projectPath.c_str());
+        logger.Error("Failed to write project with name={} to path={}", p.GetName(), projectPath);
         return false;
     }
     return true;
@@ -114,12 +113,12 @@ bool ProjectCreator::WriteProjectFile(std::filesystem::path projectPath, Project
 bool ProjectCreator::WriteComponentFiles(std::filesystem::path projectParentPath, std::string projectName)
 {
     auto scriptPath = projectParentPath / "Scripts";
-    logger->Infof("Writing component files to path=%ls", scriptPath.c_str());
+    logger.Info("Writing component files to path={}", scriptPath);
     std::filesystem::create_directories(scriptPath);
     bool componentSuccess = componentCreator->CreateComponentCode(
         scriptPath, projectName, "MyComponent", {{.type = SerializedValueType::DOUBLE, .name = "myProperty"}});
     if (!componentSuccess) {
-        logger->Errorf("Failed to generate template component at path=%ls", projectParentPath.c_str());
+        logger.Error("Failed to generate template component at path={}", projectParentPath);
         return false;
     }
     return true;
@@ -129,12 +128,11 @@ bool ProjectCreator::WriteTemplateFile(std::string templateFileName, std::filesy
                                        SerializedObject & templateCtx)
 {
     auto templatePath = templateDirectory / templateFileName;
-    logger->Infof(
-        "Rendering template from path=%ls to project at path=%ls", templatePath.c_str(), projectParentPath.c_str());
+    logger.Info("Rendering template from path={} to project at path=%{}", templatePath, projectParentPath);
     if (templateFileName.ends_with(".tpl")) {
         std::optional<std::string> renderedOpt = templateRenderer->RenderTemplate(templatePath, templateCtx);
         if (!renderedOpt.has_value()) {
-            logger->Errorf("Failed to render template with path=%ls", templatePath.c_str());
+            logger.Error("Failed to render template with path={}", templatePath);
             return false;
         }
 
@@ -148,7 +146,7 @@ bool ProjectCreator::WriteTemplateFile(std::string templateFileName, std::filesy
         std::filesystem::create_directories(renderedPath.parent_path());
         bool writeSuccess = WriteToFile(renderedPath, renderedOpt.value());
         if (!writeSuccess) {
-            logger->Errorf("Failed to write rendered template to path=%ls", renderedPath.c_str());
+            logger.Error("Failed to write rendered template to path={}", renderedPath);
             return false;
         }
     } else {
@@ -158,16 +156,15 @@ bool ProjectCreator::WriteTemplateFile(std::string templateFileName, std::filesy
         bool copySuccess = std::filesystem::copy_file(
             templatePath, renderedPath, std::filesystem::copy_options::overwrite_existing, copyError);
         if (copyError) {
-            logger->Errorf("Failed to copy template file from templatePath=%ls to renderedPath=%ls, error=%s",
-                           templatePath.c_str(),
-                           renderedPath.c_str(),
-                           copyError.message().c_str());
+            logger.Error("Failed to copy template file from templatePath={} to renderedPath={}, error={}",
+                         templatePath,
+                         renderedPath,
+                         copyError.message());
             return false;
         }
         if (!copySuccess) {
-            logger->Errorf("Failed to copy template file from templatePath=%ls to renderedPath=%ls",
-                           templatePath.c_str(),
-                           renderedPath.c_str());
+            logger.Error(
+                "Failed to copy template file from templatePath={} to renderedPath={}", templatePath, renderedPath);
         }
         return false;
     }
@@ -178,35 +175,30 @@ bool ProjectCreator::CopyLibraryFiles(std::filesystem::path projectParentPath)
 {
     auto templateIncludePath = templateDirectory / "Include";
     auto renderedIncludePath = projectParentPath / "Include";
-    logger->Infof("Copying include files from templatePath=%ls to renderedPath=%ls",
-                  templateIncludePath.c_str(),
-                  renderedIncludePath.c_str());
+    logger.Info(
+        "Copying include files from templatePath={} to renderedPath={}", templateIncludePath, renderedIncludePath);
     std::error_code copyError;
     std::filesystem::copy(templateIncludePath,
                           renderedIncludePath,
                           std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive,
                           copyError);
     if (copyError) {
-        logger->Errorf("Failed to copy include files from=%ls to=%ls, error=%s",
-                       templateIncludePath.c_str(),
-                       renderedIncludePath.c_str(),
-                       copyError.message().c_str());
+        logger.Error("Failed to copy include files from={} to={}, error={}",
+                     templateIncludePath,
+                     renderedIncludePath,
+                     copyError.message());
         return false;
     }
     auto templateBinPath = templateDirectory / "Bin";
     auto renderedBinPath = projectParentPath / "Bin";
-    logger->Infof("Copying bin files from templatePath=%ls to renderedPath=%ls",
-                  templateBinPath.c_str(),
-                  renderedBinPath.c_str());
+    logger.Info("Copying bin files from templatePath={} to renderedPath={}", templateBinPath, renderedBinPath);
     std::filesystem::copy(templateBinPath,
                           renderedBinPath,
                           std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive,
                           copyError);
     if (copyError) {
-        logger->Errorf("Failed to copy bin files from=%ls to=%ls, error=%s",
-                       templateBinPath.c_str(),
-                       renderedBinPath.c_str(),
-                       copyError.message().c_str());
+        logger.Error(
+            "Failed to copy bin files from={} to={}, error={}", templateBinPath, renderedBinPath, copyError.message());
         return false;
     }
     return true;

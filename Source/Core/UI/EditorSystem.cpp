@@ -110,7 +110,7 @@ void DrawEditorNode(EditorNode * e)
         break;
     }
     default: {
-        logger->Warnf("Unknown EditorNode type=%zu", e->type);
+        logger.Warn("Unknown EditorNode type={}", e->type);
     }
     }
 }
@@ -222,7 +222,7 @@ void Init()
 
     entitySchema = Deserializable::GetSchema("Entity");
     if (!entitySchema.has_value()) {
-        logger->Errorf("Could not find the schema for Entity, this should never happen and will cause a crash.");
+        logger.Error("Could not find the schema for Entity, this should never happen and will cause a crash.");
     }
 
     PerspectiveCamera camera;
@@ -267,9 +267,9 @@ void OnGui()
         auto newProjectOpt = editProjectDialog.Draw();
         if (newProjectOpt.has_value()) {
             auto newProjectAndPath = newProjectOpt.value();
-            logger->Infof("Creating new project with name=%s, path=%ls",
-                          newProjectAndPath.second.GetString("name").value().c_str(),
-                          newProjectAndPath.first.c_str());
+            logger.Info("Creating new project with name={}, path={}",
+                        newProjectAndPath.second.GetString("name").value(),
+                        newProjectAndPath.first);
             bool success = projectCreator.CreateProject(newProjectAndPath.first, newProjectAndPath.second);
             if (success) {
                 projectManager->ChangeProject(newProjectAndPath.first);
@@ -323,13 +323,13 @@ void OnGui()
                 DeserializationContext context = {GetSceneWorkingDirectory()};
                 auto newComponent = (Component *)Deserializable::Deserialize(&context, newComponentOpt.value());
                 if (!newComponent) {
-                    logger->Errorf("Failed to deserialize new component");
+                    logger.Error("Failed to deserialize new component");
                     addComponentEditor.SetErrorMessage("Failed to deserialize component, check console for errors.");
                     return;
                 }
                 auto currEntity = entityEditor.currEntity.Get();
                 if (!currEntity) {
-                    logger->Errorf("Cannot add new component because currEntity is null");
+                    logger.Error("Cannot add new component because currEntity is null");
                     addComponentEditor.SetErrorMessage(
                         "Failed to add component because the selected entity does not exist.");
                     return;
@@ -349,7 +349,7 @@ void OnGui()
 
             auto entityOpt = Entity::Deserialize(&context, newEntityOpt.value());
             if (!entityOpt.has_value()) {
-                logger->Errorf("Failed to deserialize new entity");
+                logger.Error("Failed to deserialize new entity");
                 newEntityEditor.SetErrorMessage("Failed to deserialize entity, check console for errors.");
                 return;
             }
@@ -364,8 +364,7 @@ void OnGui()
         }
         auto newComponentTypeOpt = newComponentTypeEditor.Draw();
         if (newComponentTypeOpt.has_value()) {
-            logger->Infof("Creating new component type %s",
-                          newComponentTypeOpt.value().GetString("name").value().c_str());
+            logger.Info("Creating new component type {}", newComponentTypeOpt.value().GetString("name").value());
 
             auto componentTypeObj = newComponentTypeOpt.value();
             auto componentName = componentTypeObj.GetString("name").value();
@@ -380,7 +379,7 @@ void OnGui()
                 auto typeString = propObj.GetString("type").value();
                 auto type = SerializedValueTypeFromString(typeString);
                 if (!type.has_value()) {
-                    logger->Errorf("Failed to convert type=%s for property=%s", typeString.c_str(), name.c_str());
+                    logger.Error("Failed to convert type={} for property={}", typeString, name);
                     continue;
                 }
                 componentProperties.push_back(ComponentProperty{.type = type.value(), .name = name});
@@ -389,7 +388,7 @@ void OnGui()
             bool success = componentCreator.CreateComponentCode(
                 std::filesystem::path(directory), activeProject.value().name, componentName, componentProperties);
             if (!success) {
-                logger->Errorf("Failed to create code for component with name=%s", componentName.c_str());
+                logger.Error("Failed to create code for component with name={}", componentName);
             }
             newComponentTypeEditor.Close();
         }
@@ -516,7 +515,7 @@ MenuBarResult DrawMenuBar()
             }
             if (ImGui::MenuItem("Copy library files", nullptr, nullptr, activeProject.has_value())) {
                 projectCreator.CopyLibraryFiles(activeProject.value().path.parent_path());
-                logger->Infof("Updated library files at path=%ls", activeProject.value().path.parent_path());
+                logger.Info("Updated library files at path={}", activeProject.value().path.parent_path());
             }
             ImGui::Separator();
             if (ImGui::MenuItem("New Scene", nullptr, nullptr, activeProject.has_value())) {
@@ -768,7 +767,7 @@ void Pause(bool reset)
     Time::SetTimeScale(0.f);
     isWorldPaused = true;
     if (reset) {
-        logger->Infof("Reset on pause enabled, reloading scene");
+        logger.Info("Reset on pause enabled, reloading scene");
         std::optional<EntityId> currEntityId;
         if (entityEditor.currEntity) {
             currEntityId = entityEditor.currEntity.Get()->GetId();
@@ -780,7 +779,7 @@ void Pause(bool reset)
         if (!entityEditor.currEntity) {
             entityEditor.currEntity = entityManager->First();
         }
-        logger->Infof("Finished reloading scene");
+        logger.Info("Finished reloading scene");
     }
 }
 
@@ -823,7 +822,7 @@ std::filesystem::path GetSceneWorkingDirectory()
 void SaveScene()
 {
     // Always save main camera as active, otherwise it may be saved as inactive if the editor camera is active
-    logger->Infof("Saving scene=%s", activeScene.value().path.c_str());
+    logger.Info("Saving scene={}", activeScene.value().path);
     auto mainCamera = entityManager->GetEntityBySingletonTag(EntityManager::IS_MAIN_CAMERA_TAG);
     if (mainCamera.has_value()) {
         auto mainCamEntity = mainCamera.value().Get();

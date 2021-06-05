@@ -10,22 +10,22 @@ void * Deserializable::Deserialize(DeserializationContext * deserializationConte
 {
     auto typeOpt = obj.GetString("type");
     if (!typeOpt.has_value()) {
-        logger->Errorf("Key 'type' was not present when deserializing object.");
+        logger.Error("Key 'type' was not present when deserializing object.");
         return nullptr;
     }
     std::string type = typeOpt.value();
     auto m = Map();
     auto found = m.find(type);
     if (found == m.end()) {
-        logger->Errorf("No deserializer found for type=%s", type.c_str());
+        logger.Error("No deserializer found for type={}", type);
         return nullptr;
     }
     auto deserializer = found->second;
     auto validationResult = SchemaValidator::Validate(deserializer->GetSchema(), obj);
     if (!validationResult.isValid) {
-        logger->Errorf("Failed to deserialize object of type=%s, object does not match schema. Errors:", type.c_str());
+        logger.Error("Failed to deserialize object of type={}, object does not match schema. Errors:", type);
         for (auto err : validationResult.propertyErrors) {
-            logger->Errorf("%s: %s", err.first.c_str(), err.second.c_str());
+            logger.Error("{}: {}", err.first, err.second);
         }
         return nullptr;
     }
@@ -52,7 +52,7 @@ std::unordered_map<std::string, Deserializer *> & Deserializable::Map()
 void Deserializable::RemoveByOwner(std::string const & owner)
 {
     if (owner == "Core") {
-        logger->Errorf("Attempt to RemoveByOwner with owner=Core. Will not do that.");
+        logger.Error("Attempt to RemoveByOwner with owner=Core. Will not do that.");
         return;
     }
     auto & m = Map();

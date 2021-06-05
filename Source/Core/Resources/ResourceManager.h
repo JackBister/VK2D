@@ -12,7 +12,7 @@ class ResourceCreationContext;
 
 namespace ResourceManager
 {
-extern std::unique_ptr<Logger> logger;
+extern Logger logger;
 extern std::unordered_map<std::string, void *> resources;
 
 void CreateResources(std::function<void(ResourceCreationContext &)> && fun);
@@ -23,7 +23,7 @@ template <typename T>
 void AddResource(std::string const & name, T * resource)
 {
     auto newName = std::filesystem::path(name).make_preferred().string();
-    logger->Infof("Adding resource '%s' = %p", newName.c_str(), resource);
+    logger.Info("Adding resource '{}' = {}", newName, resource);
     resources.insert_or_assign(newName, resource);
 }
 
@@ -32,7 +32,7 @@ T * GetResource(std::string const & name)
 {
     auto newName = std::filesystem::path(name).make_preferred().string();
     if (resources.find(newName) == resources.end()) {
-        logger->Infof("Resource '%s' not found", newName.c_str());
+        logger.Info("Resource '{}' not found", newName);
         return nullptr;
     }
     return (T *)resources.at(newName);

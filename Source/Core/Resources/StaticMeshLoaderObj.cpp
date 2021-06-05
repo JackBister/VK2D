@@ -57,12 +57,11 @@ void StaticMeshLoaderObj::LoadFile(std::string const & filename, std::function<v
                                            baseDir.string().c_str());
 
         if (!loadContext->warn.empty()) {
-            logger->Warnf(
-                "Warning when loading OBJ file '%s', warning='%s'", filename.c_str(), loadContext->warn.c_str());
+            logger.Warn("Warning when loading OBJ file '{}', warning='{}'", filename, loadContext->warn);
         }
 
         if (!loadContext->err.empty()) {
-            logger->Errorf("Error when loading OBJ file '%s', error='%s'", filename.c_str(), loadContext->err.c_str());
+            logger.Error("Error when loading OBJ file '{}', error='{}'", filename, loadContext->err);
             callback(nullptr);
             delete loadContext;
             return;
@@ -169,10 +168,10 @@ void StaticMeshLoaderObj::LoadFile(std::string const & filename, std::function<v
                 for (size_t i = 0; i < shape.mesh.material_ids.size(); ++i) {
                     auto currentMaterialId = shape.mesh.material_ids[i];
                     if (currentMaterialId != mtlId) {
-                        logger->Warnf(
-                            "Problem loading OBJ file '%s', the engine currently requires all faces in a shape to "
-                            "use the same material, but shape '%s' contains both material ID %d and %d",
-                            filename.c_str(),
+                        logger.Warn(
+                            "Problem loading OBJ file '{}', the engine currently requires all faces in a shape to "
+                            "use the same material, but shape '{}' contains both material ID {} and {}",
+                            filename,
                             shape.name,
                             mtlId,
                             currentMaterialId);
@@ -188,17 +187,17 @@ void StaticMeshLoaderObj::LoadFile(std::string const & filename, std::function<v
                 auto numVtx = vertices.size();
                 Material * material;
                 if (mtlId < 0 || mtlId >= loadContext->materialIdToMaterial.size()) {
-                    logger->Warnf(
-                        "Problem loading OBJ file '%s', could not find definition for material ID %d in shape '%s'",
-                        filename.c_str(),
+                    logger.Warn(
+                        "Problem loading OBJ file '{}', could not find definition for material ID {} in shape '{}'",
+                        filename,
                         mtlId,
-                        shape.name.c_str());
+                        shape.name);
                     material = ResourceManager::GetResource<Material>("_Primitives/Materials/default.mtl");
                 } else {
                     material = loadContext->materialIdToMaterial.at(mtlId);
                 }
 
-                logger->Infof("shape=%s, mtlId=%d, material=%p", shape.name.c_str(), mtlId, material);
+                logger.Info("shape={}, mtlId={}, material={}", shape.name, mtlId, material);
 
                 CpuSubmesh cpuSubmesh;
                 cpuSubmesh.name = name;

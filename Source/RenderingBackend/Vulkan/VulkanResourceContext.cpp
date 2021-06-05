@@ -481,7 +481,7 @@ ImageViewHandle * VulkanResourceContext::CreateImageView(ResourceCreationContext
         case ImageViewHandle::Type::CUBE_ARRAY:
             return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
         default:
-            logger->Errorf("Unknown ImageViewType %d", type);
+            logger.Error("Unknown ImageViewType {}", type);
             assert(false);
             return VK_IMAGE_VIEW_TYPE_1D;
         }

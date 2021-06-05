@@ -24,7 +24,7 @@ LoggerFactory * LoggerFactory::GetInstance()
     return singleton;
 }
 
-std::unique_ptr<Logger> LoggerFactory::CreateLogger(std::string name)
+Logger LoggerFactory::CreateLogger(std::string name)
 {
-    return std::make_unique<Logger>(name, appender);
+    return Logger(name, appender);
 }

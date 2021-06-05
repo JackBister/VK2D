@@ -65,7 +65,7 @@ void RenderSystem::StartFrame(FrameContext & context, PreRenderCommands const & 
                               scheduledDestroyers.end());
 
     if (queuedConfigUpdate.has_value()) {
-        logger->Infof("UpdateConfig");
+        logger.Info("UpdateConfig");
         renderer->UpdateConfig(queuedConfigUpdate.value());
         queuedConfigUpdate.reset();
     }

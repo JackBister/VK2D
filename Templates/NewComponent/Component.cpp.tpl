@@ -85,11 +85,11 @@ SerializedObject {% componentName %}::Serialize() const
 void {% componentName %}::OnEvent(HashedString name, EventArgs args)
 {
     if (name == "BeginPlay") {
-        logger->Infof("Hello world!");
+        logger.Info("Hello world!");
     } else if (name == "Tick") {
         if (Input::GetKeyDown(Keycode::KC_MOUSE_LEFT))
         {
-            logger->Infof("Click!");
+            logger.Info("Click!");
         }
     }
 }

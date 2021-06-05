@@ -47,7 +47,7 @@ static Scene * ReadFile(std::string const & fileName)
         fread(&buf[0], 1, length, f);
         serializedSceneString = std::string(buf.begin(), buf.end());
     } else {
-        logger->Errorf("LoadFile failed to open fileName=%s", fileName.c_str());
+        logger.Error("LoadFile failed to open fileName={}", fileName);
         return nullptr;
     }
 
@@ -62,9 +62,9 @@ std::optional<Scene> Scene::Deserialize(DeserializationContext * deserialization
 {
     auto validationResult = SchemaValidator::Validate(SCENE_SCHEMA, obj);
     if (!validationResult.isValid) {
-        logger->Warnf("Failed to deserialize Scene from SerializedObject, validation failed. Errors:");
+        logger.Warn("Failed to deserialize Scene from SerializedObject, validation failed. Errors:");
         for (auto const & err : validationResult.propertyErrors) {
-            logger->Warnf("\t%s: %s", err.first, err.second);
+            logger.Warn("\t{}: {}", err.first, err.second);
         }
         return std::nullopt;
     }
@@ -81,20 +81,18 @@ Scene * Scene::FromFile(std::string const & fileName, EntityManager * entityMana
     ResourceManager::AddResource(fileName, ret);
 #if HOT_RELOAD_RESOURCES
     WatchFile(fileName, [fileName, entityManager]() {
-        logger->Infof("Scene file '%s' changed, will reload on next frame start", fileName.c_str());
+        logger.Info("Scene file '{}' changed, will reload on next frame start", fileName);
         GameModule::OnFrameStart([fileName, entityManager]() {
             auto scene = ResourceManager::GetResource<Scene>(fileName);
             if (scene == nullptr) {
-                logger->Warnf("Scene file '%s' was changed but ResourceManager had no reference for it.",
-                              fileName.c_str());
+                logger.Warn("Scene file '{}' was changed but ResourceManager had no reference for it.", fileName);
                 return;
             }
 
             // This is pretty messy
             auto newScene = ReadFile(fileName);
             if (!newScene) {
-                logger->Warnf("Failed to reload scene file=%s, will keep existing scene. See previous errors",
-                              fileName.c_str());
+                logger.Warn("Failed to reload scene file={}, will keep existing scene. See previous errors", fileName);
                 return;
             }
             // TODO: This is really dumb
@@ -153,13 +151,13 @@ void Scene::Load(EntityManager * entityManager)
 {
     for (auto const e : serializedEntities) {
         if (e.GetType() != SerializedValueType::OBJECT) {
-            logger->Errorf("Failed to load entity from scene with name=%s, value in entities array was not an object",
-                           name.c_str());
+            logger.Error("Failed to load entity from scene with name={}, value in entities array was not an object",
+                         name);
             continue;
         }
         auto entityOpt = Entity::Deserialize(&deserializationContext, std::get<SerializedObject>(e));
         if (!entityOpt.has_value()) {
-            logger->Errorf("Failed to load entity from scene with name=%s, deserialization failed", name.c_str());
+            logger.Error("Failed to load entity from scene with name={}, deserialization failed", name);
         } else {
             liveEntities.push_back(entityManager->AddEntity(entityOpt.value()));
         }

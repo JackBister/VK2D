@@ -101,7 +101,7 @@ std::optional<TemplateExpr> ParseExpr(std::string str)
             };
         }
     }
-    logger->Warnf("Failed to parse expression='%s'", str.c_str());
+    logger.Warn("Failed to parse expression='{}'", str);
     return std::nullopt;
 }
 
@@ -110,7 +110,7 @@ bool PrintVariableExpression(std::stringstream & ss, SerializedObject & ctx, Var
     auto variableName = variableExpr.variableName;
     auto valueType = ctx.GetType(variableName);
     if (!valueType.has_value()) {
-        logger->Warnf("template rendering error: variable '%s' does not exist in context", variableName.c_str());
+        logger.Warn("template rendering error: variable '{}' does not exist in context", variableName);
         return false;
     }
     switch (valueType.value()) {
@@ -127,15 +127,15 @@ bool PrintVariableExpression(std::stringstream & ss, SerializedObject & ctx, Var
         return true;
     }
     case SerializedValueType::ARRAY:
-        logger->Warnf("template rendering error: variable '%s' has unsupported type ARRAY", variableName.c_str());
+        logger.Warn("template rendering error: variable '{}' has unsupported type ARRAY", variableName);
         return false;
     case SerializedValueType::OBJECT:
-        logger->Warnf("template rendering error: variable '%s' has unsupported type OBJECT", variableName.c_str());
+        logger.Warn("template rendering error: variable '{}' has unsupported type OBJECT", variableName);
         return false;
     default:
-        logger->Warnf("template rendering error: variable '%s' has unknown SerializedValueType %d",
-                      variableName.c_str(),
-                      valueType.value());
+        logger.Warn("template rendering error: variable '{}' has unknown SerializedValueType {}",
+                    variableName,
+                    valueType.value());
     }
     return false;
 }
@@ -171,7 +171,7 @@ std::optional<SerializedValue> EvaluateAccessExpr_r(SerializedObject & obj, Acce
         auto variableName = variableExpr.variableName;
         auto valueType = obj.GetType(variableName);
         if (!valueType.has_value()) {
-            logger->Warnf("template rendering error: variable '%s' does not exist in context", variableName.c_str());
+            logger.Warn("template rendering error: variable '{}' does not exist in context", variableName);
             return false;
         }
         switch (valueType.value()) {
@@ -189,9 +189,9 @@ std::optional<SerializedValue> EvaluateAccessExpr_r(SerializedObject & obj, Acce
         case SerializedValueType::OBJECT:
             return obj.GetObject(variableName).value();
         default:
-            logger->Warnf("template rendering error: variable '%s' has unknown SerializedValueType %d",
-                          variableName.c_str(),
-                          valueType.value());
+            logger.Warn("template rendering error: variable '{}' has unknown SerializedValueType {}",
+                        variableName,
+                        valueType.value());
         }
         return std::nullopt;
     } else if (expr.index() == 1) {
@@ -210,7 +210,7 @@ bool RenderPropertyExpr_r(std::stringstream & ss, SerializedObject & obj, Proper
 {
     auto innerObjOpt = obj.GetObject(p.variableName);
     if (!innerObjOpt.has_value()) {
-        logger->Errorf("template rendering error: '%s' property is missing or is not an object", p.variableName);
+        logger.Error("template rendering error: '{}' property is missing or is not an object", p.variableName);
         return false;
     }
     if (p.innerExpr.index() == 0) {
@@ -236,8 +236,7 @@ bool RenderTemplate_r(TemplateRenderContext & ctx, std::string_view templateStri
             if (expr.index() == ExprType::VARIABLE) {
                 auto variableExpr = std::get<VariableExpr>(expr);
                 if (!PrintVariableExpression(ctx.ss, ctx.ctx, variableExpr)) {
-                    logger->Errorf("%ls: template rendering error: failed to print variable expression",
-                                   ctx.templatePath.c_str());
+                    logger.Error("{}: template rendering error: failed to print variable expression", ctx.templatePath);
                     return false;
                 }
                 templateString = templateString.substr(findExprResult.endPos + 2);
@@ -245,9 +244,9 @@ bool RenderTemplate_r(TemplateRenderContext & ctx, std::string_view templateStri
                 auto forInExpr = std::get<1>(expr);
                 auto arrayOpt = ctx.ctx.GetArray(forInExpr.arrayVariableName);
                 if (!arrayOpt.has_value()) {
-                    logger->Errorf("%ls: template rendering error: variable '%s' is not an array",
-                                   ctx.templatePath.c_str(),
-                                   forInExpr.arrayVariableName.c_str());
+                    logger.Error("{}: template rendering error: variable '{}' is not an array",
+                                 ctx.templatePath,
+                                 forInExpr.arrayVariableName);
                     return false;
                 }
                 std::string_view remainderSlice = templateString.substr(findExprResult.endPos + 2);
@@ -256,8 +255,8 @@ bool RenderTemplate_r(TemplateRenderContext & ctx, std::string_view templateStri
                 while (!remainderSlice.empty()) {
                     FindExprResult innerResult = FindExpr(remainderSlice);
                     if (innerResult.hasParseError) {
-                        logger->Errorf("%ls: template rendering error: error when parsing content of loop",
-                                       ctx.templatePath.c_str());
+                        logger.Error("{}: template rendering error: error when parsing content of loop",
+                                     ctx.templatePath);
                         return false;
                     }
                     if (innerResult.expr.has_value() && innerResult.expr.value().index() == ExprType::END_FOR) {
@@ -269,7 +268,7 @@ bool RenderTemplate_r(TemplateRenderContext & ctx, std::string_view templateStri
                     loopEndPos += innerResult.endPos + 2;
                 }
                 if (!hasEndFor) {
-                    logger->Errorf("%ls: template rendering error: no matching endfor found", ctx.templatePath.c_str());
+                    logger.Error("{}: template rendering error: no matching endfor found", ctx.templatePath);
                     return false;
                 }
 
@@ -315,8 +314,8 @@ bool RenderTemplate_r(TemplateRenderContext & ctx, std::string_view templateStri
                 while (!remainderSlice.empty()) {
                     FindExprResult innerResult = FindExpr(remainderSlice);
                     if (innerResult.hasParseError) {
-                        logger->Errorf("%ls: template rendering error: error when parsing content of loop",
-                                       ctx.templatePath.c_str());
+                        logger.Error("{}: template rendering error: error when parsing content of loop",
+                                     ctx.templatePath);
                         return false;
                     }
                     if (innerResult.expr.has_value() && innerResult.expr.value().index() == ExprType::END_IF) {
@@ -328,7 +327,7 @@ bool RenderTemplate_r(TemplateRenderContext & ctx, std::string_view templateStri
                     ifEndPos += innerResult.endPos + 2;
                 }
                 if (!hasEndIf) {
-                    logger->Errorf("%ls: template rendering error: no matching endfor found", ctx.templatePath.c_str());
+                    logger.Error("{}: template rendering error: no matching endfor found", ctx.templatePath);
                     return false;
                 }
 
@@ -365,9 +364,8 @@ bool RenderTemplate_r(TemplateRenderContext & ctx, std::string_view templateStri
                 }
                 templateString = templateString.substr(findExprResult.endPos + 2);
             } else {
-                logger->Errorf("%ls: template rendering error: unknown expression type %zu",
-                               ctx.templatePath.c_str(),
-                               expr.index());
+                logger.Error(
+                    "{}: template rendering error: unknown expression type {}", ctx.templatePath, expr.index());
                 return false;
             }
 
@@ -386,7 +384,7 @@ std::optional<std::string> DefaultTemplateRenderer::RenderTemplate(std::filesyst
                                                                    SerializedObject ctx)
 {
     if (!templatePath.has_filename()) {
-        logger->Warnf("Will not render template at path=%ls because it is not a file.", templatePath.c_str());
+        logger.Warn("Will not render template at path={} because it is not a file.", templatePath);
         return std::nullopt;
     }
     std::string templateContent = fileSlurper->SlurpFile(templatePath.string());

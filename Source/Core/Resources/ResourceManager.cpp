@@ -6,7 +6,7 @@
 
 namespace ResourceManager
 {
-std::unique_ptr<Logger> logger = Logger::Create("ResourceManager");
+Logger logger = Logger::Create("ResourceManager");
 RenderSystem * renderSystem;
 std::unordered_map<std::string, void *> resources;
 

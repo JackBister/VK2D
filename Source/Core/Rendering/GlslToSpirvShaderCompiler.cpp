@@ -20,7 +20,7 @@ shaderc_optimization_level GetOptimizationLevel(std::string const & str)
     } else if (str == "performance") {
         return shaderc_optimization_level_performance;
     } else {
-        logger->Errorf("Unknown glsl.optimizationLevel '%s', defaulting to performance", str.c_str());
+        logger.Error("Unknown glsl.optimizationLevel '{}', defaulting to performance", str);
         return shaderc_optimization_level_performance;
     }
 }
@@ -86,7 +86,7 @@ SpirvCompilationResult GlslToSpirvShaderCompiler::CompileGlslFile(std::string co
         compiler.CompileGlslToSpv(fileContent.data(), fileContent.size() - 1, shaderType, fileName.c_str(), options);
 
     if (result.GetNumErrors() > 0) {
-        logger->Errorf("Failed to compile shader %s: %s", fileName.c_str(), result.GetErrorMessage().c_str());
+        logger.Error("Failed to compile shader {}: {}", fileName, result.GetErrorMessage());
         assert(false);
         return SpirvCompilationResult(std::vector<uint32_t>(), result.GetErrorMessage(), false);
     }

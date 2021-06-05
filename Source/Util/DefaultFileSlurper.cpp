@@ -22,7 +22,7 @@ std::string DefaultFileSlurper::SlurpFile(std::string const & fileName)
         fread(&buf[0], 1, length, f);
         return std::string(buf.begin(), buf.end());
     } else {
-        logger->Errorf("Failed to open fileName=%s, will return empty string", fileName.c_str());
+        logger.Error("Failed to open fileName={}, will return empty string", fileName);
         assert(false);
         return "";
     }

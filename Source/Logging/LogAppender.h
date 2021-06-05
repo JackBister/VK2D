@@ -5,8 +5,9 @@
 
 #include "LogLevel.h"
 #include "LogMessage.h"
+#include "Util/DllExport.h"
 
-class LogAppender
+class EAPI LogAppender
 {
 public:
     void Append(LogMessage message);

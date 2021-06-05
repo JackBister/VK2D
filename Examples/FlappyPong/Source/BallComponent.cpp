@@ -78,9 +78,9 @@ void BallComponent::OnEvent(HashedString name, EventArgs args)
         auto collisionInfo = (CollisionInfo *)args["info"].asPointer;
         if (collisionInfo->normals.size() == 0) {
             auto other = collisionInfo->other.Get();
-            logger->Warnf("OnCollisionStart with no normals. thisEntity='%s' otherEntity='%s'",
-                          e->GetName().c_str(),
-                          (other ? other->GetName().c_str() : ""));
+            logger.Warn("OnCollisionStart with no normals. thisEntity='{}' otherEntity='{}'",
+                        e->GetName(),
+                        (other ? other->GetName() : ""));
             velocityDir.x = -velocityDir.x;
         } else {
             auto norm = glm::normalize(glm::vec2(collisionInfo->normals[0]));

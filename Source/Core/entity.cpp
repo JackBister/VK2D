@@ -48,9 +48,9 @@ std::optional<Entity> Entity::Deserialize(DeserializationContext * deserializati
 {
     auto validationResult = SchemaValidator::Validate(ENTITY_SCHEMA, obj);
     if (!validationResult.isValid) {
-        logger->Warnf("Failed to deserialize Entity from SerializedObject, validation failed. Errors:");
+        logger.Warn("Failed to deserialize Entity from SerializedObject, validation failed. Errors:");
         for (auto const & err : validationResult.propertyErrors) {
-            logger->Warnf("\t%s: %s", err.first, err.second);
+            logger.Warn("\t{}: {}", err.first, err.second);
         }
         return std::nullopt;
     }
@@ -63,9 +63,8 @@ std::optional<Entity> Entity::Deserialize(DeserializationContext * deserializati
         Component * c = static_cast<Component *>(
             Deserializable::Deserialize(deserializationContext, std::get<SerializedObject>(component)));
         if (!c) {
-            logger->Errorf("Failed to deserialize component for entity with name=%s, id=%s. See earlier errors.",
-                           name.c_str(),
-                           id.c_str());
+            logger.Error(
+                "Failed to deserialize component for entity with name={}, id={}. See earlier errors.", name, id);
             for (auto c2 : components) {
                 delete c2;
             }

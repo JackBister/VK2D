@@ -19,7 +19,7 @@ GLint ToGLAddressMode(AddressMode addressMode)
     case AddressMode::MIRROR_CLAMP_TO_EDGE:
         return GL_MIRROR_CLAMP_TO_EDGE;
     default:
-        logger->Errorf("Unrecognized sampler address mode: %d", ToUnderlyingType(addressMode));
+        logger.Error("Unrecognized sampler address mode: {}", ToUnderlyingType(addressMode));
         assert(false);
         return GL_REPEAT;
     }
@@ -45,7 +45,7 @@ GLenum ToGLCompareOp(CompareOp compareOp)
     case CompareOp::ALWAYS:
         return GL_ALWAYS;
     default:
-        logger->Warnf("Unknown compareOp %d", compareOp);
+        logger.Warn("Unknown compareOp {}", compareOp);
         return GL_LESS;
     }
 }
@@ -75,7 +75,7 @@ GLint ToGLFilter(Filter filter)
     case Filter::NEAREST:
         return GL_NEAREST;
     default:
-        logger->Errorf("Unrecognized sampler filter: %d", ToUnderlyingType(filter));
+        logger.Error("Unrecognized sampler filter: {}", ToUnderlyingType(filter));
         assert(false);
         return GL_LINEAR;
     }
@@ -99,7 +99,7 @@ GLint ToGLFormat(Format format)
     case Format::D32_SFLOAT:
         return GL_DEPTH_COMPONENT32F;
     default:
-        logger->Errorf("Unrecognized image format: %d", ToUnderlyingType(format));
+        logger.Error("Unrecognized image format: {}", ToUnderlyingType(format));
         assert(false);
         return GL_RGBA;
     }
@@ -138,7 +138,7 @@ GLint ToGLInternalFormat(Format format)
     case Format::R32_SFLOAT:
         return GL_R32F;
     default:
-        logger->Errorf("Unrecognized image format: %d", ToUnderlyingType(format));
+        logger.Error("Unrecognized image format: {}", ToUnderlyingType(format));
         assert(false);
         return GL_RGBA8;
     }
@@ -154,7 +154,7 @@ GLenum ToGLPrimitiveTopology(PrimitiveTopology topology)
     case PrimitiveTopology::TRIANGLE_LIST:
         return GL_TRIANGLES;
     default:
-        logger->Errorf("Unrecognized primitive topology: %d", ToUnderlyingType(topology));
+        logger.Error("Unrecognized primitive topology: {}", ToUnderlyingType(topology));
         assert(false);
         return GL_TRIANGLES;
     }

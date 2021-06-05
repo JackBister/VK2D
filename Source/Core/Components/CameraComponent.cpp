@@ -71,8 +71,8 @@ class CameraComponentDeserializer : public Deserializer
             cam.zNear = perspective.GetNumber("zNear").value();
             cameraData = cam;
         } else {
-            logger->Errorf("CameraComponent must be initialized with either an 'ortho' parameter or a 'perspective' "
-                           "parameter. Will create a default ortho camera.");
+            logger.Error("CameraComponent must be initialized with either an 'ortho' parameter or a 'perspective' "
+                         "parameter. Will create a default ortho camera.");
             OrthoCamera cam;
             cam.aspect = 0.75;
             cam.viewSize = 60;
@@ -186,10 +186,10 @@ SerializedObject CameraComponent::Serialize() const
                                .Build());
     } else {
         auto e = entity.Get();
-        logger->Errorf(
-            "Unknown cameraData.index() %zu, will not be able to serialize CameraComponent on Entity='%s' fully.",
+        logger.Error(
+            "Unknown cameraData.index() {}, will not be able to serialize CameraComponent on Entity='{}' fully.",
             cameraData.index(),
-            e->GetName().c_str());
+            e->GetName());
     }
 
     return builder.Build();
@@ -205,14 +205,14 @@ void CameraComponent::OnEvent(HashedString name, EventArgs args)
     if (name == "BeginPlay" && defaultsToMain) {
         auto entityManager = entity.GetManager();
         if (!entityManager) {
-            logger->Errorf("entityManager was null when trying to set main camera in BeginPlay");
+            logger.Error("entityManager was null when trying to set main camera in BeginPlay");
             return;
         }
         entityManager->SetSingletonTag(EntityManager::IS_MAIN_CAMERA_TAG, entity);
     } else if (name == "TakeCameraFocus") {
         auto entityManager = entity.GetManager();
         if (!entityManager) {
-            logger->Errorf("entityManager was null when trying to set main camera in TakeCameraFocus");
+            logger.Error("entityManager was null when trying to set main camera in TakeCameraFocus");
             return;
         }
         entityManager->SetSingletonTag(EntityManager::IS_MAIN_CAMERA_TAG, entity);

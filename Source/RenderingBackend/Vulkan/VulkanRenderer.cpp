@@ -30,11 +30,11 @@ static VkBool32 VKAPI_PTR DbgCallback(VkDebugReportFlagsEXT flags, VkDebugReport
                                       const char * pMessage, void * pUserData)
 {
     if (flags & VkDebugReportFlagBitsEXT::VK_DEBUG_REPORT_ERROR_BIT_EXT) {
-        vulkanLogger->Errorf("(%s): %s", pLayerPrefix, pMessage);
+        vulkanLogger.Error("({}): {}", pLayerPrefix, pMessage);
     } else if (flags & VkDebugReportFlagBitsEXT::VK_DEBUG_REPORT_WARNING_BIT_EXT) {
-        vulkanLogger->Warnf("(%s): %s", pLayerPrefix, pMessage);
+        vulkanLogger.Warn("({}): {}", pLayerPrefix, pMessage);
     } else {
-        vulkanLogger->Infof("(%s): %s", pLayerPrefix, pMessage);
+        vulkanLogger.Info("({}): {}", pLayerPrefix, pMessage);
     }
     return false;
 }
@@ -45,7 +45,7 @@ static bool CheckVkDeviceExtensions(VkPhysicalDevice device, std::vector<const c
     // Get extension count
     uint32_t extensionCount = 0;
     if (vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr) != VK_SUCCESS) {
-        logger->Severef("Unable to get Vulkan device extension count.");
+        logger.Severe("Unable to get Vulkan device extension count.");
         return false;
     }
 
@@ -53,7 +53,7 @@ static bool CheckVkDeviceExtensions(VkPhysicalDevice device, std::vector<const c
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
     if (vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data()) !=
         VK_SUCCESS) {
-        logger->Severef("Unable to get Vulkan extensions.");
+        logger.Severe("Unable to get Vulkan extensions.");
         return false;
     }
 
@@ -67,7 +67,7 @@ static bool CheckVkDeviceExtensions(VkPhysicalDevice device, std::vector<const c
             }
         }
         if (!exists) {
-            logger->Severef("Vulkan extension %s is not supported!", extensions[i]);
+            logger.Severe("Vulkan extension {} is not supported!", extensions[i]);
             return false;
         }
     }
@@ -78,13 +78,13 @@ static bool CheckVkInstanceExtensions(std::vector<const char *> extensions)
 {
     uint32_t extensionCount = 0;
     if (vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr) != VK_SUCCESS) {
-        logger->Severef("Unable to get Vulkan extension count.");
+        logger.Severe("Unable to get Vulkan extension count.");
         return false;
     }
 
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
     if (vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data()) != VK_SUCCESS) {
-        logger->Severef("Unable to get Vulkan extensions.");
+        logger.Severe("Unable to get Vulkan extensions.");
         return false;
     }
 
@@ -97,7 +97,7 @@ static bool CheckVkInstanceExtensions(std::vector<const char *> extensions)
             }
         }
         if (!exists) {
-            logger->Severef("Vulkan extension %s is not supported!", extensions[i]);
+            logger.Severe("Vulkan extension {} is not supported!", extensions[i]);
             return false;
         }
     }
@@ -108,12 +108,12 @@ static std::optional<VkPhysicalDevice> ChoosePhysicalDevice(VkInstance instance)
 {
     uint32_t deviceCount = 0;
     if (vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr) != VK_SUCCESS || deviceCount == 0) {
-        logger->Severef("Couldn't enumerate physical devices.");
+        logger.Severe("Couldn't enumerate physical devices.");
         return {};
     }
     auto physicalDevices = std::vector<VkPhysicalDevice>(deviceCount);
     if (vkEnumeratePhysicalDevices(instance, &deviceCount, &physicalDevices[0]) != VK_SUCCESS || deviceCount == 0) {
-        logger->Severef("Couldn't enumerate physical devices.");
+        logger.Severe("Couldn't enumerate physical devices.");
         return {};
     }
 
@@ -123,24 +123,24 @@ static std::optional<VkPhysicalDevice> ChoosePhysicalDevice(VkInstance instance)
         VkPhysicalDeviceProperties props;
         vkGetPhysicalDeviceProperties(pd, &props);
         if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-            logger->Infof("Discrete GPU detected. deviceName=%s", props.deviceName);
+            logger.Info("Discrete GPU detected. deviceName={}", props.deviceName);
             chosenDevice = pd;
             chosenType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
             break;
         }
         if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
-            logger->Infof("iGPU detected. deviceName=%s", props.deviceName);
+            logger.Info("iGPU detected. deviceName={}", props.deviceName);
             chosenDevice = pd;
             chosenType = VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
         } else if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU &&
                    chosenType != VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
-            logger->Infof("CPU detected. deviceName=%s", props.deviceName);
+            logger.Info("CPU detected. deviceName={}", props.deviceName);
             chosenDevice = pd;
             chosenType = VK_PHYSICAL_DEVICE_TYPE_CPU;
         }
     }
     if (chosenDevice == VK_NULL_HANDLE) {
-        logger->Infof("chosenDevice is VK_NULL_HANDLE, defaulting to physicalDevices[0]");
+        logger.Info("chosenDevice is VK_NULL_HANDLE, defaulting to physicalDevices[0]");
         chosenDevice = physicalDevices[0];
     }
     return chosenDevice;
@@ -151,7 +151,7 @@ static bool CreateVkCommandPool(VkDevice device, uint32_t const queueIdx, VkComm
     VkCommandPoolCreateInfo poolCreateInfo = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIdx};
     if (vkCreateCommandPool(device, &poolCreateInfo, nullptr, ret) != VK_SUCCESS) {
-        logger->Severef("Couldn't create command pool.");
+        logger.Severe("Couldn't create command pool.");
         return false;
     }
     return true;
@@ -161,7 +161,7 @@ static bool CreateVkSemaphore(VkDevice device, VkSemaphore * const ret)
 {
     VkSemaphoreCreateInfo semaphoreCreateInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0};
     if (vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, ret) != VK_SUCCESS) {
-        logger->Severef("Unable to create semaphore.");
+        logger.Severe("Unable to create semaphore.");
         return false;
     }
     return true;
@@ -257,7 +257,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
     {
         unsigned int requiredInstanceExtensionsCount;
         if (!SDL_Vulkan_GetInstanceExtensions(window, &requiredInstanceExtensionsCount, nullptr)) {
-            logger->Severef("Unable to get required Vulkan instance extensions.");
+            logger.Severe("Unable to get required Vulkan instance extensions.");
             assert(false);
             exit(1);
         }
@@ -278,7 +278,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
 #endif
     };
 
-    logger->Infof("Creating Vulkan instance.");
+    logger.Info("Creating Vulkan instance.");
     VkInstanceCreateFlags const vulkanFlags = 0;
     VkInstanceCreateInfo const vulkanInfo = {
         VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -293,7 +293,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
 
     auto res = vkCreateInstance(&vulkanInfo, nullptr, &basics.instance);
     if (res != VK_SUCCESS) {
-        logger->Severef("vkCreateInstance failed.");
+        logger.Severe("vkCreateInstance failed.");
         assert(false);
         exit(1);
     }
@@ -318,21 +318,21 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
     VkDebugReportCallbackEXT test;
     res = vkCreateDebugReportCallbackEXT(basics.instance, &dbgInfo, nullptr, &test);
     if (res != VK_SUCCESS) {
-        logger->Severef("Failed to create debug report callback.");
+        logger.Severe("Failed to create debug report callback.");
         assert(false);
         exit(1);
     }
 #endif
 
     if (!SDL_Vulkan_CreateSurface(window, basics.instance, &surface)) {
-        logger->Severef("Unable to create Vulkan surface.");
+        logger.Severe("Unable to create Vulkan surface.");
         assert(false);
         exit(1);
     }
 
     auto physDeviceOptional = ChoosePhysicalDevice(basics.instance);
     if (!physDeviceOptional.has_value()) {
-        logger->Severef("ChoosePhysicalDevice failed.");
+        logger.Severe("ChoosePhysicalDevice failed.");
         assert(false);
         exit(1);
     }
@@ -342,7 +342,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
                                                         VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME};
 
     if (!CheckVkDeviceExtensions(basics.physicalDevice, deviceExtensions)) {
-        logger->Severef("CheckVkDeviceExtensions failed.");
+        logger.Severe("CheckVkDeviceExtensions failed.");
         assert(false);
         exit(1);
     }
@@ -351,7 +351,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(basics.physicalDevice, &queueFamilyCount, nullptr);
     if (queueFamilyCount == 0) {
-        logger->Severef("No queue families found.");
+        logger.Severe("No queue families found.");
         assert(false);
         exit(1);
     }
@@ -373,7 +373,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
     for (uint32_t i = 0; i < queueFamilyCount; ++i) {
         if (vkGetPhysicalDeviceSurfaceSupportKHR(basics.physicalDevice, i, surface, &queuePresentSupport[i]) !=
             VK_SUCCESS) {
-            logger->Severef("Couldn't get physical device surface support.");
+            logger.Severe("Couldn't get physical device surface support.");
             assert(false);
             exit(1);
         }
@@ -413,7 +413,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
 
     // One of our needed queues does not exist. We can't work with this.
     if (graphicsQueueIdx == UINT32_MAX || presentQueueIdx == UINT32_MAX || transferFamilyIdx == UINT32_MAX) {
-        logger->Severef("No queues with graphics, transfer or present support found.");
+        logger.Severe("No queues with graphics, transfer or present support found.");
         assert(false);
         exit(1);
     }
@@ -457,19 +457,18 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
 
     vkGetPhysicalDeviceFeatures(basics.physicalDevice, &this->supportedFeatures);
     if (!this->supportedFeatures.multiDrawIndirect) {
-        logger->Severef(
+        logger.Severe(
             "multiDrawIndirect feature not supported. The engine currently only works with multiDrawIndirect");
         exit(1);
     }
     if (!this->supportedFeatures.independentBlend) {
-        logger->Severef(
-            "independentBlend feature not supported. The engine currently only works with independentBlend");
+        logger.Severe("independentBlend feature not supported. The engine currently only works with independentBlend");
         exit(1);
     }
     if (!this->supportedFeatures.wideLines) {
         // TODO: This is only required for debug draw, so it shouldn't crash the engine like this. But to handle that
         // the rest of the engine needs to be aware of what features are enabled.
-        logger->Severef("wideLines feature not supported. The engine currently only works with wideLines");
+        logger.Severe("wideLines feature not supported. The engine currently only works with wideLines");
         exit(1);
     }
     VkPhysicalDeviceFeatures enabledFeatures = {0};
@@ -489,7 +488,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
                                            &enabledFeatures};
 
     if (vkCreateDevice(basics.physicalDevice, &deviceCreateInfo, nullptr, &basics.device) != VK_SUCCESS) {
-        logger->Severef("Couldn't create device.");
+        logger.Severe("Couldn't create device.");
         assert(false);
         exit(1);
     }
@@ -529,7 +528,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
         for (int i = 0; i < numThreads; ++i) {
             auto res = vkCreateDescriptorPool(basics.device, &ci, nullptr, &descriptorPools[i].pool);
             if (res != VK_SUCCESS) {
-                logger->Severef("Couldn't create descriptor pool.");
+                logger.Severe("Couldn't create descriptor pool.");
                 assert(false);
                 exit(1);
             }
@@ -556,7 +555,7 @@ uint32_t Renderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags pro
         }
     }
 
-    logger->Errorf("Couldn't find memory type, typeFilter=%ud properties=%ud", typeFilter, properties);
+    logger.Error("Couldn't find memory type, typeFilter={} properties={}", typeFilter, properties);
     assert(false);
     return 0;
 }
@@ -620,7 +619,7 @@ VkPresentModeKHR Renderer::GetDesiredPresentMode(std::vector<VkPresentModeKHR> p
         desiredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
     }
     if (std::find(presentModes.begin(), presentModes.end(), desiredPresentMode) == presentModes.end()) {
-        logger->Warnf("Did not find desired present mode, will default to FIFO");
+        logger.Warn("Did not find desired present mode, will default to FIFO");
         return VK_PRESENT_MODE_FIFO_KHR;
     }
     return desiredPresentMode;
@@ -787,8 +786,8 @@ LockedQueue Renderer::GetGraphicsQueue()
         }
     }
 
-    logger->Infof("Failed to lock graphics upload queue during loop, defaulting to locking queue at index 0. Maybe in "
-                  "the future this index should be randomized.");
+    logger.Info("Failed to lock graphics upload queue during loop, defaulting to locking queue at index 0. Maybe in "
+                "the future this index should be randomized.");
 
     return {std::lock_guard<std::mutex>(graphicsQueues[0].queueLock), graphicsQueues[0].queue};
 }
@@ -803,8 +802,8 @@ LockedQueue Renderer::GetTransferQueue()
         }
     }
 
-    logger->Infof("Failed to lock graphics upload queue during loop, defaulting to locking queue at index 0. Maybe in "
-                  "the future this index should be randomized.");
+    logger.Info("Failed to lock graphics upload queue during loop, defaulting to locking queue at index 0. Maybe in "
+                "the future this index should be randomized.");
 
     return {std::lock_guard<std::mutex>(transferQueues[0].queueLock), transferQueues[0].queue};
 }
@@ -813,7 +812,7 @@ void Renderer::InitSurfaceCapabilities()
 {
     if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(basics.physicalDevice, surface, &capabilities.capabilities) !=
         VK_SUCCESS) {
-        logger->Severef("Unable to get device surface capabilities.");
+        logger.Severe("Unable to get device surface capabilities.");
         assert(false);
         exit(1);
     }
@@ -821,7 +820,7 @@ void Renderer::InitSurfaceCapabilities()
     uint32_t formatsCount;
     if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.physicalDevice, surface, &formatsCount, nullptr) != VK_SUCCESS ||
         formatsCount == 0) {
-        logger->Severef("Unable to get device surface formats.");
+        logger.Severe("Unable to get device surface formats.");
         assert(false);
         exit(1);
     }
@@ -830,7 +829,7 @@ void Renderer::InitSurfaceCapabilities()
     if (vkGetPhysicalDeviceSurfaceFormatsKHR(basics.physicalDevice, surface, &formatsCount, &capabilities.formats[0]) !=
             VK_SUCCESS ||
         formatsCount == 0) {
-        logger->Severef("Unable to get device surface formats.");
+        logger.Severe("Unable to get device surface formats.");
         assert(false);
         exit(1);
     }
@@ -839,7 +838,7 @@ void Renderer::InitSurfaceCapabilities()
     if (vkGetPhysicalDeviceSurfacePresentModesKHR(basics.physicalDevice, surface, &presentModesCount, nullptr) !=
             VK_SUCCESS ||
         presentModesCount == 0) {
-        logger->Severef("Unable to get device present modes.");
+        logger.Severe("Unable to get device present modes.");
         assert(false);
         exit(1);
     }
@@ -848,7 +847,7 @@ void Renderer::InitSurfaceCapabilities()
     if (vkGetPhysicalDeviceSurfacePresentModesKHR(
             basics.physicalDevice, surface, &presentModesCount, &capabilities.presentModes[0]) != VK_SUCCESS ||
         presentModesCount == 0) {
-        logger->Severef("Unable to get device present modes.");
+        logger.Severe("Unable to get device present modes.");
         assert(false);
         exit(1);
     }
@@ -893,7 +892,7 @@ void Renderer::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage imag
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     } else {
-        logger->Errorf("Error: Unknown image layout transition.");
+        logger.Error("Error: Unknown image layout transition.");
         assert(false);
         return;
     }
@@ -904,7 +903,7 @@ void Renderer::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage imag
 void Renderer::RecreateSwapchain()
 {
     OPTICK_EVENT();
-    logger->Infof("Renderer::RecreateSwapchain");
+    logger.Info("Renderer::RecreateSwapchain");
     isSwapchainInvalid = false;
     InitSurfaceCapabilities();
     uint32_t desiredNumberOfImages = GetDesiredNumberOfImages(capabilities.capabilities);
@@ -913,7 +912,7 @@ void Renderer::RecreateSwapchain()
 
     // TRANSFER_DST_BIT required for clearing op
     if (!(capabilities.capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
-        logger->Severef("VK_IMAGE_USAGE_TRANSFER_DST_BIT not supported by surface.");
+        logger.Severe("VK_IMAGE_USAGE_TRANSFER_DST_BIT not supported by surface.");
         assert(false);
         exit(1);
     }
@@ -948,7 +947,7 @@ void Renderer::RecreateSwapchain()
                                                     oldSwapchain};
 
     if (vkCreateSwapchainKHR(basics.device, &swapchainCreateInfo, nullptr, &swapchain.swapchain) != VK_SUCCESS) {
-        logger->Severef("Couldn't create swap chain.");
+        logger.Severe("Couldn't create swap chain.");
         assert(false);
         exit(1);
     }
@@ -962,7 +961,7 @@ void Renderer::RecreateSwapchain()
     uint32_t swapchainImageCount = 0;
     auto res = vkGetSwapchainImagesKHR(basics.device, swapchain.swapchain, &swapchainImageCount, nullptr);
     if (res != VK_SUCCESS || swapchainImageCount == 0) {
-        logger->Severef("Couldn't get swap chain image count.");
+        logger.Severe("Couldn't get swap chain image count.");
         assert(false);
         exit(1);
     }
@@ -971,7 +970,7 @@ void Renderer::RecreateSwapchain()
     swapchain.images.resize(swapchainImageCount);
     res = vkGetSwapchainImagesKHR(basics.device, swapchain.swapchain, &swapchainImageCount, &swapchain.images[0]);
     if (res != VK_SUCCESS || swapchainImageCount == 0) {
-        logger->Severef("Couldn't get swap chain images.");
+        logger.Severe("Couldn't get swap chain images.");
         assert(false);
         exit(1);
     }
@@ -999,7 +998,7 @@ void Renderer::RecreateSwapchain()
         createInfo.subresourceRange.layerCount = 1;
         res = vkCreateImageView(basics.device, &createInfo, nullptr, &swapchain.imageViews[i]);
         if (res != VK_SUCCESS) {
-            logger->Severef("Couldn't create swap chain image views.");
+            logger.Severe("Couldn't create swap chain image views.");
             assert(false);
             exit(1);
         }

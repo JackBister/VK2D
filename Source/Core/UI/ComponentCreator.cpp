@@ -9,9 +9,7 @@ static auto const logger = Logger::Create("ComponentCreator");
 bool ComponentCreator::CreateComponentCode(std::filesystem::path directory, std::string projectName,
                                            std::string componentName, std::vector<ComponentProperty> properties)
 {
-    logger->Infof("Generating component code in directory=%ls for component with name=%s",
-                  directory.c_str(),
-                  componentName.c_str());
+    logger.Info("Generating component code in directory={} for component with name={}", directory, componentName);
     SerializedArray serializedProperties;
     for (auto const & p : properties) {
         serializedProperties.push_back(SerializedObject::Builder()
@@ -31,22 +29,20 @@ bool ComponentCreator::CreateComponentCode(std::filesystem::path directory, std:
 
         auto renderedHeaderOpt = templateRenderer->RenderTemplate(templateHeaderPath, templateCtx);
         if (!renderedHeaderOpt.has_value()) {
-            logger->Errorf("Failed to create component '%s': template rendering failed, there is likely logging above "
-                           "indicating why",
-                           componentName.c_str());
+            logger.Error("Failed to create component '{}': template rendering failed, there is likely logging above "
+                         "indicating why",
+                         componentName);
             return false;
         }
-        logger->Infof("Header file template rendered for component with name=%s", componentName.c_str());
+        logger.Info("Header file template rendered for component with name={}", componentName);
         bool writeSuccess = WriteToFile(outputHeaderPath, renderedHeaderOpt.value());
         if (!writeSuccess) {
-            logger->Errorf("Failed to create component '%s': writing rendered template to file=%ls failed.",
-                           componentName.c_str(),
-                           outputHeaderPath.c_str());
+            logger.Error("Failed to create component '{}': writing rendered template to file={} failed.",
+                         componentName,
+                         outputHeaderPath);
             return false;
         }
-        logger->Infof("Header file written to file=%ls for component with name=%s",
-                      outputHeaderPath.c_str(),
-                      componentName.c_str());
+        logger.Info("Header file written to file={} for component with name={}", outputHeaderPath, componentName);
     }
 
     {
@@ -55,22 +51,21 @@ bool ComponentCreator::CreateComponentCode(std::filesystem::path directory, std:
 
         auto renderedHeaderOpt = templateRenderer->RenderTemplate(templateCppPath, templateCtx);
         if (!renderedHeaderOpt.has_value()) {
-            logger->Errorf(
-                "Failed to create component '%s': cpp template rendering failed, there is likely logging above "
+            logger.Error(
+                "Failed to create component '{}': cpp template rendering failed, there is likely logging above "
                 "indicating why",
-                componentName.c_str());
+                componentName);
             return false;
         }
-        logger->Infof("cpp file template rendered for component with name=%s", componentName.c_str());
+        logger.Info("cpp file template rendered for component with name={}", componentName);
         bool writeSuccess = WriteToFile(outputCppPath, renderedHeaderOpt.value());
         if (!writeSuccess) {
-            logger->Errorf("Failed to create component '%s': writing rendered template to cpp file=%ls failed.",
-                           componentName.c_str(),
-                           outputCppPath.c_str());
+            logger.Error("Failed to create component '{}': writing rendered template to cpp file={} failed.",
+                         componentName,
+                         outputCppPath);
             return false;
         }
-        logger->Infof(
-            "cpp file written to file=%ls for component with name=%s", outputCppPath.c_str(), componentName.c_str());
+        logger.Info("cpp file written to file={} for component with name={}", outputCppPath, componentName);
     }
 
     return true;

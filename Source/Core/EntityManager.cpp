@@ -45,13 +45,13 @@ void EntityManager::RemoveEntity(EntityPtr ptr)
     std::scoped_lock lock(liveEntitiesLock);
     auto & e = liveEntities[ptr.index];
     if (e.generation != ptr.generation) {
-        logger->Warnf("Generation mismatch when attempting to remove an entity. ptr=%s, actualGeneration=%zu",
-                      ptr.ToString().c_str(),
-                      e.generation);
+        logger.Warn("Generation mismatch when attempting to remove an entity. ptr={}, actualGeneration={}",
+                    ptr.ToString(),
+                    e.generation);
         return;
     }
     if (e.isRemoved) {
-        logger->Warnf("Attempt to remove an already removed entity. ptr=%s", ptr.ToString().c_str());
+        logger.Warn("Attempt to remove an already removed entity. ptr={}", ptr.ToString());
         return;
     }
     for (auto c : e.entity.components) {

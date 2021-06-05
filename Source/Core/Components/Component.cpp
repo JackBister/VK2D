@@ -12,6 +12,6 @@ Component::~Component() {}
 void Component::LogMissingEntity() const
 {
     if (!entity) {
-        logger->Warnf("Missing entity for component=%s, entityPtr=%s", type.c_str(), entity.ToString().c_str());
+        logger.Warn("Missing entity for component={}, entityPtr={}", type, entity.ToString());
     }
 }

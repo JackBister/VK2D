@@ -18,7 +18,7 @@ class ComponentPropertyDeserializer : public Deserializer
 
     void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) override
     {
-        logger->Errorf("STUB: ComponentPropertyDeserializer::Deserialize");
+        logger.Error("STUB: ComponentPropertyDeserializer::Deserialize");
         return nullptr;
     }
 };
@@ -38,7 +38,7 @@ class NewComponentTypeDeserializer : public Deserializer
 
     void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) override
     {
-        logger->Errorf("STUB: NewComponentTypeDeserializer::Deserialize");
+        logger.Error("STUB: NewComponentTypeDeserializer::Deserialize");
         return nullptr;
     }
 };

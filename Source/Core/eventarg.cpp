@@ -55,7 +55,7 @@ EventArg::EventArg(EventArg const & ea) : type(ea.type)
         asEntityPtr = ea.asEntityPtr;
         break;
     default:
-        logger->Errorf("Unknown EventArg::type %d", type);
+        logger.Error("Unknown EventArg::type {}", type);
     }
 }
 
@@ -91,7 +91,7 @@ EventArg::EventArg(EventArg && ea) : type(ea.type)
         ea.asEntityPtr = EntityPtr();
         break;
     default:
-        logger->Errorf("Unknown EventArg::type %d", type);
+        logger.Error("Unknown EventArg::type {}", type);
     }
 }
 
@@ -136,7 +136,7 @@ EventArg & EventArg::operator=(EventArg && ea)
         ea.asEntityPtr = EntityPtr();
         break;
     default:
-        logger->Errorf("Unknown EventArg::type %d", type);
+        logger.Error("Unknown EventArg::type {}", type);
     }
     return *this;
 }

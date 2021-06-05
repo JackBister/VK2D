@@ -102,9 +102,9 @@ void EditorInstance::Draw()
             selected = std::filesystem::relative(selected, workingDirectory);
             values[currentFileProperty.value()] = selected.string();
         } else {
-            logger->Warnf("Unexpected state, file browser was open and a file was selected but no property was "
-                          "currently being edited. Editing object with schema=%s",
-                          schema.GetName().c_str());
+            logger.Warn("Unexpected state, file browser was open and a file was selected but no property was "
+                        "currently being edited. Editing object with schema={}",
+                        schema.GetName());
         }
         currentFileProperty = {};
         fileBrowser.Close();
@@ -163,12 +163,12 @@ void EditorInstance::DrawProperty(SerializedPropertySchema const & prop)
                         ImGui::EndCombo();
                     }
                 } else {
-                    logger->Warnf("Property with key=%s, there are no available enum options.", key.c_str());
+                    logger.Warn("Property with key={}, there are no available enum options.", key);
                 }
             } else {
-                logger->Warnf("Weird state, property with key=%s HasFlag(IS_STRING_ENUM) but "
-                              "GetFlag<StringEnumFlag> failed. Bug in SerializedPropertyFlags?",
-                              key.c_str());
+                logger.Warn("Weird state, property with key={} HasFlag(IS_STRING_ENUM) but "
+                            "GetFlag<StringEnumFlag> failed. Bug in SerializedPropertyFlags?",
+                            key);
             }
         } else {
             ImGui_InputText("##hidelabel", &std::get<std::string>(values[prop.GetName()]));
