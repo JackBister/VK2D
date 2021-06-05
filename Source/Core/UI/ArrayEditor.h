@@ -34,6 +34,7 @@ private:
     std::string name;
     ArrayEditorType type;
     std::variant<std::vector<std::unique_ptr<EditorInstance>>, std::vector<SerializedValue>> contents;
+    std::vector<int> enumSelections;
     std::optional<SerializedObjectSchema> schema;
     std::optional<SerializedValueType> valueType;
     SerializedPropertyFlags flags;

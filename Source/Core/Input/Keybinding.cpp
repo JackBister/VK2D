@@ -5,8 +5,10 @@
 #include "Serialization/SerializedObjectSchema.h"
 
 static SerializedObjectSchema const KEYBINDING_SCHEMA = SerializedObjectSchema(
-    "Keybinding", {SerializedPropertySchema::Required("name", SerializedValueType::STRING),
-                   SerializedPropertySchema::RequiredArray("keyCodes", SerializedValueType::STRING)});
+    "Keybinding",
+    {SerializedPropertySchema::Required("name", SerializedValueType::STRING),
+     SerializedPropertySchema::RequiredArray("keyCodes", SerializedValueType::STRING,
+                                             SerializedPropertyFlags({StringEnumFlag(GetAllKeycodeStrings())}))});
 
 class KeybindingDeserializer : public Deserializer
 {

@@ -33,7 +33,7 @@ ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<S
       typeChooser(name + ".type", flags.HasFlag(SerializedPropertyFlagType::IS_COMPONENT)
                                       ? TypeChooser::COMPONENT_TYPE_FILTER
                                       : nullptr),
-      workingDirectory(workingDirectory), flags(flags), size(arr.size())
+      workingDirectory(workingDirectory), flags(flags), size(arr.size()), enumSelections(arr.size(), 0)
 {
     if (type == ArrayEditorType::OBJECT) {
         contents = std::vector<std::unique_ptr<EditorInstance>>();
@@ -50,6 +50,39 @@ ArrayEditor::ArrayEditor(std::string name, ArrayEditorType type, std::optional<S
                         name);
         }
     } else {
+        auto enumOpt = flags.GetFlag<StringEnumFlag>();
+        if (enumOpt.has_value()) {
+            std::unordered_map<std::string, int> valueToIndex;
+            auto & enumValues = enumOpt.value().GetValues();
+            if (!enumValues.empty()) {
+                for (int i = 0; i < enumValues.size(); ++i) {
+                    valueToIndex[enumValues[i]] = i;
+                }
+                for (size_t i = 0; i < arr.size(); ++i) {
+                    auto & val = arr[i];
+                    if (val.GetType() != SerializedValueType::STRING) {
+                        logger.Warn("Property has StringEnumFlag but value at index={} is not a string. type={}",
+                                    i,
+                                    val.GetType());
+                        continue;
+                    }
+                    auto strVal = std::get<std::string>(val);
+                    if (valueToIndex.find(strVal) == valueToIndex.end()) {
+                        logger.Warn(
+                            "Property at index={} has a string value not present in StringEnumFlag. Will reset it "
+                            "to value={}. currentValue={}",
+                            enumValues[0],
+                            strVal);
+                        arr[i] = enumValues[0];
+                        enumSelections[i] = 0;
+                    } else {
+                        enumSelections[i] = valueToIndex[strVal];
+                    }
+                }
+            } else {
+                logger.Warn("Property has StringEnumFlag but array of values is empty.");
+            }
+        }
         contents = arr;
     }
     fileBrowser.SetPwd(workingDirectory);
@@ -117,6 +150,38 @@ void ArrayEditor::Draw()
                         if (ImGui::SmallButton("Pick")) {
                             fileBrowser.Open();
                             fileBrowserActiveForIndex = i;
+                        }
+                    } else if (flags.HasFlag(SerializedPropertyFlagType::IS_STRING_ENUM)) {
+                        auto enumOpt = flags.GetFlag<StringEnumFlag>();
+                        if (enumOpt.has_value()) {
+                            auto selected = enumSelections[i];
+                            auto options = enumOpt.value().GetValues();
+                            if (!options.empty()) {
+                                if (selected > options.size()) {
+                                    enumSelections[i] = selected = 0;
+                                    values[i] = options[0];
+                                }
+                                auto selectedString = options[selected];
+                                if (ImGui::BeginCombo("##hidelabel", selectedString.c_str())) {
+                                    for (int j = 0; j < options.size(); ++j) {
+                                        bool isSelected = i == selected;
+                                        if (ImGui::Selectable(options[j].c_str(), isSelected)) {
+                                            enumSelections[i] = j;
+                                            values[i] = options[j];
+                                        }
+                                        if (isSelected) {
+                                            ImGui::SetItemDefaultFocus();
+                                        }
+                                    }
+                                    ImGui::EndCombo();
+                                }
+                            } else {
+                                logger.Warn("Property at index={}, there are no available enum options.", i);
+                            }
+                        } else {
+                            logger.Warn("Weird state, property with index={} HasFlag(IS_STRING_ENUM) but "
+                                        "GetFlag<StringEnumFlag> failed. Bug in SerializedPropertyFlags?",
+                                        i);
                         }
                     } else {
                         ImGui_InputText("##hidelabel", &std::get<std::string>(values[i]));
@@ -233,4 +298,5 @@ void ArrayEditor::Resize()
             }
         }
     }
+    enumSelections.resize(size);
 }
