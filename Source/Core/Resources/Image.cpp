@@ -74,7 +74,7 @@ bool CheckForTransparency(std::vector<uint8_t> const & data)
     return false;
 }
 
-static std::vector<uint8_t> ReadImageFile(std::string fileName, int * width, int * height)
+static std::optional<std::vector<uint8_t>> ReadImageFile(std::string fileName, int * width, int * height)
 {
     OPTICK_EVENT();
     int n;
@@ -83,7 +83,7 @@ static std::vector<uint8_t> ReadImageFile(std::string fileName, int * width, int
         logger.Error("Got error when opening fileName='{}'", fileName);
         *width = 0;
         *height = 0;
-        return {};
+        return std::nullopt;
     }
     uint8_t * imageData = stbi_load_from_file(file, width, height, &n, 4);
     fclose(file);
@@ -130,7 +130,11 @@ Image * Image::FromFile(std::string const & fileName, bool forceReload)
     }
 
     int width, height;
-    auto data = ReadImageFile(fileName, &width, &height);
+    auto dataOpt = ReadImageFile(fileName, &width, &height);
+    if (!dataOpt.has_value()) {
+        return nullptr;
+    }
+    auto data = dataOpt.value();
 
     auto imageAndView = CreateImageResources(data, width, height);
     logger.Info("Initial load '{}' image={}, imageView={}", fileName, imageAndView.image, imageAndView.imageView);
@@ -148,7 +152,12 @@ Image * Image::FromFile(std::string const & fileName, bool forceReload)
             return;
         }
         int width, height;
-        auto data = ReadImageFile(fileName, &width, &height);
+        auto dataOpt = ReadImageFile(fileName, &width, &height);
+        if (!dataOpt.has_value()) {
+            logger.Warn("Failed to read image file '{}'", fileName);
+            return;
+        }
+        auto data = dataOpt.value();
         auto previousImage = image->img;
         auto previousView = image->defaultView;
         auto imageAndView = CreateImageResources(data, width, height);

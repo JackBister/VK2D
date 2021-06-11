@@ -31,12 +31,16 @@ class SpriteComponentDeserializer : public Deserializer
 
     void * Deserialize(DeserializationContext * ctx, SerializedObject const & obj) final override
     {
-        SpriteComponent * ret = new SpriteComponent();
-        ret->file = obj.GetString("file").value();
-
-        auto path = ctx->workingDirectory / ret->file;
+        auto file = obj.GetString("file").value();
+        auto path = ctx->workingDirectory / file;
 
         auto img = Image::FromFile(path.string());
+        if (img == nullptr) {
+            return nullptr;
+        }
+
+        SpriteComponent * ret = new SpriteComponent();
+        ret->file = file;
 
         ret->spriteInstance = RenderSystem::GetInstance()->CreateSpriteInstance(img);
         ret->isActive = obj.GetBool("isActive").value_or(true);
