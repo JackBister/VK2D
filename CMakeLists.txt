@@ -138,12 +138,3 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy ${BUILD_LIB_ABSPATH} ${TEMPLATE_LIB_ABSPATH}
     MAIN_DEPENDENCY ${BUILD_LIB_ABSPATH}
 )
-
-# FLAPPYPONG
-
-file(GLOB_RECURSE FLAPPYPONG_SOURCES Examples/FlappyPong/Source/*.c Examples/FlappyPong/Source/*.cpp Examples/FlappyPong/Source/*.h)
-add_library(FlappyPong SHARED ${FLAPPYPONG_SOURCES})
-target_include_directories(FlappyPong SYSTEM PUBLIC include Source ${BULLET_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${STB_IMAGE_INCLUDE_DIR} ${Vulkan_INCLUDE_DIRS})
-target_compile_definitions(FlappyPong PRIVATE VK2D_DLL=1)
-
-target_link_libraries(FlappyPong Main)

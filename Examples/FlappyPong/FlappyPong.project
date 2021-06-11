@@ -1,22 +1,22 @@
 {
-  "type": "Project",
-  "name": "FlappyPong",
-  "startingScene": "./main.scene",
-  "startingGravity": {
-    "x": 0,
-    "y": 0,
-    "z": 0
-  },
-  "dlls": [
-    "./FlappyPong.dll"
-  ],
   "defaultKeybindings": [
     {
-      "name": "Flap",
       "keyCodes": [
         "KC_MOUSE_LEFT",
         "KC_UP"
-      ]
+      ],
+      "name": "Flap"
     }
-  ]
+  ],
+  "dlls": [
+    "build/bin/FlappyPong.dll"
+  ],
+  "name": "FlappyPong",
+  "startingGravity": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "startingScene": "./main.scene",
+  "type": "Project"
 }
