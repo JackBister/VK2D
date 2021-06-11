@@ -3,8 +3,9 @@
 #include <string>
 
 #include "Core/Reflect.h"
+#include "Util/DllExport.h"
 
-class EntityId
+class EAPI EntityId
 {
 public:
     friend class std::hash<EntityId>;

@@ -8,12 +8,13 @@
 #include "Core/eventarg.h"
 #include "Core/transform.h"
 #include "Serialization/Deserializable.h"
+#include "Util/DllExport.h"
 #include "Util/HashedString.h"
 
 class Component;
 class EntityManager;
 
-class Entity final : public Deserializable
+class EAPI Entity final : public Deserializable
 {
 public:
     friend class EntityManager;

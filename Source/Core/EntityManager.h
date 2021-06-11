@@ -8,6 +8,7 @@
 
 #include "EntityId.h"
 #include "EntityPtr.h"
+#include "Util/DllExport.h"
 #include "entity.h"
 
 struct FreeSlot {
@@ -21,7 +22,7 @@ struct LiveEntity {
     Entity entity;
 };
 
-class EntityManager
+class EAPI EntityManager
 {
 public:
     static std::string const IS_MAIN_CAMERA_TAG;

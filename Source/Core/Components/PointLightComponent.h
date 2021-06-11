@@ -4,8 +4,9 @@
 
 #include "Component.h"
 #include "Core/Rendering/LightInstance.h"
+#include "Util/DllExport.h"
 
-class PointLightComponent : public Component
+class EAPI PointLightComponent : public Component
 {
 public:
     PointLightComponent(glm::vec3 color, bool isActive = true);

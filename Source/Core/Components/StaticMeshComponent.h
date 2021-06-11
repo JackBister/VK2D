@@ -5,8 +5,9 @@
 #include "Component.h"
 #include "Core/Rendering/StaticMeshInstance.h"
 #include "Core/Resources/StaticMesh.h"
+#include "Util/DllExport.h"
 
-class StaticMeshComponent : public Component
+class EAPI StaticMeshComponent : public Component
 {
 public:
     StaticMeshComponent(std::string file, StaticMesh * mesh, bool isActive = true);

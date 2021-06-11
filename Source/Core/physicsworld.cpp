@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <glm/gtx/compatibility.hpp>
+
 #include "Console/Console.h"
 #include "Core/Components/physicscomponent.h"
 #include "Core/Rendering/DebugDrawSystem.h"
@@ -312,7 +314,7 @@ RaytestResult PhysicsWorld::Raytest(Line line)
     }
     PhysicsComponent * hitComponent = (PhysicsComponent *)callback.m_collisionObject->getUserPointer();
     auto hitFraction = callback.m_closestHitFraction;
-    auto hitPoint = (line.from + line.to) * hitFraction;
+    auto hitPoint = glm::lerp(line.from, line.to, hitFraction);
     if (isDebugDrawEnabled) {
         debugDrawSystem->DrawPoint(hitPoint, glm::vec3(1.f, 0.f, 0.f), 5.f);
     }

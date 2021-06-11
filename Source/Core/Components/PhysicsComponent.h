@@ -4,10 +4,11 @@
 #include "btBulletDynamicsCommon.h"
 
 #include "Core/Components/Component.h"
+#include "Util/DllExport.h"
 
 class PhysicsComponentDeserializer;
 
-class PhysicsComponent : public Component, public btMotionState
+class EAPI PhysicsComponent : public Component, public btMotionState
 {
 public:
     friend class PhysicsComponentDeserializer;

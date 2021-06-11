@@ -25,6 +25,7 @@
 #include "ComponentCreator.h"
 #include "Core/DllManager.h"
 #include "Core/ProjectManager.h"
+#include "Core/Rendering/RenderSystem.h"
 #include "Core/Resources/Scene.h"
 #include "Core/SceneManager.h"
 #include "Core/dtime.h"
@@ -231,11 +232,11 @@ void Init()
     camera.fov = 90;
     camera.zFar = 10000;
     camera.zNear = 0.1;
-    editorCamera =
-        entityManager->AddEntity(Entity("EditorCamera",
-                                        "EditorCamera",
-                                        Transform(),
-                                        {new CameraComponent(camera, true, false), new UneditableComponent()}));
+    editorCamera = entityManager->AddEntity(
+        Entity("EditorCamera",
+               "EditorCamera",
+               Transform(),
+               {new CameraComponent(RenderSystem::GetInstance(), camera, true, false), new UneditableComponent()}));
 }
 
 void OnGui()

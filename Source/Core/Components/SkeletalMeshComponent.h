@@ -2,10 +2,11 @@
 
 #include "Component.h"
 #include "Core/Rendering/SkeletalMeshInstance.h"
+#include "Util/DllExport.h"
 
 class SkeletalMesh;
 
-class SkeletalMeshComponent : public Component
+class EAPI SkeletalMeshComponent : public Component
 {
 public:
     SkeletalMeshComponent(std::string file, SkeletalMesh * mesh, bool isActive = true,

@@ -81,7 +81,7 @@ class CameraComponentDeserializer : public Deserializer
         auto defaultsToMain = obj.GetBool("defaultsToMain").value_or(false);
         auto isActive = obj.GetBool("isActive").value();
 
-        return new CameraComponent(cameraData, isActive, defaultsToMain);
+        return new CameraComponent(RenderSystem::GetInstance(), cameraData, isActive, defaultsToMain);
     }
 };
 
@@ -118,11 +118,11 @@ COMPONENT_IMPL(CameraComponent, new CameraComponentDeserializer())
 DESERIALIZABLE_IMPL(OrthoCamera, new OrthoCameraDeserializer())
 DESERIALIZABLE_IMPL(PerspectiveCamera, new PerspectiveCameraDeserializer())
 
-CameraComponent::CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData, bool isActive,
-                                 bool defaultsToMain)
-    : cameraData(cameraData), isActive(isActive), defaultsToMain(defaultsToMain)
+CameraComponent::CameraComponent(RenderSystem * renderSystem, std::variant<OrthoCamera, PerspectiveCamera> cameraData,
+                                 bool isActive, bool defaultsToMain)
+    : renderSystem(renderSystem), cameraData(cameraData), isActive(isActive), defaultsToMain(defaultsToMain)
 {
-    cameraHandle = RenderSystem::GetInstance()->CreateCamera();
+    cameraHandle = renderSystem->CreateCamera();
 
     receiveTicks = false;
     type = "CameraComponent";
@@ -130,7 +130,7 @@ CameraComponent::CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> ca
 
 CameraComponent::~CameraComponent()
 {
-    RenderSystem::GetInstance()->DestroyCamera(this->cameraHandle);
+    renderSystem->DestroyCamera(this->cameraHandle);
 }
 
 glm::mat4 const & CameraComponent::GetProjection()
@@ -159,6 +159,53 @@ glm::mat4 const & CameraComponent::GetView()
         view = glm::inverse(e->GetTransform()->GetLocalToWorld());
     }
     return view;
+}
+
+std::optional<Line> CameraComponent::ScreenPointToLine(int x, int y)
+{
+    if (x < 0 || y < 0) {
+        logger.Warn("ScreenPointToLine: x/y cannot be less than 0 but were x={} y={}", x, y);
+        return std::nullopt;
+    }
+    glm::ivec2 resolution = renderSystem->GetResolution();
+    if (x > resolution.x || y > resolution.y) {
+        logger.Warn("ScreenPointToLine: x/y cannot be greater than resolution but were x={} y={}. resolution was "
+                    "resX={} resY={}",
+                    x,
+                    y,
+                    resolution.x,
+                    resolution.y);
+        return std::nullopt;
+    }
+    auto e = entity.Get();
+    if (!e) {
+        LogMissingEntity();
+        return std::nullopt;
+    }
+    float clipX = ((2.f * x) / (float)resolution.x) - 1.f;
+    float clipY = 1.f - ((2.f * y) / (float)resolution.y);
+    float clipZ = 1.f;
+    float zFar = 0.f;
+    if (cameraData.index() == 0) {
+        auto & orthoCamera = std::get<OrthoCamera>(cameraData);
+        zFar = 10000.f;
+    } else if (cameraData.index() == 1) {
+        auto & perspectiveCamera = std::get<PerspectiveCamera>(cameraData);
+        zFar = perspectiveCamera.zFar;
+    } else {
+        logger.Warn("Unknown camera type, index={}", cameraData.index());
+        return std::nullopt;
+    }
+    glm::vec4 clipCoordinate(clipX, clipY, clipZ, 1.f);
+    glm::mat4 v = GetView();
+    glm::mat4 p = GetProjection();
+    glm::vec4 worldCoordinate = glm::inverse(v) * (glm::inverse(p) * clipCoordinate);
+    worldCoordinate = glm::normalize(worldCoordinate);
+    worldCoordinate *= zFar;
+    auto transform = e->GetTransform();
+    auto model = transform->GetLocalToWorld();
+    glm::vec4 worldPos = model * glm::vec4(0.f, 0.f, 0.f, 1.f);
+    return Line(worldPos, worldCoordinate);
 }
 
 SerializedObject CameraComponent::Serialize() const

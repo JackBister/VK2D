@@ -4,11 +4,12 @@
 
 #include "Core/Components/Component.h"
 #include "Core/Rendering/SpriteInstance.h"
+#include "Util/DllExport.h"
 
 class Image;
 class SpriteComponentDeserializer;
 
-class SpriteComponent final : public Component
+class EAPI SpriteComponent final : public Component
 {
 public:
     friend class SpriteComponentDeserializer;

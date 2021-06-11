@@ -7,6 +7,10 @@
 
 #include "Core/Components/component.h"
 #include "Core/Rendering/CameraInstance.h"
+#include "Util/DllExport.h"
+#include "Util/Line.h"
+
+class RenderSystem;
 
 struct OrthoCamera {
     float viewSize;
@@ -20,11 +24,11 @@ struct PerspectiveCamera {
     float zNear;
 };
 
-class CameraComponent : public Component
+class EAPI CameraComponent : public Component
 {
 public:
-    CameraComponent(std::variant<OrthoCamera, PerspectiveCamera> cameraData, bool isActive = true,
-                    bool defaultsToMain = false);
+    CameraComponent(RenderSystem * renderSystem, std::variant<OrthoCamera, PerspectiveCamera> cameraData,
+                    bool isActive = true, bool defaultsToMain = false);
     ~CameraComponent() override;
 
     SerializedObject Serialize() const override;
@@ -37,11 +41,7 @@ public:
     glm::mat4 const & GetProjection();
     glm::mat4 const & GetView();
 
-    std::optional<OrthoCamera> GetOrtho();
-    void SetOrtho(OrthoCamera);
-
-    std::optional<PerspectiveCamera> GetPerspective();
-    void SetPerspective(PerspectiveCamera);
+    std::optional<Line> ScreenPointToLine(int x, int y);
 
     REFLECT()
     REFLECT_INHERITANCE()
@@ -57,5 +57,6 @@ private:
     glm::mat4 projection;
     glm::mat4 view;
 
+    RenderSystem * renderSystem;
     CameraInstanceId cameraHandle;
 };

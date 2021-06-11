@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Component.h"
+#include "Util/DllExport.h"
 
-class UneditableComponent : public Component
+class EAPI UneditableComponent : public Component
 {
 public:
     UneditableComponent()

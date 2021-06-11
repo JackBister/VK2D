@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "Util/DllExport.h  "
+#include "Util/DllExport.h"
 
 class Entity;
 class EntityManager;
