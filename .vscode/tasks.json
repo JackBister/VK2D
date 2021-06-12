@@ -83,7 +83,7 @@
       "type": "shell",
       "windows": {
         "command": "msbuild",
-        "args": ["ALL_BUILD.vcxproj", "-target:Clean"],
+        "args": ["Main.vcxproj", "-target:Clean"],
         "options": {
           "cwd": "${workspaceFolder}/build"
         },

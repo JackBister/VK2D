@@ -3,7 +3,7 @@ Examples/3D/
 
 # Third party stuff, should only be submodule'd
 Assets/ThirdParty
-Source/ThirdParty
+Source/ThirdParty/!CMakeLists.txt
 
 # Generated shader files
 *.spv.h
@@ -43,6 +43,7 @@ cmake-build-*/
 x64/
 x86/
 build/
+build_thirdparty/
 bld/
 [Bb]in/
 [Oo]bj/

@@ -9,6 +9,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(vk2d C CXX)
 
+add_subdirectory(Source/ThirdParty)
+
 file(GLOB_RECURSE SOURCES
     Source/Console/*.c Source/Console/*.cpp Source/Console/*.h
     Source/Core/*.c Source/Core/*.cpp Source/Core/*.h
@@ -94,13 +96,6 @@ find_library(BULLETCOLLISION_LIBRARY BulletCollision_Debug)
 find_library(LINEARMATH_LIBRARY LinearMath_Debug)
 find_library(SDL2_LIBRARY SDL2)
 find_library(SHADERC_LIBRARY shaderc_combined)
-
-add_library(imgui
-    Source/ThirdParty/imgui/imgui.cpp
-    Source/ThirdParty/imgui/imgui_widgets.cpp
-    Source/ThirdParty/imgui/imgui_draw.cpp)
-add_library(ImGuizmo Source/ThirdParty/ImGuizmo/ImGuizmo.cpp)
-target_include_directories(ImGuizmo SYSTEM PRIVATE Source/ThirdParty/imgui)
 
 target_link_libraries(
         Main
