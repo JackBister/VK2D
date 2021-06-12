@@ -1,8 +1,8 @@
 #ifdef USE_OGL_RENDERER
 #include "OpenGLRenderer.h"
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_opengl.h>
+#include <ThirdParty/SDL2/include/SDL.h>
+#include <ThirdParty/SDL2/include/SDL_opengl.h>
 #include <ThirdParty/optick/src/optick.h>
 #include <ThirdParty/stb/stb_image.h>
 

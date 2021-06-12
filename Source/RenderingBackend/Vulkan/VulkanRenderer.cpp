@@ -1,7 +1,7 @@
 #ifndef USE_OGL_RENDERER
 #include "VulkanRenderer.h"
 
-#include <SDL2/SDL_vulkan.h>
+#include <ThirdParty/SDL2/include/SDL_vulkan.h>
 #include <ThirdParty/optick/src/optick.h>
 #include <ThirdParty/stb/stb_image.h>
 #include <vulkan/vulkan.h>

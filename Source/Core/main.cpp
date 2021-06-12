@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <thread>
 
-#include <SDL2/SDL.h>
+#include <ThirdParty/SDL2/include/SDL.h>
 #include <ThirdParty/imgui/imgui.h>
 #include <ThirdParty/optick/src/optick.h>
 

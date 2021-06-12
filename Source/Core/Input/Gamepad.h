@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include <SDL2/SDL.h>
+#include <ThirdParty/SDL2/include/SDL.h>
 
 #include "Util/DllExport.h"
 

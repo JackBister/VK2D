@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "SDL2/SDL.h"
+#include <ThirdParty/SDL2/include/SDL.h>
 
 #define MOUSE_MASK (1 << 28)
 #define MOUSE_TO_KEYCODE(X) (X | MOUSE_MASK)

@@ -76,8 +76,6 @@ else()
     )
 endif()
 
-find_package(SDL2 CONFIG REQUIRED)
-
 find_path(BULLET_INCLUDE_DIR btBulletCollisionCommon.h PATH_SUFFIXES bullet)
 find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.h)
 target_include_directories(Main PUBLIC Source)
@@ -86,18 +84,17 @@ target_include_directories(Main SYSTEM PUBLIC ${BULLET_INCLUDE_DIR} ${SHADERC_IN
 find_library(BULLETDYNAMICS_LIBRARY BulletDynamics_Debug)
 find_library(BULLETCOLLISION_LIBRARY BulletCollision_Debug)
 find_library(LINEARMATH_LIBRARY LinearMath_Debug)
-find_library(SDL2_LIBRARY SDL2)
 find_library(SHADERC_LIBRARY shaderc_combined)
 
 target_link_libraries(
         Main
-        assimp::assimp
+        assimp
         ${BULLETDYNAMICS_LIBRARY}
         ${BULLETCOLLISION_LIBRARY}
         imgui
         ImGuizmo
         ${LINEARMATH_LIBRARY}
-        ${SDL2_LIBRARY}
+        SDL2
         ${SHADERC_LIBRARY}
 )
 

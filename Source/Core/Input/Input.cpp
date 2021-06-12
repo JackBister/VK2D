@@ -4,7 +4,7 @@
 #include <set>
 #include <unordered_map>
 
-#include <SDL2/SDL.h>
+#include <ThirdParty/SDL2/include/SDL.h>
 #include <ThirdParty/glm/glm/glm.hpp>
 #include <ThirdParty/imgui/imgui.h>
 #include <ThirdParty/optick/src/optick.h>
