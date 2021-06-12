@@ -4,10 +4,10 @@
 #include <regex>
 #include <unordered_map>
 
+#include <ThirdParty/assimp/include/assimp/Importer.hpp>
+#include <ThirdParty/assimp/include/assimp/postprocess.h>
+#include <ThirdParty/assimp/include/assimp/scene.h>
 #include <ThirdParty/optick/src/optick.h>
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
 
 #include "Core/Rendering/BufferAllocator.h"
 #include "Core/Rendering/Vertex.h"

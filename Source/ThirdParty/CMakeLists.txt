@@ -27,3 +27,25 @@ set_target_properties(OptickCore PROPERTIES
                         ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>
                         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>
                         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>)
+
+# assimp
+option(ASSIMP_NO_EXPORT "" ON)
+option(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT "" OFF)
+option(ASSIMP_BUILD_FBX_IMPORTER "" ON)
+option(ASSIMP_BUILD_OBJ_IMPORTER "" ON)
+
+option(ASSIMP_BUILD_TESTS "" OFF)
+option(ASSIMP_BUILD_ASSIMP_VIEW "" OFF)
+option(ASSIMP_BUILD_ASSIMP_TOOLS "" OFF)
+option(ASSIMP_INSTALL "" OFF)
+option(ASSIMP_INSTALL_PDB "" OFF)
+option(BUILD_SHARED_LIBS "" OFF)
+
+SET(ASSIMP_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>")
+SET(ASSIMP_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>")
+SET(ASSIMP_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>")
+add_subdirectory(assimp)
+set_target_properties(assimp PROPERTIES
+                        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>
+                        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>
+                        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>)
