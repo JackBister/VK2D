@@ -80,7 +80,6 @@ find_package(assimp CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
-find_package(tinyobjloader CONFIG REQUIRED)
 
 find_path(BULLET_INCLUDE_DIR btBulletCollisionCommon.h PATH_SUFFIXES bullet)
 find_path(GLM_INCLUDE_DIR glm/glm.hpp)
@@ -104,7 +103,6 @@ target_link_libraries(
         ${LINEARMATH_LIBRARY}
         ${SDL2_LIBRARY}
         ${SHADERC_LIBRARY}
-        tinyobjloader::tinyobjloader
 )
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/Source FILES ${SOURCES})

@@ -3,9 +3,11 @@
 #include <filesystem>
 #include <unordered_map>
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <ThirdParty/tinyobjloader/tiny_obj_loader.h>
+#undef TINYOBJLOADER_IMPLEMENTATION
 #include <glm/glm.hpp>
 #include <optick/optick.h>
-#include <tiny_obj_loader.h>
 
 #include "Core/Rendering/BufferAllocator.h"
 #include "Core/Rendering/Vertex.h"
