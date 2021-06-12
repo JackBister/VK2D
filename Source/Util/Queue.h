@@ -1,7 +1,8 @@
 #pragma once
 
-#include <concurrentqueue/concurrentqueue.h>
 #include <optional>
+
+#include <ThirdParty/concurrentqueue/concurrentqueue.h>
 
 #include "Util/Semaphore.h"
 

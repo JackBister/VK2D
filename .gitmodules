@@ -10,3 +10,6 @@
 [submodule "Source/ThirdParty/imgui-filebrowser"]
 	path = Source/ThirdParty/imgui-filebrowser
 	url = https://github.com/AirGuanZ/imgui-filebrowser.git
+[submodule "Source/ThirdParty/concurrentqueue"]
+	path = Source/ThirdParty/concurrentqueue
+	url = https://github.com/cameron314/concurrentqueue.git
