@@ -75,15 +75,13 @@ else()
 endif()
 
 find_package(assimp CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
 
 find_path(BULLET_INCLUDE_DIR btBulletCollisionCommon.h PATH_SUFFIXES bullet)
-find_path(GLM_INCLUDE_DIR glm/glm.hpp)
 find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.h)
 target_include_directories(Main PUBLIC Source)
-target_include_directories(Main SYSTEM PUBLIC ${BULLET_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${SHADERC_INCLUDE_DIR})
+target_include_directories(Main SYSTEM PUBLIC ${BULLET_INCLUDE_DIR} ${SHADERC_INCLUDE_DIR})
 
 find_library(BULLETDYNAMICS_LIBRARY BulletDynamics_Debug)
 find_library(BULLETCOLLISION_LIBRARY BulletCollision_Debug)

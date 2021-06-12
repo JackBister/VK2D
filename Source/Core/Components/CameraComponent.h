@@ -3,7 +3,7 @@
 #include <optional>
 #include <variant>
 
-#include <glm/glm.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
 
 #include "Component.h"
 #include "Core/Rendering/CameraInstance.h"

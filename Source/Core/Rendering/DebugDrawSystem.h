@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <glm/glm.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
 
 struct DebugPoint {
     glm::vec3 worldSpacePos;

@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include <glm/glm.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
 
 class RenderSystem;
 

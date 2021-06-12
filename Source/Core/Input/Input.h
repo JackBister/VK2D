@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/fwd.hpp>
+#include <ThirdParty/glm/glm/fwd.hpp>
 
 #include "Keycodes.h"
 #include "Util/DllExport.h"

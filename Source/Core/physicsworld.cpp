@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <glm/gtx/compatibility.hpp>
+#include <ThirdParty/glm/glm/gtx/compatibility.hpp>
 
 #include "Console/Console.h"
 #include "Core/Components/physicscomponent.h"

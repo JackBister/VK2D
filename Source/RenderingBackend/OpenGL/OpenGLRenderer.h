@@ -5,8 +5,8 @@
 #include <memory>
 #include <vector>
 
+#include <ThirdParty/glm/glm/glm.hpp>
 #include <gl/glew.h>
-#include <glm/glm.hpp>
 
 #include "../Abstract/AbstractRenderer.h"
 #include "OpenGLContextStructs.h"

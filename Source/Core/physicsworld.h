@@ -4,8 +4,8 @@
 #include <optional>
 #include <unordered_map>
 
+#include <ThirdParty/glm/glm/glm.hpp>
 #include <btBulletDynamicsCommon.h>
-#include <glm/glm.hpp>
 
 #include "Core/collisioninfo.h"
 #include "Util/Line.h"

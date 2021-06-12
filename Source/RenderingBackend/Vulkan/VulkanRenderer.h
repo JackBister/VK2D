@@ -11,13 +11,13 @@
 #include <unordered_map>
 #include <vector>
 
+#include <ThirdParty/glm/glm/glm.hpp>
 #include <gl/glew.h>
-#include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
 #include "../Abstract/AbstractRenderer.h"
-#include "VulkanContextStructs.h"
 #include "Util/Queue.h"
+#include "VulkanContextStructs.h"
 
 struct CommandBufferAndFence {
     VkCommandBuffer commandBuffer;

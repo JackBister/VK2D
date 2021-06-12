@@ -2,8 +2,8 @@
 
 #include <set>
 
+#include <ThirdParty/glm/glm/gtc/type_ptr.hpp>
 #include <ThirdParty/optick/src/optick.h>
-#include <glm/gtc/type_ptr.hpp>
 
 #include "Core/FrameContext.h"
 #include "Core/Resources/Image.h"

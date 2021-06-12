@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
 
 struct Line {
     Line(glm::vec3 from, glm::vec3 to) : from(from), to(to) {}

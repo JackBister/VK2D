@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-#include <glm/glm.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
 
 #include "Core/EntityPtr.h"
 

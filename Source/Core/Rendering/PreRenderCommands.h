@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <glm/glm.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
 
 #include "CameraInstance.h"
 #include "LightInstance.h"

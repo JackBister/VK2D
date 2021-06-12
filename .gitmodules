@@ -22,3 +22,6 @@
 [submodule "Source/ThirdParty/optick"]
 	path = Source/ThirdParty/optick
 	url = https://github.com/bombomby/optick.git
+[submodule "Source/ThirdParty/glm"]
+	path = Source/ThirdParty/glm
+	url = https://github.com/g-truc/glm.git

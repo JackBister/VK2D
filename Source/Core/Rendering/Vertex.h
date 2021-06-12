@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
 
 constexpr size_t MAX_VERTEX_WEIGHTS = 4;
 

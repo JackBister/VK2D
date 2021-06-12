@@ -3,12 +3,12 @@
 #include <ThirdParty/imgui/imgui.h>
 
 #include <ThirdParty/ImGuizmo/ImGuizmo.h>
+#include <ThirdParty/glm/glm/gtc/type_ptr.hpp>
+#include <ThirdParty/glm/glm/gtx/euler_angles.hpp>
+#include <ThirdParty/glm/glm/gtx/matrix_decompose.hpp>
+#include <ThirdParty/glm/glm/gtx/quaternion.hpp>
 #include <ThirdParty/imgui-filebrowser/imfilebrowser.h>
 #include <ThirdParty/optick/src/optick.h>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/euler_angles.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
-#include <glm/gtx/quaternion.hpp>
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/Components/UneditableComponent.h"

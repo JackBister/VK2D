@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
 
 enum class PresentMode { IMMEDIATE, FIFO, MAILBOX };
 

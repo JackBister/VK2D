@@ -1,7 +1,7 @@
 #include "CameraComponent.h"
 
+#include <ThirdParty/glm/glm/gtc/matrix_transform.hpp>
 #include <ThirdParty/optick/src/optick.h>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include "Core/EntityManager.h"
 #include "Core/Rendering/PreRenderCommands.h"

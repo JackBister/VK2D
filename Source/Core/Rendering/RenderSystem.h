@@ -4,7 +4,7 @@
 #include <set>
 #include <vector>
 
-#include <glm/glm.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
 
 #include "Core/Rendering/CameraInstance.h"
 #include "Core/Rendering/LightInstance.h"

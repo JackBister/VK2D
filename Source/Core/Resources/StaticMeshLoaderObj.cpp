@@ -6,8 +6,8 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <ThirdParty/tinyobjloader/tiny_obj_loader.h>
 #undef TINYOBJLOADER_IMPLEMENTATION
+#include <ThirdParty/glm/glm/glm.hpp>
 #include <ThirdParty/optick/src/optick.h>
-#include <glm/glm.hpp>
 
 #include "Core/Rendering/BufferAllocator.h"
 #include "Core/Rendering/Vertex.h"

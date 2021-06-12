@@ -1,7 +1,7 @@
 #pragma once
 
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
+#include <ThirdParty/glm/glm/gtc/quaternion.hpp>
 
 #include <string>
 #include <vector>

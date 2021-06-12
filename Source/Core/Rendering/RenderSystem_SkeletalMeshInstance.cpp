@@ -2,11 +2,11 @@
 
 #include <unordered_map>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/compatibility.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
+#include <ThirdParty/glm/glm/gtc/matrix_transform.hpp>
+#include <ThirdParty/glm/glm/gtc/quaternion.hpp>
+#include <ThirdParty/glm/glm/gtx/compatibility.hpp>
+#include <ThirdParty/glm/glm/gtx/matrix_decompose.hpp>
 
 #include <ThirdParty/optick/src/optick.h>
 

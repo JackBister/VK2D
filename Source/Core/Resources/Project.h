@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <glm/glm.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
 
 #include "Core/Input/Keybinding.h"
 #include "Serialization/Deserializable.h"
