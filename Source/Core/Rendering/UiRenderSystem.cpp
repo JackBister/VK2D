@@ -3,7 +3,7 @@
 #include <ThirdParty/imgui/imgui.h>
 
 #include <ThirdParty/ImGuizmo/ImGuizmo.h>
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "Core/FrameContext.h"
 #include "Core/Resources/ResourceManager.h"

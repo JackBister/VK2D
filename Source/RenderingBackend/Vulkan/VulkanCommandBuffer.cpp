@@ -1,7 +1,7 @@
 #ifndef USE_OGL_RENDERER
 #include "VulkanCommandBuffer.h"
 
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "VulkanCommandBufferAllocator.h"
 #include "VulkanContextStructs.h"

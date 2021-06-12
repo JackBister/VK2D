@@ -4,11 +4,11 @@
 
 #include <ThirdParty/ImGuizmo/ImGuizmo.h>
 #include <ThirdParty/imgui-filebrowser/imfilebrowser.h>
+#include <ThirdParty/optick/src/optick.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <optick/optick.h>
 
 #include "Core/Components/CameraComponent.h"
 #include "Core/Components/UneditableComponent.h"

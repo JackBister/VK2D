@@ -1,7 +1,7 @@
 ﻿#include "PhysicsComponent.h"
 
 #include <BulletCollision/CollisionShapes/btBox2dShape.h>
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "Core/entity.h"
 #include "Core/physicsworld.h"

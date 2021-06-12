@@ -1,6 +1,6 @@
 ﻿#include "Core/entity.h"
 
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "Core/Components/component.h"
 #include "Core/EntityManager.h"

@@ -1,6 +1,6 @@
 #include "Core/dtime.h"
 
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 namespace Time
 {

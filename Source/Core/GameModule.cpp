@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "Console/Console.h"
 #include "Core/EntityManager.h"

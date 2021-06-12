@@ -1,7 +1,7 @@
 #include "RenderSystem.h"
 
+#include <ThirdParty/optick/src/optick.h>
 #include <glm/gtc/type_ptr.hpp>
-#include <optick/optick.h>
 
 #include "Core/FrameContext.h"
 #include "Core/Resources/Image.h"

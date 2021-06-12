@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "Logging/Logger.h"
 #include "RenderSystem.h"

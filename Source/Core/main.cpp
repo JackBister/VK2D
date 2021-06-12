@@ -3,7 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <ThirdParty/imgui/imgui.h>
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "Core/Config/Config.h"
 #include "Core/FrameContext.h"

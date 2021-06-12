@@ -1,6 +1,6 @@
 ﻿#include "Image.h"
 
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <ThirdParty/stb/stb_image.h>
 

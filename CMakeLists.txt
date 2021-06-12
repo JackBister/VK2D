@@ -40,12 +40,10 @@ endif()
 
 option(ENABLE_PROFILER "Enable Optick profiler" ON)
 if (ENABLE_PROFILER)
-    find_path(OPTICK_INCLUDE_DIR optick/optick.h)
-    find_library(OPTICK_LIBRARY OptickCore)
     add_definitions(-DUSE_OPTICK=1)
-    target_include_directories(Main SYSTEM PUBLIC ${OPTICK_INCLUDE_DIR})
     target_link_libraries(
         Main
+        OptickCore
         ${OPTICK_LIBRARY}
     )
 else()

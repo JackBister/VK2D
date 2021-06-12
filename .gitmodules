@@ -19,3 +19,6 @@
 [submodule "Source/ThirdParty/tinyobjloader"]
 	path = Source/ThirdParty/tinyobjloader
 	url = https://github.com/tinyobjloader/tinyobjloader.git
+[submodule "Source/ThirdParty/optick"]
+	path = Source/ThirdParty/optick
+	url = https://github.com/bombomby/optick.git

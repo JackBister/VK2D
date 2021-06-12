@@ -1,6 +1,6 @@
 #include "JobEngine.h"
 
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "Logging/Logger.h"
 #include "Util/SetThreadName.h"

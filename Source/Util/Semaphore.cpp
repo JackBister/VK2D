@@ -1,6 +1,6 @@
 #include "Semaphore.h"
 
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 Semaphore::Semaphore()
 {

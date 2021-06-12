@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #include <ThirdParty/imgui/imgui.h>
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "Logging/LogAppender.h"
 #include "Logging/Logger.h"

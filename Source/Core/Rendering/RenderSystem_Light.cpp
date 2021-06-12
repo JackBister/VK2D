@@ -1,6 +1,6 @@
 #include "RenderSystem.h"
 
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "Core/FrameContext.h"
 #include "RenderingBackend/Abstract/RenderResources.h"

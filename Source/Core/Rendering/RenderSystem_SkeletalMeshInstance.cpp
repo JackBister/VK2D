@@ -8,7 +8,7 @@
 #include <glm/gtx/compatibility.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "Core/Resources/SkeletalMesh.h"
 #include "Core/dtime.h"

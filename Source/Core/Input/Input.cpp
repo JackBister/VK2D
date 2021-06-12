@@ -6,8 +6,8 @@
 
 #include <SDL2/SDL.h>
 #include <ThirdParty/imgui/imgui.h>
+#include <ThirdParty/optick/src/optick.h>
 #include <glm/glm.hpp>
-#include <optick/optick.h>
 
 #include "Gamepad.h"
 #include "Logging/Logger.h"

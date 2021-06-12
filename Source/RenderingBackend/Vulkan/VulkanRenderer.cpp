@@ -2,8 +2,8 @@
 #include "VulkanRenderer.h"
 
 #include <SDL2/SDL_vulkan.h>
+#include <ThirdParty/optick/src/optick.h>
 #include <ThirdParty/stb/stb_image.h>
-#include <optick/optick.h>
 #include <vulkan/vulkan.h>
 
 #include "Jobs/JobEngine.h"
@@ -541,8 +541,29 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
         properties = RendererProperties(props.limits.minUniformBufferOffsetAlignment);
     }
 
+    Optick::VulkanFunctions optickVulkanFunctions{
+        .vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties,
+        .vkCreateQueryPool = (PFN_vkCreateQueryPool_)vkCreateQueryPool,
+        .vkCreateCommandPool = (PFN_vkCreateCommandPool_)vkCreateCommandPool,
+        .vkAllocateCommandBuffers = (PFN_vkAllocateCommandBuffers_)vkAllocateCommandBuffers,
+        .vkCreateFence = (PFN_vkCreateFence_)vkCreateFence,
+        .vkCmdResetQueryPool = vkCmdResetQueryPool,
+        .vkQueueSubmit = (PFN_vkQueueSubmit_)vkQueueSubmit,
+        .vkWaitForFences = (PFN_vkWaitForFences_)vkWaitForFences,
+        .vkResetCommandBuffer = (PFN_vkResetCommandBuffer_)vkResetCommandBuffer,
+        .vkCmdWriteTimestamp = (PFN_vkCmdWriteTimestamp_)vkCmdWriteTimestamp,
+        .vkGetQueryPoolResults = (PFN_vkGetQueryPoolResults_)vkGetQueryPoolResults,
+        .vkBeginCommandBuffer = (PFN_vkBeginCommandBuffer_)vkBeginCommandBuffer,
+        .vkEndCommandBuffer = (PFN_vkEndCommandBuffer_)vkEndCommandBuffer,
+        .vkResetFences = (PFN_vkResetFences_)vkResetFences,
+        .vkDestroyCommandPool = vkDestroyCommandPool,
+        .vkDestroyQueryPool = vkDestroyQueryPool,
+        .vkDestroyFence = vkDestroyFence,
+        .vkFreeCommandBuffers = vkFreeCommandBuffers,
+    };
     // TODO: This will likely result in multiple threads writing to the same graphics queue simultaneously
-    OPTICK_GPU_INIT_VULKAN(&basics.device, &basics.physicalDevice, &graphicsQueues[0].queue, &graphicsQueueIdx, 1);
+    OPTICK_GPU_INIT_VULKAN(
+        &basics.device, &basics.physicalDevice, &graphicsQueues[0].queue, &graphicsQueueIdx, 1, &optickVulkanFunctions);
 }
 
 uint32_t Renderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)

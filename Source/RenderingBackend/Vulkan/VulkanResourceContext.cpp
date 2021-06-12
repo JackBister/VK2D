@@ -1,7 +1,7 @@
 #ifndef USE_OGL_RENDERER
 #include "VulkanResourceContext.h"
 
-#include <optick/optick.h>
+#include <ThirdParty/optick/src/optick.h>
 
 #include "Jobs/JobEngine.h"
 #include "Logging/Logger.h"
