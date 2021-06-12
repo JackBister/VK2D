@@ -2,7 +2,7 @@
 
 #include <optick/optick.h>
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include <ThirdParty/stb/stb_image.h>
 
 #include "Core/Resources/ResourceManager.h"
 #include "Logging/Logger.h"

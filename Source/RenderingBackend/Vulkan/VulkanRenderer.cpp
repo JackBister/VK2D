@@ -2,8 +2,8 @@
 #include "VulkanRenderer.h"
 
 #include <SDL2/SDL_vulkan.h>
+#include <ThirdParty/stb/stb_image.h>
 #include <optick/optick.h>
-#include <stb_image.h>
 #include <vulkan/vulkan.h>
 
 #include "Jobs/JobEngine.h"

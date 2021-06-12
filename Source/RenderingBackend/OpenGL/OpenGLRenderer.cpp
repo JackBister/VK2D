@@ -3,8 +3,8 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
+#include <ThirdParty/stb/stb_image.h>
 #include <optick/optick.h>
-#include <stb_image.h>
 
 #include "Logging/Logger.h"
 #include "OpenGLCommandBuffer.h"

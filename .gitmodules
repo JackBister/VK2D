@@ -13,3 +13,6 @@
 [submodule "Source/ThirdParty/concurrentqueue"]
 	path = Source/ThirdParty/concurrentqueue
 	url = https://github.com/cameron314/concurrentqueue.git
+[submodule "Source/ThirdParty/stb"]
+	path = Source/ThirdParty/stb
+	url = https://github.com/nothings/stb.git
