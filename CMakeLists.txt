@@ -75,7 +75,6 @@ else()
 endif()
 
 find_package(assimp CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
 
 find_path(BULLET_INCLUDE_DIR btBulletCollisionCommon.h PATH_SUFFIXES bullet)

@@ -1,6 +1,6 @@
 ﻿#include "JsonSerializer.h"
 
-#include <nlohmann/json.hpp>
+#include <ThirdParty/nlohmann_json/single_include/nlohmann/json.hpp>
 
 #include "Logging/Logger.h"
 

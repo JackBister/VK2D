@@ -17,7 +17,7 @@ set_target_properties(ImGuizmo PROPERTIES
                         ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>
                         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>
                         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build_thirdparty/bin/$<0:>)
-
+                        
 # optick
 if (NOT USE_OGL_RENDERER)
     option(OPTICK_USE_VULKAN "" ON)
