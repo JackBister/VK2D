@@ -1,18 +1,14 @@
 #pragma once
 #include <vector>
 
-#include "btBulletDynamicsCommon.h"
+#include <btBulletDynamicsCommon.h>
 
-#include "Core/Components/Component.h"
+#include "Component.h"
 #include "Util/DllExport.h"
-
-class PhysicsComponentDeserializer;
 
 class EAPI PhysicsComponent : public Component, public btMotionState
 {
 public:
-    friend class PhysicsComponentDeserializer;
-
     PhysicsComponent(bool isKinematic, float mass, std::unique_ptr<btCollisionShape> && shape,
                      BroadphaseNativeTypes shapeType)
         : isKinematic(isKinematic), mass(mass), shape(std::move(shape)), shapeType(shapeType)

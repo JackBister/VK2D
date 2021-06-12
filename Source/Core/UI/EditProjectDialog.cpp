@@ -1,7 +1,7 @@
 #include "EditProjectDialog.h"
 
-#include "Core/Resources/Scene.h"
 #include "Logging/Logger.h"
+#include "Serialization/DeserializationContext.h"
 #include "Serialization/SchemaValidator.h"
 
 static auto const logger = Logger::Create("EditProjectDialog");

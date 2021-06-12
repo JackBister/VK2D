@@ -3,6 +3,8 @@
 #include <optick/optick.h>
 
 #include "Core/FrameContext.h"
+#include "RenderingBackend/Abstract/RenderResources.h"
+#include "RenderingBackend/Abstract/ResourceCreationContext.h"
 
 constexpr size_t MAX_LIGHTS = 512;
 
@@ -53,7 +55,7 @@ void RenderSystem::UpdateLights(FrameContext const & context)
 
     if (currFrame.lightsMapped == nullptr) {
         Semaphore sem;
-        renderer->CreateResources([this, &sem, &currFrame](ResourceCreationContext & ctx) {
+        this->CreateResources([this, &sem, &currFrame](ResourceCreationContext & ctx) {
             if (currFrame.lights) {
                 ctx.UnmapBuffer(currFrame.lights);
                 ctx.DestroyBuffer(currFrame.lights);

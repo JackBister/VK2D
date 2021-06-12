@@ -1,19 +1,17 @@
 #pragma once
 
 #include <memory>
-#include <string>
+#include <optional>
 #include <unordered_map>
 
 #include <btBulletDynamicsCommon.h>
 #include <glm/glm.hpp>
 
 #include "Core/collisioninfo.h"
-#include "Serialization/Deserializable.h"
 #include "Util/Line.h"
 
 class DebugDrawSystem;
 class PhysicsComponent;
-class PhysicsWorldDeserializer;
 
 class RaytestResult
 {

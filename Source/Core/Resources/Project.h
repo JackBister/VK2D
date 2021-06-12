@@ -8,7 +8,6 @@
 #include <glm/glm.hpp>
 
 #include "Core/Input/Keybinding.h"
-#include "Core/Reflect.h"
 #include "Serialization/Deserializable.h"
 
 class EntityManager;
@@ -46,8 +45,6 @@ public:
     glm::vec3 const & GetStartingGravity() const { return startingGravity; }
     std::vector<std::filesystem::path> const & GetDlls() const { return dlls; }
     std::vector<Keybinding> const & GetDefaultKeybindings() const { return defaultKeybindings; }
-
-    REFLECT();
 
 private:
     std::string name;

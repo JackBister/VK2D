@@ -1,7 +1,6 @@
 ﻿#pragma once
-#include <cstddef>
+#include <cstdint>
 #include <string>
-#include <variant>
 #include <vector>
 
 #if HOT_RELOAD_RESOURCES
@@ -9,7 +8,8 @@
 #include <unordered_map>
 #endif
 
-#include "RenderingBackend/Abstract/RenderResources.h"
+struct ImageHandle;
+struct ImageViewHandle;
 
 class Image
 {

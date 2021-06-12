@@ -1,24 +1,16 @@
 ﻿#pragma once
 
-#include <atomic>
-
-#include "Core/Components/Component.h"
+#include "Component.h"
 #include "Core/Rendering/SpriteInstance.h"
 #include "Util/DllExport.h"
 
 class Image;
-class SpriteComponentDeserializer;
 
 class EAPI SpriteComponent final : public Component
 {
 public:
-    friend class SpriteComponentDeserializer;
+    SpriteComponent(SpriteInstanceId spriteInstanceId, std::string const & file, bool isActive, Image * image);
 
-    SpriteComponent()
-    {
-        receiveTicks = false;
-        type = "SpriteComponent";
-    }
     ~SpriteComponent() override;
 
     SerializedObject Serialize() const override;
@@ -28,7 +20,7 @@ public:
     REFLECT()
     REFLECT_INHERITANCE()
 private:
-    SpriteInstanceId spriteInstance;
+    SpriteInstanceId spriteInstanceId;
 
     std::string file;
     bool isActive;

@@ -4,9 +4,6 @@
 
 #include <glm/glm.hpp>
 
-#include "BufferSlice.h"
-#include "Vertex.h"
-
 class RenderSystem;
 class SkeletalMeshAnimation;
 class SkeletalBone;

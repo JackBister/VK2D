@@ -1,6 +1,5 @@
 ﻿#include "Core/physicsworld.h"
 
-#include <unordered_map>
 #include <vector>
 
 #include <glm/gtx/compatibility.hpp>

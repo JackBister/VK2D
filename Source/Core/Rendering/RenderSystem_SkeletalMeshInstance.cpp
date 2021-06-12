@@ -10,12 +10,9 @@
 
 #include <optick/optick.h>
 
-#include "BufferAllocator.h"
-#include "Core/Rendering/DebugDrawSystem.h"
 #include "Core/Resources/SkeletalMesh.h"
 #include "Core/dtime.h"
 #include "Logging/Logger.h"
-#include "RenderingBackend/Abstract/RenderResources.h"
 
 static auto const logger = Logger::Create("RenderSystem_SkeletalMesh");
 

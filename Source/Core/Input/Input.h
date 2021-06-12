@@ -2,10 +2,11 @@
 
 #include <glm/fwd.hpp>
 
-#include "Gamepad.h"
 #include "Keycodes.h"
 #include "Util/DllExport.h"
 #include "Util/HashedString.h"
+
+class Gamepad;
 
 namespace Input
 {

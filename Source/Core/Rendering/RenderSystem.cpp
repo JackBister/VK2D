@@ -14,6 +14,7 @@
 #include "Core/entity.h"
 #include "DebugDrawSystem.h"
 #include "Logging/Logger.h"
+#include "RenderingBackend/Renderer.h"
 #include "Util/Semaphore.h"
 #include "Vertex.h"
 

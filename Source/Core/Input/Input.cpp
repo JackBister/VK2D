@@ -1,6 +1,5 @@
 #include "Input.h"
 
-#include <algorithm>
 #include <optional>
 #include <set>
 #include <unordered_map>
@@ -10,6 +9,7 @@
 #include <imgui.h>
 #include <optick/optick.h>
 
+#include "Gamepad.h"
 #include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("Input");
@@ -40,7 +40,6 @@ void Frame()
     upKeys.clear();
 
     SDL_GetMouseState(&mousePosition.x, &mousePosition.y);
-    ;
 
     auto & io = ImGui::GetIO();
 

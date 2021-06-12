@@ -1,11 +1,8 @@
 #pragma once
 
-#include <optional>
 #include <string>
 #include <vector>
 
-#include "Core/Rendering/BufferSlice.h"
-#include "Core/Rendering/Vertex.h"
 #include "SkeletalMeshAnimation.h"
 #include "Submesh.h"
 #include "VertexWeight.h"

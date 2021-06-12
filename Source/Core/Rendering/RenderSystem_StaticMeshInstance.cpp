@@ -2,7 +2,6 @@
 
 #include <optick/optick.h>
 
-#include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/StaticMesh.h"
 
 StaticMeshInstanceId RenderSystem::CreateStaticMeshInstance(StaticMesh * mesh, bool isActive)

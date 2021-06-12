@@ -5,7 +5,7 @@
 
 #include <glm/glm.hpp>
 
-#include "Core/Components/component.h"
+#include "Component.h"
 #include "Core/Rendering/CameraInstance.h"
 #include "Util/DllExport.h"
 #include "Util/Line.h"

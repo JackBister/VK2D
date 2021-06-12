@@ -6,6 +6,8 @@
 
 #include "Logging/Logger.h"
 #include "RenderSystem.h"
+#include "RenderingBackend/Abstract/RenderResources.h"
+#include "RenderingBackend/Abstract/ResourceCreationContext.h"
 #include "Util/Semaphore.h"
 
 auto const logger = Logger::Create("BufferAllocator");

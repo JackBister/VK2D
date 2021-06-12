@@ -4,10 +4,7 @@
 #ifndef REFLECT_H
 #define REFLECT_H
 
-#include <cstddef>
-#include <iostream>
 #include <memory>
-
 #include <sstream>
 #include <string>
 #include <variant>
@@ -83,7 +80,6 @@ struct TypeDescriptor {
     TypeDescriptor(const char * name, size_t size) : name{name}, size{size} {}
     virtual ~TypeDescriptor() {}
     virtual std::string getFullName() const { return name; }
-    virtual void dump(const void * obj, int indentLevel = 0) const = 0;
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const = 0;
 };
 
@@ -167,16 +163,6 @@ struct TypeDescriptor_Struct : TypeDescriptor {
         : TypeDescriptor{name, size}, members{init}
     {
     }
-    virtual void dump(const void * obj, int indentLevel) const override
-    {
-        std::cout << name << " {" << std::endl;
-        for (const Member & member : members) {
-            std::cout << std::string(4 * (indentLevel + 1), ' ') << member.name << " = ";
-            member.type->dump((char *)obj + member.offset, indentLevel + 1);
-            std::cout << std::endl;
-        }
-        std::cout << std::string(4 * indentLevel, ' ') << "}";
-    }
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
     {
         EditorNode::Tree ret;
@@ -212,22 +198,6 @@ struct TypeDescriptor_StdUniquePtr : TypeDescriptor {
     virtual std::string getFullName() const override
     {
         return std::string("std::unique_ptr<") + targetType->getFullName() + ">";
-    }
-
-    virtual void dump(const void * obj, int indentLevel) const override
-    {
-        std::cout << getFullName() << "{";
-        const void * targetObj = getTarget(obj);
-        if (targetObj == nullptr) {
-            std::cout << "nullptr";
-        } else {
-            std::cout << std::endl;
-            std::cout << std::string(4 * (indentLevel + 1), ' ');
-            targetType->dump(targetObj, indentLevel + 1);
-            std::cout << std::endl;
-            std::cout << std::string(4 * indentLevel, ' ');
-        }
-        std::cout << "}";
     }
 
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
@@ -278,22 +248,6 @@ struct TypeDescriptor_GenericPointer : TypeDescriptor {
 
     virtual std::string getFullName() const override { return targetType->getFullName() + " *"; }
 
-    virtual void dump(const void * obj, int indentLevel) const override
-    {
-        std::cout << getFullName() << "{";
-        const void * targetObj = getTarget(obj);
-        if (targetObj == nullptr) {
-            std::cout << "nullptr";
-        } else {
-            std::cout << std::endl;
-            std::cout << std::string(4 * (indentLevel + 1), ' ');
-            targetType->dump(targetObj, indentLevel + 1);
-            std::cout << std::endl;
-            std::cout << std::string(4 * indentLevel, ' ');
-        }
-        std::cout << "}";
-    }
-
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
     {
         void const * target = getTarget(obj);
@@ -331,13 +285,6 @@ struct TypeDescriptor_StdString : TypeDescriptor {
     TypeDescriptor_StdString() : TypeDescriptor{"std::string", sizeof(std::string)} {}
 
     virtual std::string getFullName() const override { return "std::string"; }
-
-    virtual void dump(const void * obj, int indentLevel) const override
-    {
-        std::cout << getFullName() << "{";
-        std::cout << *((std::string *)obj);
-        std::cout << "}";
-    }
 
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
     {
@@ -380,22 +327,6 @@ struct TypeDescriptor_StdVector : TypeDescriptor {
     virtual std::string getFullName() const override
     {
         return std::string("std::vector<") + itemType->getFullName() + ">";
-    }
-    virtual void dump(const void * obj, int indentLevel) const override
-    {
-        size_t numItems = getSize(obj);
-        std::cout << getFullName();
-        if (numItems == 0) {
-            std::cout << "{}";
-        } else {
-            std::cout << "{" << std::endl;
-            for (size_t index = 0; index < numItems; index++) {
-                std::cout << std::string(4 * (indentLevel + 1), ' ') << "[" << index << "] ";
-                itemType->dump(getItem(obj, index), indentLevel + 1);
-                std::cout << std::endl;
-            }
-            std::cout << std::string(4 * indentLevel, ' ') << "}";
-        }
     }
 
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
@@ -618,7 +549,6 @@ namespace reflect
 //--------------------------------------------------------
 struct TypeDescriptor_Bool : TypeDescriptor {
     TypeDescriptor_Bool() : TypeDescriptor{"bool", sizeof(bool)} {}
-    virtual void dump(void const * obj, int) const override { std::cout << "bool{" << *(bool *)obj << "}"; }
 
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
     {
@@ -635,7 +565,6 @@ TypeDescriptor * getPrimitiveDescriptor<bool>()
 
 struct TypeDescriptor_Float : TypeDescriptor {
     TypeDescriptor_Float() : TypeDescriptor{"float", sizeof(float)} {}
-    virtual void dump(const void * obj, int) const override { std::cout << "float{" << *(float *)obj << "}"; }
 
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
     {
@@ -653,7 +582,6 @@ TypeDescriptor * getPrimitiveDescriptor<float>()
 
 struct TypeDescriptor_Double : TypeDescriptor {
     TypeDescriptor_Double() : TypeDescriptor{"double", sizeof(double)} {}
-    virtual void dump(const void * obj, int) const override { std::cout << "double{" << *(double *)obj << "}"; }
 
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
     {
@@ -671,7 +599,6 @@ TypeDescriptor * getPrimitiveDescriptor<double>()
 
 struct TypeDescriptor_Int : TypeDescriptor {
     TypeDescriptor_Int() : TypeDescriptor{"int", sizeof(int)} {}
-    virtual void dump(const void * obj, int) const override { std::cout << "int{" << *(int *)obj << "}"; }
 
     virtual std::unique_ptr<EditorNode> DrawEditorGui(char const * name, void const * obj, bool isLocked) const override
     {

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "Core/Config/Config.h"
 #include "Util/FileSlurper.h"

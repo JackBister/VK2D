@@ -5,18 +5,14 @@
 #include <optick/optick.h>
 
 #include "Console/Console.h"
-#include "Core/Components/CameraComponent.h"
 #include "Core/EntityManager.h"
+#include "Core/FrameContext.h"
 #include "Core/Input/Input.h"
 #include "Core/Rendering/DebugDrawSystem.h"
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/RenderSystem.h"
-#include "Core/Resources/Image.h"
-#include "Core/Resources/ResourceManager.h"
-#include "Core/Resources/Scene.h"
 #include "Core/UI/EditorSystem.h"
 #include "Core/dtime.h"
-#include "Core/entity.h"
 #include "Core/physicsworld.h"
 #include "Jobs/JobEngine.h"
 #include "Logging/Logger.h"
@@ -25,10 +21,17 @@ static const auto logger = Logger::Create("GameModule");
 
 namespace GameModule
 {
+enum class FrameStage {
+    INPUT,
+    TIME,
+    PHYSICS,
+    TICK,
+    RENDER,
+};
+
 Semaphore renderLock;
 FrameStage currFrameStage;
 EntityManager * entityManager;
-CameraComponent * mainCameraComponent;
 PhysicsWorld * physicsWorld;
 RenderSystem * renderSystem;
 UiRenderSystem * uiRenderSystem;

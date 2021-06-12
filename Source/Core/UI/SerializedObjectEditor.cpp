@@ -1,14 +1,8 @@
 #include "SerializedObjectEditor.h"
 
-#include <memory>
-#include <unordered_map>
-
 #include <imgui.h>
 
 #include "Logging/Logger.h"
-#include "Serialization/JsonSerializer.h"
-#include "SerializedObjectEditorInstance.h"
-#include "Util/Imgui_InputText.h"
 
 static auto const logger = Logger::Create("SerializedObjectEditor");
 

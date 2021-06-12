@@ -1,17 +1,11 @@
 ﻿#include "Scene.h"
 
-#include <atomic>
-#include <cinttypes>
 #include <filesystem>
 #include <fstream>
-#include <sstream>
 
 #include "Core/EntityManager.h"
 #include "Core/GameModule.h"
-#include "Core/Input/Input.h"
 #include "Core/Resources/ResourceManager.h"
-#include "Core/entity.h"
-#include "Core/physicsworld.h"
 #include "Logging/Logger.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/SchemaValidator.h"

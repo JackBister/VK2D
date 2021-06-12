@@ -4,7 +4,8 @@
 #include <string>
 
 #include "Core/Rendering/BufferSlice.h"
-#include "Material.h"
+
+class Material;
 
 class Submesh
 {

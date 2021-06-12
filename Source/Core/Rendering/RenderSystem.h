@@ -16,11 +16,25 @@
 #include "Core/Rendering/UiRenderSystem.h"
 #include "Jobs/JobEngine.h"
 #include "RenderingBackend/Abstract/RendererConfig.h"
-#include "RenderingBackend/Renderer.h"
 
 struct FrameContext;
 class Image;
+class Renderer;
 class ShaderProgram;
+
+struct BufferHandle;
+class CommandBuffer;
+class CommandBufferAllocator;
+struct DescriptorSet;
+struct FenceHandle;
+struct FramebufferHandle;
+struct ImageHandle;
+struct ImageViewHandle;
+struct RenderPassHandle;
+class RendererProperties;
+class ResourceCreationContext;
+struct SamplerHandle;
+struct SemaphoreHandle;
 
 int constexpr MAX_SSAO_SAMPLES = 64;
 

@@ -1,7 +1,5 @@
 #include "Core/UI/EditorSystem.h"
 
-#include <cstdio>
-
 #include <imgui.h>
 
 #include <ImGuizmo.h>
@@ -15,7 +13,7 @@
 #include "Core/Components/CameraComponent.h"
 #include "Core/Components/UneditableComponent.h"
 #include "Core/EntityManager.h"
-#include "Core/GameModule.h"
+#include "Core/Input/Gamepad.h"
 #include "Core/Input/Input.h"
 #include "Core/entity.h"
 #include "Logging/Logger.h"
@@ -23,7 +21,6 @@
 #include "Core/Reflect.h"
 #undef REFLECT_IMPL
 #include "ComponentCreator.h"
-#include "Core/DllManager.h"
 #include "Core/ProjectManager.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Resources/Scene.h"

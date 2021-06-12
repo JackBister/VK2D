@@ -6,6 +6,7 @@
 
 #include "Core/Resources/ResourceManager.h"
 #include "Logging/Logger.h"
+#include "RenderingBackend/Abstract/RenderResources.h"
 #include "RenderingBackend/Abstract/ResourceCreationContext.h"
 #include "Util/Semaphore.h"
 

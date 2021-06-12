@@ -3,11 +3,15 @@
 #include <cstdint>
 #include <vector>
 
-#include "RenderingBackend/Renderer.h"
-
-class CommandBuffer;
 struct FrameContext;
+class Renderer;
 class ShaderProgram;
+
+struct BufferHandle;
+class CommandBuffer;
+struct DescriptorSet;
+struct DescriptorSetLayoutHandle;
+struct PipelineLayoutHandle;
 
 class UiRenderSystem
 {

@@ -1,4 +1,4 @@
-#include "Core/Components/Component.h"
+#include "Component.h"
 
 #include "Logging/Logger.h"
 

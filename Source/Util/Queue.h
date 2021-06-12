@@ -2,7 +2,6 @@
 
 #include <concurrentqueue/concurrentqueue.h>
 #include <optional>
-#include <variant>
 
 #include "Util/Semaphore.h"
 

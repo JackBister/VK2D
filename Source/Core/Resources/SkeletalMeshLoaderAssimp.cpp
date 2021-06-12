@@ -3,7 +3,6 @@
 #include <optional>
 #include <regex>
 #include <unordered_map>
-#include <unordered_set>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -11,6 +10,7 @@
 #include <optick/optick.h>
 
 #include "Core/Rendering/BufferAllocator.h"
+#include "Core/Rendering/Vertex.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ResourceManager.h"

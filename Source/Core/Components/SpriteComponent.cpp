@@ -1,14 +1,13 @@
-﻿#include "Core/Components/SpriteComponent.h"
+﻿#include "SpriteComponent.h"
 
-#include <cstring>
-
-#include "glm/gtc/type_ptr.hpp"
+#include <glm/gtc/type_ptr.hpp>
 #include <optick/optick.h>
 
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Resources/Image.h"
 #include "Core/entity.h"
 #include "Logging/Logger.h"
+#include "Serialization/DeserializationContext.h"
 
 static const auto logger = Logger::Create("SpriteComponent");
 
@@ -39,29 +38,33 @@ class SpriteComponentDeserializer : public Deserializer
             return nullptr;
         }
 
-        SpriteComponent * ret = new SpriteComponent();
-        ret->file = file;
-
-        ret->spriteInstance = RenderSystem::GetInstance()->CreateSpriteInstance(img);
-        ret->isActive = obj.GetBool("isActive").value_or(true);
-
-#if HOT_RELOAD_RESOURCES
-        ret->image = img;
-        ret->hotReloadSubscriptionId = img->SubscribeToChanges([ret](auto img) {
-            ret->image = img;
-            ret->refreshImageNextFrame = true;
-        });
-#endif
-
-        return ret;
+        auto spriteInstanceId = RenderSystem::GetInstance()->CreateSpriteInstance(img);
+        bool isActive = obj.GetBool("isActive").value_or(true);
+        return new SpriteComponent(spriteInstanceId, file, isActive, img);
     }
 };
 
 COMPONENT_IMPL(SpriteComponent, new SpriteComponentDeserializer())
 
+SpriteComponent::SpriteComponent(SpriteInstanceId spriteInstanceId, std::string const & file, bool isActive,
+                                 Image * image)
+    : spriteInstanceId(spriteInstanceId), file(file), isActive(isActive)
+{
+    receiveTicks = false;
+    type = "SpriteComponent";
+
+#if HOT_RELOAD_RESOURCES
+    this->image = image;
+    hotReloadSubscriptionId = image->SubscribeToChanges([this](auto img) {
+        this->image = img;
+        this->refreshImageNextFrame = true;
+    });
+#endif
+}
+
 SpriteComponent::~SpriteComponent()
 {
-    RenderSystem::GetInstance()->DestroySpriteInstance(spriteInstance);
+    RenderSystem::GetInstance()->DestroySpriteInstance(spriteInstanceId);
 
 #if HOT_RELOAD_RESOURCES
     image->Unsubscribe(hotReloadSubscriptionId);
@@ -92,6 +95,6 @@ void SpriteComponent::OnEvent(HashedString name, EventArgs args)
             LogMissingEntity();
             return;
         }
-        builder->WithSpriteInstanceUpdate({spriteInstance, e->GetTransform()->GetLocalToWorld(), isActive, newImage});
+        builder->WithSpriteInstanceUpdate({spriteInstanceId, e->GetTransform()->GetLocalToWorld(), isActive, newImage});
     }
 }

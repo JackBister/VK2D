@@ -8,9 +8,6 @@
 
 static auto const logger = Logger::Create("Project");
 
-REFLECT_STRUCT_BEGIN(Project)
-REFLECT_STRUCT_END()
-
 static SerializedObjectSchema const PROJECT_SCHEMA = SerializedObjectSchema(
     "Project", {SerializedPropertySchema::Required("name", SerializedValueType::STRING),
                 SerializedPropertySchema::Required("startingScene", SerializedValueType::STRING,

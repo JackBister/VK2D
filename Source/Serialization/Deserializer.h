@@ -2,9 +2,10 @@
 
 #include <string>
 
-#include "DeserializationContext.h"
 #include "SerializedObject.h"
 #include "SerializedObjectSchema.h"
+
+struct DeserializationContext;
 
 class Deserializer
 {

@@ -4,8 +4,9 @@
 
 #include "Component.h"
 #include "Core/Rendering/StaticMeshInstance.h"
-#include "Core/Resources/StaticMesh.h"
 #include "Util/DllExport.h"
+
+class StaticMesh;
 
 class EAPI StaticMeshComponent : public Component
 {

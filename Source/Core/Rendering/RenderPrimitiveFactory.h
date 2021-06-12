@@ -1,8 +1,11 @@
 #pragma once
-#include "RenderingBackend/Abstract/RenderResources.h"
 
 class Renderer;
 class ResourceCreationContext;
+
+struct RenderPassHandle;
+struct PipelineLayoutHandle;
+struct VertexInputStateHandle;
 
 class RenderPrimitiveFactory
 {

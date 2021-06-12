@@ -1,9 +1,8 @@
-﻿#include "Core/Components/PhysicsComponent.h"
+﻿#include "PhysicsComponent.h"
 
-#include "BulletCollision/CollisionShapes/btBox2dShape.h"
+#include <BulletCollision/CollisionShapes/btBox2dShape.h>
 #include <optick/optick.h>
 
-#include "Core/GameModule.h"
 #include "Core/entity.h"
 #include "Core/physicsworld.h"
 #include "Logging/Logger.h"

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <future>
 #include <vector>
 
 #include "BufferSlice.h"

@@ -4,9 +4,8 @@
 #include <vector>
 
 #include "Core/EntityPtr.h"
-#include "Core/eventarg.h"
 #include "Serialization/Deserializable.h"
-#include "Util/HashedString.h"
+#include "Serialization/DeserializationContext.h"
 
 class Entity;
 class EntityManager;

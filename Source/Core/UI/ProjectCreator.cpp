@@ -4,6 +4,7 @@
 
 #include "ComponentCreator.h"
 #include "Logging/Logger.h"
+#include "Serialization/DeserializationContext.h"
 #include "Serialization/SchemaValidator.h"
 #include "Serialization/Serializer.h"
 #include "Templates/TemplateRenderer.h"

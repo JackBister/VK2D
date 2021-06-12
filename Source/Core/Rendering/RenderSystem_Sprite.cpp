@@ -6,6 +6,8 @@
 #include "Core/FrameContext.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/ResourceManager.h"
+#include "RenderingBackend/Abstract/RenderResources.h"
+#include "RenderingBackend/Abstract/ResourceCreationContext.h"
 #include "Util/Semaphore.h"
 
 SpriteInstanceId RenderSystem::CreateSpriteInstance(Image * image, bool isActive)
@@ -16,7 +18,7 @@ SpriteInstanceId RenderSystem::CreateSpriteInstance(Image * image, bool isActive
     sprites[id].isActive = isActive;
 
     Semaphore sem;
-    renderer->CreateResources([this, &sem, id, image](ResourceCreationContext & ctx) {
+    this->CreateResources([this, &sem, id, image](ResourceCreationContext & ctx) {
         auto layout =
             ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/spritePt.layout");
         this->sprites[id].uniformBuffer =
@@ -73,7 +75,7 @@ void RenderSystem::PreRenderSprites(FrameContext const & context, std::vector<Up
         if (sprite.newImage) {
             auto oldDescriptorSet = spriteInstance->descriptorSet;
             Semaphore sem;
-            renderer->CreateResources([spriteInstance, &sprite, &sem](ResourceCreationContext & ctx) {
+            this->CreateResources([spriteInstance, &sprite, &sem](ResourceCreationContext & ctx) {
                 ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uvDescriptor = {
                     spriteInstance->uniformBuffer, 0, sizeof(glm::mat4)};
 

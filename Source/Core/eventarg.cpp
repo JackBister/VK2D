@@ -1,7 +1,5 @@
 #include "Core/eventarg.h"
 
-#include <string>
-
 #include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("EventArg");

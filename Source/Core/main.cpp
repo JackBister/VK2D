@@ -2,17 +2,12 @@
 #include <thread>
 
 #include <SDL2/SDL.h>
-#include <glm/glm.hpp>
 #include <imgui.h>
 #include <optick/optick.h>
 
-#include "Core/Components/CameraComponent.h"
-#include "Core/Components/component.h"
 #include "Core/Config/Config.h"
-#include "Core/DllManager.h"
-#include "Core/EntityManager.h"
+#include "Core/FrameContext.h"
 #include "Core/GameModule.h"
-#include "Core/Input/Input.h"
 #include "Core/ProjectManager.h"
 #include "Core/Rendering/BufferAllocator.h"
 #include "Core/Rendering/RenderPrimitiveFactory.h"
@@ -20,21 +15,10 @@
 #include "Core/Rendering/ShaderProgramFactory.h"
 #include "Core/Resources/Project.h"
 #include "Core/Resources/ResourceManager.h"
-#include "Core/Resources/Scene.h"
-#include "Core/SceneManager.h"
 #include "Core/UI/EditorSystem.h"
-#include "Core/entity.h"
-#include "Core/physicsworld.h"
-#include "Core/transform.h"
 #include "Jobs/JobEngine.h"
-#include "Logging/Appenders/StdoutLogAppender.h"
 #include "Logging/Logger.h"
-#include "Logging/LoggerFactory.h"
 #include "RenderingBackend/Renderer.h"
-#include "Serialization/JsonSerializer.h"
-#include "Util/DefaultFileSlurper.h"
-#include "Util/Queue.h"
-#include "Util/Semaphore.h"
 #include "Util/SetThreadName.h"
 
 static const auto logger = Logger::Create("main");

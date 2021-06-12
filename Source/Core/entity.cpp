@@ -1,10 +1,5 @@
 ﻿#include "Core/entity.h"
 
-#include <cstring>
-#include <string>
-#include <unordered_map>
-#include <vector>
-
 #include <optick/optick.h>
 
 #include "Core/Components/component.h"

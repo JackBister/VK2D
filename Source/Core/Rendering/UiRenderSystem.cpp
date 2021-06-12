@@ -9,8 +9,9 @@
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/ShaderProgram.h"
 #include "Core/dtime.h"
+#include "RenderingBackend/Renderer.h"
 #include "Util/Semaphore.h"
-
+ 
 UiRenderSystem * UiRenderSystem::instance = nullptr;
 
 UiRenderSystem * UiRenderSystem::GetInstance()
@@ -79,7 +80,6 @@ void UiRenderSystem::Init()
 void UiRenderSystem::StartFrame()
 {
     OPTICK_EVENT();
-    auto deltaTime = Time::GetDeltaTime();
     auto & io = ImGui::GetIO();
     io.DeltaTime = Time::GetUnscaledDeltaTime();
     ImGui::NewFrame();

@@ -5,6 +5,7 @@
 #include "Core/SceneManager.h"
 #include "Core/physicsworld.h"
 #include "Logging/Logger.h"
+#include "Serialization/DeserializationContext.h"
 #include "Serialization/JsonSerializer.h"
 #include "Util/DefaultFileSlurper.h"
 
