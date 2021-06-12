@@ -87,7 +87,7 @@ find_path(GLM_INCLUDE_DIR glm/glm.hpp)
 find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.h)
 find_path(STB_IMAGE_INCLUDE_DIR stb_image.h)
 target_include_directories(Main PUBLIC Source)
-target_include_directories(Main SYSTEM PUBLIC Source/ThirdParty/imgui Source/ThirdParty/ImGuizmo Source/ThirdParty/imgui-filebrowser ${BULLET_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${SHADERC_INCLUDE_DIR} ${STB_IMAGE_INCLUDE_DIR})
+target_include_directories(Main SYSTEM PUBLIC ${BULLET_INCLUDE_DIR} ${GLM_INCLUDE_DIR} ${SHADERC_INCLUDE_DIR} ${STB_IMAGE_INCLUDE_DIR})
 
 find_library(BULLETDYNAMICS_LIBRARY BulletDynamics_Debug)
 find_library(BULLETCOLLISION_LIBRARY BulletCollision_Debug)

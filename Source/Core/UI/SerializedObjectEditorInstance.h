@@ -5,9 +5,9 @@
 #include <string>
 #include <unordered_map>
 
-#include <imgui.h>
+#include <ThirdParty/imgui/imgui.h>
 
-#include <imfilebrowser.h>
+#include <ThirdParty/imgui-filebrowser/imfilebrowser.h>
 
 #include "ArrayEditor.h"
 #include "Serialization/SerializedObjectSchema.h"

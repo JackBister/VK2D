@@ -3,9 +3,9 @@
 #include <filesystem>
 #include <optional>
 
-#include <imgui.h>
+#include <ThirdParty/imgui/imgui.h>
 
-#include <imfilebrowser.h>
+#include <ThirdParty/imgui-filebrowser/imfilebrowser.h>
 
 #include "Core/Resources/Project.h"
 #include "SerializedObjectEditorInstance.h"

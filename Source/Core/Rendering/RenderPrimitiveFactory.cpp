@@ -1,6 +1,6 @@
 #include "RenderPrimitiveFactory.h"
 
-#include <imgui.h>
+#include <ThirdParty/imgui/imgui.h>
 
 #include "Core/Rendering/Vertex.h"
 #include "Core/Resources/Image.h"

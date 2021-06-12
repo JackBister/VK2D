@@ -1,13 +1,13 @@
 #include "Core/UI/EditorSystem.h"
 
-#include <imgui.h>
+#include <ThirdParty/imgui/imgui.h>
 
-#include <ImGuizmo.h>
+#include <ThirdParty/ImGuizmo/ImGuizmo.h>
+#include <ThirdParty/imgui-filebrowser/imfilebrowser.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <imfilebrowser.h>
 #include <optick/optick.h>
 
 #include "Core/Components/CameraComponent.h"

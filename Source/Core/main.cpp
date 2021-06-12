@@ -2,7 +2,7 @@
 #include <thread>
 
 #include <SDL2/SDL.h>
-#include <imgui.h>
+#include <ThirdParty/imgui/imgui.h>
 #include <optick/optick.h>
 
 #include "Core/Config/Config.h"

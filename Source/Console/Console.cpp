@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-#include <imgui.h>
+#include <ThirdParty/imgui/imgui.h>
 #include <optick/optick.h>
 
 #include "Logging/LogAppender.h"

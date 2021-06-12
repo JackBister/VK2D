@@ -5,8 +5,8 @@
 #include <unordered_map>
 
 #include <SDL2/SDL.h>
+#include <ThirdParty/imgui/imgui.h>
 #include <glm/glm.hpp>
-#include <imgui.h>
 #include <optick/optick.h>
 
 #include "Gamepad.h"

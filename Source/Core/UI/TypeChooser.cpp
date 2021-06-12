@@ -1,6 +1,6 @@
 #include "TypeChooser.h"
 
-#include <imgui.h>
+#include <ThirdParty/imgui/imgui.h>
 
 #include "Serialization/Deserializable.h"
 

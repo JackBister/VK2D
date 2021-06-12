@@ -1,6 +1,6 @@
 #include "ArrayEditor.h"
 
-#include <imgui.h>
+#include <ThirdParty/imgui/imgui.h>
 
 #include "Core/UI/SerializedObjectEditorInstance.h"
 #include "Logging/Logger.h"

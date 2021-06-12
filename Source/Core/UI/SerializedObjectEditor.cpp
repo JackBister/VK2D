@@ -1,6 +1,6 @@
 #include "SerializedObjectEditor.h"
 
-#include <imgui.h>
+#include <ThirdParty/imgui/imgui.h>
 
 #include "Logging/Logger.h"
 

@@ -1,6 +1,6 @@
 #include "SerializedObjectEditorInstance.h"
 
-#include <imgui.h>
+#include <ThirdParty/imgui/imgui.h>
 
 #undef GetObject
 

@@ -1,8 +1,8 @@
 #include "Core/Rendering/UiRenderSystem.h"
 
-#include <imgui.h>
+#include <ThirdParty/imgui/imgui.h>
 
-#include <ImGuizmo.h>
+#include <ThirdParty/ImGuizmo/ImGuizmo.h>
 #include <optick/optick.h>
 
 #include "Core/FrameContext.h"
@@ -11,7 +11,7 @@
 #include "Core/dtime.h"
 #include "RenderingBackend/Renderer.h"
 #include "Util/Semaphore.h"
- 
+
 UiRenderSystem * UiRenderSystem::instance = nullptr;
 
 UiRenderSystem * UiRenderSystem::GetInstance()
