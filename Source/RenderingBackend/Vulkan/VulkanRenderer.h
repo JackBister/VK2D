@@ -12,7 +12,6 @@
 #include <vector>
 
 #include <ThirdParty/glm/glm/glm.hpp>
-#include <gl/glew.h>
 #include <vulkan/vulkan.h>
 
 #include "../Abstract/AbstractRenderer.h"

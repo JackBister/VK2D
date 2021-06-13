@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
@@ -25,6 +25,30 @@ file(GLOB_RECURSE SOURCES
 )
 add_executable(Main ${SOURCES})
 
+target_precompile_headers(Main PRIVATE
+    "Source/Core/Rendering/RenderSystem.h"
+    "Source/Logging/Logger.h"
+    "Source/Serialization/Deserializable.h"
+    "Source/Serialization/SerializedObjectSchema.h"
+    "Source/Serialization/SerializedValue.h"
+    "Source/Util/DllExport.h"
+
+    "Source/ThirdParty/glm/glm/glm.hpp"
+    "Source/ThirdParty/imgui/imgui.h"
+    "Source/ThirdParty/optick/src/optick.h"
+    "Source/ThirdParty/SDL2/include/SDL.h"
+
+    "<algorithm$<ANGLE-R>"
+    "<filesystem$<ANGLE-R>"
+    "<functional$<ANGLE-R>"
+    "<memory$<ANGLE-R>"
+    "<optional$<ANGLE-R>"
+    "<string$<ANGLE-R>"
+    "<unordered_map$<ANGLE-R>"
+    "<variant$<ANGLE-R>"
+    "<vector$<ANGLE-R>"
+)
+
 set_target_properties(Main PROPERTIES
                       ARCHIVE_OUTPUT_DIRECTORY bin/$<0:>
                       LIBRARY_OUTPUT_DIRECTORY bin/$<0:>
@@ -36,6 +60,7 @@ set_property(TARGET Main PROPERTY ENABLE_EXPORTS 1)
 if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /UMBCS /D_UNICODE /DUNICODE /std:c++latest")
     set_property(TARGET Main PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    add_compile_options("/MP")
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2b -lstdc++fs")
 endif()
@@ -46,7 +71,6 @@ if (ENABLE_PROFILER)
     target_link_libraries(
         Main
         OptickCore
-        ${OPTICK_LIBRARY}
     )
 else()
     add_definitions(-DUSE_OPTICK=0)
