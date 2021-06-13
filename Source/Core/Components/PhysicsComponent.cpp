@@ -1,6 +1,6 @@
 ﻿#include "PhysicsComponent.h"
 
-#include <BulletCollision/CollisionShapes/btBox2dShape.h>
+#include <ThirdParty/bullet3/src/BulletCollision/CollisionShapes/btBox2dShape.h>
 #include <ThirdParty/optick/src/optick.h>
 
 #include "Core/entity.h"

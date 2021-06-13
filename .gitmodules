@@ -34,3 +34,6 @@
 [submodule "Source/ThirdParty/SDL2"]
 	path = Source/ThirdParty/SDL2
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "Source/ThirdParty/bullet3"]
+	path = Source/ThirdParty/bullet3
+	url = https://github.com/bulletphysics/bullet3.git

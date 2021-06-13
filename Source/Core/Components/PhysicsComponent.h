@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-#include <btBulletDynamicsCommon.h>
+#include <ThirdParty/bullet3/src/btBulletDynamicsCommon.h>
 
 #include "Component.h"
 #include "Util/DllExport.h"

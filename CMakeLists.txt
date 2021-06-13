@@ -37,6 +37,8 @@ target_precompile_headers(Main PRIVATE
     "Source/ThirdParty/imgui/imgui.h"
     "Source/ThirdParty/optick/src/optick.h"
     "Source/ThirdParty/SDL2/include/SDL.h"
+    "Source/ThirdParty/bullet3/src/btBulletCollisionCommon.h"
+    "Source/ThirdParty/bullet3/src/btBulletDynamicsCommon.h"
 
     "<algorithm$<ANGLE-R>"
     "<filesystem$<ANGLE-R>"
@@ -100,24 +102,22 @@ else()
     )
 endif()
 
-find_path(BULLET_INCLUDE_DIR btBulletCollisionCommon.h PATH_SUFFIXES bullet)
 find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.h)
 target_include_directories(Main PUBLIC Source)
-target_include_directories(Main SYSTEM PUBLIC ${BULLET_INCLUDE_DIR} ${SHADERC_INCLUDE_DIR})
+target_include_directories(Main SYSTEM PRIVATE
+    ${SHADERC_INCLUDE_DIR}
+    Source/ThirdParty/bullet3/src)
 
-find_library(BULLETDYNAMICS_LIBRARY BulletDynamics_Debug)
-find_library(BULLETCOLLISION_LIBRARY BulletCollision_Debug)
-find_library(LINEARMATH_LIBRARY LinearMath_Debug)
 find_library(SHADERC_LIBRARY shaderc_combined)
 
 target_link_libraries(
         Main
         assimp
-        ${BULLETDYNAMICS_LIBRARY}
-        ${BULLETCOLLISION_LIBRARY}
+        BulletCollision
+        BulletDynamics
         imgui
         ImGuizmo
-        ${LINEARMATH_LIBRARY}
+        LinearMath
         SDL2
         ${SHADERC_LIBRARY}
 )
