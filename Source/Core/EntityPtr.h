@@ -1,5 +1,6 @@
 #pragma once
 
+#include <format>
 #include <string>
 
 #include "Util/DllExport.h"
@@ -32,6 +33,15 @@ private:
     EntityManager * entityManager;
     size_t index;
     size_t generation;
+};
+
+template <class CharT>
+struct std::formatter<EntityPtr, CharT> : std::formatter<std::string, CharT> {
+    template <class FormatContext>
+    auto format(EntityPtr t, FormatContext & ctx)
+    {
+        return std::formatter<std::string, CharT>::format(t.ToString(), ctx);
+    }
 };
 
 namespace std

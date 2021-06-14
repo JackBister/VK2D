@@ -9,6 +9,7 @@
 #include "Core/Rendering/DebugDrawSystem.h"
 #include "Core/entity.h"
 #include "Logging/Logger.h"
+#include "PhysicsWorld_Private.h"
 #include "Util/Strings.h"
 
 static const auto logger = Logger::Create("PhysicsWorld");
@@ -93,14 +94,7 @@ class Vec3Deserializer : public Deserializer
 
 DESERIALIZABLE_IMPL(Vec3, new Vec3Deserializer());
 
-PhysicsWorld * PhysicsWorld::GetInstance()
-{
-    static PhysicsWorld singletonPhysicsWorld(DebugDrawSystem::GetInstance());
-    return &singletonPhysicsWorld;
-}
-
-PhysicsWorld::PhysicsWorld(DebugDrawSystem * debugDrawSystem)
-    : debugDrawSystem(debugDrawSystem), debugDraw(new DebugDrawBulletAdapter(debugDrawSystem))
+PhysicsWorld::Pimpl::Pimpl(DebugDrawSystem * debugDrawSystem) : debugDraw(new DebugDrawBulletAdapter(debugDrawSystem))
 {
     this->collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
     this->dispatcher = std::make_unique<btCollisionDispatcher>(this->collisionConfig.get());
@@ -108,74 +102,14 @@ PhysicsWorld::PhysicsWorld(DebugDrawSystem * debugDrawSystem)
     this->constraintSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
     this->world = std::make_unique<btDiscreteDynamicsWorld>(
         this->dispatcher.get(), this->broadphase.get(), this->constraintSolver.get(), this->collisionConfig.get());
-    this->world->setInternalTickCallback(PhysicsWorld::s_TickCallback);
+    this->world->setInternalTickCallback(Pimpl::s_TickCallback);
     this->world->setWorldUserInfo(this);
     this->world->setDebugDrawer(debugDraw.get());
-
-    CommandDefinition debugPhysicsCommand("debug_physics",
-                                          "debug_physics <0 or 1> - enables or disables drawing physics wireframes",
-                                          1,
-                                          [this](auto args) {
-                                              auto arg = args[0];
-                                              if (arg == "0") {
-                                                  this->SetDebugDrawEnabled(false);
-                                              } else if (arg == "1") {
-                                                  this->SetDebugDrawEnabled(true);
-                                              }
-                                          });
-    Console::RegisterCommand(debugPhysicsCommand);
-
-    CommandDefinition raytestCommand(
-        "physics_raytest",
-        "physics_raytest x y z x2 y2 z2 - casts a ray from (x, y, z) to (x2, y2, z2) in "
-        "the physics world and logs the result.",
-        6,
-        [this](auto args) {
-            auto xs = args[0];
-            auto ys = args[1];
-            auto zs = args[2];
-            auto x2s = args[3];
-            auto y2s = args[4];
-            auto z2s = args[5];
-
-            auto x = Strings::Strtod(xs);
-            auto y = Strings::Strtod(ys);
-            auto z = Strings::Strtod(zs);
-            auto x2 = Strings::Strtod(x2s);
-            auto y2 = Strings::Strtod(y2s);
-            auto z2 = Strings::Strtod(z2s);
-            if (!x.has_value() || !y.has_value() || !z.has_value() || !x2.has_value() || !y2.has_value() ||
-                !z2.has_value()) {
-                logger.Warn("Could not perform raytest: input was invalid: one of the values was not a number");
-                return;
-            }
-            btVector3 from(x.value(), y.value(), z.value());
-            btVector3 to(x2.value(), y2.value(), z2.value());
-            btCollisionWorld::AllHitsRayResultCallback raytestCallback(from, to);
-            logger.Info("Performing ray test with from=({}, {}, {}), to=({}, {}, {})",
-                        from.x(),
-                        from.y(),
-                        from.z(),
-                        to.x(),
-                        to.y(),
-                        to.z());
-            world->rayTest(from, to, raytestCallback);
-            if (raytestCallback.m_collisionObject) {
-                auto userPointer = (PhysicsComponent *)raytestCallback.m_collisionObject->getUserPointer();
-                if (userPointer && userPointer->entity) {
-                    auto entity = userPointer->entity.Get();
-                    logger.Info("Ray hit entity with id={}, name={}", entity->GetId().ToString(), entity->GetName());
-                }
-            } else {
-                logger.Info("Ray did not hit anything");
-            }
-        });
-    Console::RegisterCommand(raytestCommand);
 }
 
-void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
+void PhysicsWorld::Pimpl::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
 {
-    auto & collisionsLastFrame = static_cast<PhysicsWorld *>(world->getWorldUserInfo())->collisionsLastFrame;
+    auto & collisionsLastFrame = static_cast<PhysicsWorld::Pimpl *>(world->getWorldUserInfo())->collisionsLastFrame;
     std::unordered_map<EntityPtr, std::unordered_map<EntityPtr, CollisionInfo>> collisionsThisFrame;
     int numManifolds = world->getDispatcher()->getNumManifolds();
     for (int i = 0; i < numManifolds; ++i) {
@@ -266,26 +200,105 @@ void PhysicsWorld::s_TickCallback(btDynamicsWorld * world, btScalar timestep)
     collisionsLastFrame = collisionsThisFrame;
 }
 
+PhysicsWorld * PhysicsWorld::GetInstance()
+{
+    static PhysicsWorld singletonPhysicsWorld(DebugDrawSystem::GetInstance());
+    return &singletonPhysicsWorld;
+}
+
+PhysicsWorld::PhysicsWorld(DebugDrawSystem * debugDrawSystem)
+    : debugDrawSystem(debugDrawSystem), pimpl(std::make_unique<Pimpl>(debugDrawSystem))
+{
+    CommandDefinition debugPhysicsCommand("debug_physics",
+                                          "debug_physics <0 or 1> - enables or disables drawing physics wireframes",
+                                          1,
+                                          [this](auto args) {
+                                              auto arg = args[0];
+                                              if (arg == "0") {
+                                                  this->SetDebugDrawEnabled(false);
+                                              } else if (arg == "1") {
+                                                  this->SetDebugDrawEnabled(true);
+                                              }
+                                          });
+    Console::RegisterCommand(debugPhysicsCommand);
+
+    CommandDefinition raytestCommand(
+        "physics_raytest",
+        "physics_raytest x y z x2 y2 z2 - casts a ray from (x, y, z) to (x2, y2, z2) in "
+        "the physics world and logs the result.",
+        6,
+        [this](auto args) {
+            auto xs = args[0];
+            auto ys = args[1];
+            auto zs = args[2];
+            auto x2s = args[3];
+            auto y2s = args[4];
+            auto z2s = args[5];
+
+            auto x = Strings::Strtod(xs);
+            auto y = Strings::Strtod(ys);
+            auto z = Strings::Strtod(zs);
+            auto x2 = Strings::Strtod(x2s);
+            auto y2 = Strings::Strtod(y2s);
+            auto z2 = Strings::Strtod(z2s);
+            if (!x.has_value() || !y.has_value() || !z.has_value() || !x2.has_value() || !y2.has_value() ||
+                !z2.has_value()) {
+                logger.Warn("Could not perform raytest: input was invalid: one of the values was not a number");
+                return;
+            }
+            btVector3 from(x.value(), y.value(), z.value());
+            btVector3 to(x2.value(), y2.value(), z2.value());
+            btCollisionWorld::AllHitsRayResultCallback raytestCallback(from, to);
+            logger.Info("Performing ray test with from=({}, {}, {}), to=({}, {}, {})",
+                        from.x(),
+                        from.y(),
+                        from.z(),
+                        to.x(),
+                        to.y(),
+                        to.z());
+            pimpl->world->rayTest(from, to, raytestCallback);
+            if (raytestCallback.m_collisionObject) {
+                auto userPointer = (PhysicsComponent *)raytestCallback.m_collisionObject->getUserPointer();
+                if (userPointer && userPointer->entity) {
+                    auto entity = userPointer->entity.Get();
+                    logger.Info("Ray hit entity with id={}, name={}", entity->GetId().ToString(), entity->GetName());
+                }
+            } else {
+                logger.Info("Ray did not hit anything");
+            }
+        });
+    Console::RegisterCommand(raytestCommand);
+}
+
+PhysicsWorld::~PhysicsWorld()
+{
+    for (auto & rb : pimpl->rigidbodyInstances) {
+        if (rb.second.rigidBody) {
+            pimpl->world->removeRigidBody(rb.second.rigidBody.get());
+        }
+    }
+}
+
 glm::vec3 PhysicsWorld::GetGravity() const
 {
-    auto grav = world->getGravity();
+    auto grav = pimpl->world->getGravity();
     return glm::vec3(grav.x(), grav.y(), grav.z());
 }
 
 void PhysicsWorld::SetGravity(glm::vec3 const & grav)
 {
-    world->setGravity(btVector3(grav.x, grav.y, grav.z));
+    pimpl->world->setGravity(btVector3(grav.x, grav.y, grav.z));
 }
 
 void PhysicsWorld::SetDebugDrawEnabled(bool enabled)
 {
     isDebugDrawEnabled = enabled;
     if (enabled) {
-        this->debugDraw->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb |
-                                      btIDebugDraw::DBG_DrawNormals | btIDebugDraw::DBG_DrawConstraints |
-                                      btIDebugDraw::DBG_DrawConstraintLimits);
+        pimpl->debugDraw->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb |
+                                       btIDebugDraw::DBG_DrawNormals | btIDebugDraw::DBG_DrawConstraints |
+                                       btIDebugDraw::DBG_DrawConstraintLimits);
     } else {
-        this->debugDraw->setDebugMode(btIDebugDraw::DBG_NoDebug);
+        pimpl->debugDraw->setDebugMode(btIDebugDraw::DBG_NoDebug);
     }
 }
 
@@ -299,7 +312,7 @@ RaytestResult PhysicsWorld::Raytest(Line line)
         debugDrawSystem->DrawLine(line.from, line.to, glm::vec3(1.f, 1.f, 1.f), 5.f);
     }
     btDynamicsWorld::ClosestRayResultCallback callback(worldFrom, worldTo);
-    world->rayTest(worldFrom, worldTo, callback);
+    pimpl->world->rayTest(worldFrom, worldTo, callback);
     if (!callback.hasHit()) {
         return RaytestResult(std::nullopt);
     }
@@ -322,6 +335,6 @@ RaytestResult PhysicsWorld::Raytest(Line line)
 
 void PhysicsWorld::Tick(float dt)
 {
-    world->stepSimulation(dt);
-    world->debugDrawWorld();
+    pimpl->world->stepSimulation(dt);
+    pimpl->world->debugDrawWorld();
 }

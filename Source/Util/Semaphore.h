@@ -2,20 +2,17 @@
 
 #include <memory>
 
-#include <ThirdParty/SDL2/include/SDL.h>
-
 class Semaphore
 {
 public:
     Semaphore();
+    ~Semaphore();
 
     void Signal();
     void Wait();
 
 private:
-    struct SemDestructor {
-        void operator()(SDL_sem * sem) { SDL_DestroySemaphore(sem); }
-    };
+    class Pimpl;
 
-    std::unique_ptr<SDL_sem, SemDestructor> sem_;
+    std::unique_ptr<Pimpl> pimpl;
 };

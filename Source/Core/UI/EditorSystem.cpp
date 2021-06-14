@@ -26,7 +26,8 @@
 #include "Core/Resources/Scene.h"
 #include "Core/SceneManager.h"
 #include "Core/dtime.h"
-#include "EditProjectDialog.h"
+#include "EditProjectDialog_Private.h"
+#include "Imgui_InputText_Private.h"
 #include "NewComponentTypeEditor.h"
 #include "ProjectCreator.h"
 #include "Serialization/JsonSerializer.h"
@@ -34,7 +35,6 @@
 #include "Templates/DefaultTemplateRenderer.h"
 #include "TypeChooser.h"
 #include "Util/DefaultFileSlurper.h"
-#include "Util/Imgui_InputText.h"
 #include "Util/WriteToFile.h"
 
 static const auto logger = Logger::Create("EditorSystem");
@@ -696,9 +696,6 @@ void DrawGamepadStateViewer()
                 ImGui::Text("RT: %f (%f)",
                             pad->GetAxis(GamepadAxis::AXIS_TRIGGERRIGHT),
                             pad->GetAxisRaw(GamepadAxis::AXIS_TRIGGERRIGHT));
-                ImGui::Value("RX", pad->GetAxis(GamepadAxis::AXIS_RIGHTX), "%f");
-                ImGui::Value("RY", pad->GetAxis(GamepadAxis::AXIS_RIGHTY), "%f");
-                ImGui::Value("RT", pad->GetAxis(GamepadAxis::AXIS_TRIGGERRIGHT), "%f");
                 ImGui::Value("RB", pad->GetButton(GamepadButton::BUTTON_RIGHTSHOULDER));
                 ImGui::Value("RS", pad->GetButton(GamepadButton::BUTTON_RIGHTSTICK));
                 ImGui::Value("A", pad->GetButton(GamepadButton::BUTTON_A));

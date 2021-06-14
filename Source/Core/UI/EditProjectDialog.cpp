@@ -1,4 +1,4 @@
-#include "EditProjectDialog.h"
+#include "EditProjectDialog_Private.h"
 
 #include "Logging/Logger.h"
 #include "Serialization/DeserializationContext.h"

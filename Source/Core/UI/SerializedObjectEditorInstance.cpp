@@ -1,13 +1,13 @@
-#include "SerializedObjectEditorInstance.h"
+#include "SerializedObjectEditorInstance_Private.h"
 
 #include <ThirdParty/imgui/imgui.h>
 
 #undef GetObject
 
-#include "ArrayEditor.h"
+#include "ArrayEditor_Private.h"
+#include "Imgui_InputText_Private.h"
 #include "Logging/Logger.h"
 #include "Serialization/Deserializable.h"
-#include "Util/Imgui_InputText.h"
 
 static auto const logger = Logger::Create("EditorInstance");
 

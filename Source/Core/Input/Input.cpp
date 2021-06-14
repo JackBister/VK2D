@@ -10,6 +10,7 @@
 #include <ThirdParty/optick/src/optick.h>
 
 #include "Gamepad.h"
+#include "Keycodes_Private.h"
 #include "Logging/Logger.h"
 
 static const auto logger = Logger::Create("Input");
@@ -67,12 +68,12 @@ void Frame()
             for (size_t i = 0; i < gamepads.size(); ++i) {
                 if (!gamepads[i].has_value()) {
                     didReplace = true;
-                    gamepads[i] = Gamepad(gameController, instanceId);
+                    gamepads[i].emplace(Gamepad(instanceId));
                     break;
                 }
             }
             if (!didReplace) {
-                gamepads.push_back(Gamepad(gameController, instanceId));
+                gamepads.emplace_back(Gamepad(instanceId));
             }
             break;
         }
@@ -80,7 +81,7 @@ void Frame()
             logger.Info("Controller disconnected, id={}", e.cdevice.which);
             for (size_t i = 0; i < gamepads.size(); ++i) {
                 if (gamepads[i].has_value() && gamepads[i].value().GetId() == e.cdevice.which) {
-                    gamepads[i] = {};
+                    gamepads[i] = std::nullopt;
                     break;
                 }
             }
@@ -90,24 +91,24 @@ void Frame()
             if (!e.key.repeat) {
                 io.KeysDown[e.key.keysym.scancode] = true;
 
-                downKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
+                downKeys[SdlKeycodeToKeycode(e.key.keysym.sym)] = true;
             }
             break;
         }
         case SDL_KEYUP: {
             io.KeysDown[e.key.keysym.scancode] = false;
 
-            heldKeys[static_cast<Keycode>(e.key.keysym.sym)] = false;
-            upKeys[static_cast<Keycode>(e.key.keysym.sym)] = true;
+            heldKeys[SdlKeycodeToKeycode(e.key.keysym.sym)] = false;
+            upKeys[SdlKeycodeToKeycode(e.key.keysym.sym)] = true;
             break;
         }
         case SDL_MOUSEBUTTONDOWN: {
-            downKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
+            downKeys[SdlKeycodeToKeycode(MOUSE_TO_KEYCODE(e.button.button))] = true;
             break;
         }
         case SDL_MOUSEBUTTONUP: {
-            heldKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = false;
-            upKeys[static_cast<Keycode>(MOUSE_TO_KEYCODE(e.button.button))] = true;
+            heldKeys[SdlKeycodeToKeycode(MOUSE_TO_KEYCODE(e.button.button))] = false;
+            upKeys[SdlKeycodeToKeycode(MOUSE_TO_KEYCODE(e.button.button))] = true;
             break;
         }
         case SDL_MOUSEWHEEL: {

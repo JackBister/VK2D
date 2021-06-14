@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include <ThirdParty/SDL2/include/SDL.h>
+
 #include "Core/Config/Config.h"
 #include "Logging/Logger.h"
 
@@ -12,6 +14,24 @@ static auto const logger = Logger::Create("Gamepad");
 // better precision on them
 static auto const deadzone = Config::AddFloat("gamepad_axis_deadzone", 0.2f);
 static auto const deadzoneTriggers = Config::AddFloat("gamepad_axis_deadzone_triggers", 0.05f);
+
+class Gamepad::Pimpl
+{
+public:
+    Pimpl(SDL_GameController * gameController, SDL_JoystickID joystickId)
+        : gameController(gameController), joystickId(joystickId)
+    {
+    }
+    ~Pimpl()
+    {
+        if (gameController) {
+            SDL_GameControllerClose(gameController);
+        }
+    }
+
+    SDL_GameController * gameController;
+    SDL_JoystickID joystickId;
+};
 
 SDL_GameControllerAxis ConvertAxis(GamepadAxis axis)
 {
@@ -73,11 +93,49 @@ SDL_GameControllerButton ConvertButton(GamepadButton button)
     }
 }
 
-Gamepad::~Gamepad()
+Gamepad::Gamepad() {}
+
+Gamepad::Gamepad(int32_t joystickId)
 {
-    if (gameController) {
-        SDL_GameControllerClose(gameController);
+    SDL_GameController * gameController = SDL_GameControllerFromInstanceID(joystickId);
+    this->pimpl = std::make_unique<Gamepad::Pimpl>(gameController, joystickId);
+}
+
+Gamepad::Gamepad(Gamepad && pad)
+{
+    if (pimpl && pad.pimpl) {
+        pimpl->gameController = pad.pimpl->gameController;
+        pimpl->joystickId = pad.pimpl->joystickId;
+        pad.pimpl->gameController = nullptr;
+        pad.pimpl->joystickId = 0;
+    } else if (!pimpl && pad.pimpl) {
+        pimpl = std::make_unique<Gamepad::Pimpl>(pad.pimpl->gameController, pad.pimpl->joystickId);
+        pad.pimpl->gameController = nullptr;
+        pad.pimpl->joystickId = 0;
+    } else if (pimpl && !pad.pimpl) {
+        pimpl->gameController = nullptr;
+        pimpl->joystickId = 0;
     }
+}
+
+Gamepad::~Gamepad() {}
+
+Gamepad & Gamepad::operator=(Gamepad && pad)
+{
+    if (pimpl && pad.pimpl) {
+        pimpl->gameController = pad.pimpl->gameController;
+        pimpl->joystickId = pad.pimpl->joystickId;
+        pad.pimpl->gameController = nullptr;
+        pad.pimpl->joystickId = 0;
+    } else if (!pimpl && pad.pimpl) {
+        pimpl = std::make_unique<Gamepad::Pimpl>(pad.pimpl->gameController, pad.pimpl->joystickId);
+        pad.pimpl->gameController = nullptr;
+        pad.pimpl->joystickId = 0;
+    } else if (pimpl && !pad.pimpl) {
+        pimpl->gameController = nullptr;
+        pimpl->joystickId = 0;
+    }
+    return *this;
 }
 
 float Gamepad::GetAxis(GamepadAxis axis) const
@@ -92,7 +150,7 @@ float Gamepad::GetAxis(GamepadAxis axis) const
 
 float Gamepad::GetAxisRaw(GamepadAxis axis) const
 {
-    auto raw = SDL_GameControllerGetAxis(gameController, ConvertAxis(axis));
+    auto raw = SDL_GameControllerGetAxis(pimpl->gameController, ConvertAxis(axis));
 
     // Normalizes the value to be between -1 and 1
     return std::max(raw / (double)INT16_MAX, -1.0);
@@ -100,16 +158,16 @@ float Gamepad::GetAxisRaw(GamepadAxis axis) const
 
 bool Gamepad::GetButton(GamepadButton button) const
 {
-    auto btn = SDL_GameControllerGetButton(gameController, ConvertButton(button));
+    auto btn = SDL_GameControllerGetButton(pimpl->gameController, ConvertButton(button));
     return btn != 0;
 }
 
 std::string Gamepad::GetName() const
 {
-    return SDL_GameControllerName(gameController);
+    return SDL_GameControllerName(pimpl->gameController);
 }
 
-SDL_JoystickID Gamepad::GetId() const
+int32_t Gamepad::GetId() const
 {
-    return joystickId;
+    return pimpl->joystickId;
 }

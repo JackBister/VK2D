@@ -9,7 +9,7 @@
 
 #include <ThirdParty/imgui-filebrowser/imfilebrowser.h>
 
-#include "ArrayEditor.h"
+#include "ArrayEditor_Private.h"
 #include "Serialization/SerializedObjectSchema.h"
 #include "Serialization/SerializedValue.h"
 

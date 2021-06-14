@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0082 NEW)
 
 if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
@@ -13,6 +14,10 @@ project(vk2d C CXX)
 
 add_subdirectory(Source/ThirdParty)
 
+file(GLOB_RECURSE INCLUDE_THIRDPARTY_HEADERS
+    Source/ThirdParty/concurrentqueue/concurrentqueue.h
+    Source/ThirdParty/glm/glm/*.h Source/ThirdParty/glm/glm/*.hpp Source/ThirdParty/glm/glm/*.inl)
+
 file(GLOB_RECURSE SOURCES
     Source/Console/*.c Source/Console/*.cpp Source/Console/*.h
     Source/Core/*.c Source/Core/*.cpp Source/Core/*.h
@@ -23,7 +28,10 @@ file(GLOB_RECURSE SOURCES
     Source/Templates/*.c Source/Templates/*.cpp Source/Templates/*.h
     Source/Util/*.c Source/Util/*.cpp Source/Util/*.h
 )
-add_executable(Main ${SOURCES})
+add_executable(Main ${SOURCES}
+    # This is needed for the later custom commands to be generated properly!
+    # Apparently CMake will not generate custom commands if the dependency is not included in a target?
+    ${INCLUDE_THIRDPARTY_HEADERS})
 
 target_precompile_headers(Main PRIVATE
     "Source/Core/Rendering/RenderSystem.h"
@@ -129,13 +137,17 @@ add_definitions(-DGLM_FORCE_DEPTH_ZERO_TO_ONE=1)
 file(REAL_PATH Source SOURCE_ABSPATH)
 file(GLOB_RECURSE INCLUDE_HEADERS Source/*.h)
 list(FILTER INCLUDE_HEADERS EXCLUDE REGEX ".*Source/ThirdParty/.*")
+list(FILTER INCLUDE_HEADERS EXCLUDE REGEX ".*_Private.h$")
+list(APPEND INCLUDE_HEADERS ${INCLUDE_THIRDPARTY_HEADERS})
 foreach (INCLUDE_HEADER ${INCLUDE_HEADERS})
     file(RELATIVE_PATH DEST_HEADER ${SOURCE_ABSPATH} ${INCLUDE_HEADER})
     file(REAL_PATH ./Templates/NewProject/Include/${DEST_HEADER} DEST_ABSPATH)
     add_custom_command(
         OUTPUT ${DEST_ABSPATH}
         COMMAND ${CMAKE_COMMAND} -E copy ${INCLUDE_HEADER} ${DEST_ABSPATH}
-        MAIN_DEPENDENCY ${INCLUDE_HEADER})
+        DEPENDS ${INCLUDE_HEADER}
+        MAIN_DEPENDENCY ${INCLUDE_HEADER}
+        VERBATIM)
 endforeach()
 
 file(REAL_PATH build/bin/Main.lib BUILD_LIB_ABSPATH)

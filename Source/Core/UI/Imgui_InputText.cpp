@@ -1,4 +1,4 @@
-#include "Imgui_InputText.h"
+#include "Imgui_InputText_Private.h"
 
 // Source: https://github.com/ocornut/imgui/blob/master/misc/cpp/imgui_stdlib.cpp
 

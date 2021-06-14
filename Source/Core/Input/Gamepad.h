@@ -1,8 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include <memory>
 #include <string>
-
-#include <ThirdParty/SDL2/include/SDL.h>
 
 #include "Util/DllExport.h"
 
@@ -29,35 +29,21 @@ enum class GamepadButton {
 class EAPI Gamepad
 {
 public:
-    Gamepad(Gamepad && pad) : gameController(pad.gameController), joystickId(pad.joystickId)
-    {
-        pad.gameController = nullptr;
-        pad.joystickId = 0;
-    }
-    Gamepad(SDL_GameController * gameController, SDL_JoystickID joystickId)
-        : gameController(gameController), joystickId(joystickId)
-    {
-    }
-
+    Gamepad();
+    Gamepad(Gamepad &&);
+    Gamepad(int32_t joystickId);
     ~Gamepad();
-
-    Gamepad & operator=(Gamepad && pad)
-    {
-        this->gameController = pad.gameController;
-        this->joystickId = pad.joystickId;
-        pad.gameController = nullptr;
-        pad.joystickId = 0;
-        return *this;
-    }
+    Gamepad & operator=(Gamepad &&);
 
     float GetAxis(GamepadAxis axis) const;
     float GetAxisRaw(GamepadAxis axis) const;
     bool GetButton(GamepadButton button) const;
     std::string GetName() const;
 
-    SDL_JoystickID GetId() const;
+    int32_t GetId() const;
 
 private:
-    SDL_GameController * gameController;
-    SDL_JoystickID joystickId;
+    class Pimpl;
+
+    std::unique_ptr<Pimpl> pimpl;
 };

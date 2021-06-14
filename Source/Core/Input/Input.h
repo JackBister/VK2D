@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ThirdParty/glm/glm/fwd.hpp>
+#include <ThirdParty/glm/glm/glm.hpp>
 
 #include "Keycodes.h"
 #include "Util/DllExport.h"
@@ -23,7 +23,7 @@ bool EAPI GetButtonUp(HashedString);
 glm::ivec2 EAPI GetMousePosition();
 
 // Returns null if idx >= GetGamepadCount() OR if the controller at the index has been unplugged
-Gamepad const * GetGamepad(size_t idx);
+EAPI Gamepad const * GetGamepad(size_t idx);
 // Returns the number of unique controllers that have been connected since the engine was started.
 // That is, if two controllers were connected and one was disconnected, this would return 2. If the controller was then
 // connected this would still return 2.

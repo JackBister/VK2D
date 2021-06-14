@@ -5,7 +5,6 @@
 #include <variant>
 #include <vector>
 
-#include <ThirdParty/SDL2/include/SDL.h>
 #include <gl/glew.h>
 
 #include "Util/Semaphore.h"

@@ -87,7 +87,16 @@
     "charconv": "cpp",
     "format": "cpp",
     "version": "cpp",
-    "source_location": "cpp"
+    "source_location": "cpp",
+    "bitset": "cpp",
+    "complex": "cpp",
+    "csignal": "cpp",
+    "hash_map": "cpp",
+    "hash_set": "cpp",
+    "random": "cpp",
+    "shared_mutex": "cpp",
+    "span": "cpp",
+    "stack": "cpp"
   },
   "search.exclude": {
     "**/node_modules": true,

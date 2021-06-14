@@ -1,8 +1,6 @@
 #pragma once
 
 #include <ThirdParty/glm/glm/glm.hpp>
-#include <ThirdParty/glm/glm/gtc/matrix_transform.hpp>
-#include <ThirdParty/glm/glm/gtc/quaternion.hpp>
 
 #include "Core/Reflect.h"
 #include "Serialization/Deserializable.h"

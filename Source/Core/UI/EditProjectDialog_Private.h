@@ -8,7 +8,7 @@
 #include <ThirdParty/imgui-filebrowser/imfilebrowser.h>
 
 #include "Core/Resources/Project.h"
-#include "SerializedObjectEditorInstance.h"
+#include "SerializedObjectEditorInstance_Private.h"
 
 struct EditProjectDialogResult {
     bool isNewProject;

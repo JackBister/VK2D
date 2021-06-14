@@ -69,12 +69,14 @@
         },
         {
           "type": "PhysicsComponent",
-          "isKinematic": true,
-          "mass": 1,
-          "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
-          "shapeInfoBox2d": {
-            "x": 4,
-            "y": 4
+          "rigidbody": {
+            "isKinematic": true,
+            "mass": 1,
+            "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
+            "shapeInfoBox2d": {
+              "x": 4,
+              "y": 4
+            }
           }
         }
       ]
@@ -113,12 +115,14 @@
         },
         {
           "type": "PhysicsComponent",
-          "isKinematic": true,
-          "mass": 1,
-          "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
-          "shapeInfoBox2d": {
-            "x": 2,
-            "y": 18
+          "rigidbody": {
+            "isKinematic": true,
+            "mass": 1,
+            "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
+            "shapeInfoBox2d": {
+              "x": 2,
+              "y": 18
+            }
           }
         }
       ]
@@ -157,12 +161,14 @@
         },
         {
           "type": "PhysicsComponent",
-          "isKinematic": true,
-          "mass": 1,
-          "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
-          "shapeInfoBox2d": {
-            "x": 2,
-            "y": 18
+          "rigidbody": {
+            "isKinematic": true,
+            "mass": 1,
+            "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
+            "shapeInfoBox2d": {
+              "x": 2,
+              "y": 18
+            }
           }
         }
       ]

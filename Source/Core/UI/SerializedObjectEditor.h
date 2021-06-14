@@ -5,7 +5,7 @@
 #include <string>
 
 #include "Serialization/SerializedObjectSchema.h"
-#include "SerializedObjectEditorInstance.h"
+#include "SerializedObjectEditorInstance_Private.h"
 
 class SerializedObjectEditor
 {
