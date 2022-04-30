@@ -19,6 +19,7 @@
 
 struct FrameContext;
 class Image;
+class ParticleSystem;
 class Renderer;
 class ShaderProgram;
 
@@ -86,7 +87,7 @@ class RenderSystem
 public:
     static RenderSystem * GetInstance();
 
-    RenderSystem(Renderer * renderer);
+    RenderSystem(Renderer * renderer, ParticleSystem * particleSystem);
 
     void Init();
 
@@ -316,6 +317,7 @@ private:
     Renderer * renderer;
     RendererProperties const & rendererProperties;
     UiRenderSystem uiRenderSystem;
+    ParticleSystem * particleSystem;
 
     // Options
     DescriptorSet * backbufferOverride = nullptr;

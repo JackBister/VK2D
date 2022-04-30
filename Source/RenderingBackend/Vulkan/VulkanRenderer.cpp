@@ -270,8 +270,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
 #endif
     std::vector<const char *> const instanceLayers = {
 #if defined(_DEBUG)
-    // "VK_LAYER_LUNARG_assistant_layer",
-    // "VK_LAYER_LUNARG_standard_validation",
+        "VK_LAYER_KHRONOS_validation",
 #endif
 #if defined(VULKAN_API_DUMP)
         "VK_LAYER_LUNARG_api_dump"
@@ -512,13 +511,15 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
     RecreateSwapchain();
 
     {
-        std::vector<VkDescriptorPoolSize> poolSizes(
-            {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100}, {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100}});
+        std::vector<VkDescriptorPoolSize> poolSizes({{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100},
+                                                     {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100},
+                                                     {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100},
+                                                     {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 100}});
 
         VkDescriptorPoolCreateInfo ci = {};
         ci.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         ci.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        ci.poolSizeCount = 2;
+        ci.poolSizeCount = 4;
         ci.pPoolSizes = &poolSizes[0];
         ci.maxSets = 100;
 

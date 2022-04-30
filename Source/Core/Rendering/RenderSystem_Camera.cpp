@@ -16,12 +16,12 @@ CameraInstanceId RenderSystem::CreateCamera(bool isActive)
         auto layout =
             ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraPt.layout");
         this->cameras[id].uniformBuffer =
-            ctx.CreateBuffer({sizeof(glm::mat4) + sizeof(glm::vec3),
+            ctx.CreateBuffer({2 * sizeof(glm::mat4),
                               BufferUsageFlags::UNIFORM_BUFFER_BIT | BufferUsageFlags::TRANSFER_DST_BIT,
                               DEVICE_LOCAL_BIT});
 
         ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor uniformDescriptor = {
-            this->cameras[id].uniformBuffer, 0, sizeof(glm::mat4)};
+            this->cameras[id].uniformBuffer, 0, 2 * sizeof(glm::mat4)};
 
         ResourceCreationContext::DescriptorSetCreateInfo::Descriptor descriptors[] = {
             {DescriptorType::UNIFORM_BUFFER, 0, uniformDescriptor}};

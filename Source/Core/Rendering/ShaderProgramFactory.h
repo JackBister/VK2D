@@ -13,6 +13,7 @@ private:
     static void CreateTransparentMeshShaderProgram();
     static void CreateAmbientOcclusionProgram();
     static void CreateAmbientOcclusionBlurProgram();
+    static void CreateParticleRenderingProgram();
     static void CreateTonemapProgram();
     static void CreateUiShaderProgram();
     static void CreatePostprocessShaderProgram();

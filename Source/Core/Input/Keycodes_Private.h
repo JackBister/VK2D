@@ -917,6 +917,6 @@ Keycode SdlKeycodeToKeycode(SDL_Keycode kc)
     case MOUSE_TO_KEYCODE(SDL_BUTTON_X2):
         return Keycode::KC_MOUSE_X2;
     default:
-        assert(false);
+        return Keycode::KC_UNKNOWN;
     }
 }

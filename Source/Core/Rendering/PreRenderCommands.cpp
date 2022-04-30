@@ -33,7 +33,15 @@ PreRenderCommands::Builder::WithStaticMeshInstanceUpdate(UpdateStaticMeshInstanc
     return *this;
 }
 
+PreRenderCommands::Builder &
+PreRenderCommands::Builder::WithParticleEmitterUpdate(UpdateParticleEmitter const & updateParticleEmitter)
+{
+    particleEmitterUpdates.push_back(updateParticleEmitter);
+    return *this;
+}
+
 PreRenderCommands PreRenderCommands::Builder::Build()
 {
-    return PreRenderCommands(cameraUpdates, lightUpdates, skeletalMeshUpdates, spriteUpdates, staticMeshUpdates);
+    return PreRenderCommands(
+        cameraUpdates, lightUpdates, skeletalMeshUpdates, spriteUpdates, staticMeshUpdates, particleEmitterUpdates);
 }

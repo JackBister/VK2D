@@ -30,6 +30,9 @@ void RenderPrimitiveFactory::CreatePrimitives()
         CreateSkeletalMeshPipelineLayout(ctx);
         CreateSkeletalMeshVertexInputState(ctx);
 
+        CreateParticlePipelineLayout(ctx);
+        CreateParticleVertexInputState(ctx);
+
         CreateAmbientOcclusionPipelineLayout(ctx);
         CreateAmbientOcclusionBlurPipelineLayout(ctx);
         CreateTonemapPipelineLayout(ctx);
@@ -112,7 +115,7 @@ RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreation
             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
             RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
             ImageLayout::UNDEFINED,
-            ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+            ImageLayout::SHADER_READ_ONLY_OPTIMAL,
         },
         // Normals buffer
         {
@@ -123,7 +126,7 @@ RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreation
             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
             RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
             ImageLayout::UNDEFINED,
-            ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+            ImageLayout::SHADER_READ_ONLY_OPTIMAL,
         },
         // Depth
         {
@@ -134,7 +137,7 @@ RenderPassHandle * RenderPrimitiveFactory::CreateMainRenderpass(ResourceCreation
             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
             RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
             ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-            ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            ImageLayout::SHADER_READ_ONLY_OPTIMAL,
         }};
 
     RenderPassHandle::AttachmentReference colorReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
@@ -193,7 +196,7 @@ RenderPassHandle * RenderPrimitiveFactory::CreatePostprocessRenderpass(ResourceC
         // Blurred SSAO
         {0,
          Format::R32_SFLOAT,
-         RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+         RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
          RenderPassHandle::AttachmentDescription::StoreOp::STORE,
          RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
          RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
@@ -379,6 +382,38 @@ void RenderPrimitiveFactory::CreateSkeletalMeshVertexInputState(ResourceCreation
     vertexInputStateCreateInfo.vertexBindingDescriptions = binding;
     auto meshInputState = ctx.CreateVertexInputState(vertexInputStateCreateInfo);
     ResourceManager::AddResource("_Primitives/VertexInputStates/mesh_skeletal.state", meshInputState);
+}
+
+void RenderPrimitiveFactory::CreateParticlePipelineLayout(ResourceCreationContext & ctx)
+{
+    ResourceCreationContext::DescriptorSetLayoutCreateInfo::Binding particleEmitterUniformBindings[3] = {
+        {0, DescriptorType::UNIFORM_BUFFER, ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT},
+        {1, DescriptorType::STORAGE_BUFFER, ShaderStageFlagBits::SHADER_STAGE_VERTEX_BIT},
+        {2, DescriptorType::COMBINED_IMAGE_SAMPLER, ShaderStageFlagBits::SHADER_STAGE_FRAGMENT_BIT}};
+    auto particleEmitterLayout = ctx.CreateDescriptorSetLayout({3, particleEmitterUniformBindings});
+    ResourceManager::AddResource("_Primitives/DescriptorSetLayouts/particleEmitter.layout", particleEmitterLayout);
+
+    auto cameraMeshLayout =
+        ResourceManager::GetResource<DescriptorSetLayoutHandle>("_Primitives/DescriptorSetLayouts/cameraMesh.layout");
+
+    auto particleLayout = ctx.CreatePipelineLayout({{particleEmitterLayout, cameraMeshLayout}});
+    ResourceManager::AddResource("_Primitives/PipelineLayouts/particles.pipelinelayout", particleLayout);
+}
+
+void RenderPrimitiveFactory::CreateParticleVertexInputState(ResourceCreationContext & ctx)
+{
+    std::vector<ResourceCreationContext::VertexInputStateCreateInfo::VertexBindingDescription> binding = {
+        {0, sizeof(ParticleVertex)}};
+
+    std::vector<ResourceCreationContext::VertexInputStateCreateInfo::VertexAttributeDescription> attributes = {
+        {0, 0, VertexComponentType::FLOAT, 2, false, 0},
+        {0, 1, VertexComponentType::FLOAT, 2, false, 2 * sizeof(float)},
+    };
+    ResourceCreationContext::VertexInputStateCreateInfo vertexInputStateCreateInfo;
+    vertexInputStateCreateInfo.vertexAttributeDescriptions = attributes;
+    vertexInputStateCreateInfo.vertexBindingDescriptions = binding;
+    auto particleInputState = ctx.CreateVertexInputState(vertexInputStateCreateInfo);
+    ResourceManager::AddResource("_Primitives/VertexInputStates/particles.state", particleInputState);
 }
 
 PipelineLayoutHandle * RenderPrimitiveFactory::CreateAmbientOcclusionPipelineLayout(ResourceCreationContext & ctx)

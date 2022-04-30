@@ -36,6 +36,9 @@ private:
     void CreateSkeletalMeshPipelineLayout(ResourceCreationContext &);
     void CreateSkeletalMeshVertexInputState(ResourceCreationContext &);
 
+    void CreateParticlePipelineLayout(ResourceCreationContext &);
+    void CreateParticleVertexInputState(ResourceCreationContext &);
+
     PipelineLayoutHandle * CreateAmbientOcclusionPipelineLayout(ResourceCreationContext &);
     PipelineLayoutHandle * CreateAmbientOcclusionBlurPipelineLayout(ResourceCreationContext &);
     PipelineLayoutHandle * CreateTonemapPipelineLayout(ResourceCreationContext &);

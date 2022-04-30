@@ -107,9 +107,23 @@ VkCullModeFlagBits ToVulkanCullMode(CullMode cullMode)
     }
 }
 
+bool IsBufferDescriptorType(DescriptorType descriptorType)
+{
+    switch (descriptorType) {
+    case DescriptorType::STORAGE_BUFFER:
+    case DescriptorType::UNIFORM_BUFFER:
+        return true;
+    case DescriptorType::COMBINED_IMAGE_SAMPLER:
+    case DescriptorType::INPUT_ATTACHMENT:
+        return false;
+    }
+    return false;
+}
+
 bool IsImageDescriptorType(DescriptorType descriptorType)
 {
     switch (descriptorType) {
+    case DescriptorType::STORAGE_BUFFER:
     case DescriptorType::UNIFORM_BUFFER:
         return false;
     case DescriptorType::COMBINED_IMAGE_SAMPLER:
@@ -117,7 +131,6 @@ bool IsImageDescriptorType(DescriptorType descriptorType)
         return true;
     }
     return false;
-    ;
 }
 
 VkDescriptorType ToVulkanDescriptorType(DescriptorType descriptorType)
@@ -125,6 +138,8 @@ VkDescriptorType ToVulkanDescriptorType(DescriptorType descriptorType)
     switch (descriptorType) {
     case DescriptorType::COMBINED_IMAGE_SAMPLER:
         return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    case DescriptorType::STORAGE_BUFFER:
+        return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     case DescriptorType::UNIFORM_BUFFER:
         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     case DescriptorType::INPUT_ATTACHMENT:

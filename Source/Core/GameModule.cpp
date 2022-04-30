@@ -9,6 +9,7 @@
 #include "Core/FrameContext.h"
 #include "Core/Input/Input.h"
 #include "Core/Rendering/DebugDrawSystem.h"
+#include "Core/Rendering/Particles/ParticleSystem.h"
 #include "Core/Rendering/PreRenderCommands.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/UI/EditorSystem.h"
@@ -32,6 +33,7 @@ enum class FrameStage {
 Semaphore renderLock;
 FrameStage currFrameStage;
 EntityManager * entityManager;
+ParticleSystem * particleSystem;
 PhysicsWorld * physicsWorld;
 RenderSystem * renderSystem;
 UiRenderSystem * uiRenderSystem;
@@ -42,6 +44,7 @@ void Init()
 {
     renderLock.Signal();
     entityManager = EntityManager::GetInstance();
+    particleSystem = ParticleSystem::GetInstance();
     physicsWorld = PhysicsWorld::GetInstance();
     renderSystem = RenderSystem::GetInstance();
     uiRenderSystem = UiRenderSystem::GetInstance();
@@ -85,6 +88,7 @@ void Tick(FrameContext & context)
     physicsWorld->Tick(Time::GetDeltaTime());
     currFrameStage = FrameStage::TICK;
     TickEntities();
+    particleSystem->Tick(Time::GetDeltaTime());
 
     EditorSystem::OnGui();
     auto res = renderSystem->GetResolution();

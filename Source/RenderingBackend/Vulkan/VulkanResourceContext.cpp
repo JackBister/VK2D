@@ -5,6 +5,7 @@
 
 #include "Jobs/JobEngine.h"
 #include "Logging/Logger.h"
+#include "RenderingBackend/Abstract/SpecializationConstants.h"
 #include "VulkanCommandBufferAllocator.h"
 #include "VulkanContextStructs.h"
 #include "VulkanConverterFuncs.h"
@@ -577,8 +578,29 @@ VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsP
 {
     assert(ci.rasterizationState != nullptr);
 
-    std::vector<uint32_t> specializationData{0};
-    std::vector<VkSpecializationMapEntry> specializationMapEntries{{0, 0, sizeof(uint32_t)}};
+    std::vector<uint32_t> specializationData;
+    specializationData.reserve(ci.specializationConstants.size() + 1);
+    std::vector<VkSpecializationMapEntry> specializationMapEntries;
+    specializationMapEntries.reserve(ci.specializationConstants.size() + 1);
+
+    // gfxApi specialization constant. 0 == Vulkan
+    specializationData.push_back(SpecializationConstants::GFX_API_VULKAN_VALUE);
+    specializationMapEntries.push_back(VkSpecializationMapEntry{
+        .constantID = SpecializationConstants::GFX_API_CONSTANT_ID, .offset = 0, .size = sizeof(uint32_t)});
+
+    for (auto const & kv : ci.specializationConstants) {
+        if (kv.first == 0) {
+            logger.Error("Attempted to set specialization constant with key=0, this key is reserved for the gfxApi "
+                         "specialization constant and will be ignored.");
+            continue;
+        }
+        specializationData.push_back(kv.second);
+        specializationMapEntries.push_back(
+            VkSpecializationMapEntry{.constantID = kv.first,
+                                     .offset = (uint32_t)((specializationData.size() - 1) * sizeof(uint32_t)),
+                                     .size = sizeof(uint32_t)});
+    }
+
     VkSpecializationInfo specializationInfo = {};
     specializationInfo.mapEntryCount = (uint32_t)specializationMapEntries.size();
     specializationInfo.pMapEntries = &specializationMapEntries[0];
@@ -690,26 +712,40 @@ VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsP
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments(ci.colorBlendAttachments.size());
     for (size_t i = 0; i < ci.colorBlendAttachments.size(); ++i) {
-        if (ci.colorBlendAttachments[i].enableBlending) {
-            colorBlendAttachments[i] = {VK_TRUE,
-                                        VK_BLEND_FACTOR_SRC_ALPHA,
-                                        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-                                        VK_BLEND_OP_ADD,
-                                        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-                                        VK_BLEND_FACTOR_ZERO,
-                                        VK_BLEND_OP_ADD,
-                                        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                            VK_COLOR_COMPONENT_A_BIT};
+        if (ci.colorBlendAttachments[i].blendMode ==
+            GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_ENABLED) {
+            colorBlendAttachments[i] = {.blendEnable = VK_TRUE,
+                                        .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+                                        .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                        .colorBlendOp = VK_BLEND_OP_ADD,
+                                        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                                        .alphaBlendOp = VK_BLEND_OP_ADD,
+                                        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT};
+        } else if (ci.colorBlendAttachments[i].blendMode ==
+                   GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_DISABLED) {
+            colorBlendAttachments[i] = {.blendEnable = VK_FALSE,
+                                        .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+                                        .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                        .colorBlendOp = VK_BLEND_OP_ADD,
+                                        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                                        .alphaBlendOp = VK_BLEND_OP_ADD,
+                                        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT};
+        } else if (ci.colorBlendAttachments[i].blendMode ==
+                   GraphicsPipelineCreateInfo::AttachmentBlendMode::ATTACHMENT_DISABLED) {
+            colorBlendAttachments[i] = {.blendEnable = VK_FALSE,
+                                        .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                                        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                                        .colorBlendOp = VK_BLEND_OP_ADD,
+                                        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                                        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                                        .alphaBlendOp = VK_BLEND_OP_ADD,
+                                        .colorWriteMask = 0};
         } else {
-            colorBlendAttachments[i] = {VK_FALSE,
-                                        VK_BLEND_FACTOR_SRC_ALPHA,
-                                        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-                                        VK_BLEND_OP_ADD,
-                                        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-                                        VK_BLEND_FACTOR_ZERO,
-                                        VK_BLEND_OP_ADD,
-                                        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                            VK_COLOR_COMPONENT_A_BIT};
+            assert(false);
         }
     }
 
@@ -936,7 +972,7 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
     std::vector<VkDescriptorImageInfo> imageInfos;
     for (size_t i = 0; i < info.descriptorCount; ++i) {
         auto & descriptor = info.descriptors[i];
-        if (descriptor.type == DescriptorType::UNIFORM_BUFFER) {
+        if (IsBufferDescriptorType(descriptor.type)) {
             auto buffer =
                 std::get<ResourceCreationContext::DescriptorSetCreateInfo::BufferDescriptor>(descriptor.descriptor);
             auto nativeBuffer = (VulkanBufferHandle *)buffer.buffer;
@@ -958,6 +994,9 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
                                   // TODO: Add this to the createInfo?
                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
             bindingToIdx.insert_or_assign(descriptor.binding, imageInfos.size() - 1);
+        } else {
+            logger.Error(
+                "Unknown descriptorType={} at binding={}, will likely crash", descriptor.type, descriptor.binding);
         }
     }
 
@@ -973,7 +1012,7 @@ DescriptorSet * VulkanResourceContext::CreateDescriptorSet(DescriptorSetCreateIn
                      1,
                      ToVulkanDescriptorType(descriptor.type),
                      IsImageDescriptorType(descriptor.type) ? &imageInfos[idx] : nullptr,
-                     descriptor.type == DescriptorType::UNIFORM_BUFFER ? &bufferInfos[idx] : nullptr,
+                     IsBufferDescriptorType(descriptor.type) ? &bufferInfos[idx] : nullptr,
                      // TODO: if UNIFORM_TEXEL_BUFFER/STORAGE_TEXEL_BUFFER uniforms become available
                      nullptr};
     }

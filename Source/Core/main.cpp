@@ -10,12 +10,15 @@
 #include "Core/GameModule.h"
 #include "Core/ProjectManager.h"
 #include "Core/Rendering/BufferAllocator.h"
+#include "Core/Rendering/DebugDrawSystem.h"
+#include "Core/Rendering/Particles/ParticleSystem.h"
 #include "Core/Rendering/RenderPrimitiveFactory.h"
 #include "Core/Rendering/RenderSystem.h"
 #include "Core/Rendering/ShaderProgramFactory.h"
 #include "Core/Resources/Project.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/UI/EditorSystem.h"
+#include "Core/physicsworld.h"
 #include "Jobs/JobEngine.h"
 #include "Logging/Logger.h"
 #include "RenderingBackend/Renderer.h"
@@ -67,11 +70,13 @@ int main(int argc, char * argv[])
     Renderer renderer("SDL", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, cfg, numJobThreads + 1);
     RenderPrimitiveFactory renderPrimitiveFactory(&renderer);
     renderPrimitiveFactory.CreatePrimitives();
-    RenderSystem renderSystem(&renderer);
-    BufferAllocator bufferAllocator(&renderSystem);
+    BufferAllocator bufferAllocator(&renderer);
+    ParticleSystem particleSystem(&renderer, &bufferAllocator, DebugDrawSystem::GetInstance());
+    RenderSystem renderSystem(&renderer, &particleSystem);
     ResourceManager::Init(&renderSystem);
     renderPrimitiveFactory.LateCreatePrimitives();
     ShaderProgramFactory::CreateResources();
+    particleSystem.Init();
     renderSystem.Init();
 
     GameModule::Init();

@@ -9,8 +9,8 @@ layout (location = 2) in vec3 normal;
 layout (location = 3) in vec2 texcoord;
 
 layout (std140, set = 1, binding = 0) uniform camera {
-	mat4 pv;
-	vec3 cameraPos;
+	mat4 p;
+	mat4 v;
 };
 layout (std140, set = 2, binding = 0) uniform model {
 	mat4 m[16];
@@ -23,7 +23,7 @@ layout (location = 3) out vec3 WorldPos;
 layout (location = 4) out mat4 WorldTransform;
 
 void main() {
-	mat4 pvm = pv * m[gl_BaseInstance];
+	mat4 pvm = p * v * m[gl_BaseInstance];
 	gl_Position = pvm * vec4(pos, 1.0);
 	Color = color;
 	Normal = normalize(mat3(m[gl_BaseInstance]) * normal);

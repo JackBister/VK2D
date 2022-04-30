@@ -4,6 +4,11 @@
 
 constexpr size_t MAX_VERTEX_WEIGHTS = 4;
 
+struct ParticleVertex {
+    glm::vec2 pos;
+    glm::vec2 uv;
+};
+
 struct VertexWithColorAndUv {
     glm::vec3 pos;
     glm::vec3 color;

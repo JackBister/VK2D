@@ -28,7 +28,8 @@ public:
            uint32_t subpass,
            std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
            ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
-           ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil);
+           ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil,
+           std::unordered_map<uint32_t, uint32_t> specializationConstants = {});
 
     inline PipelineHandle * GetPipeline() { return pipeline; }
 
@@ -48,7 +49,8 @@ private:
         CullMode cullMode, FrontFace frontFace, uint32_t subpass,
         std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
         ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
-        ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil);
+        ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil,
+        std::unordered_map<uint32_t, uint32_t> specializationConstants);
 
     static std::vector<ShaderStage> ReadShaderStages(std::vector<std::string> const & fileNames,
                                                      ResourceCreationContext & ctx);
@@ -58,7 +60,7 @@ private:
         std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
         ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
         ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil,
-        ResourceCreationContext & ctx);
+        std::unordered_map<uint32_t, uint32_t> specializationConstants, ResourceCreationContext & ctx);
 
     std::string name;
     PipelineHandle * pipeline;
@@ -66,6 +68,7 @@ private:
     std::vector<ShaderStage> stages;
 
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    std::unordered_map<uint32_t, uint32_t> specializationConstants;
     std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments;
     ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly;
     VertexInputStateHandle * vertexInputState;

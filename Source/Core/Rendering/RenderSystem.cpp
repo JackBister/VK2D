@@ -6,6 +6,7 @@
 #include <ThirdParty/optick/src/optick.h>
 
 #include "Core/FrameContext.h"
+#include "Core/Rendering/Particles/ParticleSystem.h"
 #include "Core/Resources/Image.h"
 #include "Core/Resources/Material.h"
 #include "Core/Resources/ShaderProgram.h"
@@ -187,6 +188,7 @@ void RenderSystem::PreRenderFrame(FrameContext & context, PreRenderCommands cons
         currFrame.preRenderPassCommandBuffer->BeginRecording(nullptr);
         PreRenderCameras(context, commands.cameraUpdates);
         PreRenderSprites(context, commands.spriteUpdates);
+        particleSystem->PreRender(context, commands.particleEmitterUpdates);
         uiRenderSystem.PreRenderUi(context, currFrame.preRenderPassCommandBuffer);
         currFrame.preRenderPassCommandBuffer->EndRecording();
         renderer->ExecuteCommandBuffer(currFrame.preRenderPassCommandBuffer, {}, {currFrame.preRenderPassFinished});
@@ -221,6 +223,7 @@ void RenderSystem::MainRenderFrame(FrameContext & context)
         RenderSprites(context, camera);
 
         RenderTransparentMeshes(context, camera, currFrame.meshBatches);
+        particleSystem->Render(context, camera, currFrame.mainCommandBuffer);
     }
 
     currFrame.mainCommandBuffer->CmdEndRenderPass();
@@ -332,9 +335,6 @@ void RenderSystem::SubmitSwap(FrameContext & context)
 void RenderSystem::Prepass(FrameContext & context, std::vector<MeshBatch> const & batches)
 {
     OPTICK_EVENT();
-    if (batches.size() == 0) {
-        return;
-    }
     auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     auto res = renderer->GetResolution();
 
@@ -429,11 +429,11 @@ void RenderSystem::PreRenderCameras(FrameContext const & context, std::vector<Up
         auto cam = GetCamera(camera.cameraHandle);
         cam->isActive = camera.isActive;
         struct {
-            glm::mat4 pv;
-            glm::vec3 pos;
-        } uniforms = {camera.projection * camera.view, camera.pos};
+            glm::mat4 p;
+            glm::mat4 v;
+        } uniforms = {.p = camera.projection, .v = camera.view};
         currFrame.preRenderPassCommandBuffer->CmdUpdateBuffer(
-            cam->uniformBuffer, 0, sizeof(glm::mat4) + sizeof(glm::vec3), (uint32_t *)&uniforms);
+            cam->uniformBuffer, 0, 2 * sizeof(glm::mat4), (uint32_t *)&uniforms);
 
         // TODO: This is bad
         if (camera.isActive) {

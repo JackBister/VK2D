@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -119,6 +120,12 @@ public:
     virtual void DestroyImageView(ImageViewHandle *) = 0;
 
     struct GraphicsPipelineCreateInfo {
+        enum class AttachmentBlendMode {
+            ATTACHMENT_DISABLED,
+            BLENDING_DISABLED,
+            BLENDING_ENABLED,
+        };
+
         struct PipelineDepthStencilStateCreateInfo {
             bool depthTestEnable;
             bool depthWriteEnable;
@@ -137,8 +144,7 @@ public:
         };
 
         struct ColorBlendAttachment {
-            // TODO: For now, there are only two preset blend modes
-            bool enableBlending;
+            AttachmentBlendMode blendMode;
         };
 
         struct InputAssembly {
@@ -147,6 +153,7 @@ public:
 
         uint32_t stageCount;
         PipelineShaderStageCreateInfo * pStages;
+        std::unordered_map<uint32_t, uint32_t> specializationConstants;
         VertexInputStateHandle * vertexInputState;
         PipelineDepthStencilStateCreateInfo * depthStencil;
         PipelineRasterizationStateCreateInfo * rasterizationState;

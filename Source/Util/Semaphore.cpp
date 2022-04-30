@@ -32,3 +32,8 @@ void Semaphore::Wait()
 {
     SDL_SemWait(pimpl->sem.get());
 }
+
+void Semaphore::WaitTimeout(uint32_t timeoutMs)
+{
+    SDL_SemWaitTimeout(pimpl->sem.get(), timeoutMs);
+}

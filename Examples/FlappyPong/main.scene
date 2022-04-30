@@ -1,177 +1,177 @@
 {
-  "type": "Scene",
-  "name": "main",
   "entities": [
     {
-      "type": "Entity",
+      "components": [
+        {
+          "defaultsToMain": true,
+          "isActive": true,
+          "ortho": {
+            "aspect": 0.75,
+            "viewSize": 60.0
+          },
+          "type": "CameraComponent"
+        }
+      ],
       "id": "1",
       "name": "MainCamera",
       "transform": {
         "position": {
-          "x": 0,
-          "y": 0,
-          "z": 0
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
         },
         "rotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0,
-          "w": 1
+          "w": 1.0,
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
         },
         "scale": {
-          "x": 1,
-          "y": 1,
-          "z": 1
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
         }
       },
-      "components": [
-        {
-          "type": "CameraComponent",
-          "isActive": true,
-          "defaultsToMain": true,
-          "ortho": {
-            "aspect": 0.75,
-            "viewSize": 60
-          }
-        }
-      ]
+      "type": "Entity"
     },
     {
-      "type": "Entity",
+      "components": [
+        {
+          "file": "white_pixel.png",
+          "type": "SpriteComponent"
+        },
+        {
+          "moveSpeed": 100.0,
+          "type": "BallComponent"
+        },
+        {
+          "rigidbody": {
+            "isKinematic": true,
+            "mass": 1.0,
+            "shapeInfoBox2d": {
+              "x": 4.0,
+              "y": 4.0
+            },
+            "shapeType": "BOX_2D_SHAPE_PROXYTYPE"
+          },
+          "type": "PhysicsComponent"
+        }
+      ],
       "id": "2",
       "name": "Ball",
       "transform": {
         "position": {
-          "x": 0,
-          "y": 0,
-          "z": -1
+          "x": 0.0,
+          "y": 0.0,
+          "z": -1.0
         },
         "rotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0,
-          "w": 1
+          "w": 1.0,
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
         },
         "scale": {
-          "x": 4,
-          "y": 4,
-          "z": 1
+          "x": 4.0,
+          "y": 4.0,
+          "z": 1.0
         }
       },
-      "components": [
-        {
-          "type": "SpriteComponent",
-          "file": "white_pixel.png"
-        },
-        {
-          "type": "BallComponent",
-          "moveSpeed": 100
-        },
-        {
-          "type": "PhysicsComponent",
-          "rigidbody": {
-            "isKinematic": true,
-            "mass": 1,
-            "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
-            "shapeInfoBox2d": {
-              "x": 4,
-              "y": 4
-            }
-          }
-        }
-      ]
+      "type": "Entity"
     },
     {
-      "type": "Entity",
+      "components": [
+        {
+          "file": "white_pixel.png",
+          "type": "SpriteComponent"
+        },
+        {
+          "flapSpeed": 60.0,
+          "gravity": 60.0,
+          "type": "PaddleComponent"
+        },
+        {
+          "rigidbody": {
+            "isKinematic": true,
+            "mass": 1.0,
+            "shapeInfoBox2d": {
+              "x": 2.0,
+              "y": 18.0
+            },
+            "shapeType": "BOX_2D_SHAPE_PROXYTYPE"
+          },
+          "type": "PhysicsComponent"
+        }
+      ],
       "id": "3",
       "name": "Left Paddle",
       "transform": {
         "position": {
-          "x": -70,
-          "y": 0,
-          "z": -1
+          "x": -70.0,
+          "y": 0.0,
+          "z": -1.0
         },
         "rotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0,
-          "w": 1
+          "w": 1.0,
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
         },
         "scale": {
-          "x": 2,
-          "y": 18,
-          "z": 1
+          "x": 2.0,
+          "y": 18.0,
+          "z": 1.0
         }
       },
-      "components": [
-        {
-          "type": "SpriteComponent",
-          "file": "white_pixel.png"
-        },
-        {
-          "type": "PaddleComponent",
-          "flapSpeed": 60,
-          "gravity": 60
-        },
-        {
-          "type": "PhysicsComponent",
-          "rigidbody": {
-            "isKinematic": true,
-            "mass": 1,
-            "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
-            "shapeInfoBox2d": {
-              "x": 2,
-              "y": 18
-            }
-          }
-        }
-      ]
+      "type": "Entity"
     },
     {
-      "type": "Entity",
+      "components": [
+        {
+          "file": "white_pixel.png",
+          "type": "SpriteComponent"
+        },
+        {
+          "flapSpeed": 60.0,
+          "gravity": 60.0,
+          "type": "PaddleComponent"
+        },
+        {
+          "rigidbody": {
+            "isKinematic": true,
+            "mass": 1.0,
+            "shapeInfoBox2d": {
+              "x": 2.0,
+              "y": 18.0
+            },
+            "shapeType": "BOX_2D_SHAPE_PROXYTYPE"
+          },
+          "type": "PhysicsComponent"
+        }
+      ],
       "id": "4",
       "name": "Right Paddle",
       "transform": {
         "position": {
-          "x": 70,
-          "y": 0,
-          "z": -1
+          "x": 70.0,
+          "y": 0.0,
+          "z": -1.0
         },
         "rotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0,
-          "w": 1
+          "w": 1.0,
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
         },
         "scale": {
-          "x": 2,
-          "y": 18,
-          "z": 1
+          "x": 2.0,
+          "y": 18.0,
+          "z": 1.0
         }
       },
-      "components": [
-        {
-          "type": "SpriteComponent",
-          "file": "white_pixel.png"
-        },
-        {
-          "type": "PaddleComponent",
-          "flapSpeed": 60,
-          "gravity": 60
-        },
-        {
-          "type": "PhysicsComponent",
-          "rigidbody": {
-            "isKinematic": true,
-            "mass": 1,
-            "shapeType": "BOX_2D_SHAPE_PROXYTYPE",
-            "shapeInfoBox2d": {
-              "x": 2,
-              "y": 18
-            }
-          }
-        }
-      ]
+      "type": "Entity"
     }
-  ]
+  ],
+  "name": "main",
+  "type": "Scene"
 }

@@ -7,6 +7,7 @@
 #include <ThirdParty/glm/glm/glm.hpp>
 
 #include "CameraInstance.h"
+#include "Core/Rendering/Particles/ParticleEmitter.h"
 #include "LightInstance.h"
 #include "SkeletalMeshInstance.h"
 #include "SpriteInstance.h"
@@ -65,6 +66,7 @@ public:
         Builder & WithSkeletalMeshUpdate(UpdateSkeletalMeshInstance const &);
         Builder & WithSpriteInstanceUpdate(UpdateSpriteInstance const &);
         Builder & WithStaticMeshInstanceUpdate(UpdateStaticMeshInstance const &);
+        Builder & WithParticleEmitterUpdate(UpdateParticleEmitter const &);
         PreRenderCommands Build();
 
     private:
@@ -73,15 +75,18 @@ public:
         std::vector<UpdateSkeletalMeshInstance> skeletalMeshUpdates;
         std::vector<UpdateSpriteInstance> spriteUpdates;
         std::vector<UpdateStaticMeshInstance> staticMeshUpdates;
+        std::vector<UpdateParticleEmitter> particleEmitterUpdates;
     };
 
 private:
     PreRenderCommands(std::vector<UpdateCamera> cameraUpdates, std::vector<UpdateLight> lightUpdates,
                       std::vector<UpdateSkeletalMeshInstance> skeletalMeshUpdates,
                       std::vector<UpdateSpriteInstance> spriteUpdates,
-                      std::vector<UpdateStaticMeshInstance> staticMeshUpdates)
+                      std::vector<UpdateStaticMeshInstance> staticMeshUpdates,
+                      std::vector<UpdateParticleEmitter> particleEmitterUpdates)
         : cameraUpdates(cameraUpdates), lightUpdates(lightUpdates), skeletalMeshUpdates(skeletalMeshUpdates),
-          spriteUpdates(spriteUpdates), staticMeshUpdates(staticMeshUpdates)
+          spriteUpdates(spriteUpdates), staticMeshUpdates(staticMeshUpdates),
+          particleEmitterUpdates(particleEmitterUpdates)
     {
     }
 
@@ -90,4 +95,5 @@ private:
     std::vector<UpdateSkeletalMeshInstance> skeletalMeshUpdates;
     std::vector<UpdateSpriteInstance> spriteUpdates;
     std::vector<UpdateStaticMeshInstance> staticMeshUpdates;
+    std::vector<UpdateParticleEmitter> particleEmitterUpdates;
 };

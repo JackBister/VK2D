@@ -1,27 +1,20 @@
 #include "RenderSystem.h"
 
 #include "Console/Console.h"
+#include "Core/Rendering/DebugDrawSystem.h"
 #include "Core/Resources/ResourceManager.h"
 #include "Core/Resources/ShaderProgram.h"
+#include "Core/physicsworld.h"
 #include "Logging/Logger.h"
 #include "RenderingBackend/Renderer.h"
+#include "Util/Lerp.h"
+#include "Util/RandomFloat.h"
 
 static const auto logger = Logger::Create("RenderSystem");
 
-float Lerp(float a, float b, float f)
-{
-    return a + f * (b - a);
-}
-
-// Returns a float between 0.0 and 1.0
-float RandomFloat()
-{
-    return ((float)rand() / (float)RAND_MAX);
-}
-
-RenderSystem::RenderSystem(Renderer * renderer)
+RenderSystem::RenderSystem(Renderer * renderer, ParticleSystem * particleSystem)
     : jobEngine(JobEngine::GetInstance()), renderer(renderer), rendererProperties(renderer->GetProperties()),
-      uiRenderSystem(renderer)
+      particleSystem(particleSystem), uiRenderSystem(renderer)
 {
     CommandDefinition backbufferOverrideCommand(
         "render_override_backbuffer",
@@ -244,7 +237,7 @@ void RenderSystem::InitSwapchainResources()
                 RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
                 RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
                 ImageLayout::UNDEFINED,
-                ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+                ImageLayout::SHADER_READ_ONLY_OPTIMAL,
             },
             {
                 0,
@@ -254,7 +247,7 @@ void RenderSystem::InitSwapchainResources()
                 RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
                 RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
                 ImageLayout::UNDEFINED,
-                ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+                ImageLayout::SHADER_READ_ONLY_OPTIMAL,
             },
             {
                 0,
@@ -264,7 +257,7 @@ void RenderSystem::InitSwapchainResources()
                 RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
                 RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,
                 ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-                ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                ImageLayout::SHADER_READ_ONLY_OPTIMAL,
             }};
 
         RenderPassHandle::AttachmentReference colorReference = {0, ImageLayout::COLOR_ATTACHMENT_OPTIMAL};
@@ -323,7 +316,7 @@ void RenderSystem::InitSwapchainResources()
             // Blurred SSAO
             {0,
              Format::R32_SFLOAT,
-             RenderPassHandle::AttachmentDescription::LoadOp::LOAD,
+             RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
              RenderPassHandle::AttachmentDescription::StoreOp::STORE,
              RenderPassHandle::AttachmentDescription::LoadOp::DONT_CARE,
              RenderPassHandle::AttachmentDescription::StoreOp::DONT_CARE,

@@ -21,7 +21,8 @@ void JobEngine::JobThread(uint32_t threadIdx, JobEngine * jobEngine, Queue<JobId
     while (true) {
         // Did I just make a lock free queue into a locked queue?
         // TODO: There is some kind of deadlock here where jobs are available in the queue but Wait() never returns
-        jobEngine->jobsWaiting.Wait();
+        // The 16ms timeout is a workaround for now
+        jobEngine->jobsWaiting.WaitTimeout(16);
         auto high = highPriorityQueue.Pop();
         if (high.has_value()) {
             auto id = high.value();
@@ -161,6 +162,8 @@ void JobEngine::EnqueueJob(JobId id, JobPriority priority)
     } else {
         lowPriorityWriters[threadIdx].Push(std::move(id));
     }
+    // TODO: I belive there is a race condition here where the threads waiting get woken up and check the queue but do
+    // not find anything, even though this signal is executed after the queue push.
     jobsWaiting.Signal();
 }
 

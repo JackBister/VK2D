@@ -12,6 +12,7 @@ void ShaderProgramFactory::CreateResources()
     CreateTransparentMeshShaderProgram();
     CreateAmbientOcclusionProgram();
     CreateAmbientOcclusionBlurProgram();
+    CreateParticleRenderingProgram();
     CreateTonemapProgram();
     CreateUiShaderProgram();
     CreatePostprocessShaderProgram();
@@ -33,7 +34,7 @@ void ShaderProgramFactory::CreateDebugDrawShaderProgram()
         FrontFace::CLOCKWISE,
         1,
         {
-            {false},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_DISABLED},
         },
         {
             PrimitiveTopology::LINE_LIST,
@@ -50,7 +51,7 @@ void ShaderProgramFactory::CreateDebugDrawShaderProgram()
         FrontFace::CLOCKWISE,
         1,
         {
-            {false},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_DISABLED},
         },
         {
             PrimitiveTopology::POINT_LIST,
@@ -76,9 +77,9 @@ void ShaderProgramFactory::CreatePassthroughTransformShaderProgram()
         0,
         {
             // Blending is enabled for color attachment
-            {true},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_ENABLED},
             // disabled for normals
-            {false},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_DISABLED},
         },
         {
             PrimitiveTopology::TRIANGLE_LIST,
@@ -104,9 +105,9 @@ void ShaderProgramFactory::CreateMeshShaderProgram()
         0,
         {
             // Blending is enabled for color attachment
-            {true},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_ENABLED},
             // disabled for normals
-            {false},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_DISABLED},
         },
         {
             PrimitiveTopology::TRIANGLE_LIST,
@@ -132,9 +133,9 @@ void ShaderProgramFactory::CreateSkeletalMeshShaderProgram()
         0,
         {
             // Blending is enabled for color attachment
-            {true},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_ENABLED},
             // disabled for normals
-            {false},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_DISABLED},
         },
         {
             PrimitiveTopology::TRIANGLE_LIST,
@@ -160,9 +161,9 @@ void ShaderProgramFactory::CreateTransparentMeshShaderProgram()
         0,
         {
             // Blending is enabled for color attachment
-            {true},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_ENABLED},
             // disabled for normals
-            {false},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_DISABLED},
         },
         {
             PrimitiveTopology::TRIANGLE_LIST,
@@ -176,24 +177,25 @@ void ShaderProgramFactory::CreateAmbientOcclusionProgram()
     depthStencil.depthCompareOp = CompareOp::ALWAYS;
     depthStencil.depthTestEnable = false;
     depthStencil.depthWriteEnable = false;
-    ShaderProgram::Create("_Primitives/ShaderPrograms/ambientOcclusion.program",
-                          {"shaders/passthrough.vert", "shaders/ambientOcclusion.frag"},
-                          ResourceManager::GetResource<VertexInputStateHandle>(
-                              "_Primitives/VertexInputStates/passthrough-transform.state"),
-                          ResourceManager::GetResource<PipelineLayoutHandle>(
-                              "_Primitives/PipelineLayouts/ambientOcclusion.pipelinelayout"),
-                          ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/ssao.pass"),
-                          CullMode::NONE,
-                          FrontFace::CLOCKWISE,
-                          0,
-                          {
-                              // Blending enabled for color attachment
-                              {true},
-                          },
-                          {
-                              PrimitiveTopology::TRIANGLE_LIST,
-                          },
-                          depthStencil);
+    ShaderProgram::Create(
+        "_Primitives/ShaderPrograms/ambientOcclusion.program",
+        {"shaders/passthrough.vert", "shaders/ambientOcclusion.frag"},
+        ResourceManager::GetResource<VertexInputStateHandle>(
+            "_Primitives/VertexInputStates/passthrough-transform.state"),
+        ResourceManager::GetResource<PipelineLayoutHandle>(
+            "_Primitives/PipelineLayouts/ambientOcclusion.pipelinelayout"),
+        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/ssao.pass"),
+        CullMode::NONE,
+        FrontFace::CLOCKWISE,
+        0,
+        {
+            // Blending enabled for color attachment
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_ENABLED},
+        },
+        {
+            PrimitiveTopology::TRIANGLE_LIST,
+        },
+        depthStencil);
 }
 
 void ShaderProgramFactory::CreateAmbientOcclusionBlurProgram()
@@ -203,24 +205,74 @@ void ShaderProgramFactory::CreateAmbientOcclusionBlurProgram()
     depthStencil.depthCompareOp = CompareOp::ALWAYS;
     depthStencil.depthTestEnable = false;
     depthStencil.depthWriteEnable = false;
-    ShaderProgram::Create("_Primitives/ShaderPrograms/ambientOcclusionBlur.program",
-                          {"shaders/passthrough.vert", "shaders/ambientOcclusionBlur.frag"},
-                          ResourceManager::GetResource<VertexInputStateHandle>(
-                              "_Primitives/VertexInputStates/passthrough-transform.state"),
-                          ResourceManager::GetResource<PipelineLayoutHandle>(
-                              "_Primitives/PipelineLayouts/ambientOcclusionBlur.pipelinelayout"),
-                          ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
-                          CullMode::NONE,
-                          FrontFace::CLOCKWISE,
-                          0,
-                          {
-                              // Blending enabled for color attachment
-                              {true},
-                          },
-                          {
-                              PrimitiveTopology::TRIANGLE_LIST,
-                          },
-                          depthStencil);
+    ShaderProgram::Create(
+        "_Primitives/ShaderPrograms/ambientOcclusionBlur.program",
+        {"shaders/passthrough.vert", "shaders/ambientOcclusionBlur.frag"},
+        ResourceManager::GetResource<VertexInputStateHandle>(
+            "_Primitives/VertexInputStates/passthrough-transform.state"),
+        ResourceManager::GetResource<PipelineLayoutHandle>(
+            "_Primitives/PipelineLayouts/ambientOcclusionBlur.pipelinelayout"),
+        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/postprocess.pass"),
+        CullMode::NONE,
+        FrontFace::CLOCKWISE,
+        0,
+        {
+            // Blending enabled for color attachment
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_ENABLED},
+        },
+        {
+            PrimitiveTopology::TRIANGLE_LIST,
+        },
+        depthStencil);
+}
+
+void ShaderProgramFactory::CreateParticleRenderingProgram()
+{
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil;
+    depthStencil.depthCompareOp = CompareOp::LESS_OR_EQUAL;
+    depthStencil.depthTestEnable = true;
+    depthStencil.depthWriteEnable = false; // No depth write so we don't get SSAO on particles
+    // Constant ID 1 = isWorldspaceParticleEmitter = false
+    std::unordered_map<uint32_t, uint32_t> localSpaceSpecialization{{1, 0}};
+    ShaderProgram::Create(
+        "_Primitives/ShaderPrograms/particleRendering.program",
+        {"shaders/particles.vert", "shaders/particles.frag"},
+        ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/particles.state"),
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/particles.pipelinelayout"),
+        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass"),
+        CullMode::BACK,
+        FrontFace::CLOCKWISE,
+        0,
+        {// Blending enabled for color attachment
+         {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_ENABLED},
+         // Does not write to normals buffer - don't blend?
+         {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::ATTACHMENT_DISABLED}},
+        {
+            PrimitiveTopology::TRIANGLE_LIST,
+        },
+        depthStencil,
+        localSpaceSpecialization);
+    // Constant ID 1 = isWorldspaceParticleEmitter = true
+    std::unordered_map<uint32_t, uint32_t> worldSpaceSpecialization{{1, 1}};
+    ShaderProgram::Create(
+        "_Primitives/ShaderPrograms/particleRendering_worldSpace.program",
+        {"shaders/particles.vert", "shaders/particles.frag"},
+        ResourceManager::GetResource<VertexInputStateHandle>("_Primitives/VertexInputStates/particles.state"),
+        ResourceManager::GetResource<PipelineLayoutHandle>("_Primitives/PipelineLayouts/particles.pipelinelayout"),
+        ResourceManager::GetResource<RenderPassHandle>("_Primitives/Renderpasses/main.pass"),
+        CullMode::BACK,
+        FrontFace::CLOCKWISE,
+        0,
+        {// Blending enabled for color attachment
+         {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_ENABLED},
+         // Does not write to normals buffer - don't blend?
+         {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::ATTACHMENT_DISABLED}},
+        {
+            PrimitiveTopology::TRIANGLE_LIST,
+        },
+        depthStencil,
+        // Constant ID 1 = isWorldspaceParticleEmitter = true
+        worldSpaceSpecialization);
 }
 
 void ShaderProgramFactory::CreateTonemapProgram()
@@ -240,8 +292,7 @@ void ShaderProgramFactory::CreateTonemapProgram()
         FrontFace::CLOCKWISE,
         1,
         {
-            // Blending enabled for color attachment
-            {false},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_DISABLED},
         },
         {
             PrimitiveTopology::TRIANGLE_LIST,
@@ -266,7 +317,7 @@ void ShaderProgramFactory::CreateUiShaderProgram()
         1,
         {
             // Blending enabled for color attachment
-            {true},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_ENABLED},
         },
         {
             PrimitiveTopology::TRIANGLE_LIST,
@@ -292,7 +343,7 @@ void ShaderProgramFactory::CreatePostprocessShaderProgram()
         1,
         {
             // Blending disabled for color attachment
-            {false},
+            {.blendMode = ResourceCreationContext::GraphicsPipelineCreateInfo::AttachmentBlendMode::BLENDING_DISABLED},
         },
         {
             PrimitiveTopology::TRIANGLE_LIST,

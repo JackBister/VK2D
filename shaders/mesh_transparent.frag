@@ -15,8 +15,8 @@ layout (location = 0) out vec4 outColor;
 layout (location = 1) out vec2 outNormal;
 
 layout (std140, set = 1, binding = 0) uniform camera {
-	mat4 pv;
-	vec3 cameraPos;
+	mat4 p;
+	mat4 v;
 };
 
 layout (set = 3, binding = 0) uniform sampler2D albedo;
@@ -59,6 +59,7 @@ void main() {
 	}
 	*/
 	vec3 N = Normal;
+	vec3 cameraPos = vec3(v[3][0], v[3][1], v[3][2]);
 	vec3 V = normalize(cameraPos - WorldPos);
 	vec3 albedo = pow(texture(albedo, Texcoord).xyz, vec3(2.2));
 	float metallic = texture(metallic, Texcoord).x;

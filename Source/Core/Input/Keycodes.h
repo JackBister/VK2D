@@ -229,6 +229,8 @@ typedef enum {
     // For mice with more buttons than 3. Kinda dislike the name.
     KC_MOUSE_X1,
     KC_MOUSE_X2,
+
+    KC_UNKNOWN
 } Keycode;
 
 extern std::unordered_map<std::string, Keycode> strToKeycode;

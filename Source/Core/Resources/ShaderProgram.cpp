@@ -70,7 +70,7 @@ PipelineHandle * ShaderProgram::CreatePipeline(
     std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
     ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
     ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil,
-    ResourceCreationContext & ctx)
+    std::unordered_map<uint32_t, uint32_t> specializationConstants, ResourceCreationContext & ctx)
 {
 
     std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineShaderStageCreateInfo> stagesCreateInfo(
@@ -88,6 +88,7 @@ PipelineHandle * ShaderProgram::CreatePipeline(
     rasterizationInfo.frontFace = frontFace;
 
     ResourceCreationContext::GraphicsPipelineCreateInfo pipelineCreateInfo;
+    pipelineCreateInfo.specializationConstants = specializationConstants;
     pipelineCreateInfo.depthStencil = &depthStencil;
     pipelineCreateInfo.pipelineLayout = pipelineLayout;
     pipelineCreateInfo.rasterizationState = &rasterizationInfo;
@@ -129,7 +130,8 @@ ShaderProgram * ShaderProgram::Create(
     uint32_t subpass,
     std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
     ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
-    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil)
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil,
+    std::unordered_map<uint32_t, uint32_t> specializationConstants)
 {
     assert(fileNames.size() > 0);
 
@@ -147,7 +149,8 @@ ShaderProgram * ShaderProgram::Create(
                                       subpass,
                                       colorBlendAttachments,
                                       inputAssembly,
-                                      vertexInputState](ResourceCreationContext & ctx) {
+                                      vertexInputState,
+                                      specializationConstants](ResourceCreationContext & ctx) {
         GlslToSpirvShaderCompiler glslCompiler(std::make_shared<DefaultFileSlurper>());
 
         auto stages = ReadShaderStages(fileNames, ctx);
@@ -173,6 +176,7 @@ ShaderProgram * ShaderProgram::Create(
                                        colorBlendAttachments,
                                        inputAssembly,
                                        depthStencil,
+                                       specializationConstants,
                                        ctx);
 
         ret = new ShaderProgram(name,
@@ -186,7 +190,8 @@ ShaderProgram * ShaderProgram::Create(
                                 subpass,
                                 colorBlendAttachments,
                                 inputAssembly,
-                                depthStencil);
+                                depthStencil,
+                                specializationConstants);
         sem.Signal();
     });
     sem.Wait();
@@ -238,6 +243,7 @@ ShaderProgram * ShaderProgram::Create(
                                                    program->colorBlendAttachments,
                                                    program->inputAssembly,
                                                    program->depthStencil,
+                                                   program->specializationConstants,
                                                    ctx);
                 ResourceManager::DestroyResources([oldStages, oldPipeline](ResourceCreationContext & ctx) {
                     ctx.DestroyPipeline(oldPipeline);
@@ -268,6 +274,7 @@ void ShaderProgram::SetRenderpass(RenderPassHandle * newPass)
                                         this->colorBlendAttachments,
                                         this->inputAssembly,
                                         this->depthStencil,
+                                        this->specializationConstants,
                                         ctx);
         ResourceManager::DestroyResources(
             [oldPipeline](ResourceCreationContext & ctx) { ctx.DestroyPipeline(oldPipeline); });
@@ -280,10 +287,11 @@ ShaderProgram::ShaderProgram(
     CullMode cullMode, FrontFace frontFace, uint32_t subpass,
     std::vector<ResourceCreationContext::GraphicsPipelineCreateInfo::ColorBlendAttachment> colorBlendAttachments,
     ResourceCreationContext::GraphicsPipelineCreateInfo::InputAssembly inputAssembly,
-    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil)
+    ResourceCreationContext::GraphicsPipelineCreateInfo::PipelineDepthStencilStateCreateInfo depthStencil,
+    std::unordered_map<uint32_t, uint32_t> specializationConstants)
     : name(name), pipeline(pipeline), stages(stages), vertexInputState(vertexInputState),
       pipelineLayout(pipelineLayout), renderPass(renderPass), cullMode(cullMode), frontFace(frontFace),
       subpass(subpass), colorBlendAttachments(colorBlendAttachments), inputAssembly(inputAssembly),
-      depthStencil(depthStencil)
+      depthStencil(depthStencil), specializationConstants(specializationConstants)
 {
 }

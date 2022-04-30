@@ -26,7 +26,7 @@ public:
 
     bool HasTransparency() const;
 
-    ImageViewHandle * GetDefaultView() const;
+    ImageViewHandle * GetDefaultView() const { return defaultView; }
     ImageHandle * GetImage() const;
 
 #if HOT_RELOAD_RESOURCES

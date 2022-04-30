@@ -196,11 +196,6 @@ bool Image::HasTransparency() const
     return hasTransparency;
 }
 
-ImageViewHandle * Image::GetDefaultView() const
-{
-    return defaultView;
-}
-
 ImageHandle * Image::GetImage() const
 {
     return img;

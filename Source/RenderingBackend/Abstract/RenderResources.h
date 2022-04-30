@@ -62,8 +62,8 @@ enum class DescriptorType {
     STORAGE_TEXEL_BUFFER = 5,
     */
     UNIFORM_BUFFER = 6,
-    /*
     STORAGE_BUFFER = 7,
+    /*
     UNIFORM_BUFFER_DYNAMIC = 8,
     STORAGE_BUFFER_DYNAMIC = 9,
     */
