@@ -34,7 +34,7 @@
         "args": [
           "-DUSE_OGL_RENDERER=1",
           "-G",
-          "Visual Studio 16 2019",
+          "Visual Studio 17 2022",
           "-A",
           "x64",
           ".."
@@ -51,7 +51,7 @@
       "type": "shell",
       "windows": {
         "command": "cmake",
-        "args": ["-G", "Visual Studio 16 2019", "-A", "x64", ".."],
+        "args": ["-G", "Visual Studio 17 2022", "-A", "x64", ".."],
         "options": {
           "cwd": "${workspaceFolder}/build"
         }
@@ -67,7 +67,7 @@
         "args": [
           "-DCMAKE_BUILD_TYPE=Release",
           "-G",
-          "Visual Studio 16 2019",
+          "Visual Studio 17 2022",
           "-A",
           "x64",
           ".."

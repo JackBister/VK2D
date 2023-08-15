@@ -62,35 +62,35 @@ public:
     template <class... Args>
     void Trace(std::string_view fmt, Args const &... args) const
     {
-        std::string messageString = std::format(fmt, args...);
+        std::string messageString = std::vformat(fmt, std::make_format_args(args...));
         appender->Append(LogMessage(name, LogLevel::TRACE, messageString));
     }
 
     template <class... Args>
     void Info(std::string_view fmt, Args const &... args) const
     {
-        std::string messageString = std::format(fmt, args...);
+        std::string messageString = std::vformat(fmt, std::make_format_args(args...));
         appender->Append(LogMessage(name, LogLevel::INFO, messageString));
     }
 
     template <class... Args>
     void Warn(std::string_view fmt, Args const &... args) const
     {
-        std::string messageString = std::format(fmt, args...);
+        std::string messageString = std::vformat(fmt, std::make_format_args(args...));
         appender->Append(LogMessage(name, LogLevel::WARN, messageString));
     }
 
     template <class... Args>
     void Error(std::string_view fmt, Args const &... args) const
     {
-        std::string messageString = std::format(fmt, args...);
+        std::string messageString = std::vformat(fmt, std::make_format_args(args...));
         appender->Append(LogMessage(name, LogLevel::ERROR, messageString));
     }
 
     template <class... Args>
     void Severe(std::string_view fmt, Args const &... args) const
     {
-        std::string messageString = std::format(fmt, args...);
+        std::string messageString = std::vformat(fmt, std::make_format_args(args...));
         appender->Append(LogMessage(name, LogLevel::SEVERE, messageString));
     }
 
