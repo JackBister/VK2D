@@ -37,3 +37,15 @@
 [submodule "Source/ThirdParty/bullet3"]
 	path = Source/ThirdParty/bullet3
 	url = https://github.com/bulletphysics/bullet3.git
+[submodule "Source/ThirdParty/shaderc"]
+	path = Source/ThirdParty/shaderc
+	url = https://github.com/google/shaderc.git
+[submodule "Source/ThirdParty/SPIRV-Tools"]
+	path = Source/ThirdParty/SPIRV-Tools
+	url = https://github.com/KhronosGroup/SPIRV-Tools.git
+[submodule "Source/ThirdParty/SPIRV-Headers"]
+	path = Source/ThirdParty/SPIRV-Headers
+	url = https://github.com/KhronosGroup/SPIRV-Headers.git
+[submodule "Source/ThirdParty/glslang"]
+	path = Source/ThirdParty/glslang
+	url = https://github.com/KhronosGroup/glslang.git

@@ -110,13 +110,9 @@ else()
     )
 endif()
 
-find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.h)
 target_include_directories(Main PUBLIC Source)
 target_include_directories(Main SYSTEM PRIVATE
-    ${SHADERC_INCLUDE_DIR}
     Source/ThirdParty/bullet3/src)
-
-find_library(SHADERC_LIBRARY shaderc_combined)
 
 target_link_libraries(
         Main
@@ -127,7 +123,7 @@ target_link_libraries(
         ImGuizmo
         LinearMath
         SDL2
-        ${SHADERC_LIBRARY}
+        shaderc
 )
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR}/Source FILES ${SOURCES})
