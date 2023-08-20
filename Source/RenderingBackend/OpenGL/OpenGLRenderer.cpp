@@ -118,7 +118,7 @@ Format Renderer::GetBackbufferFormat() const
     return Format::RGBA8;
 }
 
-glm::ivec2 Renderer::GetResolution() const
+glm::uvec2 Renderer::GetResolution() const
 {
     return config.windowResolution;
 }

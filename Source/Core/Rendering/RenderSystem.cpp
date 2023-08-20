@@ -119,7 +119,7 @@ void RenderSystem::DestroyResources(std::function<void(ResourceCreationContext &
     scheduledDestroyers.push_back({(int)frameInfo.size(), fun});
 }
 
-glm::ivec2 RenderSystem::GetResolution()
+glm::uvec2 RenderSystem::GetResolution()
 {
     return renderer->GetResolution();
 }
@@ -242,7 +242,7 @@ void RenderSystem::PostProcessFrame(FrameContext & context)
     auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     auto res = renderer->GetResolution();
 
-    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    CommandBuffer::Viewport viewport = {0.f, 0.f, static_cast<float>(res.x), static_cast<float>(res.y), 0.f, 1.f};
     CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
 
     currFrame.postProcessCommandBuffer->Reset();
@@ -291,7 +291,7 @@ void RenderSystem::PostProcessFrame(FrameContext & context)
     currFrame.postProcessCommandBuffer->CmdDrawIndexed(6, 1, 0, 0, 0);
 
     if (backbufferOverride != nullptr) {
-        CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+        CommandBuffer::Viewport viewport = {0.f, 0.f, static_cast<float>(res.x), static_cast<float>(res.y), 0.f, 1.f};
         currFrame.postProcessCommandBuffer->CmdSetViewport(0, 1, &viewport);
 
         CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
@@ -355,7 +355,7 @@ void RenderSystem::Prepass(FrameContext & context, std::vector<MeshBatch> const 
         return;
     }
 
-    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    CommandBuffer::Viewport viewport = {0.f, 0.f, static_cast<float>(res.x), static_cast<float>(res.y), 0.f, 1.f};
     currFrame.mainCommandBuffer->CmdSetViewport(0, 1, &viewport);
 
     CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
@@ -470,7 +470,7 @@ void RenderSystem::RenderMeshes(FrameContext & context, CameraInstance const & c
 
     auto res = renderer->GetResolution();
 
-    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    CommandBuffer::Viewport viewport = {0.f, 0.f, static_cast<float>(res.x), static_cast<float>(res.y), 0.f, 1.f};
     currFrame.mainCommandBuffer->CmdSetViewport(0, 1, &viewport);
 
     CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
@@ -551,7 +551,7 @@ void RenderSystem::RenderTransparentMeshes(FrameContext & context, CameraInstanc
 
     auto res = renderer->GetResolution();
 
-    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    CommandBuffer::Viewport viewport = {0.f, 0.f, static_cast<float>(res.x), static_cast<float>(res.y), 0.f, 1.f};
     currFrame.mainCommandBuffer->CmdSetViewport(0, 1, &viewport);
 
     CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
@@ -691,7 +691,7 @@ void RenderSystem::RenderDebugDraws(FrameContext & context, CameraInstance const
         currFrame.debugPointsMapped[debugPointsIdx++] = point.color;
     }
 
-    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    CommandBuffer::Viewport viewport = {0.f, 0.f, static_cast<float>(res.x), static_cast<float>(res.y), 0.f, 1.f};
     currFrame.postProcessCommandBuffer->CmdSetViewport(0, 1, &viewport);
 
     CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};
@@ -1090,7 +1090,7 @@ void RenderSystem::RenderSprites(FrameContext & context, CameraInstance const & 
     auto & currFrame = frameInfo[context.currentGpuFrameIndex];
     auto res = renderer->GetResolution();
 
-    CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+    CommandBuffer::Viewport viewport = {0.f, 0.f, static_cast<float>(res.x), static_cast<float>(res.y), 0.f, 1.f};
     currFrame.mainCommandBuffer->CmdSetViewport(0, 1, &viewport);
 
     CommandBuffer::Rect2D scissor = {{0, 0}, {res.x, res.y}};

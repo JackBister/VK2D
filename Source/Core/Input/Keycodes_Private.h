@@ -462,6 +462,7 @@ SDL_Keycode KeycodeToSdlKeycode(Keycode kc)
         return MOUSE_TO_KEYCODE(SDL_BUTTON_X2);
     default:
         assert(false);
+        return SDLK_RETURN;
     }
 }
 

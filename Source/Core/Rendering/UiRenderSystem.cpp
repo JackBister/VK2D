@@ -189,7 +189,8 @@ void UiRenderSystem::RenderUi(FrameContext & context, CommandBuffer * commandBuf
                 imCmdBuf->UserCallback(cmdList, imCmdBuf);
             } else {
                 auto res = renderer->GetResolution();
-                CommandBuffer::Viewport viewport = {0.f, 0.f, res.x, res.y, 0.f, 1.f};
+                CommandBuffer::Viewport viewport = {
+                    0.f, 0.f, static_cast<float>(res.x), static_cast<float>(res.y), 0.f, 1.f};
                 commandBuffer->CmdSetViewport(0, 1, &viewport);
 
                 CommandBuffer::Rect2D scissor;

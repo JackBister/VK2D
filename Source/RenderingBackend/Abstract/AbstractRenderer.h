@@ -22,7 +22,7 @@ public:
     /**
      * Returns the rendering resolution (currently tied to window resolution) of the renderer's backbuffers
      */
-    virtual glm::ivec2 GetResolution() const = 0;
+    virtual glm::uvec2 GetResolution() const = 0;
     /**
      * Returns the number of framebuffers in the swapchain.
      */

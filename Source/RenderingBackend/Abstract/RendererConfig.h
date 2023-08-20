@@ -7,6 +7,6 @@ enum class PresentMode { IMMEDIATE, FIFO, MAILBOX };
 class RendererConfig
 {
 public:
-    glm::ivec2 windowResolution;
+    glm::uvec2 windowResolution;
     PresentMode presentMode;
 };

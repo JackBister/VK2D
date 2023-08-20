@@ -22,12 +22,12 @@ The following libraries are currently used by the engine:
 - [stb](https://github.com/nothings/stb)
 - [tinyobjloader](https://github.com/syoyo/tinyobjloader)
 
-These are all clonde into the `Source/ThirdParty` directory using git submodules and then built together with the engine. This means that the first build after cloning will be slow because all these libraries need to be built.
+These are all cloned into the `Source/ThirdParty` directory using git submodules and then built together with the engine. This means that the first build after cloning will be slow because all these libraries need to be built.
 
 When it comes to graphics APIs, the engine currently targets:
 
 - Vulkan 1.0
-- OpenGL 4.6 - SPIR-V support was standardized in 4.6, and the engine only supports SPIR-V shaders as of now.
+- OpenGL 4.6
 
 You must have the following installed in order to build:
 
@@ -37,8 +37,8 @@ You must have the following installed in order to build:
 ## Build instructions
 
 1. Clone the project: `git clone https://github.com/JackBister/VK2D.git`
-2. Download dependencies: `git submodule update --init`
-3. Enter the directory: `cd VK2D`
+2. Enter the directory: `cd VK2D`
+3. Download dependencies: `git submodule update --init`
 4. Create the build directory: `mkdir build`
 5. Enter the build directory: `cd build`
 6. Run CMake to generate project files, in this case using Visual Studio: `cmake -G "Visual Studio 17 2022" -A x64`

@@ -21,7 +21,7 @@ struct ImageAndView {
     ImageViewHandle * imageView;
 };
 
-static ImageAndView CreateImageResources(std::vector<uint8_t> const & data, int width, int height)
+static ImageAndView CreateImageResources(std::vector<uint8_t> const & data, uint32_t width, uint32_t height)
 {
     OPTICK_EVENT();
     ImageAndView ret;
@@ -75,7 +75,7 @@ bool CheckForTransparency(std::vector<uint8_t> const & data)
     return false;
 }
 
-static std::optional<std::vector<uint8_t>> ReadImageFile(std::string fileName, int * width, int * height)
+static std::optional<std::vector<uint8_t>> ReadImageFile(std::string fileName, uint32_t * width, uint32_t * height)
 {
     OPTICK_EVENT();
     int n;
@@ -86,7 +86,10 @@ static std::optional<std::vector<uint8_t>> ReadImageFile(std::string fileName, i
         *height = 0;
         return std::nullopt;
     }
-    uint8_t * imageData = stbi_load_from_file(file, width, height, &n, 4);
+    int widthInt, heightInt;
+    uint8_t * imageData = stbi_load_from_file(file, &widthInt, &heightInt, &n, 4);
+    *width = static_cast<uint32_t>(widthInt);
+    *height = static_cast<uint32_t>(heightInt);
     fclose(file);
     std::vector<uint8_t> data(*width * *height * 4);
     memcpy(&data[0], imageData, *width * *height * 4);
@@ -130,7 +133,7 @@ Image * Image::FromFile(std::string const & fileName, bool forceReload)
         return ResourceManager::GetResource<Image>(fileName);
     }
 
-    int width, height;
+    uint32_t width, height;
     auto dataOpt = ReadImageFile(fileName, &width, &height);
     if (!dataOpt.has_value()) {
         return nullptr;
@@ -152,7 +155,7 @@ Image * Image::FromFile(std::string const & fileName, bool forceReload)
             logger.Warn("Image file '{}' was changed but ResourceManager had no reference for it.", fileName);
             return;
         }
-        int width, height;
+        uint32_t width, height;
         auto dataOpt = ReadImageFile(fileName, &width, &height);
         if (!dataOpt.has_value()) {
             logger.Warn("Failed to read image file '{}'", fileName);

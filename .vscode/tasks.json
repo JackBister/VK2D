@@ -109,6 +109,18 @@
         },
         "problemMatcher": ["$msCompile"]
       }
+    },
+    {
+      "label": "msbuild-Main",
+      "type": "shell",
+      "windows": {
+        "command": "msbuild",
+        "args": ["Main.vcxproj"],
+        "options": {
+          "cwd": "${workspaceFolder}/build"
+        },
+        "problemMatcher": ["$msCompile"]
+      }
     }
   ]
 }

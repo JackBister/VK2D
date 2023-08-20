@@ -166,7 +166,7 @@ std::optional<Line> CameraComponent::ScreenPointToLine(int x, int y)
         logger.Warn("ScreenPointToLine: x/y cannot be less than 0 but were x={} y={}", x, y);
         return std::nullopt;
     }
-    glm::ivec2 resolution = renderSystem->GetResolution();
+    auto resolution = renderSystem->GetResolution();
     if (x > resolution.x || y > resolution.y) {
         logger.Warn("ScreenPointToLine: x/y cannot be greater than resolution but were x={} y={}. resolution was "
                     "resX={} resY={}",

@@ -90,7 +90,7 @@ VkComponentSwizzle ToVulkanComponentSwizzle(ComponentSwizzle swizzle)
     }
 }
 
-VkCullModeFlagBits ToVulkanCullMode(CullMode cullMode)
+VkCullModeFlags ToVulkanCullMode(CullMode cullMode)
 {
     switch (cullMode) {
     case CullMode::NONE:

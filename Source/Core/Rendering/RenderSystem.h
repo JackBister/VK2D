@@ -98,7 +98,7 @@ public:
     void CreateResources(std::function<void(ResourceCreationContext &)> && fun);
     void DestroyResources(std::function<void(ResourceCreationContext &)> && fun);
 
-    glm::ivec2 GetResolution();
+    glm::uvec2 GetResolution();
 
     CameraInstanceId CreateCamera(bool isActive = true);
     void DestroyCamera(CameraInstanceId camera);

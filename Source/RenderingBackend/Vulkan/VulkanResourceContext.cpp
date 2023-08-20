@@ -442,11 +442,11 @@ RenderPassHandle * VulkanResourceContext::CreateRenderPass(ResourceCreationConte
     VkRenderPassCreateInfo const info{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
                                       nullptr,
                                       0,
-                                      attachments.size(),
+                                      static_cast<uint32_t>(attachments.size()),
                                       attachments.size() > 0 ? &attachments[0] : nullptr,
-                                      subpassDescriptions.size(),
+                                      static_cast<uint32_t>(subpassDescriptions.size()),
                                       subpassDescriptions.size() > 0 ? &subpassDescriptions[0] : nullptr,
-                                      subpassDependencies.size(),
+                                      static_cast<uint32_t>(subpassDependencies.size()),
                                       subpassDependencies.size() > 0 ? &subpassDependencies[0] : nullptr};
 
     auto const ret = (VulkanRenderPassHandle *)allocator.allocate(sizeof(VulkanRenderPassHandle));
@@ -522,7 +522,7 @@ FramebufferHandle * VulkanResourceContext::CreateFramebuffer(ResourceCreationCon
                                        nullptr,
                                        0,
                                        ((VulkanRenderPassHandle *)ci.renderPass)->renderPass,
-                                       imageViews.size(),
+                                       static_cast<uint32_t>(imageViews.size()),
                                        &imageViews[0],
                                        ci.width,
                                        ci.height,
@@ -754,7 +754,7 @@ VulkanResourceContext::CreateGraphicsPipeline(ResourceCreationContext::GraphicsP
                                                         0,
                                                         VK_FALSE,
                                                         VK_LOGIC_OP_COPY,
-                                                        colorBlendAttachments.size(),
+                                                        static_cast<uint32_t>(colorBlendAttachments.size()),
                                                         colorBlendAttachments.size() > 0 ? &colorBlendAttachments[0]
                                                                                          : nullptr,
                                                         {0.f, 0.f, 0.f, 0.f}};

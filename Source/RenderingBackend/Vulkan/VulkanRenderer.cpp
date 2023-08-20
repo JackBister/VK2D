@@ -236,10 +236,10 @@ void Renderer::SwapWindow(uint32_t imageIndex, SemaphoreHandle * waitSem)
     auto res = vkQueuePresentKHR(presentQueue, &presentInfo);
 }
 
-glm::ivec2 Renderer::GetResolution() const
+glm::uvec2 Renderer::GetResolution() const
 {
     // TODO: May not work when window resolution and render resolution are decoupled?
-    return glm::ivec2(swapchain.extent.width, swapchain.extent.height);
+    return glm::uvec2(swapchain.extent.width, swapchain.extent.height);
 }
 
 uint32_t Renderer::GetSwapCount() const
@@ -592,7 +592,7 @@ VkExtent2D Renderer::GetDesiredExtent(VkSurfaceCapabilitiesKHR surfaceCapabiliti
 {
     VkExtent2D desiredExtent = surfaceCapabilities.currentExtent;
     if (surfaceCapabilities.currentExtent.width == -1) {
-        desiredExtent = {static_cast<uint32_t>(cfg.windowResolution.x), static_cast<uint32_t>(cfg.windowResolution.y)};
+        desiredExtent = {cfg.windowResolution.x, cfg.windowResolution.y};
         if (desiredExtent.width < surfaceCapabilities.minImageExtent.width) {
             desiredExtent.width = surfaceCapabilities.minImageExtent.width;
         }

@@ -13,7 +13,7 @@ uint32_t ToVulkanBufferUsageFlagBits(BufferUsageFlags flags);
 VkCompareOp ToVulkanCompareOp(CompareOp compareOp);
 VkComponentMapping ToVulkanComponentMapping(ImageViewHandle::ComponentMapping mapping);
 VkComponentSwizzle ToVulkanComponentSwizzle(ComponentSwizzle swizzle);
-VkCullModeFlagBits ToVulkanCullMode(CullMode cullMode);
+VkCullModeFlags ToVulkanCullMode(CullMode cullMode);
 bool IsBufferDescriptorType(DescriptorType descriptorType);
 bool IsImageDescriptorType(DescriptorType descriptorType);
 VkDescriptorType ToVulkanDescriptorType(DescriptorType descriptorType);
