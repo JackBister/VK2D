@@ -4,8 +4,6 @@
       "name": "Win32",
       "includePath": [
         "${workspaceFolder}/Source/**",
-        "${env:VCPKG_ROOT}/installed/x64-windows/include",
-        "${env:VCPKG_ROOT}/installed/x64-windows/include/bullet",
         "${env:VULKAN_SDK}/Include"
       ],
       "defines": ["_DEBUG", "UNICODE", "_UNICODE", "HOT_RELOAD_RESOURCES"],

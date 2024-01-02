@@ -268,7 +268,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
 #if defined(_DEBUG)
     instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 #endif
-    std::vector<const char *> const instanceLayers = {
+    std::vector<const char *> instanceLayers = {
 #if defined(_DEBUG)
         "VK_LAYER_KHRONOS_validation",
 #endif
@@ -276,6 +276,36 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
         "VK_LAYER_LUNARG_api_dump"
 #endif
     };
+
+    uint32_t layerCount = 0;
+    auto res = vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+    if (res != VK_SUCCESS) {
+        logger.Severe("vkEnumerateInstanceLayerProperties failed.");
+        assert(false);
+        exit(1);
+    }
+    std::vector<VkLayerProperties> layerProperties(layerCount);
+    res = vkEnumerateInstanceLayerProperties(&layerCount, &layerProperties[0]);
+    if (res != VK_SUCCESS) {
+        logger.Severe("vkEnumerateInstanceLayerProperties failed.");
+        assert(false);
+        exit(1);
+    }
+
+    logger.Info("Available instance layers:");
+    for (auto const & lp : layerProperties) {
+        logger.Info("{}", lp.layerName);
+    }
+
+    std::erase_if(instanceLayers, [&layerProperties](auto layerName) {
+        if (std::find_if(layerProperties.begin(), layerProperties.end(), [layerName](VkLayerProperties lp) {
+                return strcmp(lp.layerName, layerName) == 0;
+            }) == layerProperties.end()) {
+            logger.Info("Layer with name={} not found. Wil not enable.", layerName);
+            return true;
+        }
+        return false;
+    });
 
     logger.Info("Creating Vulkan instance.");
     VkInstanceCreateFlags const vulkanFlags = 0;
@@ -290,7 +320,7 @@ Renderer::Renderer(char const * title, int winX, int winY, uint32_t flags, Rende
         instanceExtensions.size() > 0 ? &instanceExtensions[0] : nullptr,
     };
 
-    auto res = vkCreateInstance(&vulkanInfo, nullptr, &basics.instance);
+    res = vkCreateInstance(&vulkanInfo, nullptr, &basics.instance);
     if (res != VK_SUCCESS) {
         logger.Severe("vkCreateInstance failed.");
         assert(false);

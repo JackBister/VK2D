@@ -2,11 +2,7 @@
   "configurations": [
     {
       "name": "Win32",
-      "includePath": [
-        "${workspaceFolder}/Include/*",
-        "${env:VCPKG_ROOT}/installed/x64-windows/include",
-        "${env:VCPKG_ROOT}/installed/x64-windows/include/bullet"
-      ],
+      "includePath": ["${workspaceFolder}/Include/*"],
       "intelliSenseMode": "windows-msvc-x64",
       "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30037/bin/Hostx64/x64/cl.exe",
       "cStandard": "c17",

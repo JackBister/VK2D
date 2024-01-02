@@ -3,11 +3,6 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0082 NEW)
 
-if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-            CACHE STRING "")
-endif()
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(vk2d C CXX)
@@ -64,7 +59,7 @@ set_target_properties(Main PROPERTIES
                       LIBRARY_OUTPUT_DIRECTORY bin/$<0:>
                       RUNTIME_OUTPUT_DIRECTORY bin/$<0:>)
 
-set_property(TARGET Main PROPERTY CXX_STANDARD 23)
+set_property(TARGET Main PROPERTY CXX_STANDARD 20)
 set_property(TARGET Main PROPERTY ENABLE_EXPORTS 1)
 
 if (MSVC)

@@ -1,10 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
 
-if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-            CACHE STRING "")
-endif()
-
 add_custom_target(CopyAndRenameDll ALL
     COMMAND ${CMAKE_COMMAND} -P ../CMake/CopyAndRenameDll_booter.cmake
     COMMENT "Removing old DLLs"
@@ -22,7 +17,7 @@ set_target_properties(FlappyPong PROPERTIES
                       ARCHIVE_OUTPUT_DIRECTORY bin/$<0:>
                       LIBRARY_OUTPUT_DIRECTORY bin/$<0:>
                       RUNTIME_OUTPUT_DIRECTORY bin/$<0:>)
-set_property(TARGET FlappyPong PROPERTY CXX_STANDARD 23)
+set_property(TARGET FlappyPong PROPERTY CXX_STANDARD 20)
 target_include_directories(FlappyPong SYSTEM PUBLIC include "Include")
 target_compile_definitions(FlappyPong PRIVATE VK2D_DLL=1)
 
